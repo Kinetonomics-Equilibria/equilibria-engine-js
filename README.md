@@ -11,6 +11,13 @@ Welcome to **KGJS-Equilibria**, a headless Javascript rendering engine for inter
 npm install equilibria-engine-js
 ```
 
+You will also need to import the engine's CSS and the KaTeX CSS (for math rendering) in your application:
+
+```javascript
+import "equilibria-engine-js/dist/style.css";
+import "katex/dist/katex.min.css"; 
+```
+
 ## Documentation
 
 Comprehensive documentation has been added to assist developers in utilizing and configuring the headless engine. 
@@ -28,7 +35,7 @@ The engine relies heavily on:
 
 * [D3](https://d3js.org) for drawing 2D diagrams
 * [mathjs](https://mathjs.org/) for mathematical constraint solving and evaluation
-* [KaTeX](https://katex.org) for rendering mathematical typographic text
+* [KaTeX](https://katex.org) for rendering mathematical typographic text (requires `katex/dist/katex.min.css`)
 
 ## Repository
 [https://github.com/Kinetonomics-Equilibria/KGJS-Equilibria](https://github.com/Kinetonomics-Equilibria/KGJS-Equilibria)

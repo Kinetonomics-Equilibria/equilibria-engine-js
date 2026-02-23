@@ -18,6 +18,8 @@ Within your javascript or typescript files, you can then import the engine class
 
 ```js
 import { KineticGraph, KG_EVENTS } from "equilibria-engine-js";
+import "equilibria-engine-js/dist/style.css"; // Engine styles
+import "katex/dist/katex.min.css"; // Required for math rendering
 ```
 
 ### Option 2: Using CDN (For Vanilla HTML/JS)
@@ -25,6 +27,10 @@ import { KineticGraph, KG_EVENTS } from "equilibria-engine-js";
 You can load the bundled module directly in your browser. Since the engine exposes an ES module, you can instantiate it directly inside a `<script type="module">` tag.
 
 ```html
+<!-- Required CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/equilibria-engine-js@latest/dist/style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" />
+
 <!-- Host container for the graph -->
 <div id="graph-container"></div>
 

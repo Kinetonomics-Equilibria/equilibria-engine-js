@@ -1167,7 +1167,7 @@ var eventemitter3 = { exports: {} };
   }, o.prototype.off = o.prototype.removeListener, o.prototype.addListener = o.prototype.on, o.prefixed = t, o.EventEmitter = o, i.exports = o;
 })(eventemitter3);
 var eventemitter3Exports = eventemitter3.exports;
-const EventEmitter = /* @__PURE__ */ getDefaultExportFromCjs(eventemitter3Exports);
+const EventEmitter = /* @__PURE__ */ getDefaultExportFromCjs(eventemitter3Exports), kgjsTheme = "";
 class KineticGraph extends EventEmitter {
   constructor(e) {
     super(), this.container = null, this.view = null, this.config = e;

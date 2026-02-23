@@ -1,0 +1,129 @@
+# Equilibria Engine JS (`equilibria-engine-js`)
+**AI Implementation Guide**
+
+This file provides LLMs and AI coding assistants with the necessary context, API surface, and best practices for integrating the `equilibria-engine-js` library into modern web applications (React, NextJS, Vite, Vue, Vanilla JS).
+
+## 1. Core Purpose
+`equilibria-engine-js` is a headless, data-driven Javascript rendering engine for interactive mathematical and economic graphs. It uses:
+- **D3.js** for SVG painting.
+- **MathJS** for real-time expression evaluation.
+- **KaTeX** for mathematical typography.
+
+It follows a declarative configuration pattern (typically defined in JSON or YAML) that binds mathematical models directly to visual SVG components.
+
+## 2. Installation & CSS Requirements
+
+**NPM Setup:**
+```bash
+npm install equilibria-engine-js
+```
+
+**CRITICAL: Required CSS Imports**
+If the graph renders without colors/styling, or if math text is broken, it is because you did not import the required CSS. You must import both the engine theme and KaTeX CSS in your application's root or component:
+```javascript
+import "equilibria-engine-js/dist/style.css";
+import "katex/dist/katex.min.css"; // Required for math labels
+```
+
+## 3. The API Lifecycle
+
+The engine is encapsulated in the `KineticGraph` class. 
+
+### A. Initialization & Mounting
+1. Construct the engine with a configuration object.
+2. Call `.mount()` passing a raw DOM `HTMLElement` (e.g., a React `ref.current` or `document.getElementById`).
+
+```javascript
+import { KineticGraph } from "equilibria-engine-js";
+
+const config = { /* ... see configuration schema ... */ };
+const containerElement = document.getElementById("graph-container");
+
+const kg = new KineticGraph(config);
+kg.mount(containerElement); // Binds to DOM and renders
+```
+
+### B. Updating State Programmatically
+To update the graph from the outside (e.g., reacting to a React state slider), pass a partial config containing the new `params` values to `.update()`.
+
+```javascript
+// This instantly updates the "price" param and re-renders dependent math/geometry
+kg.update({
+    params: [
+        { name: "price", value: 15 }
+    ]
+});
+```
+
+### C. Teardown (CRITICAL for React/Vue)
+To prevent memory leaks from dangling D3 event listeners, you **must** call `.destroy()` when the component unmounts.
+
+```javascript
+// React useEffect Example:
+useEffect(() => {
+    const kg = new KineticGraph(config);
+    if (graphRef.current) kg.mount(graphRef.current);
+    
+    return () => {
+        kg.destroy(); // Cleans up the DOM and listeners
+    };
+}, []);
+```
+
+## 4. Configuration Schema
+
+The engine is driven by a `config` object. Here are the most important top-level keys:
+
+### `params` (Independent State)
+Variables that drive the graph logic. They can be mutated by dragging or `.update()`.
+```json
+"params": [
+  { "name": "price", "value": 10, "min": 0, "max": 100, "round": 1 }
+]
+```
+
+### `calcs` (Computed State via MathJS)
+Derived math variables mapped from `params`.
+```json
+"calcs": {
+  "revenue": "price * 50",
+  "midpoint": "price / 2"
+}
+```
+
+### `scales` (Viewport Mapping)
+Maps mathematical domains (e.g., $x \in [0, 20]$) to actual pixel ranges on the screen.
+```json
+"scales": [
+  { "name": "x", "axis": "x", "domainMin": 0, "domainMax": 20 },
+  { "name": "y", "axis": "y", "domainMin": 0, "domainMax": 20 }
+]
+```
+
+### `objects` (SVG Geometry)
+The visual elements rendered on the screen. Types include `Point`, `Segment`, `Curve`, `Function`, and `Label`.
+
+*Interactive Dragging:* To make a point draggable (which directly mutates a parameter like `price`), supply a `drag` array.
+
+```json
+"objects": [
+  {
+    "type": "Point",
+    "def": {
+      "x": "10",
+      "y": "price", // Binds Y coordinate to the param
+      "color": "blue",
+      "drag": [
+        { 
+          "directions": "y", // Allow vertical dragging
+          "param": "price",  // Mutate this param
+          "prop": "y"        // Map pixel Y-movement back to param math value
+        }
+      ]
+    }
+  }
+]
+```
+
+## 5. Viewport Responsiveness
+The engine automatically attaches a `window` resize listener upon `mount()`. To ensure the graph sizes correctly, ensure the host `containerElement` has a defined CSS width (e.g., `width: 100%`). The engine scales height automatically based on the config's `aspectRatio` property.

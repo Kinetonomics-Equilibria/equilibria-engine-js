@@ -1,6 +1,7 @@
 import { View } from "./view/view";
 import { KG_EVENTS } from "./constants";
 import { EventEmitter } from "eventemitter3";
+import "../css/kgjs-theme.css";
 
 export { KG_EVENTS };
 
