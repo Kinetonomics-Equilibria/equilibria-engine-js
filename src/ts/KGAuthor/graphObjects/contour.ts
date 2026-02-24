@@ -70,7 +70,6 @@ import { GraphObjectDefinition, GraphObject } from "./graphObject";
                 contourDef.level = level;
                 return new Contour(contourDef, graph);
             });
-            console.log('contours: ', m.subObjects);
         
     
 

@@ -41,14 +41,12 @@ import { EconConstantElasticityCurveDefinition, EconConstantElasticityCurve } fr
             def.demand.name = def.name + "dem";
             def.demand.color = "colors.demand";
             const demand = new EconConstantElasticityCurve(def.demand, graph)
-            console.log("demand: ", demand)
             cee.subObjects.push(demand);
 
             def.supply.point = def.equilibrium;
             def.supply.name = def.name + "sup";
             def.supply.color = "colors.supply";
             const supply = new EconConstantElasticityCurve(def.supply, graph)
-            console.log('supply: ', supply)
             cee.subObjects.push(supply);
 
         }

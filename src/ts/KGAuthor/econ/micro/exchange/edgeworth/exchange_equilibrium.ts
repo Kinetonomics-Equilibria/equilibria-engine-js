@@ -30,7 +30,7 @@ import { BundleDefinition, EconBundle } from "../../consumer_theory/two_good_uti
                 p = divideDefs(addDefs(alphaW2(agentA), alphaW2(agentB)), addDefs(oneMinusAlphaW1(agentA), oneMinusAlphaW1(agentB)));
 
             } else {
-                console.log("We're just handling Edgeworth equilibrium with Cobb-Douglas so far...")
+                // Only Cobb-Douglas is supported for Edgeworth equilibrium
             }
 
             setDefaults(def, {

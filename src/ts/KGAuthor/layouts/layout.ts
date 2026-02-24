@@ -2,56 +2,49 @@ import { AuthoringObject } from "../parsers/authoringObject";
 
 
 
-    export class Layout extends AuthoringObject {
+export class Layout extends AuthoringObject {
 
-        public aspectRatio: number;
-        public nosvg: boolean;
+    public aspectRatio: number;
+    public nosvg: boolean;
 
-        constructor(def) {
-            super(def);
-            this.aspectRatio = 2;
-            this.nosvg = false;
+    constructor(def) {
+        super(def);
+        this.aspectRatio = 2;
+        this.nosvg = false;
 
-            let l = this;
+        let l = this;
 
-            
-        }
-
-        parseSelf(parsedData) {
-            parsedData.aspectRatio = this.aspectRatio;
-            parsedData.nosvg = this.nosvg;
-            return parsedData;
-        }
 
     }
 
-    export class SquareLayout extends Layout {
-
-        // creates a square layout (aspect ratio of 1) within the main body of the text
-        // to make a square graph, the ratio of width to height should be 0.82
-
-        constructor(def) {
-            super(def);
-            this.aspectRatio = 1.22;
-        }
+    parseSelf(parsedData) {
+        parsedData.aspectRatio = this.aspectRatio;
+        parsedData.nosvg = this.nosvg;
+        return parsedData;
     }
 
+}
 
-    export class WideRectangleLayout extends Layout {
+export class SquareLayout extends Layout {
 
-        // creates a rectangle, twice as wide as it is high, within the main body of the text
-        // to make a square graph, the ratio of width to height should be 0.41
+    // creates a square layout (aspect ratio of 1) within the main body of the text
+    // to make a square graph, the ratio of width to height should be 0.82
 
-        constructor(def) {
-            super(def);
-            this.aspectRatio = 2.44;
-        
-
-    
-
-
+    constructor(def) {
+        super(def);
+        this.aspectRatio = 1.22;
+    }
 }
 
 
+export class WideRectangleLayout extends Layout {
 
+    // creates a rectangle, twice as wide as it is high, within the main body of the text
+    // to make a square graph, the ratio of width to height should be 0.41
+
+    constructor(def) {
+        super(def);
+        this.aspectRatio = 2.44;
+    }
 }
+

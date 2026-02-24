@@ -30,8 +30,12 @@ import "katex/dist/katex.min.css"; // Required for math labels
 The engine is encapsulated in the `KineticGraph` class. 
 
 ### A. Initialization & Mounting
-1. Construct the engine with a configuration object.
+1. Construct the engine with a configuration object and optional options.
 2. Call `.mount()` passing a raw DOM `HTMLElement` (e.g., a React `ref.current` or `document.getElementById`).
+
+The engine automatically:
+- Applies the `.kg-container` CSS class to the container element.
+- Attaches a `ResizeObserver` to the container for responsive resizing (scoped to the container, not `window`).
 
 ```javascript
 import { KineticGraph } from "equilibria-engine-js";
@@ -41,6 +45,14 @@ const containerElement = document.getElementById("graph-container");
 
 const kg = new KineticGraph(config);
 kg.mount(containerElement); // Binds to DOM and renders
+```
+
+**Options (second constructor argument):**
+```javascript
+const kg = new KineticGraph(config, {
+    legacyUrlOverrides: false // default: false. If true, reads URL query params 
+                              // and container div attributes for param overrides.
+});
 ```
 
 ### B. Updating State Programmatically
@@ -56,7 +68,11 @@ kg.update({
 ```
 
 ### C. Teardown (CRITICAL for React/Vue)
-To prevent memory leaks from dangling D3 event listeners, you **must** call `.destroy()` when the component unmounts.
+To prevent memory leaks from dangling D3 event listeners and ResizeObserver, you **must** call `.destroy()` when the component unmounts. This will:
+- Disconnect the `ResizeObserver`
+- Remove the `.kg-container` class
+- Clear the container's innerHTML
+- Remove all event listeners
 
 ```javascript
 // React useEffect Example:
@@ -65,7 +81,7 @@ useEffect(() => {
     if (graphRef.current) kg.mount(graphRef.current);
     
     return () => {
-        kg.destroy(); // Cleans up the DOM and listeners
+        kg.destroy(); // Cleans up the DOM, observer, and listeners
     };
 }, []);
 ```
@@ -126,4 +142,4 @@ The visual elements rendered on the screen. Types include `Point`, `Segment`, `C
 ```
 
 ## 5. Viewport Responsiveness
-The engine automatically attaches a `window` resize listener upon `mount()`. To ensure the graph sizes correctly, ensure the host `containerElement` has a defined CSS width (e.g., `width: 100%`). The engine scales height automatically based on the config's `aspectRatio` property.
+The engine uses a `ResizeObserver` attached to the container element on `mount()`. To ensure the graph sizes correctly, ensure the host `containerElement` has a defined CSS width (e.g., `width: 100%`). The engine scales height automatically based on the config's `aspectRatio` property.

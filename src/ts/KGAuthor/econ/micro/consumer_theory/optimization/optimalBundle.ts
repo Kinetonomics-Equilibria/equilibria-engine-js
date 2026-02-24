@@ -33,7 +33,6 @@ import { getUtilityFunction } from "../two_good_utility/utilitySelector";
                 indifferenceCurve: {}
             });
 
-            console.log('coords: ',coords);
 
             if(bl.hasOwnProperty('endowment')) {
                 if(bl.def.sellOnly) {
@@ -67,7 +66,7 @@ import { getUtilityFunction } from "../two_good_utility/utilitySelector";
                 });
             }
             else {
-                console.log('oops, need to define an EconOptimalBundle with a utility function and budget line.')
+                // EconOptimalBundle requires a utility function and budget line
             }
 
             super(def, graph);

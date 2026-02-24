@@ -146,7 +146,6 @@ export class Line extends Curve {
                 color: def.color,
                 coordinates: lineRadius(l, labelDef.r, labelDef.center)
             });
-            console.log(labelDef);
             l.subObjects.push(new Label(labelDef, graph));
         }
 

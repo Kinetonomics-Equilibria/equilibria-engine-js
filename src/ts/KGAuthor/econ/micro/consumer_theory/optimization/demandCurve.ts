@@ -44,7 +44,7 @@ import { OptimalBundleDefinition } from "./optimalBundle";
                 });
             }
             else {
-                console.log('oops, need to define an EconOptimalBundle with a utility function and budget line.')
+                // EconOptimalBundle requires a utility function and budget line
             }
 
             super(def, graph);
@@ -80,7 +80,7 @@ import { OptimalBundleDefinition } from "./optimalBundle";
                 });
             }
             else {
-                console.log('oops, need to define an EconOptimalBundle with a utility function and budget line.')
+                // EconOptimalBundle requires a utility function and budget line
             }
 
             super(def, graph);
@@ -116,7 +116,7 @@ import { OptimalBundleDefinition } from "./optimalBundle";
                 });
             }
             else {
-                console.log('oops, need to define an EconOptimalBundle with a utility function and budget line.')
+                // EconOptimalBundle requires a utility function and budget line
             }
 
             super(def, graph);

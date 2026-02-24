@@ -46,7 +46,7 @@ export class Segment extends GraphObject {
 
         // new way of trimming
         if (def.hasOwnProperty('trim')) {
-            console.log('implementing trimming');
+            // TODO: implement trimming
             const x1 = s.x1;
             const y1 = s.y1;
             const x2 = s.x2;

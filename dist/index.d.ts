@@ -57,12 +57,19 @@ export declare const KG_EVENTS: {
 
 export declare class KineticGraph extends EventEmitter {
     private config;
+    private options;
     private container;
     view: View | null;
-    constructor(config: any);
+    private resizeObserver;
+    constructor(config: any, options?: KineticGraphOptions);
     mount(containerElement: HTMLElement): void;
     update(newConfig: any): void;
     destroy(): void;
+}
+
+export declare interface KineticGraphOptions {
+    /** Enable legacy URL query param and div attribute overrides (default: false) */
+    legacyUrlOverrides?: boolean;
 }
 
 declare interface ListenerDefinition extends UpdateListenerDefinition {
@@ -98,7 +105,7 @@ declare class Model implements IModel {
     evalCalcs(): {};
     evalObject(obj: {}, onlyJSMath?: boolean): {};
     evaluate(name: string, onlyJSMath?: boolean): any;
-    latexColors(): void;
+    latexColors(): string;
     getParam(paramName: string): Param;
     updateParam(name: string, newValue: any): void;
     toggleParam(name: string): void;
@@ -197,7 +204,8 @@ declare class View implements IView {
     private explanation?;
     private svgContainerDiv;
     private clearColor;
-    constructor(div: Element, data: ViewDefinition);
+    private viewOptions;
+    constructor(div: Element, data: ViewDefinition, options?: ViewOptions);
     parse(data: ViewDefinition, div?: any): any;
     render(data: any, div: any): void;
     addViewToDef(def: any, layer: any): any;
@@ -265,6 +273,10 @@ declare interface ViewObjectDefinition extends UpdateListenerDefinition {
     yScaleMin?: string;
     xScaleMax?: string;
     yScaleMax?: string;
+}
+
+declare interface ViewOptions {
+    legacyUrlOverrides?: boolean;
 }
 
 export { }

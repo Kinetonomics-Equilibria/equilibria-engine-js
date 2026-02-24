@@ -52,8 +52,6 @@ export class Graph extends PositionedObject {
             g.subObjects.push(new KGAuthorClasses[obj.type](obj.def, g))
         });
 
-        console.log(g);
-
     }
 
     getMarkerName(lookup: { markerType: string, color: string }) {

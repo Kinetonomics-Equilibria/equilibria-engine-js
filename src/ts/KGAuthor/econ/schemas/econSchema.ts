@@ -49,7 +49,6 @@ import { Schema } from "../../schemas/schema";
                 }
             })
 
-            console.log("idioms: ",def.idioms);
 
             def.colors = setDefaults(def.colors || {},{
 

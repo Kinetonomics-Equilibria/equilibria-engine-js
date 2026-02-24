@@ -18,7 +18,6 @@ import { extractUtilityFunction } from "./bundle";
             indifferenceCurveDef.name = def.name + "_IC";
             return new EconIndifferenceCurve(indifferenceCurveDef, graph);
         }
-        console.log('tried to instantiate a budget line without either a budget line def or object')
     }
 
     export interface IndifferenceCurveDefinition extends CurveDefinition {

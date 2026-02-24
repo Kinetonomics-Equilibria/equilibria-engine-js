@@ -32,7 +32,6 @@ export class ThreeHorizontalGraphs extends Layout {
 
         let includeControls = false;
 
-        console.log('layout: ', l);
 
         if (def.hasOwnProperty('leftControls')) {
 

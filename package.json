@@ -1,6 +1,6 @@
 {
   "name": "equilibria-engine-js",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Headless js renderer for kineticgraphs",
   "main": "dist/kgjs.cjs.js",
   "module": "dist/kgjs.es.js",

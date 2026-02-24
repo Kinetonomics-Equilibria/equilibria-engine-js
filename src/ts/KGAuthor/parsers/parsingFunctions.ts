@@ -56,7 +56,6 @@ export function getParameterName(str) {
 }
 
 export function namedCalc(str) {
-    console.log('name is ', this.name);
     return "calcs." + this.name + "." + str;
 }
 
@@ -111,7 +110,10 @@ export function divideDefs(def1, def2) {
 }
 
 export function absDef(def) {
-    return "";
+    if (typeof def == 'number') {
+        return Math.abs(def);
+    }
+    return `abs(${getDefinitionProperty(def)})`;
 }
 
 export function invertDef(def) {

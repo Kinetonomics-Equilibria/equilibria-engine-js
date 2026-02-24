@@ -5,7 +5,8 @@ import { resolve } from 'path';
 
 export default defineConfig({
   test: {
-    environment: 'jsdom'
+    environment: 'jsdom',
+    setupFiles: ['./src/__tests__/setup.ts']
   },
   build: {
     lib: {

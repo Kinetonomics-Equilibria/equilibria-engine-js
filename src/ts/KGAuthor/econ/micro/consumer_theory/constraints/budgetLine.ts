@@ -83,7 +83,6 @@ import { EconBundle } from "../two_good_utility/bundle";
                 priceRatio = divideDefs(def.p1, def.p2),
                 endowment = {x: def.x, y: def.y};
 
-            console.log('xIntercept', xIntercept);
 
             if (def.inMap) {
                 def.strokeWidth = 1;

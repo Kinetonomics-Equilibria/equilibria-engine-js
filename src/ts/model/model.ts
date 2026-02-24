@@ -61,11 +61,8 @@ export class Model implements IModel {
     }
 
     resetParams() {
-        console.log("resetting model parameters")
         const model = this;
-        console.log('initial parameters are: ', model.initialParams);
         model.initialParams.forEach(function (p) {
-            console.log('setting ', p.name, ' to ', p.value)
             model.updateParam(p.name, p.value);
         })
         model.update(true);
@@ -152,21 +149,13 @@ export class Model implements IModel {
             return result;
         } catch (err: any) {
 
-            // if that doesn't work, try to evaluate using native js eval
-            // console.log('MathJS error evaluating', name, ':', err.message);
-
+            // If MathJS can't parse the expression, return it as-is rather than
+            // falling back to eval() which is a security risk with user-provided YAML.
             if (onlyJSMath) {
                 return name;
             } else {
-                try {
-                    let result = eval(name);
-                    //console.log('parsed', name, 'as an expression with value', result);
-                    return result;
-                } catch (err) {
-                    //console.log('unable to parse', name, 'as a valid expression; generates error:', err.message);
-                    return name;
-                }
-
+                // Return the raw string — callers should handle non-numeric results
+                return name;
             }
 
 
@@ -180,7 +169,7 @@ export class Model implements IModel {
         for (const color in model.colors) {
             result += `\\definecolor{${color}}{HTML}{${model.evaluate(model.colors[color]).replace('#', '')}}\n`
         }
-        console.log(result)
+        return result;
     }
 
     getParam(paramName: string) {

@@ -13,6 +13,10 @@ import * as d3 from "d3";
 
 
 
+export interface ViewOptions {
+    legacyUrlOverrides?: boolean;
+}
+
 export interface TypeAndDef {
     type: string;
     def: any;
@@ -72,8 +76,10 @@ export class View implements IView {
     private explanation?: any;
     private svgContainerDiv: any;
     private clearColor: string;
+    private viewOptions: ViewOptions;
 
-    constructor(div: Element, data: ViewDefinition) {
+    constructor(div: Element, data: ViewDefinition, options?: ViewOptions) {
+        this.viewOptions = options || {};
         this.render(data, div);
     }
 
@@ -93,28 +99,33 @@ export class View implements IView {
 
         data.schema = data.schema || "Schema";
 
-        // allow user to specify param overrides or select idioms in methods
-        const urlParams = new URLSearchParams(window.location.search);
+        const useLegacyOverrides = !!this.viewOptions.legacyUrlOverrides;
+
+        // Only read URL params if legacy overrides are enabled
+        let urlParams: URLSearchParams | null = null;
+        if (useLegacyOverrides) {
+            try {
+                urlParams = new URLSearchParams(window.location.search);
+            } catch (e) {
+                // window.location may not be available in headless/SSR environments
+            }
+        }
 
         // override params
         data.params = (data.params || []).map(function (paramData) {
-            // allow author to override initial parameter values by specifying them as div attributes
-            if (div.hasAttribute(paramData.name)) {
-                paramData.value = div.getAttribute(paramData.name)
-            }
+            if (useLegacyOverrides) {
+                // allow author to override initial parameter values by specifying them as div attributes
+                if (div && div.hasAttribute && div.hasAttribute(paramData.name)) {
+                    paramData.value = div.getAttribute(paramData.name)
+                }
 
-            // allow user to override parameter values by specifying them in the URL
-            const urlParamValue = urlParams.get(paramData.name);
-
-            /* console.log("Searching for ", paramData.name)
-            if (urlParamValue) {
-                console.log(urlParamValue)
-            } else {
-                console.log('not found')
-            }*/
-
-            if (urlParamValue) {
-                paramData.value = urlParamValue
+                // allow user to override parameter values by specifying them in the URL
+                if (urlParams) {
+                    const urlParamValue = urlParams.get(paramData.name);
+                    if (urlParamValue) {
+                        paramData.value = urlParamValue
+                    }
+                }
             }
 
             // convert boolean params from strings to numbers
@@ -131,8 +142,8 @@ export class View implements IView {
             return paramData;
         });
 
-        // allow author to set clear color as div attribute
-        if (div.hasAttribute("clearColor")) {
+        // allow author to set clear color as div attribute (legacy mode only)
+        if (useLegacyOverrides && div && div.hasAttribute && div.hasAttribute("clearColor")) {
             data.clearColor = div.getAttribute("clearColor")
         }
 
@@ -151,7 +162,7 @@ export class View implements IView {
             markers: data.markers || [],
             scales: data.scales || [{
                 name: 'x',
-                axis: 'x',
+                axis: 'x' as const,
                 rangeMin: 0,
                 rangeMax: 1,
                 domainMin: 0,
@@ -159,7 +170,7 @@ export class View implements IView {
             },
             {
                 name: 'y',
-                axis: 'y',
+                axis: 'y' as const,
                 rangeMin: 0,
                 rangeMax: 1,
                 domainMin: 0,
@@ -186,7 +197,7 @@ export class View implements IView {
         }
 
         if (data.hasOwnProperty('schema')) {
-            if (urlParams.get('custom')) {
+            if (useLegacyOverrides && urlParams && urlParams.get('custom')) {
                 parsedData.custom = urlParams.get('custom');
             }
             data.objects.push({ type: data.schema, def: { custom: parsedData.custom } })
@@ -354,7 +365,7 @@ export class View implements IView {
             // read the client width of the enclosing div and calculate the height using the aspectRatio
             let clientWidth = view.div.node().clientWidth;
 
-            width = clientWidth - 10
+            width = clientWidth;
             height = width / view.aspectRatio;
 
             let sidebarHeight = 0, explanationHeight = 0;
