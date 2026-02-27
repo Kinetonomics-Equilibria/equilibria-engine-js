@@ -229,7 +229,16 @@ export function copyJSON(def) {
 }
 
 export function replaceVariable(target, search, replacement) {
-    return `(${target.split(search).join(replacement)})`;
+    if (typeof target !== 'string') {
+        target = String(target);
+    }
+    let result = target.split(search).join(replacement);
+    let baseSearch = search.replace(/[\(\)]/g, '');
+    if (baseSearch) {
+        let regex = new RegExp(`\\b${baseSearch}\\b`, 'g');
+        result = result.replace(regex, replacement);
+    }
+    return `(${result})`;
 }
 
 // allow author to specify a function using a single string rather than a function object
