@@ -1,0 +1,202 @@
+/* ============================================================
+   Equilibria React — Component Styles
+   Self-contained CSS with custom properties for theming.
+   Override --eq-* variables on your container to customise.
+   ============================================================ */
+
+:root {
+    /* Card container */
+    --eq-card-bg: #ffffff;
+    --eq-card-border: #e2e8f0;
+    --eq-card-radius: 12px;
+    --eq-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+    --eq-card-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.1), 0 8px 24px rgba(0, 0, 0, 0.08);
+    --eq-card-padding: 1.25rem;
+
+    /* Typography */
+    --eq-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --eq-title-color: #1a202c;
+    --eq-title-size: 1.05rem;
+    --eq-title-weight: 600;
+    --eq-description-color: #718096;
+    --eq-description-size: 0.875rem;
+
+    /* States */
+    --eq-error-bg: #fff5f5;
+    --eq-error-color: #c53030;
+    --eq-error-border: #fed7d7;
+    --eq-skeleton-color: #edf2f7;
+    --eq-skeleton-shine: #f7fafc;
+}
+
+/* ── Chart Container (bare) ─────────────────────────────── */
+
+.chartContainer {
+    width: 100%;
+    min-height: 120px;
+    position: relative;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+
+.card {
+    font-family: var(--eq-font-family);
+    background: var(--eq-card-bg);
+    border-radius: var(--eq-card-radius);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+}
+
+/* Variants */
+.card--elevated {
+    box-shadow: var(--eq-card-shadow);
+}
+
+.card--elevated:hover {
+    box-shadow: var(--eq-card-shadow-hover);
+}
+
+.card--outlined {
+    border: 1px solid var(--eq-card-border);
+    box-shadow: none;
+}
+
+.card--outlined:hover {
+    border-color: #cbd5e0;
+}
+
+.card--flat {
+    box-shadow: none;
+    border: none;
+}
+
+.card--flat:hover {
+    transform: none;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+
+.header {
+    padding: var(--eq-card-padding) var(--eq-card-padding) 0;
+}
+
+.title {
+    margin: 0;
+    font-family: var(--eq-font-family);
+    font-size: var(--eq-title-size);
+    font-weight: var(--eq-title-weight);
+    color: var(--eq-title-color);
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+}
+
+.description {
+    margin: 0.35rem 0 0;
+    font-size: var(--eq-description-size);
+    color: var(--eq-description-color);
+    line-height: 1.5;
+}
+
+/* ── Chart Area ──────────────────────────────────────────── */
+
+.chartArea {
+    position: relative;
+    padding: var(--eq-card-padding);
+    min-height: 160px;
+}
+
+/* ── Loading Skeleton ────────────────────────────────────── */
+
+.skeleton {
+    position: absolute;
+    inset: var(--eq-card-padding);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--eq-skeleton-color);
+}
+
+.skeletonPulse {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            var(--eq-skeleton-color) 0%,
+            var(--eq-skeleton-shine) 50%,
+            var(--eq-skeleton-color) 100%);
+    background-size: 200% 100%;
+    animation: eq-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes eq-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ── Error State ─────────────────────────────────────────── */
+
+.errorContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem 1rem;
+    background: var(--eq-error-bg);
+    border: 1px solid var(--eq-error-border);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.errorIcon {
+    font-size: 1.5rem;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.errorMessage {
+    margin: 0;
+    font-family: var(--eq-font-family);
+    font-size: 0.85rem;
+    color: var(--eq-error-color);
+    max-width: 320px;
+    word-break: break-word;
+}
+
+.retryButton {
+    appearance: none;
+    border: 1px solid var(--eq-error-border);
+    background: var(--eq-card-bg);
+    color: var(--eq-error-color);
+    font-family: var(--eq-font-family);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.retryButton:hover {
+    background: var(--eq-error-bg);
+    border-color: var(--eq-error-color);
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+
+.footer {
+    padding: 0 var(--eq-card-padding) var(--eq-card-padding);
+    font-family: var(--eq-font-family);
+    font-size: var(--eq-description-size);
+    color: var(--eq-description-color);
+    border-top: 1px solid var(--eq-card-border);
+    margin-top: 0;
+    padding-top: calc(var(--eq-card-padding) * 0.75);
+}
