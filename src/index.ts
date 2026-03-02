@@ -1,3 +1,6 @@
+import 'equilibria-engine-js/dist/style.css';
+import 'katex/dist/katex.min.css';
+
 // Components
 export { EquilibriaChart } from './EquilibriaChart';
 export { EquilibriaCard } from './EquilibriaCard';

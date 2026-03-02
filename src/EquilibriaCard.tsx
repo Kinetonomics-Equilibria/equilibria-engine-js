@@ -68,11 +68,9 @@ export function EquilibriaCard({
             {/* Chart area */}
             <div className={styles.chartArea}>
                 {/* Loading skeleton */}
-                {isLoading && !error && (
-                    <div className={styles.skeleton}>
-                        <div className={styles.skeletonPulse} />
-                    </div>
-                )}
+                <div className={`${styles.skeleton} ${!isLoading || error ? styles.skeletonHidden : ''}`}>
+                    <div className={styles.skeletonPulse} />
+                </div>
 
                 {/* Error state */}
                 {error && errorContent}
@@ -80,12 +78,7 @@ export function EquilibriaCard({
                 {/* Chart container — always rendered so the ref is attached */}
                 <div
                     ref={containerRef}
-                    className={styles.chartContainer}
-                    style={{
-                        opacity: isLoading || error ? 0 : 1,
-                        position: isLoading || error ? 'absolute' : 'relative',
-                        pointerEvents: isLoading || error ? 'none' : 'auto',
-                    }}
+                    className={`${styles.chartContainer} ${isLoading || error ? styles.chartContainerLoading : styles.chartContainerReady}`}
                 />
             </div>
 

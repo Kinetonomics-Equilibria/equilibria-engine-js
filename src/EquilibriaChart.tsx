@@ -34,7 +34,11 @@ export function EquilibriaChart({
         }
     }, [isReady, onReady]);
 
-    const classNames = [styles.chartContainer, className].filter(Boolean).join(' ');
+    const classNames = [
+        styles.chartContainer,
+        !isReady || error ? styles.chartContainerLoading : styles.chartContainerReady,
+        className
+    ].filter(Boolean).join(' ');
 
     return (
         <div
