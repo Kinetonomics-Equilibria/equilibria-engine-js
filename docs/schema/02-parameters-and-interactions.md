@@ -49,9 +49,7 @@ x: (r + 10) * t
 
 The system uses `math.js` to parse these strings algebraically under the hood. It supports a wide variety of standard mathematical formulas (`sin`, `cos`, `log`, `min`, `max`, exponents `^`, etc.).
 
-## Restrictions
-
-A schema can define an array of `restrictions` (currently subject to varying functional support in the engine) that prevents user interaction from dragging a parameter into an invalid domain.
+A schema can define an array of `restrictions` that prevent user interaction from dragging a parameter into an invalid domain.
 
 ### `RestrictionDefinition` Interface
 
@@ -64,4 +62,6 @@ interface RestrictionDefinition {
 }
 ```
 
-For example, if you have a budget line where `Px * X + Py * Y = M`, you might want to enforce that `Px > 0` and `Py > 0`. You would define an expression for `Px` with a min of `0.001`. (Note: In the current version of the engine, some restriction handling may be bypassed by default. If you need stricter limits, ensure you set explicit `min` and `max` on the params themselves.)
+For example, if you have a budget line where `Px * X + Py * Y = M`, you might want to enforce that `Px > 0` and `Py > 0`. You would define an expression for `Px` with a min of `0.001`. 
+
+When a user interacts with a parameter (like dragging a point bound to `Px`), the Equilibria engine predictively evaluates the new mathematical state. If the new `Px` value drops below `0.001`—or if the interaction violates any other mathematical properties defined in the `expression` operators—the engine will silently cancel the update and roll back the parameter to the last known valid state.

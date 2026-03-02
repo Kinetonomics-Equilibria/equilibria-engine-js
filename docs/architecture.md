@@ -14,13 +14,14 @@ The core modules located in `src/ts/` are broadly divided into:
 At the heart of the engine is the `Model` class (`src/ts/model/model.ts`), instantiated when you provide a configuration object. The model acts as a reactive state container, primarily housing:
 
 * **Params** (`src/ts/model/param.ts`): The independent variables of your diagram (e.g., $price=10$, $quantity=5$). 
-* **UpdateListeners** (`src/ts/model/updateListener.ts`): Dependent variables constructed dynamically using **MathJS**. When an underlying param changes, the update listeners traverse the dependency graph and recalculate.
+* **UpdateListeners** (`src/ts/model/updateListener.ts`): Dependent variables constructed dynamically using **MathJS**. The engine utilizes a flattened execution scope; when an underlying param changes, the update listeners traverse the dependency graph and recalculate. You can refer to `params`, `calcs`, `colors`, and `idioms` directly as variables dynamically within Math expressions without prefix paths.
 * **Restrictions** (`src/ts/model/restriction.ts`): Rules that prevent parameters from exceeding certain bounds or satisfying particular conditions during interactions.
 
-Whenever an interaction changes a Param's value, the Model performs a fast update:
-1. It validates the change against Restrictions.
-2. It evaluates all mathematical Calcs via MathJS.
-3. It broadcasts an update to the View so components can redraw their coordinates and math text.
+Whenever an interaction changes a Param's value, the Model performs a fast update loop:
+1. It hypothetically evaluates the new mathematical state.
+2. It validates the new mathematical properties against all active Restrictions. 
+3. If strictly valid, it completes the broadcast update to the View; if invalid, it rolls the underlying param back to its previous legal state.
+4. For valid updates, View objects redraw their coordinates, math text, and SVGs smoothly.
 
 ## 2. View: The Rendering Layer
 
@@ -28,10 +29,10 @@ The `View` (`src/ts/view/view.ts`) handles painting to the screen using **D3.js*
 
 The lifecycle of the view goes as follows:
 
-1. **Initialization:** The view creates the root SVG tag within the host container and applies the provided `aspectRatio`.
+1. **Initialization:** The view creates the root SVG tag within the host container and applies the provided `aspectRatio`. It also generates an `svgContainerDiv` for absolute positioning of overlay text objects.
 2. **Scales Execution:** The engine creates `Scale` instances (`src/ts/view/scale.ts`). These scale objects are crucial: they convert mathematical domain values (e.g., $x \in [0, 20]$) into raw pixel locations on the viewport. 
 3. **ViewObjects Instantiation:** Geometric elements (`Point`, `Segment`, `Curve`, `Label`, `Area`, `Circle`, `Rectangle`, `Contour`) are instantiated from the configuration. These are located in `src/ts/view/viewObjects/`.
-4. **Drawing:** Each `ViewObject` creates its own SVG elements (e.g., `<circle>`, `<path>`, or DOM `<div>` elements for KaTeX) inside dedicated D3 layers.
+4. **Drawing:** Each `ViewObject` creates its own elements (e.g., `<circle>`, `<path>`) inside dedicated D3 layers within the primary SVG graphic. Text objects like `Label` elements are parsed via KaTeX and rendered dynamically within absolute `div`s inside the `svgContainerDiv` layer cleanly separated from the SVG logic for better headless SPA integrations.
 
 When the Model broadcasts a state change, the View objects trigger their internal `update()` methods, mapping their new data values through the scales and smoothly interpolating D3 transitions.
 
