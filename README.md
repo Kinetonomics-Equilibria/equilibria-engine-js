@@ -37,6 +37,22 @@ The engine relies heavily on:
 * [mathjs](https://mathjs.org/) for mathematical constraint solving and evaluation
 * [KaTeX](https://katex.org) for rendering mathematical typographic text (requires `katex/dist/katex.min.css`)
 
+## React Integration
+
+For React and Next.js applications, the companion package [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react) provides drop-in components with lifecycle management, event forwarding, and styled card wrappers:
+
+```bash
+npm install equilibria-react equilibria-engine-js
+```
+
+It provides:
+- **`<EquilibriaChart />`** — Minimal chart component
+- **`<EquilibriaCard />`** — Styled card with title, loading skeleton, and error handling
+- **`useEquilibria()`** — Full-control hook with `updateParams` and event callbacks
+- Automatic re-export of `KG_EVENTS` for event subscriptions
+
+See the [equilibria-react README](https://github.com/Kinetonomics-Equilibria/equilibria-react) for full API documentation.
+
 ## Repository
-[https://github.com/Kinetonomics-Equilibria/KGJS-Equilibria](https://github.com/Kinetonomics-Equilibria/KGJS-Equilibria)
+[https://github.com/Kinetonomics-Equilibria/equilibria-engine-js](https://github.com/Kinetonomics-Equilibria/equilibria-engine-js)
 

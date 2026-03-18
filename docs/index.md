@@ -41,3 +41,7 @@ For detailed guidance on authoring YAML schemas with the KGAuthor transpiler:
 8. [Schema: Graphs & Scales](./schema/04-graphs-and-scales.md)
 9. [Schema: Graph Objects](./schema/05-graph-objects.md)
 10. [Schema: Economic Components](./schema/06-econ-objects.md)
+
+### React Companion Package
+
+For React and Next.js applications, see the companion package [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react), which provides drop-in components (`<EquilibriaChart />`, `<EquilibriaCard />`), the `useEquilibria()` hook, and automatic event forwarding.

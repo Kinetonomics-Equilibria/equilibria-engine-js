@@ -143,3 +143,26 @@ The visual elements rendered on the screen. Types include `Point`, `Segment`, `C
 
 ## 5. Viewport Responsiveness
 The engine uses a `ResizeObserver` attached to the container element on `mount()`. To ensure the graph sizes correctly, ensure the host `containerElement` has a defined CSS width (e.g., `width: 100%`). The engine scales height automatically based on the config's `aspectRatio` property.
+
+## 6. React Integration (`equilibria-react`)
+
+For React and Next.js applications, use the companion package [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react) instead of interacting with `KineticGraph` directly. It handles mounting, unmounting, resizing, and error handling automatically.
+
+**Install:**
+```bash
+npm install equilibria-react equilibria-engine-js
+```
+
+**When to use `equilibria-react` vs raw engine:**
+- **Use `equilibria-react`** when building React/Next.js applications. It provides lifecycle-safe components and React-idiomatic event handling.
+- **Use the raw engine** when building with Vanilla JS, Vue, Svelte, or non-React frameworks, or when you need direct control over the `KineticGraph` instance.
+
+**Key API surface:**
+- `<EquilibriaChart />` — Minimal component, renders only the graph
+- `<EquilibriaCard />` — Styled card with title, description, loading skeleton, error handling
+- `useEquilibria(config, options?, eventCallbacks?)` — Full-control hook returning `containerRef`, `instance`, `isReady`, `error`, `retry`, and `updateParams`
+- `KG_EVENTS` — Re-exported from the engine for convenience
+- Event callback props: `onParamChanged`, `onCurveDragged`, `onNodeHover`
+- `updateParams([{ name, value }])` — Programmatically set parameter values from external UI
+
+**Critical:** Config objects must be wrapped in `React.useMemo()` to avoid unnecessary engine remounting on every parent render.

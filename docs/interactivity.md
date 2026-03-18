@@ -6,6 +6,9 @@ The power of the Equilibria engine lies in allowing the host web application (th
 
 The `KineticGraph` class extends `EventEmitter3`. This gives the host application the ability to attach subscriptions to interactions happening on the graph.
 
+> [!TIP]
+> **React users:** The [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react) package re-exports `KG_EVENTS` and provides callback props (`onParamChanged`, `onCurveDragged`, `onNodeHover`) so you don't need to subscribe manually. See the [equilibria-react README](https://github.com/Kinetonomics-Equilibria/equilibria-react) for details.
+
 The engine exposes a `KG_EVENTS` object with the following event keys:
 
 | Event Key | Event Name | Description |

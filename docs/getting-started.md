@@ -41,6 +41,40 @@ You can load the bundled module directly in your browser. Since the engine expos
 </script>
 ```
 
+### Option 3: Using React (Recommended for React/Next.js)
+
+The [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react) companion package wraps the engine with React-idiomatic components and handles mounting, unmounting, resizing, error handling, and event forwarding automatically:
+
+```bash
+npm install equilibria-react equilibria-engine-js
+```
+
+```tsx
+import { useMemo } from 'react';
+import { EquilibriaChart } from 'equilibria-react';
+
+function App() {
+  const config = useMemo(() => ({
+    params: [{ name: "price", value: 10, min: 0, max: 20 }],
+    layout: {
+      OneGraph: {
+        graph: {
+          xAxis: { title: "Quantity", min: 0, max: 20 },
+          yAxis: { title: "Price", min: 0, max: 20 },
+          objects: [
+            { type: "Point", def: { x: "10", y: "price", color: "blue", draggable: true } }
+          ]
+        }
+      }
+    }
+  }), []);
+
+  return <EquilibriaChart config={config} onReady={() => console.log('mounted')} />;
+}
+```
+
+See the [`equilibria-react` documentation](https://github.com/Kinetonomics-Equilibria/equilibria-react) for `<EquilibriaCard />`, event callbacks (`onParamChanged`, `onCurveDragged`, `onNodeHover`), the `useEquilibria()` hook, and the `updateParams` API.
+
 ## Initializing the Engine
 
 The engine reads a `config` object (typically from parsed JSON or YAML) that dictates the mathematical model and visual presentation of the graph.
