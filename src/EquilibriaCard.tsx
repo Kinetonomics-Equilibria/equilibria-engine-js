@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useEquilibria } from './useEquilibria';
 import type { EquilibriaCardProps } from './types';
 import styles from './styles.module.css';
@@ -14,8 +14,11 @@ export function EquilibriaCard({
     options,
     className,
     style,
-    onError: _onError,
-    onReady: _onReady,
+    onError,
+    onReady,
+    onParamChanged,
+    onCurveDragged,
+    onNodeHover,
     title,
     description,
     footer,
@@ -23,7 +26,25 @@ export function EquilibriaCard({
     errorFallback,
     variant = 'elevated',
 }: EquilibriaCardProps) {
-    const { containerRef, error, isReady, retry } = useEquilibria(config, options);
+    const { containerRef, error, isReady, retry } = useEquilibria(config, options, {
+        onParamChanged,
+        onCurveDragged,
+        onNodeHover,
+    });
+
+    // Forward error callback
+    useEffect(() => {
+        if (error && onError) {
+            onError(error);
+        }
+    }, [error, onError]);
+
+    // Forward ready callback
+    useEffect(() => {
+        if (isReady && onReady) {
+            onReady();
+        }
+    }, [isReady, onReady]);
 
     const isLoading = loadingOverride !== undefined ? loadingOverride : !isReady && !error;
 

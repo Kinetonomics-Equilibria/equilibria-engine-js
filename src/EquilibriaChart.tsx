@@ -18,16 +18,24 @@ export function EquilibriaChart({
     style,
     onError,
     onReady,
+    onParamChanged,
+    onCurveDragged,
+    onNodeHover,
 }: EquilibriaChartProps) {
-    const { containerRef, error, isReady } = useEquilibria(config, options);
+    const { containerRef, error, isReady } = useEquilibria(config, options, {
+        onParamChanged,
+        onCurveDragged,
+        onNodeHover,
+    });
 
-    // Forward callbacks
+    // Forward error callback
     useEffect(() => {
         if (error && onError) {
             onError(error);
         }
     }, [error, onError]);
 
+    // Forward ready callback
     useEffect(() => {
         if (isReady && onReady) {
             onReady();
