@@ -19,11 +19,11 @@ export class TwoHorizontalGraphs extends Layout {
         let leftGraphDef = def['leftGraph'],
             rightGraphDef = def['rightGraph'];
 
-        const leftX = 0.15,
-            rightX = 0.65,
+        const leftX = 0.12,
+            rightX = 0.58,
             topY = 0.1,
             bottomY = 0.9,
-            width = 0.3,
+            width = 0.35,
             controlHeight = 0.25;
 
         let includeControls = false;
@@ -73,7 +73,7 @@ export class TwoHorizontalGraphs extends Layout {
 
         let graphHeight = includeControls ? 0.5 : 0.9;
 
-        this.aspectRatio = includeControls ? 2 : 4;
+        this.aspectRatio = includeControls ? 1.8 : 2.5;
 
 
         leftGraphDef.position = {

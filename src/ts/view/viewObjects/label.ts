@@ -17,6 +17,7 @@ export interface LabelDefinition extends ViewObjectDefinition {
     align?: string;
     valign?: string;
     rotate?: number;
+    bgcolor?: string;
 }
 
 export class Label extends ViewObject {
@@ -68,7 +69,7 @@ export class Label extends ViewObject {
         setDefaults(def, {
             xPixelOffset: 0,
             yPixelOffset: 0,
-            fontSize: 12,
+            fontSize: 10,
             align: 'center',
             valign: 'middle',
             rotate: 0,
@@ -81,7 +82,9 @@ export class Label extends ViewObject {
 
         super(def);
 
-        this.bgcolor = def.model.clearColor;
+        // Default to the view's clearColor so labels visually blend with the chart background.
+        // Schema authors can override this via the schema's clearColor property.
+        this.bgcolor = def.bgcolor ?? def.model.clearColor;
 
     }
 

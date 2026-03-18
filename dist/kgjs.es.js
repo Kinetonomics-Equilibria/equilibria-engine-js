@@ -1481,7 +1481,7 @@ class fe extends T {
     super(t);
     const e = this;
     let n = t.leftGraph, r = t.rightGraph;
-    const i = 0.15, s = 0.65, a = 0.1, l = 0.9, c = 0.3, h = 0.25;
+    const i = 0.12, s = 0.58, a = 0.1, l = 0.9, c = 0.35, h = 0.25;
     let m = !1;
     t.hasOwnProperty("leftControls") && (e.subObjects.push(new vt({
       position: {
@@ -1511,7 +1511,7 @@ class fe extends T {
       ]
     })), m = !0);
     let g = m ? 0.5 : 0.9;
-    this.aspectRatio = m ? 2 : 4, n.position = {
+    this.aspectRatio = m ? 1.8 : 2.5, n.position = {
       x: i,
       y: a,
       width: c,
@@ -3554,12 +3554,12 @@ class En extends I {
     t.x == "AXIS" && (t.x = t.yScale.intercept, t.align = e ? "left" : "right", t.xPixelOffset = r), t.x == "OPPAXIS" && (t.x = t.xScale.domainMax, t.align = e ? "right" : "left", t.xPixelOffset = -r), t.y == "AXIS" && (t.y = t.yScale.intercept, t.yPixelOffset = i), t.y == "OPPAXIS" && (t.y = t.yScale.domainMax, t.yPixelOffset = -i), u(t, {
       xPixelOffset: 0,
       yPixelOffset: 0,
-      fontSize: 12,
+      fontSize: 10,
       align: "center",
       valign: "middle",
       rotate: 0,
       color: "black"
-    }), C(t, "constants", ["xPixelOffset", "yPixelOffset", "fontSize", "plainText"]), C(t, "updatables", ["x", "y", "text", "align", "valign", "rotate", "color", "bgcolor"]), super(t), this.bgcolor = t.model.clearColor;
+    }), C(t, "constants", ["xPixelOffset", "yPixelOffset", "fontSize", "plainText"]), C(t, "updatables", ["x", "y", "text", "align", "valign", "rotate", "color", "bgcolor"]), super(t), this.bgcolor = t.bgcolor ?? t.model.clearColor;
   }
   // create div for text
   draw(t) {
