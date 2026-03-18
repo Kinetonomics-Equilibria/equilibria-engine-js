@@ -1,6 +1,6 @@
 {
     "name": "equilibria-react",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "React components for the Equilibria Engine — styled, drop-in chart cards with lifecycle management",
     "type": "module",
     "main": "dist/equilibria-react.cjs.js",
