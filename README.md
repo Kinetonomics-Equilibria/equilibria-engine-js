@@ -37,6 +37,35 @@ Because the app imports engine source rather than a built bundle, an edit
 anywhere under `packages/engine/src` hot-reloads in the browser immediately — no
 rebuild, and no ordering constraint between the packages.
 
+## Checking the app in a browser
+
+`npm test` runs the engine and React suites under jsdom, and the React tests
+mock the engine — so nothing in it renders a real diagram. These two commands
+drive the actual app in headless Chromium against `npm run dev`:
+
+```bash
+npm run test:browser   # smoke-test the running app
+npm run screenshot     # capture apps/web/screenshots/app.png
+```
+
+Both start a dev server if one isn't up and stop it afterwards; if you already
+have `npm run dev` open they attach to it and leave it alone. On a machine that
+has never run Playwright, install the browser once with
+`npx playwright install chromium`.
+
+The tests live in [`apps/web/tests`](./apps/web/tests) and assert the numbers
+the diagram resolves to, not just that an SVG appeared — `dataCoordinates()`
+reads a rendered point back through the axis ticks into graph units, so a
+diagram that solves the wrong system fails even though it still looks like a
+diagram. That is the gap [`NOTES.md`](./NOTES.md) blames for the econ defects
+that passed CI. `npm run test:browser:ui` opens Playwright's UI mode for
+stepping through a failure, and a failed run leaves a screenshot and a trace in
+`apps/web/test-results/` (`npx playwright show-trace <path>`).
+
+`screenshot` is the one to reach for when developing without a screen — a
+container or an SSH session — since it is the only way to actually see what a
+change did to a diagram. It takes `--out`, `--url`, `--width` and `--height`.
+
 ## Documentation
 
 Engine guides live in [`docs/`](./docs):
