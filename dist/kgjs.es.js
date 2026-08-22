@@ -4240,8 +4240,24 @@ class tr extends Rn {
         this.view && this.view.updateDimensions();
       }), this.resizeObserver.observe(t);
     } catch (e) {
-      this.emit("error", e);
+      this.view = null, this.reportFailure(e);
     }
+  }
+  /**
+   * Surfaces a failure raised while building the view.
+   *
+   * Failures are reported through the 'error' event so callers can render their
+   * own fallback UI. eventemitter3 - unlike Node's EventEmitter - does not throw
+   * when an 'error' event has no listeners, so if nothing is listening the error
+   * is re-thrown instead. Otherwise a failed mount would leave the caller with an
+   * empty container and no diagnostic anywhere.
+   */
+  reportFailure(t) {
+    if (this.listenerCount("error") > 0) {
+      this.emit("error", t);
+      return;
+    }
+    throw t;
   }
   update(t) {
     this.config = { ...this.config, ...t }, this.view && (t.params ? t.params.forEach((e) => {

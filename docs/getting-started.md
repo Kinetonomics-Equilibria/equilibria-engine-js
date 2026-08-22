@@ -150,13 +150,29 @@ Ensure the container has a defined width logic (e.g. `width: 100%`) in your CSS.
 
 ## Error Handling
 
-If the engine encounters an error during rendering, it emits an `'error'` event that you can listen for:
+If the engine encounters an error during rendering, it emits an `'error'` event that you can listen for. Attach the listener *before* calling `mount()`:
 
 ```js
+const kg = new KineticGraph(graphConfig);
+
 kg.on('error', (err) => {
     console.error("Engine rendering error:", err);
 });
+
+kg.mount(containerElement);
 ```
+
+If no `'error'` listener is attached, `mount()` throws instead, so a failed mount is never silent. Either subscribe to the event or wrap the call:
+
+```js
+try {
+    kg.mount(containerElement);
+} catch (err) {
+    console.error("Engine failed to mount:", err);
+}
+```
+
+After a failed mount, `kg.view` is left as `null`.
 
 ## Tearing Down
 

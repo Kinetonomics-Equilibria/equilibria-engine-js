@@ -63,6 +63,16 @@ export declare class KineticGraph extends EventEmitter {
     private resizeObserver;
     constructor(config: any, options?: KineticGraphOptions);
     mount(containerElement: HTMLElement): void;
+    /**
+     * Surfaces a failure raised while building the view.
+     *
+     * Failures are reported through the 'error' event so callers can render their
+     * own fallback UI. eventemitter3 - unlike Node's EventEmitter - does not throw
+     * when an 'error' event has no listeners, so if nothing is listening the error
+     * is re-thrown instead. Otherwise a failed mount would leave the caller with an
+     * empty container and no diagnostic anywhere.
+     */
+    private reportFailure;
     update(newConfig: any): void;
     destroy(): void;
 }
