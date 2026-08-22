@@ -10,3 +10,5 @@ packages/engine/src/lib/js-yaml/
 vendor/
 # macOS finder metadata, at any depth
 .DS_Store
+# Claude Code local, per-machine settings (skills in .claude/skills are shared)
+.claude/settings.local.json

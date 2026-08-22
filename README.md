@@ -37,6 +37,52 @@ Because the app imports engine source rather than a built bundle, an edit
 anywhere under `packages/engine/src` hot-reloads in the browser immediately — no
 rebuild, and no ordering constraint between the packages.
 
+## UI: Mantine
+
+The webapp's UI layer is [Mantine 9](https://mantine.dev/) (`@mantine/core` +
+`@mantine/hooks`), installed in `apps/web` only — the engine and its React
+bindings stay dependency-free and headless, so nothing Mantine-related leaks
+into a consumer of `equilibria-react`.
+
+The setup follows Mantine's Vite guide:
+
+| Piece | Where |
+|---|---|
+| PostCSS preset (`light-dark()`, `rem()`, `@mixin`, breakpoint vars) | [`apps/web/postcss.config.js`](./apps/web/postcss.config.js) |
+| Theme tokens (fonts, colours, spacing) | [`apps/web/src/theme.ts`](./apps/web/src/theme.ts) |
+| `MantineProvider` + `@mantine/core/styles.css` | [`apps/web/src/main.tsx`](./apps/web/src/main.tsx) |
+
+Two conventions follow from that. Mantine's stylesheet is imported **before**
+`index.css`, since both are plain CSS of equal specificity and import order is
+what lets app styles win. And styling goes through Mantine props, `.module.css`
+files, and the `--mantine-*` CSS variables — not hard-coded hex or ad-hoc inline
+layout — so a change to `theme.ts` reaches the whole app.
+
+Mantine 9 requires React 19; the whole monorepo is on it, and
+`equilibria-react` still declares `^18 || ^19` peers so it remains usable from a
+React 18 host.
+
+### Working on Mantine code with an AI agent
+
+Three sources are configured, in the order worth reaching for:
+
+1. **The `mantine` MCP server** — declared in [`.mcp.json`](./.mcp.json), run via
+   `npx -y @mantine/mcp-server`. Exposes `list_items`, `get_item_doc`,
+   `get_item_props` and `search_docs` against the live docs. Claude Code asks
+   for approval the first time the project is opened.
+2. **The Mantine skills** in [`.claude/skills/`](./.claude/skills) —
+   `mantine-combobox`, `mantine-form` and `mantine-custom-components`, from
+   [mantinedev/skills](https://github.com/mantinedev/skills). They load
+   automatically when a task touches those areas.
+3. **The vendored docs** at
+   [`docs/reference/mantine-llms-full.txt`](./docs/reference/mantine-llms-full.txt)
+   — the complete Mantine 9.5.x documentation, offline and pinned to the
+   installed version. See [`docs/reference/README.md`](./docs/reference/README.md)
+   for the grep-then-`sed` lookup workflow.
+
+Check one of them before writing Mantine code rather than guessing at a prop or
+a variant name.
+
 ## Checking the app in a browser
 
 `npm test` runs the engine and React suites under jsdom, and the React tests
@@ -76,6 +122,10 @@ Engine guides live in [`docs/`](./docs):
 4. [API & Interactivity](./docs/interactivity.md)
 
 There is also a schema reference under [`docs/schema/`](./docs/schema).
+
+Vendored third-party reference docs — currently the full Mantine documentation,
+pinned to the installed version — live under
+[`docs/reference/`](./docs/reference).
 
 ## Repository
 
