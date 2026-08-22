@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { EquilibriaChartProps } from './types';
 import styles from './styles.module.css';
@@ -42,7 +43,11 @@ export function EquilibriaChart({
         }
     }, [isReady, onReady]);
 
+    // KG_CONTAINER_CLASS is rendered here rather than left to the engine's
+    // classList.add: React owns this element's class attribute and rewrites it
+    // on every render, which dropped the class the engine had added.
     const classNames = [
+        KG_CONTAINER_CLASS,
         styles.chartContainer,
         !isReady || error ? styles.chartContainerLoading : styles.chartContainerReady,
         className

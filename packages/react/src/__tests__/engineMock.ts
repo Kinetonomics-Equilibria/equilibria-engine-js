@@ -13,6 +13,8 @@
  * this package actually has.
  */
 
+import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
+
 type Listener = (...args: unknown[]) => void;
 
 /** Knobs for steering the fake engine, reset between tests via `resetEngineMock()`. */
@@ -93,6 +95,9 @@ export class FakeKineticGraph {
     mount(containerElement: HTMLElement) {
         this.container = containerElement;
         this.mountCount++;
+        // The real engine styles its container by adding this class to the
+        // caller's element, which is what a React re-render can then wipe.
+        containerElement.classList.add(KG_CONTAINER_CLASS);
 
         if (engineControl.mountFailure) {
             // Mirrors KineticGraph.reportFailure().
@@ -110,6 +115,7 @@ export class FakeKineticGraph {
 
     destroy() {
         this.destroyCount++;
+        this.container?.classList.remove(KG_CONTAINER_CLASS);
         this.container = null;
         this.listeners.clear();
         if (engineControl.destroyFailure) {

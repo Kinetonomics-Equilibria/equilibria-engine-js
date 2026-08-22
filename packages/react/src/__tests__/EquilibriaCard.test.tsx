@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act, fireEvent } from '@testing-library/react';
+import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { EquilibriaCard } from '../EquilibriaCard';
 import styles from '../styles.module.css';
 import { engineControl, resetEngineMock, latestInstance } from './engineMock';
@@ -46,6 +47,20 @@ describe('<EquilibriaCard />', () => {
 
             expect(container.querySelector(`.${styles.header}`)).toBeNull();
             expect(container.querySelector(`.${styles.footer}`)).toBeNull();
+        });
+
+        // Regression: the engine styles its container by adding .kg-container to
+        // it, but React owns that element's class attribute and rewrites it on
+        // every render — including the one the mount itself triggers — dropping
+        // the class and the theme's text and background colors with it.
+        it('keeps the engine container class across re-renders', () => {
+            const { container, rerender } = render(<EquilibriaCard config={config} />);
+
+            expect(chartContainer(container).className).toContain(KG_CONTAINER_CLASS);
+
+            rerender(<EquilibriaCard config={config} title="Supply and demand" />);
+
+            expect(chartContainer(container).className).toContain(KG_CONTAINER_CLASS);
         });
 
         it('defaults to the elevated variant', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act } from '@testing-library/react';
-import { KG_EVENTS } from 'equilibria-engine-js';
+import { KG_EVENTS, KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { EquilibriaChart } from '../EquilibriaChart';
 import styles from '../styles.module.css';
 import { engineControl, resetEngineMock, latestInstance } from './engineMock';
@@ -40,6 +40,22 @@ describe('<EquilibriaChart />', () => {
         expect(el.className).toContain('my-chart');
         expect(el.className).toContain(styles.chartContainer);
         expect(el.style.height).toBe('300px');
+    });
+
+    // Regression: the engine styles its container by adding .kg-container to it,
+    // but React owns that element's class attribute and rewrites it on every
+    // render. The render triggered by the mount itself therefore dropped the
+    // class, taking the theme's text and background colors with it — invisible
+    // in tests that only looked at the first render.
+    it('keeps the engine container class across re-renders', () => {
+        const { container, rerender } = render(<EquilibriaChart config={config} />);
+
+        expect(containerOf(container).className).toContain(KG_CONTAINER_CLASS);
+
+        rerender(<EquilibriaChart config={config} className="my-chart" />);
+
+        expect(containerOf(container).className).toContain(KG_CONTAINER_CLASS);
+        expect(containerOf(container).className).toContain('my-chart');
     });
 
     it('marks the container ready once the engine has mounted', () => {

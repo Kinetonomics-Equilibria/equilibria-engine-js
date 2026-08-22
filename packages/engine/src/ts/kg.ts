@@ -5,6 +5,17 @@ import "../css/kgjs-theme.css";
 
 export { KG_EVENTS };
 
+/**
+ * The class the engine applies to its container, which the theme stylesheet
+ * hangs the diagram's text and background colors on.
+ *
+ * `mount()` adds it, but the container belongs to the caller, and a framework
+ * that renders `class`/`className` on that element overwrites the attribute on
+ * its next render and drops it. Callers in that position should render this
+ * class themselves rather than rely on the engine's `classList.add`.
+ */
+export const KG_CONTAINER_CLASS = 'kg-container';
+
 export interface KineticGraphOptions {
     /** Enable legacy URL query param and div attribute overrides (default: false) */
     legacyUrlOverrides?: boolean;
@@ -27,7 +38,7 @@ export class KineticGraph extends EventEmitter {
         this.container = containerElement;
 
         // Apply the .kg-container class for CSS custom property activation
-        this.container.classList.add('kg-container');
+        this.container.classList.add(KG_CONTAINER_CLASS);
 
         try {
             // Deep-clone the config so View.parse() mutations don't
@@ -97,7 +108,7 @@ export class KineticGraph extends EventEmitter {
 
         // Remove the kg-container class we added
         if (this.container) {
-            this.container.classList.remove('kg-container');
+            this.container.classList.remove(KG_CONTAINER_CLASS);
             this.container.innerHTML = "";
         }
 

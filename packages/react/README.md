@@ -157,6 +157,21 @@ All of the above **except** `title`, `description`, `footer`, `variant`, `loadin
 | `CURVE_DRAGGED` | `'kg:curve_dragged'` | Curve element dragged |
 | `NODE_HOVER` | `'kg:node_hover'` | Interactive node hovered |
 
+### `KG_CONTAINER_CLASS` (re-exported)
+
+The class the engine's theme hangs the diagram's text and background colors on.
+`mount()` adds it to the container, but React rewrites the `className` it owns on
+every render and would drop it, so a component that gives its container a
+`className` has to render this class itself:
+
+```tsx
+<div ref={containerRef} className={`${KG_CONTAINER_CLASS} my-chart`} />
+```
+
+`<EquilibriaChart />` and `<EquilibriaCard />` already do. A container with no
+`className` at all — as in the `useEquilibria` example above — needs nothing:
+React never touches the attribute, so the class the engine adds survives.
+
 ## Important: Config Identity & useMemo
 
 The `useEquilibria` hook re-mounts the engine when the `config` object identity changes. Since an inline object literal creates a **new reference on every render**, your engine would unmount and remount on every parent re-render.

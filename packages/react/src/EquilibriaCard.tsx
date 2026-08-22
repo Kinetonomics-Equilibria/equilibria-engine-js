@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { EquilibriaCardProps } from './types';
 import styles from './styles.module.css';
@@ -96,10 +97,14 @@ export function EquilibriaCard({
                 {/* Error state */}
                 {error && errorContent}
 
-                {/* Chart container — always rendered so the ref is attached */}
+                {/* Chart container — always rendered so the ref is attached.
+                    KG_CONTAINER_CLASS is rendered here rather than left to the
+                    engine's classList.add: React owns this element's class
+                    attribute and rewrites it on every render, which dropped the
+                    class the engine had added. */}
                 <div
                     ref={containerRef}
-                    className={`${styles.chartContainer} ${isLoading || error ? styles.chartContainerLoading : styles.chartContainerReady}`}
+                    className={`${KG_CONTAINER_CLASS} ${styles.chartContainer} ${isLoading || error ? styles.chartContainerLoading : styles.chartContainerReady}`}
                 />
             </div>
 

@@ -146,6 +146,16 @@ When `kg.mount()` is called, the engine attaches a `ResizeObserver` scoped to th
 
 The engine also applies the `.kg-container` CSS class to the container element for theme activation.
 
+The container belongs to you, though, so a framework that renders the element's `class` attribute — React's `className`, Vue's `:class`, and so on — overwrites it on its next render and drops the class, taking the diagram's text and background colors with it. Render the class yourself in that case, using the exported name rather than a string literal:
+
+```js
+import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
+
+<div ref={containerRef} className={`${KG_CONTAINER_CLASS} my-chart`} />
+```
+
+`equilibria-react`'s `<EquilibriaChart />` and `<EquilibriaCard />` already do this.
+
 Ensure the container has a defined width logic (e.g. `width: 100%`) in your CSS.
 
 ## Error Handling

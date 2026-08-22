@@ -3,7 +3,8 @@
 Findings from building the first real consumer of the engine (`apps/web`).
 These are pre-existing defects inherited from the KGJS fork, not regressions
 from the monorepo or packaging work — the code paths involved are untouched by
-those changes.
+those changes. All four are now fixed; the entries are kept for the record, and
+each names the test that holds the behaviour in place.
 
 ## 1. Semantic colors were discarded — FIXED
 
@@ -83,17 +84,30 @@ regression guards on the `Line` forms that already worked.
 and `Point` objects, which was the workaround for this bug. It no longer has to —
 `EconLinearEquilibrium` now solves the same market correctly.
 
-## 3. React binding clobbers the engine's container class — OPEN, cosmetic
+## 3. React binding clobbered the engine's container class — FIXED
 
 `KineticGraph.mount()` adds `.kg-container` to the container element via
-`classList.add`. `EquilibriaChart` also sets `className` on that same element,
-so the next React render after `setMounted(true)` resets the class attribute and
-drops `.kg-container`. It is present in jsdom tests (no re-render is triggered
-there) but absent in the browser.
+`classList.add`. `EquilibriaChart` and `EquilibriaCard` also set `className` on
+that same element, so the render React runs after `setMounted(true)` rewrote the
+class attribute and dropped `.kg-container`. It was present in jsdom tests
+(which only looked at the first render) but absent in the browser.
 
-Impact is limited to the two declarations under `.kg-container` in
+Impact was limited to the two declarations under `.kg-container` in
 `kgjs-theme.css` (`color` and `background-color`); the `--kg-*` custom
-properties are defined on `:root`, so colors and axes are unaffected.
+properties are defined on `:root`, so colors and axes were unaffected.
+
+**Fix:** the engine exports the class name as `KG_CONTAINER_CLASS`, and both
+React components render it in their own `className` instead of relying on the
+engine's `classList.add`. Whichever element React owns, React writes the class —
+there is no longer an attribute two parties both assign. `mount()` still adds the
+class for plain-DOM callers, and the same guidance now appears in
+`docs/getting-started.md` for any other framework that renders `class` on the
+container.
+
+The React test double now mirrors the engine here — it adds the class on `mount`
+and removes it on `destroy` — so the regression tests reproduce the real
+sequence: engine adds the class, React's next render drops it. Both fail against
+the previous components.
 
 ## 4. Unnamed econ objects collided on their default names — FIXED
 
