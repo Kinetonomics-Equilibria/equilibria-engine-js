@@ -18,6 +18,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
@@ -26,13 +28,16 @@
     "equilibria-engine-js": "^1.0.8"
   },
   "devDependencies": {
+    "@testing-library/react": "^14.1.2",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "jsdom": "^22.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.2.2",
     "vite": "^4.4.9",
-    "vite-plugin-dts": "^3.5.3"
+    "vite-plugin-dts": "^3.5.3",
+    "vitest": "^0.34.3"
   },
   "files": [
     "dist",
@@ -40,7 +45,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Kinetonomics-Equilibria/equilibria-react.git"
+    "url": "git+https://github.com/Kinetonomics-Equilibria/equilibria-engine-js.git",
+    "directory": "packages/react"
   },
   "author": "Jarryd Bentley",
   "license": "MIT",

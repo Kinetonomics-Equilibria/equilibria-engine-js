@@ -28,7 +28,10 @@ export interface UseEquilibriaReturn {
     /** Error caught during mount, if any. */
     error: Error | null;
 
-    /** Whether the engine has successfully mounted. */
+    /**
+     * Whether the engine mounted successfully and has not reported an error
+     * since. Never true at the same time as a non-null `error`.
+     */
     isReady: boolean;
 
     /** Manually retry mounting after an error. */
@@ -65,7 +68,15 @@ export function useEquilibria(
     const instanceRef = useRef<KineticGraph | null>(null);
     const [instance, setInstance] = useState<KineticGraph | null>(null);
     const [error, setError] = useState<Error | null>(null);
-    const [isReady, setIsReady] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // `isReady` is derived rather than stored so it can never disagree with
+    // `error`. The engine does not throw when a mount fails: `KineticGraph.mount()`
+    // catches internally and emits 'error' instead (synchronously, while we are
+    // still inside the `kg.mount(el)` call below). Storing readiness meant the
+    // `setIsReady(true)` that follows a failed mount overwrote the failure, so
+    // consumers were told a broken chart was ready.
+    const isReady = mounted && error === null;
 
     // Store event callbacks in a ref so engine listeners always call the latest
     // version without needing to re-mount (avoids stale closures).
@@ -82,7 +93,7 @@ export function useEquilibria(
             }
             instanceRef.current = null;
             setInstance(null);
-            setIsReady(false);
+            setMounted(false);
         }
 
         setError(null);
@@ -115,11 +126,11 @@ export function useEquilibria(
 
             instanceRef.current = kg;
             setInstance(kg);
-            setIsReady(true);
+            setMounted(true);
         } catch (err) {
             const mountError = err instanceof Error ? err : new Error(String(err));
             setError(mountError);
-            setIsReady(false);
+            setMounted(false);
         }
     }, [config, options]);
 
@@ -136,7 +147,7 @@ export function useEquilibria(
                 }
                 instanceRef.current = null;
                 setInstance(null);
-                setIsReady(false);
+                setMounted(false);
             }
         };
     }, [mount]);

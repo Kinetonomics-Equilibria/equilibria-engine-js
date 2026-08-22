@@ -59,7 +59,7 @@ export function EquilibriaCard({
     if (error) {
         if (errorFallback) {
             errorContent = typeof errorFallback === 'function'
-                ? (errorFallback as (err: Error) => ReactNode)(error)
+                ? errorFallback(error)
                 : errorFallback;
         } else {
             errorContent = (

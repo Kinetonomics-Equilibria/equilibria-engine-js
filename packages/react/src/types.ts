@@ -63,7 +63,7 @@ export interface EquilibriaCardProps extends EquilibriaChartProps {
     loading?: boolean;
 
     /** Custom error UI. Can be a ReactNode or a render function receiving the error. */
-    errorFallback?: ReactNode | ((error: Error) => void);
+    errorFallback?: ReactNode | ((error: Error) => ReactNode);
 
     /** Card container style variant. Default: 'elevated'. */
     variant?: CardVariant;

@@ -12,7 +12,9 @@
     "build": "npm run build --workspace=equilibria-engine-js && npm run build --workspace=equilibria-react",
     "build:engine": "npm run build --workspace=equilibria-engine-js",
     "build:react": "npm run build --workspace=equilibria-react",
-    "test": "npm run test --workspace=equilibria-engine-js",
+    "test": "npm run test --workspaces --if-present",
+    "test:engine": "npm run test --workspace=equilibria-engine-js",
+    "test:react": "npm run test --workspace=equilibria-react",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "repository": {

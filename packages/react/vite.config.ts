@@ -1,8 +1,15 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 
 export default defineConfig({
+    test: {
+        environment: 'jsdom',
+        setupFiles: ['./src/__tests__/setup.ts'],
+        include: ['src/**/*.test.{ts,tsx}'],
+        restoreMocks: true
+    },
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
@@ -33,7 +40,10 @@ export default defineConfig({
     },
     plugins: [
         dts({
-            insertTypesEntry: true
+            insertTypesEntry: true,
+            // The tests live under src/, so without this the plugin emits
+            // declaration files for them into dist/__tests__ and they ship.
+            exclude: ['src/__tests__/**']
         })
     ]
 });

@@ -129,7 +129,7 @@ function CustomChart({ config }) {
 | `className` | `string` | — | Additional CSS class |
 | `style` | `CSSProperties` | — | Inline styles |
 | `onError` | `(err) => void` | — | Error callback |
-| `onReady` | `() => void` | — | Fires after mount |
+| `onReady` | `() => void` | — | Fires after a successful mount (not fired if the mount fails) |
 | `onParamChanged` | `(data) => void` | — | Fires on parameter change (drag/click) |
 | `onCurveDragged` | `(data) => void` | — | Fires when a curve is dragged |
 | `onNodeHover` | `(data) => void` | — | Fires on interactive node hover |
@@ -145,7 +145,7 @@ All of the above **except** `title`, `description`, `footer`, `variant`, `loadin
 | `containerRef` | `RefObject<HTMLDivElement>` | Attach to container div |
 | `instance` | `KineticGraph \| null` | Raw engine instance |
 | `error` | `Error \| null` | Mount/runtime error |
-| `isReady` | `boolean` | Engine mounted successfully |
+| `isReady` | `boolean` | Engine mounted and healthy — never `true` while `error` is set |
 | `retry` | `() => void` | Retry after error |
 | `updateParams` | `(params) => void` | Programmatically set param values |
 
@@ -217,6 +217,18 @@ Override CSS custom properties to match your design system:
 ```
 
 These properties are scoped to the `equilibria-react` components and won't affect the engine's own `--kg-*` variables.
+
+## Testing
+
+```bash
+npm test --workspace=equilibria-react   # or `npm test` from the repo root for every package
+```
+
+Tests run on vitest + jsdom with React Testing Library. Component and hook tests
+replace `KineticGraph` with a test double (`src/__tests__/engineMock.ts`) that
+mirrors the engine's failure contract: `mount()` reports build failures by
+emitting an `error` event rather than throwing, so a test double that throws
+would hide real bugs.
 
 ## License
 
