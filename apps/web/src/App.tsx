@@ -1,12 +1,11 @@
 import { EquilibriaCard } from 'equilibria-react';
 
-// A linear supply-and-demand market, built from primitive Line and Point
-// objects rather than the EconLinearEquilibrium wrapper, which currently solves
-// the wrong intersection — see NOTES.md, issue 2.
+// A linear supply-and-demand market.
 //
-// `params` hold the state, `calcs` solve the equilibrium from them, and the
-// objects bind to both, so changing a param re-solves and re-renders rather
-// than redrawing a static picture.
+// `params` hold the state and the objects bind to them, so changing a param
+// re-solves and re-renders rather than redrawing a static picture.
+// EconLinearEquilibrium solves the intersection itself and publishes it as
+// calcs.equilibrium.Q / .P, so the app does not restate the algebra.
 //
 // The engine is headless: it renders the diagram, not a control panel. Slider
 // UI for `params` is the app's job — the `useEquilibria` hook exposes
@@ -17,11 +16,6 @@ const linearEquilibrium = {
         { name: 'a', value: 20, min: 12, max: 28, round: 0.1 },
         { name: 'c', value: 2, min: 0, max: 8, round: 0.1 }
     ],
-    // demand P = a - Q, supply P = c + Q  =>  Q* = (a - c)/2, P* = (a + c)/2
-    calcs: {
-        Qe: '(params.a - params.c)/2',
-        Pe: '(params.a + params.c)/2'
-    },
     layout: {
         OneGraph: {
             graph: {
@@ -29,25 +23,18 @@ const linearEquilibrium = {
                 yAxis: { title: 'P', min: 0, max: 20 },
                 objects: [
                     {
-                        type: 'Line',
+                        type: 'EconLinearEquilibrium',
                         def: {
-                            yIntercept: 'params.a', slope: -1,
-                            color: 'colors.demand', label: { text: 'D' }
-                        }
-                    },
-                    {
-                        type: 'Line',
-                        def: {
-                            yIntercept: 'params.c', slope: 1,
-                            color: 'colors.supply', label: { text: 'S' }
-                        }
-                    },
-                    {
-                        type: 'Point',
-                        def: {
-                            x: 'calcs.Qe', y: 'calcs.Pe',
-                            color: 'colors.equilibriumPrice',
-                            droplines: { vertical: 'Q^*', horizontal: 'P^*' }
+                            // demand P = a - Q, supply P = c + Q
+                            demand: {
+                                yIntercept: 'params.a', slope: -1,
+                                label: { text: 'D' }
+                            },
+                            supply: {
+                                yIntercept: 'params.c', slope: 1,
+                                label: { text: 'S' }
+                            },
+                            equilibrium: {}
                         }
                     }
                 ]

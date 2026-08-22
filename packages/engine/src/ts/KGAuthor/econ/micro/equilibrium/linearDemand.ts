@@ -32,15 +32,29 @@ export class EconLinearDemand extends Line {
 
         def = setStrokeColor(def);
 
+        // Line derives its geometry by dispatching on which keys are present,
+        // and it tests `point + yIntercept` before `slope + yIntercept`.
+        // Defaulting a point at [0, yIntercept] therefore pre-empted the
+        // author's own slope: the placeholder point *is* the y-intercept, so
+        // the slope came out as 0/0 and the explicit slope was discarded — a
+        // demand curve declared as {yIntercept: 20, slope: -1} was solved as
+        // the horizontal line P = 20. Only supply a fallback when the def
+        // carries no geometry of its own.
+        const definesGeometry = ['point', 'point2', 'slope', 'invSlope', 'xIntercept', 'yIntercept']
+            .some(key => def.hasOwnProperty(key));
+
         setDefaults(def, {
             name: "demand",
-            point: [0, def.yIntercept],
-            slope: 0,
             color: 'colors.demand',
             strokeWidth: 2,
             lineStyle: 'solid',
             pts: []
         });
+
+        if (!definesGeometry) {
+            def.slope = 0;
+            def.yIntercept = 0;
+        }
 
         if (def.draggable && typeof (def.xIntercept) == 'string') {
             def.drag = [{
@@ -81,53 +95,63 @@ export class EconLinearDemand extends Line {
         if (graph) {
             const subObjects = ld.subObjects;
 
-            let xInterceptPointDef = {
-                coordinates: [ld.xIntercept, 0],
-                color: def.color,
-                r: 4
-            };
+            // A horizontal demand curve has no x-intercept and a vertical one
+            // has no y-intercept; Line reports the missing one as null. Building
+            // a Point on a null coordinate throws, so skip the handle instead.
+            const hasXIntercept = ld.xIntercept !== null && ld.xIntercept !== undefined;
+            const hasYIntercept = ld.yIntercept !== null && ld.yIntercept !== undefined;
 
-            if (def.draggable && typeof (ld.xIntercept) == 'string') {
-                xInterceptPointDef['drag'] = [{
-                    directions: 'x',
-                    param: paramName(ld.xIntercept),
-                    expression: addDefs(ld.xIntercept, 'drag.dx')
-                }]
-            }
+            if (hasXIntercept) {
+                let xInterceptPointDef = {
+                    coordinates: [ld.xIntercept, 0],
+                    color: def.color,
+                    r: 4
+                };
 
-            if (def.hasOwnProperty('xInterceptLabel')) {
-                xInterceptPointDef['droplines'] = {
-                    vertical: def.xInterceptLabel
+                if (def.draggable && typeof (ld.xIntercept) == 'string') {
+                    xInterceptPointDef['drag'] = [{
+                        directions: 'x',
+                        param: paramName(ld.xIntercept),
+                        expression: addDefs(ld.xIntercept, 'drag.dx')
+                    }]
                 }
-            }
 
-            ld.xInterceptPoint = new Point(xInterceptPointDef, graph);
-
-            let yInterceptPointDef = {
-                coordinates: [0, ld.yIntercept],
-                color: def.color,
-                r: 4
-            };
-
-            if (def.draggable && typeof (ld.yIntercept) == 'string') {
-                yInterceptPointDef['drag'] = [{
-                    directions: 'y',
-                    param: paramName(ld.invSlope),
-                    expression: negativeDef(divideDefs(ld.xIntercept, 'max(drag.y,0.01)'))
-                }]
-            }
-
-            if (def.hasOwnProperty('yInterceptLabel')) {
-                yInterceptPointDef['droplines'] = {
-                    horizontal: def.yInterceptLabel
+                if (def.hasOwnProperty('xInterceptLabel')) {
+                    xInterceptPointDef['droplines'] = {
+                        vertical: def.xInterceptLabel
+                    }
                 }
+
+                ld.xInterceptPoint = new Point(xInterceptPointDef, graph);
             }
 
-            ld.yInterceptPoint = new Point(yInterceptPointDef, graph);
+            if (hasYIntercept) {
+                let yInterceptPointDef = {
+                    coordinates: [0, ld.yIntercept],
+                    color: def.color,
+                    r: 4
+                };
+
+                if (def.draggable && typeof (ld.yIntercept) == 'string') {
+                    yInterceptPointDef['drag'] = [{
+                        directions: 'y',
+                        param: paramName(ld.invSlope),
+                        expression: negativeDef(divideDefs(ld.xIntercept, 'max(drag.y,0.01)'))
+                    }]
+                }
+
+                if (def.hasOwnProperty('yInterceptLabel')) {
+                    yInterceptPointDef['droplines'] = {
+                        horizontal: def.yInterceptLabel
+                    }
+                }
+
+                ld.yInterceptPoint = new Point(yInterceptPointDef, graph);
+            }
 
             if (def.handles) {
-                subObjects.push(ld.xInterceptPoint);
-                subObjects.push(ld.yInterceptPoint);
+                if (ld.xInterceptPoint) subObjects.push(ld.xInterceptPoint);
+                if (ld.yInterceptPoint) subObjects.push(ld.yInterceptPoint);
             }
 
             if (def.hasOwnProperty('marginalRevenue')) {

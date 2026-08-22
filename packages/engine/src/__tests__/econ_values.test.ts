@@ -58,6 +58,67 @@ describe('Line geometry', () => {
 });
 
 describe('EconLinearEquilibrium', () => {
+    // Regression: EconLinearDemand defaulted `point: [0, yIntercept]` alongside
+    // the author's slope. Line tests `point + yIntercept` before
+    // `slope + yIntercept`, and the placeholder point *is* the y-intercept, so
+    // the slope resolved to 0/0 and the explicit slope was discarded. The
+    // demand curve became horizontal and the equilibrium came out as Q=0, P=2.
+    it('honours an explicit slope on the demand curve', () => {
+        const r = mountObjects([{
+            type: 'EconLinearEquilibrium',
+            def: {
+                demand: { yIntercept: 20, slope: -1 },
+                supply: { yIntercept: 2, slope: 1 },
+                equilibrium: {}
+            }
+        }]);
+
+        expect(r.error).toBeNull();
+        expect(r.calcs.demand).toMatchObject({ slope: -1, xIntercept: 20, yIntercept: 20 });
+        expect(r.calcs.equilibrium).toEqual({ Q: 9, P: 11 });
+        r.destroy();
+    });
+
+    it('agrees between slope form and intercept form', () => {
+        const slopeForm = mountObjects([{
+            type: 'EconLinearEquilibrium',
+            def: {
+                demand: { yIntercept: 20, slope: -1 },
+                supply: { yIntercept: 2, slope: 1 },
+                equilibrium: {}
+            }
+        }]);
+        const interceptForm = mountObjects([{
+            type: 'EconLinearEquilibrium',
+            def: {
+                demand: { yIntercept: 20, xIntercept: 20 },
+                supply: { yIntercept: 2, slope: 1 },
+                equilibrium: {}
+            }
+        }]);
+
+        expect(slopeForm.calcs.equilibrium).toEqual(interceptForm.calcs.equilibrium);
+        slopeForm.destroy();
+        interceptForm.destroy();
+    });
+
+    // A steeper demand curve must clear at a lower quantity and a higher price.
+    // demand P = 20 - 2Q, supply P = 2 + Q  =>  Q = 6, P = 8
+    it('tracks a change in the slope of demand', () => {
+        const r = mountObjects([{
+            type: 'EconLinearEquilibrium',
+            def: {
+                demand: { yIntercept: 20, slope: -2 },
+                supply: { yIntercept: 2, slope: 1 },
+                equilibrium: {}
+            }
+        }]);
+
+        expect(r.error).toBeNull();
+        expect(r.calcs.equilibrium).toEqual({ Q: 6, P: 8 });
+        r.destroy();
+    });
+
     // demand P = 20 - Q, supply P = 2 + Q  =>  20 - Q = 2 + Q  =>  Q = 9, P = 11
     it('solves the intersection of demand and supply', () => {
         const r = mountObjects([{
@@ -114,6 +175,88 @@ describe('EconLinearEquilibrium', () => {
         model.updateParam('c', 4);
 
         expect(model.currentCalcValues.equilibrium).toEqual({ Q: 10, P: 14 });
+        r.destroy();
+    });
+});
+
+describe('the webapp market diagram', () => {
+    // Mirrors apps/web/src/App.tsx. That diagram was hand-built from primitive
+    // Line and Point objects with the algebra restated in `calcs`, because
+    // EconLinearEquilibrium solved the wrong intersection. It now uses the
+    // wrapper, so this pins the config the app actually ships.
+    const config = {
+        demand: { yIntercept: 'params.a', slope: -1, label: { text: 'D' } },
+        supply: { yIntercept: 'params.c', slope: 1, label: { text: 'S' } },
+        equilibrium: {}
+    };
+    const params = [
+        { name: 'a', value: 20, min: 12, max: 28, round: 0.1 },
+        { name: 'c', value: 2, min: 0, max: 8, round: 0.1 }
+    ];
+
+    it('solves the equilibrium from the curve parameters', () => {
+        const r = mountObjects(
+            [{ type: 'EconLinearEquilibrium', def: config }],
+            { params, xAxis: { title: 'Q', min: 0, max: 20 }, yAxis: { title: 'P', min: 0, max: 20 } }
+        );
+
+        expect(r.error).toBeNull();
+        // a = 20, c = 2  =>  Q* = (a-c)/2 = 9, P* = (a+c)/2 = 11
+        expect(r.calcs.equilibrium).toEqual({ Q: 9, P: 11 });
+        r.destroy();
+    });
+
+    it('re-solves as the curve parameters move', () => {
+        const r = mountObjects(
+            [{ type: 'EconLinearEquilibrium', def: config }],
+            { params, xAxis: { title: 'Q', min: 0, max: 20 }, yAxis: { title: 'P', min: 0, max: 20 } }
+        );
+        const model = (r.kg as any).view.model;
+
+        // Q* = (a-c)/2, P* = (a+c)/2 for demand P = a - Q against supply P = c + Q
+        for (const [a, c] of [[28, 0], [12, 8], [24, 4]]) {
+            model.updateParam('a', a);
+            model.updateParam('c', c);
+            expect(model.currentCalcValues.equilibrium).toEqual({
+                Q: (a - c) / 2,
+                P: (a + c) / 2
+            });
+        }
+        r.destroy();
+    });
+});
+
+describe('EconLinearDemand', () => {
+    it('derives the x-intercept from slope form', () => {
+        const r = mountObjects([
+            { type: 'EconLinearDemand', def: { name: 'd', yIntercept: 20, slope: -2 } }
+        ]);
+
+        expect(r.error).toBeNull();
+        expect(r.calcs.d).toMatchObject({ slope: -2, xIntercept: 10, yIntercept: 20 });
+        r.destroy();
+    });
+
+    // With only a y-intercept there is no slope to derive, so the curve is
+    // horizontal at that price — a perfectly elastic demand curve.
+    it('treats a lone yIntercept as a horizontal curve', () => {
+        const r = mountObjects([
+            { type: 'EconLinearDemand', def: { name: 'd', yIntercept: 12 } }
+        ]);
+
+        expect(r.error).toBeNull();
+        expect(r.calcs.d.slope).toBe(0);
+        expect(r.calcs.d.yIntercept).toBe(12);
+        r.destroy();
+    });
+
+    it('still renders when the def carries no geometry at all', () => {
+        const r = mountObjects([
+            { type: 'EconLinearDemand', def: { name: 'd' } }
+        ]);
+
+        expect(r.error).toBeNull();
+        expect(r.shapeCount).toBeGreaterThan(0);
         r.destroy();
     });
 });
