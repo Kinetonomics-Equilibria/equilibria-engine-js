@@ -3,13 +3,13 @@
   "version": "0.2.0",
   "description": "React components for the Equilibria Engine \u2014 styled, drop-in chart cards with lifecycle management",
   "type": "module",
-  "main": "dist/equilibria-react.cjs.js",
+  "main": "dist/equilibria-react.cjs",
   "module": "dist/equilibria-react.es.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/equilibria-react.es.js",
-      "require": "./dist/equilibria-react.cjs.js",
+      "require": "./dist/equilibria-react.cjs",
       "types": "./dist/index.d.ts"
     },
     "./dist/style.css": "./dist/style.css"

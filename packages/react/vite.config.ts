@@ -7,7 +7,9 @@ export default defineConfig({
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
             name: 'EquilibriaReact',
-            fileName: (format) => `equilibria-react.${format}.js`,
+            // .cjs overrides the package's "type": "module"; a .js file would be
+            // parsed as ESM and the CommonJS bundle would fail to load.
+            fileName: (format) => format === 'cjs' ? 'equilibria-react.cjs' : 'equilibria-react.es.js',
             formats: ['es', 'cjs']
         },
         rollupOptions: {
