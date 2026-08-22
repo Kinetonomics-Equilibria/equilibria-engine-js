@@ -64,6 +64,14 @@ export class Line extends Curve {
             xIntercept = negativeDef(divideDefs(yIntercept, slope));
         }
 
+        // Without this branch a def carrying both a slope and an x-intercept
+        // fell through to the `slope`-only case below, which forces the line
+        // through the origin — silently discarding the author's x-intercept.
+        else if (def.hasOwnProperty('slope') && def.hasOwnProperty('xIntercept')) {
+            invSlope = invertDef(def.slope);
+            yIntercept = negativeDef(multiplyDefs(def.slope, def.xIntercept));
+        }
+
         else if (def.hasOwnProperty('invSlope') && def.hasOwnProperty('xIntercept')) {
             slope = invertDef(def.invSlope);
             yIntercept = negativeDef(divideDefs(xIntercept, invSlope));

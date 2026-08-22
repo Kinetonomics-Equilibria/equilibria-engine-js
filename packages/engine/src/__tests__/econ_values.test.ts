@@ -80,6 +80,20 @@ describe('Line geometry', () => {
         r.destroy();
     });
 
+    // Regression: with both a slope and an x-intercept the def fell through to
+    // the slope-only branch, which forces the line through the origin and threw
+    // the author's x-intercept away.
+    it('derives the y-intercept from slope + xIntercept', () => {
+        const r = mountObjects([
+            { type: 'Line', def: { name: 'l', slope: -1, xIntercept: 20 } }
+        ]);
+
+        expect(r.error).toBeNull();
+        // P = 20 - Q
+        expect(r.calcs.l).toMatchObject({ slope: -1, xIntercept: 20, yIntercept: 20 });
+        r.destroy();
+    });
+
     it('derives slope and intercepts from two points', () => {
         // through (1,1) and (5,9): slope 2, yIntercept -1
         const r = mountObjects([
@@ -351,6 +365,28 @@ describe('EconBudgetLine', () => {
             priceRatio: 2,
             m: 20
         });
+        r.destroy();
+    });
+
+    it('omits the endowment when the line is defined by income', () => {
+        const r = mountObjects([
+            { type: 'EconBudgetLine', def: { name: 'bl', p1: 2, p2: 1, m: 20 } }
+        ]);
+
+        // this used to publish the literal string "[object Object]"
+        expect(r.calcs.bl.endowment).toBeUndefined();
+        r.destroy();
+    });
+
+    // An endowment of (4, 12) at p1 = 2, p2 = 1 is worth m = 8 + 12 = 20.
+    it('publishes the endowment as a point and values it as income', () => {
+        const r = mountObjects([
+            { type: 'EconBudgetLine', def: { name: 'bl', p1: 2, p2: 1, x: 4, y: 12 } }
+        ]);
+
+        expect(r.error).toBeNull();
+        expect(r.calcs.bl.endowment).toEqual({ x: 4, y: 12 });
+        expect(r.calcs.bl.m).toBe(20);
         r.destroy();
     });
 });
