@@ -12,7 +12,9 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/ts/kg.ts'),
       name: 'KineticGraph',
-      fileName: (format) => `kgjs.${format}.js`,
+      // .cjs overrides the package's "type": "module"; a .js file would be
+      // parsed as ESM and the CommonJS bundle would fail to load.
+      fileName: (format) => format === 'cjs' ? 'kgjs.cjs' : 'kgjs.es.js',
       formats: ['es', 'cjs']
     },
     rollupOptions: {

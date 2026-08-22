@@ -5,7 +5,7 @@
   "files": [
     "dist"
   ],
-  "main": "dist/kgjs.cjs.js",
+  "main": "dist/kgjs.cjs",
   "module": "dist/kgjs.es.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -17,7 +17,7 @@
   "exports": {
     ".": {
       "import": "./dist/kgjs.es.js",
-      "require": "./dist/kgjs.cjs.js",
+      "require": "./dist/kgjs.cjs",
       "types": "./dist/index.d.ts"
     },
     "./dist/style.css": "./dist/style.css"
