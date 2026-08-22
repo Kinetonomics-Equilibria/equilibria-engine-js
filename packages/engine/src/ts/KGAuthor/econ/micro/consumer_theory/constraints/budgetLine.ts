@@ -234,15 +234,27 @@ import { EconBundle } from "../two_good_utility/bundle";
         parseSelf(parsedData) {
             let bl = this;
             parsedData = super.parseSelf(parsedData);
-            parsedData.calcs[bl.name] = {
+            const calcs: any = {
                 xIntercept: bl.xIntercept.toString(),
                 yIntercept: bl.yIntercept.toString(),
                 m: bl.m.toString(),
                 p1: bl.p1.toString(),
                 p2: bl.p2.toString(),
-                priceRatio: bl.priceRatio.toString(),
-                endowment: bl.endowment.toString()
+                priceRatio: bl.priceRatio.toString()
             };
+
+            // The endowment is a point, and calling toString() on it published
+            // the literal "[object Object]". Publish it as a nested calc so
+            // calcs.<name>.endowment.x resolves, and only when the budget line
+            // was actually defined by an endowment rather than by income.
+            if (bl.endowment && bl.endowment.x !== undefined && bl.endowment.y !== undefined) {
+                calcs.endowment = {
+                    x: bl.endowment.x.toString(),
+                    y: bl.endowment.y.toString()
+                };
+            }
+
+            parsedData.calcs[bl.name] = calcs;
             return parsedData;
         
     

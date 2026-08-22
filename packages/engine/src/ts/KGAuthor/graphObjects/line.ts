@@ -70,6 +70,9 @@ export class Line extends Curve {
             xIntercept = negativeDef(divideDefs(yIntercept, slope));
         }
 
+        // Without this branch a def carrying both a slope and an x-intercept
+        // fell through to the `slope`-only case below, which forces the line
+        // through the origin — silently discarding the author's x-intercept.
         else if (def.hasOwnProperty('slope') && def.hasOwnProperty('xIntercept')) {
             invSlope = invertDef(def.slope);
             yIntercept = negativeDef(multiplyDefs(slope, xIntercept));
@@ -169,16 +172,31 @@ export class Line extends Curve {
             slope: l.slope.toString(),
             invSlope: l.invSlope.toString()
         };
-        if (l.xIntercept) {
+        // An intercept of 0 is a real intercept — the line passes through the
+        // origin. Testing these for truthiness treated it as absent, so a line
+        // through the origin published its fixed point as
+        // "((undefined)/(1 - m))": d.yIntercept was never set, but the branch
+        // below still interpolated it. Line's own defaults make this ordinary
+        // rather than exotic (a `slope`-only def yields both intercepts as 0),
+        // and so does a supply curve starting at the origin.
+        //
+        // Only a horizontal line genuinely has no x-intercept, and only a
+        // vertical one has no y-intercept; Line reports those as null.
+        const hasXIntercept = l.xIntercept !== null && l.xIntercept !== undefined;
+        const hasYIntercept = l.yIntercept !== null && l.yIntercept !== undefined;
+
+        if (hasXIntercept) {
             d.xIntercept = l.xIntercept.toString();
         }
-        if (l.yIntercept) {
+        if (hasYIntercept) {
             d.yIntercept = l.yIntercept.toString();
-
         }
-        if (!l.xIntercept) {
+
+        // The fixed point is where the line crosses y = x: for y = b + mx that
+        // is b/(1 - m), and for x = c + ny it is c/(1 - n).
+        if (!hasXIntercept) {
             d.fixedPoint = `((${d.yIntercept})/(1 - ${l.slope.toString()}))`;
-        } else if (!l.yIntercept) {
+        } else if (!hasYIntercept) {
             d.fixedPoint = `((${d.xIntercept})/(1 - ${l.invSlope.toString()}))`
         } else {
             d.fixedPoint = `(${d.invSlope} == 0 ? (${d.xIntercept})/(1 - ${l.invSlope.toString()}) : (${d.yIntercept})/(1 - ${l.slope.toString()}))`

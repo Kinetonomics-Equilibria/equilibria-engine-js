@@ -100,7 +100,13 @@ export function subtractDefs(def1, def2) {
 }
 
 export function divideDefs(def1, def2) {
-    if (def1 == 0) {
+    // 0/x is 0, but 0/0 is not — and short-circuiting on the numerator alone
+    // reported the second as the first. That turned a degenerate division into
+    // a plausible-looking zero rather than a NaN, so a slope derived from two
+    // coincident points arrived at the renderer looking like a valid horizontal
+    // line. A symbolic denominator still short-circuits: it is not literally 0,
+    // and keeping the simplification keeps generated expressions readable.
+    if (def1 == 0 && def2 != 0) {
         return 0;
     }
     if (def2 == 1) {

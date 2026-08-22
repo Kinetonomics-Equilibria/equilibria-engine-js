@@ -15,10 +15,29 @@ export interface IModel {
     update: (force: boolean) => void;
 }
 
+/**
+ * Does this calc still carry an `undefined` interpolated into it?
+ *
+ * Failing to evaluate is not by itself a bug: color names ("blue"), LaTeX label
+ * text ("^\prime"), forward references that resolve on a later pass, and
+ * deliberate function-of-x strings all land in the same place and are all
+ * legitimate. The one unambiguous defect is the literal token `undefined`,
+ * which only ever appears because a definition was missing a value when the
+ * expression was assembled — for instance a line through the origin emitting
+ * `((undefined)/(1 - 1))` for its fixed point.
+ */
+export function containsUndefinedToken(value: any): boolean {
+    return typeof value === 'string' && /\bundefined\b/.test(value);
+}
+
 export class Model implements IModel {
 
     private restrictions: Restriction[];
     private updateListeners: UpdateListener[];
+
+    // warnings already emitted, so an unresolved calc is reported once rather
+    // than on every parameter change
+    private warnedExpressions: Set<string> = new Set();
 
     // objects that store definitions of params, calcs, and colors
     private params: Param[];
@@ -95,6 +114,9 @@ export class Model implements IModel {
                 }
             }
         }
+
+        model.reportUnresolvedCalcs(model.currentCalcValues, '');
+
         return model.currentCalcValues;
     }
 
@@ -157,16 +179,35 @@ export class Model implements IModel {
 
             // If MathJS can't parse the expression, return it as-is rather than
             // falling back to eval() which is a security risk with user-provided YAML.
-            if (onlyJSMath) {
-                return name;
-            } else {
-                // Return the raw string — callers should handle non-numeric results
-                return name;
-            }
-
+            // Not every failure here is a defect — colors, label text and forward
+            // references all fail legitimately — so reporting happens once the
+            // calcs have settled, in reportUnresolvedCalcs().
+            return name;
 
         }
 
+    }
+
+    // Walk the settled calcs and report any that still carry an interpolated
+    // `undefined`. Such a calc is silently returned as a string and flows on
+    // into the diagram as if nothing went wrong, so without this the only
+    // symptom is a shape drawn in the wrong place.
+    private reportUnresolvedCalcs(obj: any, path: string) {
+        const model = this;
+        for (const key in obj) {
+            const value = obj[key];
+            const keyPath = path ? `${path}.${key}` : key;
+            if (containsUndefinedToken(value)) {
+                const message = `calcs.${keyPath} could not be resolved: "${value}". ` +
+                    `A definition was missing a value when this expression was built.`;
+                if (!model.warnedExpressions.has(message)) {
+                    model.warnedExpressions.add(message);
+                    console.warn(message);
+                }
+            } else if (value && typeof value === 'object') {
+                model.reportUnresolvedCalcs(value, keyPath);
+            }
+        }
     }
 
     // This is a utility for exporting currently used colors for use in LaTex documents.

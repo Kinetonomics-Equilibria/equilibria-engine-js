@@ -1,10 +1,25 @@
 # Known issues
 
-Findings from building the first real consumer of the engine (`apps/web`).
-These are pre-existing defects inherited from the KGJS fork, not regressions
-from the monorepo or packaging work — the code paths involved are untouched by
-those changes. All four are now fixed; the entries are kept for the record, and
-each names the test that holds the behaviour in place.
+Findings from building the first real consumer of the engine (`apps/web`) and
+from auditing the econ object library. These are pre-existing defects inherited
+from the KGJS fork, not regressions from the monorepo or packaging work — the
+code paths involved are untouched by those changes. Everything under **Fixed**
+is closed and named by the test that holds it in place; two items remain **Open**
+at the end.
+
+## Why these went unnoticed
+
+The suite asserted that a diagram *rendered*: element counts above zero, the
+absence of `NaN` in the markup, stroke colors, and one DOM snapshot. None of
+that distinguishes a diagram that solves the right system from one that solves
+the wrong one, so every wrong-answer defect below passed CI.
+
+`src/__tests__/econ_values.test.ts` and `src/__tests__/econ_equilibrium_values.test.ts`
+now assert the numbers the model actually resolves to, with each expected value
+hand-checkable from the config beside it. New engine work should extend those
+rather than adding more shape-count tests.
+
+# Fixed
 
 ## 1. Semantic colors were discarded — FIXED
 
@@ -53,32 +68,40 @@ invSlope = divideDefs(def.point[0], subtractDefs(def.point[1], def.yIntercept));
 ```
 
 Because the defaulted point *is* the y-intercept, both reduce to `0/0`, and the
-caller's explicit `slope: -1` is discarded. `lineIntersection()` — whose formula
-is itself correct — is then handed a degenerate line and returns `x = 0`.
+caller's explicit `slope: -1` is discarded. `divideDefs()` compounded it by
+short-circuiting a zero numerator to `0` rather than `NaN`, so the result looked
+like a legitimate horizontal line rather than a degenerate one.
+`lineIntersection()` — whose formula is itself correct — is then handed the wrong
+line and returns `x = 0`.
 
-**Fix:** `EconLinearDemand` no longer defaults `point`. `[0, yIntercept]` *is*
-the y-intercept, so it never added a constraint — it only diverted the def into a
-branch that could not use it. Precedence in `Line` is otherwise unchanged: a
-point plus a y-intercept still reads as two points on the line, which is the
+**Fix:** the placeholder point is gone. `[0, yIntercept]` *is* the y-intercept,
+so it never added a constraint — it only diverted the def into a branch that
+could not use it. A fallback is applied only when the def carries no geometry at
+all (no `point`, `point2`, `slope`, `invSlope`, `xIntercept` or `yIntercept`),
+which is the case it was there for. Precedence in `Line` is otherwise unchanged:
+a point plus a y-intercept still reads as two points on the line, which is the
 right answer whenever the point carries information.
 
-Two gaps that the defaulted point had been masking are closed alongside it:
+Gaps that the defaulted point had been masking are closed alongside it:
 
 - `Line` had no `slope && xIntercept` branch, so a line given that pair fell
   through to the bare `slope` branch and was drawn through the origin, ignoring
-  the x-intercept. `EconLinearDemand` defaults `slope: 0`, so every demand curve
-  defined by an x-intercept hit this.
+  the x-intercept. Every demand curve defined by an x-intercept hit this.
 - The `point && yIntercept` branch is now skipped when the point *is* the
   y-intercept (`[0, yIntercept]`), since its formulas reduce to `0/0` there. Any
   config still passing that redundant point falls through to the slope it also
   carries instead of producing a degenerate line. A point elsewhere on the y-axis
   still reads as a vertical line, as before.
+- `divideDefs()` no longer reports `0/0` as `0`. A symbolic denominator still
+  short-circuits: it is not literally `0`, and the simplification keeps generated
+  expressions readable.
 
 Covered by `src/__tests__/econ_equilibrium_values.test.ts`, which asserts solved
 values (`Q*=9`, `P*=11`, from literals and from params) and checks the rendered
-diagram against primitive `Line`/`Point` objects placed at the same coordinates.
-Seven of its ten tests fail against the previous behaviour; the other three are
-regression guards on the `Line` forms that already worked.
+diagram against primitive `Line`/`Point` objects placed at the same coordinates,
+and by the demand and equilibrium cases in `src/__tests__/econ_values.test.ts`.
+Seven of the ten tests in the first file fail against the previous behaviour; the
+other three are regression guards on the `Line` forms that already worked.
 
 **Note:** `apps/web/src/App.tsx` still builds its diagram from primitive `Line`
 and `Point` objects, which was the workaround for this bug. It no longer has to —
@@ -144,3 +167,85 @@ which asserts on parsed calcs rather than on rendered elements.
 **Note for authors:** generated numbering follows construction order, so name
 curves explicitly whenever you intend to reference them (see
 `docs/schema/06-econ-objects.md`).
+
+## 5. Documented functional-form names did not work — FIXED
+
+**Symptom:** `EconIndifferenceCurve`, `EconIndifferenceMap`, `EconOptimalBundle`
+(and the Lagrange/Slutsky/Hicks/LowestCost variants) and `EconDemandCurve` all
+failed with `Cannot read properties of undefined (reading 'levelCurve')` — an
+error naming neither the config nor the real problem.
+
+**Cause:** `getUtilityFunction()` matched `CobbDouglas`, `Substitutes`,
+`Complements`, `Concave`, `Quasilinear` and `CESFunction`. The names the schema
+reference documents — and that the classes are exported under — are
+`CobbDouglasFunction`, `LinearFunction`, `MinFunction`, `ConcaveFunction`,
+`QuasilinearFunction` and `CESFunction`. Only `CESFunction` overlapped, so five
+of the six documented forms fell off the end of the chain and returned
+`undefined`.
+
+**Fix:** both vocabularies are accepted, and an unrecognised name throws an error
+that names itself and lists the valid options. Covered by
+`src/__tests__/diagnostics.test.ts`.
+
+## 6. Lines through the origin published a broken fixed point — FIXED
+
+**Symptom:** `calcs.<name>.fixedPoint` came back as the literal string
+`"((undefined)/(1 - 1))"`, so anything binding to it received a string instead of
+a number. Reached by any line through the origin — including a `slope`-only def,
+and a supply curve starting at the origin.
+
+**Cause:** `Line.parseSelf()` tested its intercepts for truthiness, so an
+intercept of `0` read as absent: `d.yIntercept` was never set, but the branch
+below still interpolated it.
+
+**Fix:** the intercepts are tested against `null`, which is what `Line` actually
+reports for the absent intercept of a horizontal or vertical line. An intercept
+of `0` now reaches `calcs` as `"0"` rather than being omitted.
+
+## 7. Unresolved expressions failed silently — FIXED
+
+`Model.evaluate()` catches every mathjs failure and returns the raw string. That
+fallback is load-bearing — color names, LaTeX label text, forward references that
+resolve on a later pass, and deliberate functions of `x` all fail to evaluate
+legitimately — but it also let badly assembled expressions through unremarked.
+
+Calcs are now swept once they have settled, and any value still carrying an
+interpolated `undefined` is reported with its calc path, once rather than on
+every parameter change. That token is the one unambiguous signal: it only ever
+appears because a definition was missing a value when the expression was built.
+Covered by `src/__tests__/diagnostics.test.ts`.
+
+## 8. Two smaller calc-key collisions — FIXED
+
+- `EconContractCurve` published its function under a hardcoded `calcs['cc']`, so
+  two contract curves in one diagram overwrote each other. It is now keyed by
+  name, with `'cc'` kept as the default so existing configs still resolve, and it
+  goes through the name registry from issue 4 — a second unnamed contract curve
+  is numbered (`cc2`) rather than dropped.
+- `EconBudgetLine` published its endowment via `toString()` on a point object,
+  emitting the literal `"[object Object]"`. It is now a nested calc
+  (`calcs.<name>.endowment.x`), omitted when the line is defined by income.
+
+Covered by `src/__tests__/calc_keys.test.ts` and `src/__tests__/econ_values.test.ts`.
+
+# Open
+
+## A. `multiplyDefs()` treats `0 * Infinity` as `0`
+
+`multiplyDefs()` short-circuits to `0` whenever either operand is `0`, without
+checking the other. `Infinity` is a real operand here — `Line` uses it for the
+inverse slope of a horizontal line — so the product is reported as `0` where it
+is mathematically undefined.
+
+No defect has been traced to this in practice, and the short-circuit is load
+bearing for horizontal and vertical line handling, so it is recorded rather than
+changed. `divideDefs()` had the analogous flaw and *was* implicated (issue 2),
+which is why that one was fixed and this one was not.
+
+## B. Missing required keys produce opaque errors
+
+An econ object built without the keys it needs interpolates `undefined` into its
+generated expressions and surfaces as a mathjs type error naming neither the
+object nor the missing key — for example `EconContractCurve` without `a`/`b`.
+The calc sweep from issue 7 reports these once they reach the model, but there is
+no up-front validation of required keys.
