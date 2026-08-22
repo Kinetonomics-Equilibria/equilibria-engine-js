@@ -43,6 +43,43 @@ describe('Line geometry', () => {
         r.destroy();
     });
 
+    // Regression: parseSelf() tested the intercepts for truthiness, so an
+    // intercept of 0 read as absent and the line published its fixed point as
+    // the literal string "((undefined)/(1 - m))".
+    it('publishes a usable fixed point for a line through the origin', () => {
+        const r = mountObjects([
+            { type: 'Line', def: { name: 'ray', slope: 2 } }
+        ]);
+
+        expect(r.error).toBeNull();
+        expect(r.calcs.ray.xIntercept).toBe(0);
+        expect(r.calcs.ray.yIntercept).toBe(0);
+        // y = 2x crosses y = x at the origin.
+        // toBeCloseTo rather than toBe because 0/(1 - 2) is -0 in JavaScript.
+        expect(r.calcs.ray.fixedPoint).toBeCloseTo(0, 10);
+        r.destroy();
+    });
+
+    it('publishes a usable fixed point for a supply curve starting at the origin', () => {
+        const r = mountObjects([
+            { type: 'EconLinearSupply', def: { name: 's', yIntercept: 0, slope: 2 } }
+        ]);
+
+        expect(r.error).toBeNull();
+        expect(r.calcs.s.fixedPoint).toBeCloseTo(0, 10);
+        r.destroy();
+    });
+
+    // P = 4 + 0.5Q crosses y = x at 4/(1 - 0.5) = 8
+    it('computes the fixed point from the y-intercept and slope', () => {
+        const r = mountObjects([
+            { type: 'Line', def: { name: 'l', yIntercept: 4, slope: 0.5 } }
+        ]);
+
+        expect(r.calcs.l.fixedPoint).toBe(8);
+        r.destroy();
+    });
+
     it('derives slope and intercepts from two points', () => {
         // through (1,1) and (5,9): slope 2, yIntercept -1
         const r = mountObjects([
