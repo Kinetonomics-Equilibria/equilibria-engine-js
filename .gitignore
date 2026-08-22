@@ -1,6 +1,11 @@
 .idea/
 node_modules/
 dist/
+# Playwright run output and dev screenshots
+test-results/
+playwright-report/
+.playwright/
+screenshots/
 packages/engine/src/lib/js-yaml/
 vendor/
 # macOS finder metadata, at any depth

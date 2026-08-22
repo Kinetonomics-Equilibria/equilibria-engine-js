@@ -36,6 +36,8 @@
     "include": [
         "src/**/*.ts",
         "src/**/*.tsx",
-        "vite.config.ts"
+        "tests/**/*.ts",
+        "vite.config.ts",
+        "playwright.config.ts"
     ]
 }
