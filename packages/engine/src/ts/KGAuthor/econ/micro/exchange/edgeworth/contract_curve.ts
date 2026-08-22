@@ -29,6 +29,11 @@ import { multiplyDefs, subtractDefs } from "../../../../parsers/parsingFunctions
             def.univariateFunction = {fn: fnString};
 
             setDefaults(def, {
+                // 'cc' was the fixed key this curve published its function
+                // under; keeping it as the default name means existing configs
+                // still reference calcs.cc, while a named curve now gets its
+                // own key instead of overwriting another one.
+                name: 'cc',
                 interpolation: 'curveMonotoneX',
                 color: 'colors.budget'
             });
@@ -42,7 +47,10 @@ import { multiplyDefs, subtractDefs } from "../../../../parsers/parsingFunctions
         parseSelf(parsedData) {
             let cc = this;
             parsedData = super.parseSelf(parsedData);
-            parsedData.calcs['cc'] = cc.fnString;
+            // Keyed by name rather than a fixed 'cc': two contract curves in one
+            // diagram used to overwrite each other, and whichever parsed last
+            // silently won.
+            parsedData.calcs[cc.name] = cc.fnString;
             return parsedData;
         
     
