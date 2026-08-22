@@ -40,6 +40,12 @@ export class Line extends Curve {
             slope = def.slope,
             invSlope = def.invSlope;
 
+        // A point that is itself the y-intercept constrains nothing beyond it, and
+        // the two-point formulas below reduce to 0/0 on it. Skip that branch so
+        // such a def falls through to whichever of slope/invSlope it also carries.
+        const pointIsYIntercept = def.hasOwnProperty('point') && def.hasOwnProperty('yIntercept')
+            && def.point[0] === 0 && def.point[1] === def.yIntercept;
+
         if (def.hasOwnProperty('point') && def.hasOwnProperty('point2')) {
             // still need to handle infinite case
             slope = divideDefs(subtractDefs(def.point[1], def.point2[1]), subtractDefs(def.point[0], def.point2[0]));
@@ -53,7 +59,7 @@ export class Line extends Curve {
             invSlope = negativeDef(divideDefs(def.xIntercept, def.yIntercept));
         }
 
-        else if (def.hasOwnProperty('point') && def.hasOwnProperty('yIntercept')) {
+        else if (def.hasOwnProperty('point') && def.hasOwnProperty('yIntercept') && !pointIsYIntercept) {
             slope = divideDefs(subtractDefs(def.point[1], def.yIntercept), def.point[0]);
             invSlope = divideDefs(def.point[0], subtractDefs(def.point[1], def.yIntercept));
             xIntercept = negativeDef(multiplyDefs(yIntercept, invSlope));
@@ -62,6 +68,11 @@ export class Line extends Curve {
         else if (def.hasOwnProperty('slope') && def.hasOwnProperty('yIntercept')) {
             invSlope = invertDef(def.slope);
             xIntercept = negativeDef(divideDefs(yIntercept, slope));
+        }
+
+        else if (def.hasOwnProperty('slope') && def.hasOwnProperty('xIntercept')) {
+            invSlope = invertDef(def.slope);
+            yIntercept = negativeDef(multiplyDefs(slope, xIntercept));
         }
 
         else if (def.hasOwnProperty('invSlope') && def.hasOwnProperty('xIntercept')) {

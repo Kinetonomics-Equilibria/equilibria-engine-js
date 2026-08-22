@@ -35,8 +35,12 @@ export class EconLinearDemand extends Line {
 
         setEconName(def, "demand");
 
+        // No `point` default: [0, yIntercept] *is* the y-intercept, so it adds no
+        // constraint, but the Line constructor dispatches on hasOwnProperty and
+        // reaches its `point && yIntercept` branch before `slope && yIntercept`.
+        // Those two-point formulas then reduced to 0/0 and discarded the caller's
+        // slope, leaving a degenerate line and an equilibrium solved at Q=0.
         setDefaults(def, {
-            point: [0, def.yIntercept],
             slope: 0,
             color: 'colors.demand',
             strokeWidth: 2,

@@ -47,6 +47,16 @@ def:
     text: "Demand"
 ```
 
+A line is defined by any two of `point`, `point2`, `slope`, `invSlope`,
+`xIntercept` and `yIntercept` — for example `slope` with `yIntercept`, the two
+intercepts, or `xIntercept` with `slope`. Where a def carries more than two, the
+first pair below wins, so pass only the pair you mean:
+
+`point` + `point2`, then `xIntercept` + `yIntercept`, then `point` +
+`yIntercept`, then `slope`/`invSlope` with an intercept, then `slope`/`invSlope`
+with a `point`. A single `slope`, `yIntercept` or `xIntercept` on its own gives a
+line through the origin, a horizontal line, or a vertical line respectively.
+
 A `Segment` requires starting and ending definitions:
 ```yaml
 type: Segment

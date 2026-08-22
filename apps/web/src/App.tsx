@@ -1,8 +1,9 @@
 import { EquilibriaCard } from 'equilibria-react';
 
 // A linear supply-and-demand market, built from primitive Line and Point
-// objects rather than the EconLinearEquilibrium wrapper, which currently solves
-// the wrong intersection — see NOTES.md, issue 2.
+// objects. This started as a workaround for NOTES.md issue 2; that is fixed, so
+// EconLinearEquilibrium would draw the same market in fewer lines, but the
+// primitive version shows the params/calcs binding this app is built around.
 //
 // `params` hold the state, `calcs` solve the equilibrium from them, and the
 // objects bind to both, so changing a param re-solves and re-renders rather

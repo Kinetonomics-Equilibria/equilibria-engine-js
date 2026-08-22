@@ -34,7 +34,7 @@ Plain `Line` and `Curve` objects were unaffected because they set `color`
 Covered by regression tests in `src/__tests__/econ_regressions.test.ts`
 ("semantic colors").
 
-## 2. `EconLinearEquilibrium` solves the wrong intersection — OPEN
+## 2. `EconLinearEquilibrium` solved the wrong intersection — FIXED
 
 **Symptom:** `EconLinearEquilibrium` with `demand: {yIntercept: 20, slope: -1}`
 and `supply: {yIntercept: 2, slope: 1}` reports an equilibrium of `Q=0, P=2`.
@@ -55,15 +55,33 @@ Because the defaulted point *is* the y-intercept, both reduce to `0/0`, and the
 caller's explicit `slope: -1` is discarded. `lineIntersection()` — whose formula
 is itself correct — is then handed a degenerate line and returns `x = 0`.
 
-**Why it is still open:** the fix is a precedence decision (should an explicit
-`slope` beat a defaulted `point`? should `EconLinearDemand` stop defaulting
-`point` at all?) that changes behaviour for every diagram built on `Line`, and
-the repo has no coverage asserting econ *values* to catch fallout. It wants a
-deliberate call plus value-level tests, not a quick patch.
+**Fix:** `EconLinearDemand` no longer defaults `point`. `[0, yIntercept]` *is*
+the y-intercept, so it never added a constraint — it only diverted the def into a
+branch that could not use it. Precedence in `Line` is otherwise unchanged: a
+point plus a y-intercept still reads as two points on the line, which is the
+right answer whenever the point carries information.
 
-**Workaround in use:** `apps/web/src/App.tsx` builds its supply-and-demand
-diagram from primitive `Line` and `Point` objects with the equilibrium solved in
-`calcs`, which is verified correct (`Q*=9`, `P*=11`).
+Two gaps that the defaulted point had been masking are closed alongside it:
+
+- `Line` had no `slope && xIntercept` branch, so a line given that pair fell
+  through to the bare `slope` branch and was drawn through the origin, ignoring
+  the x-intercept. `EconLinearDemand` defaults `slope: 0`, so every demand curve
+  defined by an x-intercept hit this.
+- The `point && yIntercept` branch is now skipped when the point *is* the
+  y-intercept (`[0, yIntercept]`), since its formulas reduce to `0/0` there. Any
+  config still passing that redundant point falls through to the slope it also
+  carries instead of producing a degenerate line. A point elsewhere on the y-axis
+  still reads as a vertical line, as before.
+
+Covered by `src/__tests__/econ_equilibrium_values.test.ts`, which asserts solved
+values (`Q*=9`, `P*=11`, from literals and from params) and checks the rendered
+diagram against primitive `Line`/`Point` objects placed at the same coordinates.
+Seven of its ten tests fail against the previous behaviour; the other three are
+regression guards on the `Line` forms that already worked.
+
+**Note:** `apps/web/src/App.tsx` still builds its diagram from primitive `Line`
+and `Point` objects, which was the workaround for this bug. It no longer has to —
+`EconLinearEquilibrium` now solves the same market correctly.
 
 ## 3. React binding clobbers the engine's container class — OPEN, cosmetic
 
