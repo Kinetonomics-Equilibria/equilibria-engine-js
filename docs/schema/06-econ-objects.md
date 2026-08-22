@@ -35,6 +35,30 @@ Objects for analyzing consumer choice subject to constraints.
 - **`EconConstantElasticityEquilibrium` / `EconConstantElasticityCurve`**: For markets exhibiting constant elasticity rather than linearity.
 - **`EconLinearMonopoly` / `EconLinearMC`**: Automatically calculates and plots marginal revenue, marginal cost, profit-maximizing quantity, monopoly price, and profit/deadweight loss areas based on a linear demand curve.
 
+### Names and `calcs` keys
+
+Econ objects that would otherwise need a `name` default to a semantic one, so a
+single unnamed curve can be referenced without naming it: `demand`, `supply`
+(also used by `EconLinearMC`), `equilibrium`, `monopoly`, `ppf`. Their solved
+values are published under that key — `calcs.equilibrium.P`,
+`calcs.equilibrium.Q`, `calcs.demand.slope`, `calcs.supply.yIntercept`, and the
+price/quantity point at `calcs.demand.PQ.y` / `calcs.demand.PQ.x`.
+
+When a diagram holds more than one object of the same kind, the first unnamed
+one keeps the bare name and later ones are numbered: `demand`, `demand2`,
+`demand3`. Numbering follows construction order, so give curves explicit names
+whenever you intend to reference them:
+
+```yaml
+- type: EconLinearDemand
+  def: { name: domestic, yIntercept: 20, slope: -1 }
+- type: EconLinearDemand
+  def: { name: foreign, yIntercept: 14, slope: -0.5 }
+```
+
+Names you supply are never rewritten. Reusing one for two objects logs a warning
+and keeps only the first object's calcs, since both write to the same key.
+
 ## Microeconomics: Exchange and Edgeworth Boxes
 
 - **Layouts**: Special `layout.type` settings exist for exchange economies, such as `EdgeworthBox`, `EdgeworthBoxPlusSidebar`, etc. These flip the axes for the second consumer, creating the traditional box.

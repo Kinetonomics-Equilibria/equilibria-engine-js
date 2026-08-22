@@ -1,4 +1,5 @@
 import { setDefaults } from "../../../../util";
+import { setEconName } from "../../../parsers/nameRegistry";
 import { PointDefinition } from "../../../../KGAuthor/graphObjects/point";
 import { GraphObjectGenerator } from "../../../defObjects/graphObjectGenerator";
 import { AreaDefinition, Area } from "../../../graphObjects/area";
@@ -32,8 +33,9 @@ export class EconLinearMonopoly extends GraphObjectGenerator {
 
     constructor(def: EconLinearMonopolyDefinition, graph) {
 
+        setEconName(def, 'monopoly');
+
         setDefaults(def, {
-            name: 'monopoly',
             showCS: false,
             showPS: false,
             showProfit: false,

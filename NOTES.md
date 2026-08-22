@@ -1,7 +1,7 @@
 # Known issues
 
 Findings from building the first real consumer of the engine (`apps/web`).
-Both are pre-existing defects inherited from the KGJS fork, not regressions
+These are pre-existing defects inherited from the KGJS fork, not regressions
 from the monorepo or packaging work — the code paths involved are untouched by
 those changes.
 
@@ -76,3 +76,39 @@ there) but absent in the browser.
 Impact is limited to the two declarations under `.kg-container` in
 `kgjs-theme.css` (`color` and `background-color`); the `--kg-*` custom
 properties are defined on `:root`, so colors and axes are unaffected.
+
+## 4. Unnamed econ objects collided on their default names — FIXED
+
+**Symptom:** two `EconLinearDemand` objects in one diagram, neither given a
+`name`, both reported the first curve's geometry. The second curve's slope and
+intercepts never reached `calcs`, so anything reading `calcs.demand.*` — a
+surplus area, an equilibrium point, an author's own expression — silently
+described the wrong curve. Same for two supply curves and two equilibria.
+
+**Cause:** names double as calc keys, and `EconLinearDemand`, `EconLinearSupply`
+and `EconLinearEquilibrium` defaulted to the fixed names `demand`, `supply` and
+`equilibrium`. `Line.parseSelf` merges into `parsedData.calcs` with
+`setDefaults`, which skips keys that already exist:
+
+```ts
+parsedData.calcs[l.name] = setDefaults(parsedData.calcs[l.name] || {}, d);
+```
+
+so the first object to parse won the key and the second was dropped with no
+warning. `EconLinearMonopoly` (`monopoly`), `EconPPF` (`ppf`) and
+`EconConstantElasticityEquilibrium` (`equilibrium`) had fixed defaults too.
+
+**Fix:** a per-parse name registry (`KGAuthor/parsers/nameRegistry.ts`, reset at
+the top of `parse()`) hands out those semantic defaults. The first claim on a
+base name is still unqualified — every config that already references
+`calcs.demand` keeps working, which is why the collision was fixed by numbering
+rather than by switching the defaults to unique names — and later unnamed
+objects of the same kind get `demand2`, `demand3`, and so on. Names the author
+supplied are never rewritten, but they are registered, so a generated name never
+lands on top of one; reusing a name explicitly now logs a warning instead of
+silently dropping calcs. Covered by `src/__tests__/econ_object_names.test.ts`,
+which asserts on parsed calcs rather than on rendered elements.
+
+**Note for authors:** generated numbering follows construction order, so name
+curves explicitly whenever you intend to reference them (see
+`docs/schema/06-econ-objects.md`).

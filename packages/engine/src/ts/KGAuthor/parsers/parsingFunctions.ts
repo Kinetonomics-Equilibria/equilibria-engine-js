@@ -3,6 +3,7 @@ import { UnivariateFunctionDefinition } from "../../math/univariateFunction";
 import { TypeAndDef } from "../../view/view";
 import { Curve } from "../graphObjects/curve";
 import { KGAuthorClasses } from "../classRegistry";
+import { resetNameRegistry } from "./nameRegistry";
 
 export function extractTypeAndDef(def) {
     if (def.hasOwnProperty('type')) {
@@ -15,6 +16,9 @@ export function extractTypeAndDef(def) {
 }
 
 export function parse(data: TypeAndDef[], parsedData) {
+    // Names are handed out as objects are constructed, and they double as calc
+    // keys, so the registry is scoped to a single parse of a single diagram.
+    resetNameRegistry();
     data.forEach(function (obj) {
         if (Object.prototype.hasOwnProperty.call(KGAuthorClasses, obj.type)) {
             parsedData = new KGAuthorClasses[obj.type](obj.def).parse(parsedData);

@@ -3,6 +3,7 @@ import { CurveDefinition, Curve } from "../../../../KGAuthor/graphObjects/curve"
 import { Point } from "../../../../KGAuthor/graphObjects/point";
 import { setStrokeColor, divideDefs, raiseDefToDef, subtractDefs, addDefs, paramName, multiplyDefs, invertDef } from "../../../parsers/parsingFunctions";
 import { EconOneInputProductionFunction } from "../producer_theory/oneInputProductionFunction";
+import { setEconName } from "../../../parsers/nameRegistry";
 
 
 
@@ -43,8 +44,9 @@ import { EconOneInputProductionFunction } from "../producer_theory/oneInputProdu
 
             def = setStrokeColor(def);
 
+            setEconName(def, 'ppf');
+
             setDefaults(def, {
-                name: 'ppf',
                 color: 'colors.supply',
                 strokeWidth: 2,
                 lineStyle: 'solid',

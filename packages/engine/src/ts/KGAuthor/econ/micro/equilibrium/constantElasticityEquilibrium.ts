@@ -1,4 +1,5 @@
 import { setDefaults } from "../../../../util";
+import { setEconName } from "../../../parsers/nameRegistry";
 import { PointDefinition, Point } from "../../../../KGAuthor/graphObjects/point";
 import { GraphObjectGeneratorDefinition, GraphObjectGenerator } from "../../../defObjects/graphObjectGenerator";
 import { EconConstantElasticityCurveDefinition, EconConstantElasticityCurve } from "./constantElasticityCurve";
@@ -22,8 +23,9 @@ import { EconConstantElasticityCurveDefinition, EconConstantElasticityCurve } fr
 
         constructor(def: EconConstantElasticityEquilibriumDefinition, graph) {
 
+            setEconName(def, 'equilibrium');
+
             setDefaults(def, {
-                name: 'equilibrium',
                 showCS: false,
                 showPS: false
             });

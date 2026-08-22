@@ -3,6 +3,7 @@ import { AreaDefinition, Area } from "../../../graphObjects/area";
 import { LineDefinition, Line } from "../../../graphObjects/line";
 import { setStrokeColor, paramName, addDefs, negativeDef, divideDefs, multiplyDefs } from "../../../parsers/parsingFunctions";
 import { setDefaults } from "../../../../util";
+import { setEconName } from "../../../parsers/nameRegistry";
 
 
 
@@ -32,8 +33,9 @@ export class EconLinearDemand extends Line {
 
         def = setStrokeColor(def);
 
+        setEconName(def, "demand");
+
         setDefaults(def, {
-            name: "demand",
             point: [0, def.yIntercept],
             slope: 0,
             color: 'colors.demand',

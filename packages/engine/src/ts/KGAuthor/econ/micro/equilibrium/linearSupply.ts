@@ -1,4 +1,5 @@
 import { setDefaults } from "../../../../util";
+import { setEconName } from "../../../parsers/nameRegistry";
 import { Point } from "../../../../KGAuthor/graphObjects/point";
 import { Area } from "../../../graphObjects/area";
 import { LineDefinition, Line } from "../../../graphObjects/line";
@@ -26,8 +27,9 @@ import { SurplusDefinition } from "./linearDemand";
 
             def = setStrokeColor(def);
 
+            setEconName(def, 'supply');
+
             setDefaults(def, {
-                name: 'supply',
                 color: 'colors.supply',
                 strokeWidth: 2,
                 lineStyle: 'solid',

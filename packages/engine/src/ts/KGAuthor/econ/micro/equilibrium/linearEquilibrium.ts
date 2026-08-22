@@ -1,4 +1,5 @@
 import { setDefaults } from "../../../../util";
+import { setEconName } from "../../../parsers/nameRegistry";
 import { PointDefinition, Point } from "../../../../KGAuthor/graphObjects/point";
 import { GraphObjectGenerator } from "../../../defObjects/graphObjectGenerator";
 import { lineIntersection } from "../../../graphObjects/line";
@@ -27,8 +28,9 @@ export class EconLinearEquilibrium extends GraphObjectGenerator {
 
     constructor(def: EconLinearEquilibriumDefinition, graph) {
 
+        setEconName(def, 'equilibrium');
+
         setDefaults(def, {
-            name: 'equilibrium',
             showCS: false,
             showPS: false
         });
