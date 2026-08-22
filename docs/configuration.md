@@ -122,8 +122,12 @@ Scales connect mathematical Cartesian domains to the pixel viewport. Every `View
 | `axis` | string | `"x"` (horizontal mapping) or `"y"` (vertical mapping). |
 | `domainMin` | string/number | Starting range of Cartesian space (e.g. `0`). |
 | `domainMax` | string/number | Ending range of Cartesian space (e.g. `100`). |
+| `rangeMin` | number | Start of the viewport band, as a fraction of width/height (e.g. `0.1`). |
+| `rangeMax` | number | End of the viewport band, as a fraction of width/height (e.g. `0.9`). |
 
 > **Note:** When using `layout`, scales are generated automatically. You only need to define scales explicitly when building a configuration without a layout.
+
+> **Important:** When defining scales explicitly, all of `axis`, `rangeMin`, and `rangeMax` are required. If they are omitted the scale's pixel range evaluates to `NaN` and the diagram renders with no visible geometry. To invert an axis (the usual case for `y`, so that larger values sit higher on screen), set `rangeMin: 0.9, rangeMax: 0.1`.
 
 ## 8. View Objects (`objects`)
 

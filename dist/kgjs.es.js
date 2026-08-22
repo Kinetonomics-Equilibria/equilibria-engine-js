@@ -2265,7 +2265,7 @@ class Xe extends M {
       showDWL: !1
     }), super(t, e);
     let n = this;
-    t.demand.surplus = { show: t.showCS, price: `calcs.${n.name}.P`, quantity: `calcs.${n.name}.Q` }, t.cost.surplus = { show: t.showPS, price: `calcs.${n.name}.P`, quantity: `calcs.${n.name}.Q` }, n.demand = new xt(t.demand, e), n.cost = new Jt(t.cost, e);
+    t.demand.marginalRevenue = t.demand.marginalRevenue || {}, t.demand.surplus = { show: t.showCS, price: `calcs.${n.name}.P`, quantity: `calcs.${n.name}.Q` }, t.cost.surplus = { show: t.showPS, price: `calcs.${n.name}.P`, quantity: `calcs.${n.name}.Q` }, n.demand = new xt(t.demand, e), n.cost = new Jt(t.cost, e);
     let r = Pt(n.demand.marginalRevenue, n.cost);
     n.Q = r[0], n.P = n.demand.yOfX(n.Q), n.MRMC = n.cost.yOfX(n.Q);
     let i = Pt(n.demand, n.cost);

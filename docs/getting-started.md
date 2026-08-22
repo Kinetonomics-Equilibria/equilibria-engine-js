@@ -97,25 +97,28 @@ const containerElement = document.getElementById('graph-container');
 const graphConfig = {
     // Defines parameters the user can manipulate
     params: [
-        { name: "price", value: 10 }
+        { name: "price", value: 10, min: 0, max: 20 }
     ],
-    // Defines the x and y coordinate space bounds
-    scales: [
-        { name: "x", axis: "x", domainMin: 0, domainMax: 20 },
-        { name: "y", axis: "y", domainMin: 0, domainMax: 20 }
-    ],
-    // Defines the graphical elements 
-    objects: [
-        {
-            type: "Point",
-            def: {
-                x: "10",
-                y: "price", // Bound to the parameter
-                color: "blue",
-                drag: [{ directions: "y", param: "price", prop: "y" }]
+    // Defines the layout, its graphs, axes, and the objects drawn on them
+    layout: {
+        OneGraph: {
+            graph: {
+                xAxis: { title: "Quantity", min: 0, max: 20 },
+                yAxis: { title: "Price", min: 0, max: 20 },
+                objects: [
+                    {
+                        type: "Point",
+                        def: {
+                            x: "10",
+                            y: "params.price", // Bound to the parameter
+                            color: "blue",
+                            draggable: true
+                        }
+                    }
+                ]
             }
         }
-    ]
+    }
 };
 
 // 1. Instantiate the graph with the configuration

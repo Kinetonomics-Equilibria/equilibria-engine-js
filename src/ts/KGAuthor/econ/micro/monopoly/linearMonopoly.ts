@@ -44,6 +44,11 @@ export class EconLinearMonopoly extends GraphObjectGenerator {
 
         let lm = this;
 
+        // The monopoly outcome is defined by MR = MC, so the demand curve must always
+        // generate its marginal revenue line; EconLinearDemand only builds one when the
+        // key is present, so supply it here if the author didn't.
+        def.demand.marginalRevenue = def.demand.marginalRevenue || {};
+
         def.demand.surplus = { show: def.showCS, price: `calcs.${lm.name}.P`, quantity: `calcs.${lm.name}.Q` };
         def.cost.surplus = { show: def.showPS, price: `calcs.${lm.name}.P`, quantity: `calcs.${lm.name}.Q` };
         lm.demand = new EconLinearDemand(def.demand, graph);
