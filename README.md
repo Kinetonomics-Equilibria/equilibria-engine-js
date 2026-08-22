@@ -1,58 +1,60 @@
-# Equilibria Engine
+# Equilibria
 
-Welcome to the **Equilibria Engine** (`equilibria-engine-js`), a headless Javascript rendering engine for interactive kinetic graphs. 
+Monorepo for the **Equilibria** engine and its React bindings — a headless
+rendering engine for interactive kinetic graphs, aimed at economics diagrams.
 
-> [!NOTE] 
-> **Acknowledgement:** This project is a hard fork of the excellent [KGJS](https://github.com/cmakler/kgjs) engine originally created by Chris Makler. The intent of the Equilibria fork is to decouple the core mathematical engine from its original monolithic application structure, making it substantially easier for developers to integrate economic models into modern websites, SPAs (React/Vue/Svelte), and custom data visualization pipelines.
+> [!NOTE]
+> This project is a hard fork of [KGJS](https://github.com/cmakler/kgjs), originally
+> created by Chris Makler.
 
-## Installation
+## Packages
+
+| Package | Directory | Description |
+|---|---|---|
+| [`equilibria-engine-js`](./packages/engine) | `packages/engine` | The headless D3/mathjs rendering engine. |
+| [`equilibria-react`](./packages/react) | `packages/react` | React components and hooks wrapping the engine. |
+
+Each directory is a self-contained npm package and is published independently.
+
+## Getting started
+
+The repository uses npm workspaces, so a single install at the root covers both
+packages and links `equilibria-react` against the local engine build — no
+`npm link` or publish step is needed to test a change end to end.
 
 ```bash
-npm install equilibria-engine-js
+npm install
+npm run build      # builds the engine, then React (that order matters)
+npm test           # engine test suite
+npm run typecheck  # both packages
 ```
 
-You will also need to import the engine's CSS and the KaTeX CSS (for math rendering) in your application:
+To work on one package at a time:
 
-```javascript
-import "equilibria-engine-js/dist/style.css";
-import "katex/dist/katex.min.css"; 
+```bash
+npm run build:engine
+npm run build:react
 ```
+
+`equilibria-react` imports the engine by package name. npm resolves that to
+`packages/engine` through the workspace symlink, so engine changes are picked
+up as soon as the engine is rebuilt.
 
 ## Documentation
 
-Comprehensive documentation has been added to assist developers in utilizing and configuring the headless engine. 
-
-Please see the local `/docs` directory for guides:
+Engine guides live in [`docs/`](./docs):
 
 1. [Getting Started](./docs/getting-started.md)
 2. [Architecture Overview](./docs/architecture.md)
 3. [Configuration Specification](./docs/configuration.md)
 4. [API & Interactivity](./docs/interactivity.md)
 
-## Dependencies
-
-The engine relies heavily on:
-
-* [D3](https://d3js.org) for drawing 2D diagrams
-* [mathjs](https://mathjs.org/) for mathematical constraint solving and evaluation
-* [KaTeX](https://katex.org) for rendering mathematical typographic text (requires `katex/dist/katex.min.css`)
-
-## React Integration
-
-For React and Next.js applications, the companion package [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react) provides drop-in components with lifecycle management, event forwarding, and styled card wrappers:
-
-```bash
-npm install equilibria-react equilibria-engine-js
-```
-
-It provides:
-- **`<EquilibriaChart />`** — Minimal chart component
-- **`<EquilibriaCard />`** — Styled card with title, loading skeleton, and error handling
-- **`useEquilibria()`** — Full-control hook with `updateParams` and event callbacks
-- Automatic re-export of `KG_EVENTS` for event subscriptions
-
-See the [equilibria-react README](https://github.com/Kinetonomics-Equilibria/equilibria-react) for full API documentation.
+There is also a schema reference under [`docs/schema/`](./docs/schema).
 
 ## Repository
+
 [https://github.com/Kinetonomics-Equilibria/equilibria-engine-js](https://github.com/Kinetonomics-Equilibria/equilibria-engine-js)
 
+## License
+
+MIT

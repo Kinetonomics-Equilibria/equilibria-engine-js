@@ -1,50 +1,23 @@
 {
-  "name": "equilibria-engine-js",
-  "version": "1.0.8",
-  "description": "Headless js renderer for kineticgraphs",
-  "files": [
-    "dist"
-  ],
-  "main": "dist/kgjs.cjs",
-  "module": "dist/kgjs.es.js",
-  "types": "dist/index.d.ts",
+  "name": "equilibria",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo for the Equilibria engine and its React bindings",
   "type": "module",
+  "workspaces": [
+    "packages/engine",
+    "packages/react"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "test": "vitest run"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/kgjs.es.js",
-      "require": "./dist/kgjs.cjs",
-      "types": "./dist/index.d.ts"
-    },
-    "./dist/style.css": "./dist/style.css"
-  },
-  "peerDependencies": {
-    "d3": "^7.8.5",
-    "katex": "^0.16.8",
-    "mathjs": "^11.9.0"
-  },
-  "dependencies": {
-    "eventemitter3": "^5.0.1"
-  },
-  "devDependencies": {
-    "@types/d3": "^7.4.0",
-    "@types/katex": "^0.16.2",
-    "glob": "^13.0.6",
-    "jsdom": "^22.1.0",
-    "ts-morph": "^27.0.2",
-    "typescript": "^5.2.2",
-    "vite": "^4.4.9",
-    "vite-plugin-dts": "^3.5.3",
-    "vitest": "^0.34.3"
+    "build": "npm run build --workspace=equilibria-engine-js && npm run build --workspace=equilibria-react",
+    "build:engine": "npm run build --workspace=equilibria-engine-js",
+    "build:react": "npm run build --workspace=equilibria-react",
+    "test": "npm run test --workspace=equilibria-engine-js",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kinetonomics-Equilibria/equilibria-engine-js.git"
   },
-  "author": "Chris Makler / KGJS Equilibria Fork",
   "license": "MIT"
 }

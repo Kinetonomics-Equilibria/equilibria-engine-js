@@ -3,7 +3,7 @@ node_modules/
 export_to_econgraphs.py
 docs/_site/
 docs/.jekyll-cache/
-src/lib/js-yaml/
+packages/engine/src/lib/js-yaml/
 vendor/
 # macOS finder metadata, at any depth
 .DS_Store
