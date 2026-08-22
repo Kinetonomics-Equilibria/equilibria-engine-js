@@ -1,7 +1,8 @@
 # Equilibria
 
-Monorepo for the **Equilibria** engine and its React bindings — a headless
-rendering engine for interactive kinetic graphs, aimed at economics diagrams.
+Monorepo for the **Equilibria** student webapp, the engine that powers it, and
+its React bindings — a headless rendering engine for interactive kinetic graphs,
+aimed at economics diagrams.
 
 > [!NOTE]
 > This project is a hard fork of [KGJS](https://github.com/cmakler/kgjs), originally
@@ -11,34 +12,30 @@ rendering engine for interactive kinetic graphs, aimed at economics diagrams.
 
 | Package | Directory | Description |
 |---|---|---|
+| [`web`](./apps/web) | `apps/web` | The student-facing webapp (Vite + React). |
 | [`equilibria-engine-js`](./packages/engine) | `packages/engine` | The headless D3/mathjs rendering engine. |
 | [`equilibria-react`](./packages/react) | `packages/react` | React components and hooks wrapping the engine. |
 
-Each directory is a self-contained npm package and is published independently.
+Both packages are internal workspace libraries — they are not published to npm.
+They export TypeScript source directly, so the app compiles them as part of its
+own bundle and there is no build step between the two.
 
 ## Getting started
 
-The repository uses npm workspaces, so a single install at the root covers both
-packages and links `equilibria-react` against the local engine build — no
-`npm link` or publish step is needed to test a change end to end.
+The repository uses npm workspaces, so a single install at the root covers
+everything.
 
 ```bash
 npm install
-npm run build      # builds the engine, then React (that order matters)
-npm test           # engine test suite
-npm run typecheck  # both packages
+npm run dev        # start the webapp on http://localhost:5173
+npm test           # engine + React test suites
+npm run typecheck  # all workspaces
+npm run build      # production bundle for the app
 ```
 
-To work on one package at a time:
-
-```bash
-npm run build:engine
-npm run build:react
-```
-
-`equilibria-react` imports the engine by package name. npm resolves that to
-`packages/engine` through the workspace symlink, so engine changes are picked
-up as soon as the engine is rebuilt.
+Because the app imports engine source rather than a built bundle, an edit
+anywhere under `packages/engine/src` hot-reloads in the browser immediately — no
+rebuild, and no ordering constraint between the packages.
 
 ## Documentation
 

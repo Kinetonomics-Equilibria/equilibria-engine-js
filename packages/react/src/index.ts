@@ -1,4 +1,3 @@
-import 'equilibria-engine-js/dist/style.css';
 import 'katex/dist/katex.min.css';
 
 // Components

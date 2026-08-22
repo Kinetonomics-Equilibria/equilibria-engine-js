@@ -55,10 +55,6 @@ export function getParameterName(str) {
     }
 }
 
-export function namedCalc(str) {
-    return "calcs." + this.name + "." + str;
-}
-
 export function negativeDef(def) {
     return multiplyDefs(-1, def);
 }
@@ -218,8 +214,15 @@ export function setFillColor(def) {
 
 // allow author to set stroke color either by "color" attribute or "stroke" attribute
 export function setStrokeColor(def) {
-    def.color = def.color || def.stroke;
-    def.stroke = def.stroke || def.color;
+    // Only assign when a color is actually available. Assigning unconditionally
+    // creates own properties holding `undefined`, and setDefaults() skips any key
+    // that is already an own property — so a later `setDefaults(def, {color: ...})`
+    // would be silently discarded and the object would render with no stroke.
+    const color = def.color !== undefined ? def.color : def.stroke;
+    if (color !== undefined) {
+        def.color = color;
+        def.stroke = color;
+    }
     return def;
 }
 

@@ -2,19 +2,17 @@
   "name": "equilibria",
   "version": "0.0.0",
   "private": true,
-  "description": "Monorepo for the Equilibria engine and its React bindings",
+  "description": "Monorepo for the Equilibria engine, its React bindings, and the student webapp",
   "type": "module",
   "workspaces": [
-    "packages/engine",
-    "packages/react"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=equilibria-engine-js && npm run build --workspace=equilibria-react",
-    "build:engine": "npm run build --workspace=equilibria-engine-js",
-    "build:react": "npm run build --workspace=equilibria-react",
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "preview": "npm run preview --workspace=web",
     "test": "npm run test --workspaces --if-present",
-    "test:engine": "npm run test --workspace=equilibria-engine-js",
-    "test:react": "npm run test --workspace=equilibria-react",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "repository": {

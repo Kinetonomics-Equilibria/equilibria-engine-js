@@ -96,3 +96,49 @@ describe('EconLinearDemand', () => {
         kg.destroy();
     });
 });
+
+describe('semantic colors', () => {
+    // Regression: setStrokeColor() assigned def.color and def.stroke
+    // unconditionally, so calling it before setDefaults() left both as own
+    // properties holding `undefined`. setDefaults() skips keys that are already
+    // own properties, so the semantic color the econ objects set right
+    // afterwards ('colors.demand', 'colors.supply') was silently discarded.
+    // drawStroke() then wrote stroke=undefined and every econ curve rendered
+    // with no stroke at all — geometrically correct but invisible.
+    function strokesOf(container: HTMLElement) {
+        return Array.from(container.querySelectorAll('path'))
+            // dragPath elements are transparent hit areas, not the drawn curve
+            .filter(p => !(p.getAttribute('class') || '').startsWith('dragPath'))
+            .map(p => p.getAttribute('stroke'));
+    }
+
+    it('resolves colors.demand and colors.supply to real stroke colors', () => {
+        const { kg, container, error } = mountGraph([{
+            type: 'EconLinearEquilibrium',
+            def: {
+                demand: { yIntercept: 20, slope: -1 },
+                supply: { yIntercept: 2, slope: 1 },
+                equilibrium: {}
+            }
+        }]);
+
+        expect(error).toBeNull();
+        const strokes = strokesOf(container);
+        // blue for demand, orange for supply, straight off d3.schemeCategory10
+        expect(strokes).toContain('#1f77b4');
+        expect(strokes).toContain('#ff7f0e');
+        expect(strokes).not.toContain(null);
+        kg.destroy();
+    });
+
+    it('still lets an explicit stroke override the semantic default', () => {
+        const { kg, container, error } = mountGraph([{
+            type: 'EconLinearDemand',
+            def: { yIntercept: 15, slope: -1, stroke: 'red' }
+        }]);
+
+        expect(error).toBeNull();
+        expect(strokesOf(container)).toContain('#d62728');
+        kg.destroy();
+    });
+});

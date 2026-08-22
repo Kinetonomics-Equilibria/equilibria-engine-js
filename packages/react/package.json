@@ -1,31 +1,19 @@
 {
   "name": "equilibria-react",
   "version": "0.2.0",
-  "description": "React components for the Equilibria Engine \u2014 styled, drop-in chart cards with lifecycle management",
+  "description": "React components for the Equilibria Engine — styled, drop-in chart cards with lifecycle management",
   "type": "module",
-  "main": "dist/equilibria-react.cjs",
-  "module": "dist/equilibria-react.es.js",
-  "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "import": "./dist/equilibria-react.es.js",
-      "require": "./dist/equilibria-react.cjs",
-      "types": "./dist/index.d.ts"
-    },
-    "./dist/style.css": "./dist/style.css"
+    ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0",
-    "equilibria-engine-js": "^1.0.8"
+    "react-dom": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@testing-library/react": "^14.1.2",
@@ -36,13 +24,8 @@
     "react-dom": "^18.2.0",
     "typescript": "^5.2.2",
     "vite": "^4.4.9",
-    "vite-plugin-dts": "^3.5.3",
     "vitest": "^0.34.3"
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kinetonomics-Equilibria/equilibria-engine-js.git",
@@ -58,5 +41,10 @@
     "graphs",
     "d3",
     "interactive"
-  ]
+  ],
+  "private": true,
+  "dependencies": {
+    "equilibria-engine-js": "*",
+    "katex": "^0.16.8"
+  }
 }
