@@ -14,7 +14,9 @@ body {
      * cards read as raised. `light-dark()` is provided by
      * postcss-preset-mantine, so this follows the colour scheme. */
     background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
-    padding: var(--mantine-spacing-xl) var(--mantine-spacing-md);
+    /* No padding here: AppShell's sections are position: fixed and offset the
+     * main area themselves, so page-level padding would push the shell out of
+     * alignment. The content's breathing room is AppShell's `padding` prop. */
 }
 
 .page {

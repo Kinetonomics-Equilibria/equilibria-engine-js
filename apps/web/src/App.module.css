@@ -1,0 +1,11 @@
+/* Styles owned by the app shell itself. Anything about the *contents* of the
+ * navbar lives in components/DoubleNavbar.module.css instead. */
+
+.shellNavbar {
+    /* AppShell animates `transform, top, height` on the navbar — enough for a
+     * navbar that slides in and out, but the second column collapses by making
+     * the navbar narrower, and an un-animated width change snaps while
+     * AppShell.Main's padding slides. Naming `width` here puts the two back in
+     * step; the duration and easing are still AppShell's. */
+    transition-property: transform, top, height, width;
+}

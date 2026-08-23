@@ -1,4 +1,8 @@
+import { AppShell, Burger, Group, Text } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { EquilibriaCard } from 'equilibria-react';
+import { DoubleNavbar } from './components/DoubleNavbar';
+import classes from './App.module.css';
 
 // A linear supply-and-demand market, built from primitive Line and Point
 // objects. This started as a workaround for NOTES.md issue 2; that is fixed, so
@@ -57,21 +61,71 @@ const linearEquilibrium = {
     }
 };
 
-export function App() {
-    return (
-        <main className="page">
-            <h1>Equilibria</h1>
-            <p className="lede">
-                Interactive economics diagrams for students.
-            </p>
+// The navbar's two columns, in rem-free numbers because AppShell converts them.
+// `RAIL` is the icon rail on its own — it must match `flex: 0 0 60px` on
+// `.aside` in DoubleNavbar.module.css, since that rail is all that is left when
+// the second column is collapsed.
+const NAVBAR_WIDTH = { RAIL: 60, FULL: 300 };
 
-            <EquilibriaCard
-                config={linearEquilibrium}
-                title="Market equilibrium"
-                description="Linear supply and demand. The equilibrium price and quantity are solved from the curve parameters rather than drawn in by hand."
-                variant="elevated"
-                onError={(error) => console.error('Equilibria failed to mount:', error)}
-            />
-        </main>
+export function App() {
+    // Two independent collapses, which is why they are two hooks. Below the
+    // `sm` breakpoint the navbar is a full-width overlay toggled by the burger
+    // in the header, and starts closed. Above it the navbar is always present
+    // and the burger is hidden; what collapses there is the navbar's second
+    // column, which starts open.
+    const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
+    const [linksOpened, { toggle: toggleLinks }] = useDisclosure(true);
+
+    return (
+        <AppShell
+            padding="md"
+            header={{ height: 60 }}
+            navbar={{
+                // Narrowing the navbar is what makes the collapse visible: the
+                // column inside it is hidden by CSS, and this takes the space
+                // back so AppShell.Main widens into it. Below `breakpoint` the
+                // width is 100% regardless, so this value only bites on
+                // desktop — the same place the toggle is shown.
+                width: linksOpened ? NAVBAR_WIDTH.FULL : NAVBAR_WIDTH.RAIL,
+                breakpoint: 'sm',
+                collapsed: { mobile: !mobileOpened }
+            }}
+        >
+            <AppShell.Header>
+                <Group h="100%" px="md" gap="sm">
+                    <Burger
+                        opened={mobileOpened}
+                        onClick={toggleMobile}
+                        hiddenFrom="sm"
+                        size="sm"
+                        aria-label="Toggle navigation"
+                    />
+                    <Text fw={600}>Equilibria</Text>
+                </Group>
+            </AppShell.Header>
+
+            <AppShell.Navbar className={classes.shellNavbar}>
+                <DoubleNavbar collapsed={!linksOpened} onToggleCollapse={toggleLinks} />
+            </AppShell.Navbar>
+
+            <AppShell.Main>
+                {/* A plain div, not <main>: AppShell.Main already renders the
+                  * page's one <main> element. */}
+                <div className="page">
+                    <h1>Equilibria</h1>
+                    <p className="lede">
+                        Interactive economics diagrams for students.
+                    </p>
+
+                    <EquilibriaCard
+                        config={linearEquilibrium}
+                        title="Market equilibrium"
+                        description="Linear supply and demand. The equilibrium price and quantity are solved from the curve parameters rather than drawn in by hand."
+                        variant="elevated"
+                        onError={(error) => console.error('Equilibria failed to mount:', error)}
+                    />
+                </div>
+            </AppShell.Main>
+        </AppShell>
     );
 }

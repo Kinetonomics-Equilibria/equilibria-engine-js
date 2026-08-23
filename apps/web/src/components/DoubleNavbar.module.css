@@ -1,0 +1,138 @@
+/* Styles for the DoubleNavbar, ported from the Mantine UI recipe of the same
+ * name (ui.mantine.dev/component/double-navbar).
+ *
+ * Two changes from the original, both because the navbar now lives inside an
+ * `AppShell.Navbar` rather than standing on its own:
+ *
+ *  - the fixed `width: 300px` / `height: 750px` are gone. AppShell owns the
+ *    navbar's box — its width comes from the `navbar.width` config in App.tsx,
+ *    which is what lets the second column collapse.
+ *  - the outer `border-right` is gone too: `AppShell.Navbar` already draws one
+ *    (its `withBorder` default), and two would render as a double line.
+ */
+
+.navbar {
+    height: 100%;
+    background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+    display: flex;
+    flex-direction: column;
+}
+
+.wrapper {
+    display: flex;
+    flex: 1;
+    /* Without this a tall link list stretches the flex item instead of
+     * scrolling inside `.main`. */
+    min-height: 0;
+}
+
+.aside {
+    flex: 0 0 60px;
+    background-color: var(--mantine-color-body);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
+}
+
+.main {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+/* The collapse. Below `sm` the whole navbar is a full-width overlay driven by
+ * the header's burger, so hiding the second column there would leave a 60px
+ * rail stranded across the viewport — the collapse is a desktop affordance
+ * only, and the button that drives it is `visibleFrom="sm"` to match.
+ *
+ * `$mantine-breakpoint-sm` is supplied by postcss-simple-vars (see
+ * postcss.config.js) and is Mantine's default `sm`, the same value passed as
+ * `navbar.breakpoint` in App.tsx. Both must name the same breakpoint: the
+ * media query hides this column, and AppShell narrows the navbar around it. */
+@media (min-width: $mantine-breakpoint-sm) {
+    .wrapper[data-collapsed] .main {
+        display: none;
+    }
+}
+
+.mainLink {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--mantine-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
+    }
+
+    &[data-active] {
+        &,
+        &:hover {
+            background-color: var(--mantine-color-blue-light);
+            color: var(--mantine-color-blue-light-color);
+        }
+    }
+}
+
+/* Applied alongside `.mainLink`, so the toggle looks like the icons above it.
+ * `margin-top: auto` pushes it to the foot of the rail, where it sits in the
+ * same place whether the second column is open or shut. */
+.collapseLink {
+    margin-top: auto;
+    margin-bottom: var(--mantine-spacing-md);
+}
+
+.title {
+    margin-bottom: var(--mantine-spacing-xl);
+    background-color: var(--mantine-color-body);
+    padding: var(--mantine-spacing-md);
+    font-weight: 500;
+    padding-top: 18px;
+    height: 60px;
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
+}
+
+.logo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    color: var(--mantine-color-blue-filled);
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
+    margin-bottom: var(--mantine-spacing-xl);
+}
+
+.link {
+    display: block;
+    text-decoration: none;
+    border-top-right-radius: var(--mantine-radius-md);
+    border-bottom-right-radius: var(--mantine-radius-md);
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+    padding: 0 var(--mantine-spacing-md);
+    font-size: var(--mantine-font-size-sm);
+    margin-right: var(--mantine-spacing-md);
+    font-weight: 500;
+    height: 44px;
+    line-height: 44px;
+    white-space: nowrap;
+
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+        color: light-dark(var(--mantine-color-dark), var(--mantine-color-light));
+    }
+
+    &[data-active] {
+        &,
+        &:hover {
+            border-left-color: var(--mantine-color-blue-filled);
+            background-color: var(--mantine-color-blue-filled);
+            color: var(--mantine-color-white);
+        }
+    }
+}
