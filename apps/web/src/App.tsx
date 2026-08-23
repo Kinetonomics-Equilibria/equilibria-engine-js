@@ -1,4 +1,4 @@
-import { AppShell, Burger, Group, Text } from '@mantine/core';
+import { AppShell, Burger } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { EquilibriaCard } from 'equilibria-react';
 import { DoubleNavbar } from './components/DoubleNavbar';
@@ -69,17 +69,19 @@ const NAVBAR_WIDTH = { RAIL: 60, FULL: 300 };
 
 export function App() {
     // Two independent collapses, which is why they are two hooks. Below the
-    // `sm` breakpoint the navbar is a full-width overlay toggled by the burger
-    // in the header, and starts closed. Above it the navbar is always present
-    // and the burger is hidden; what collapses there is the navbar's second
-    // column, which starts open.
+    // `sm` breakpoint the navbar is a full-width overlay toggled by the burger,
+    // and starts closed. Above it the navbar is always present and the burger
+    // is hidden; what collapses there is the navbar's second column, which
+    // starts open.
     const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
     const [linksOpened, { toggle: toggleLinks }] = useDisclosure(true);
 
     return (
+        // No `header` config and no AppShell.Header: the navbar is the only
+        // fixed section, so nothing offsets it and it runs from the top of the
+        // viewport to the bottom.
         <AppShell
             padding="md"
-            header={{ height: 60 }}
             navbar={{
                 // Narrowing the navbar is what makes the collapse visible: the
                 // column inside it is hidden by CSS, and this takes the space
@@ -91,18 +93,21 @@ export function App() {
                 collapsed: { mobile: !mobileOpened }
             }}
         >
-            <AppShell.Header>
-                <Group h="100%" px="md" gap="sm">
-                    <Burger
-                        opened={mobileOpened}
-                        onClick={toggleMobile}
-                        hiddenFrom="sm"
-                        size="sm"
-                        aria-label="Toggle navigation"
-                    />
-                    <Text fw={600}>Equilibria</Text>
-                </Group>
-            </AppShell.Header>
+            {/* With no header there is no bar to hold the burger, so it
+              * floats in the top corner instead — the only way to reach the
+              * navbar on mobile, where it is closed by default. It sits above
+              * the navbar's z-index so it stays clickable once the navbar is
+              * open and covering the viewport, and in the *right* corner
+              * because both things it would otherwise overlap — the page
+              * heading, and the navbar's section title — are left-aligned. */}
+            <Burger
+                opened={mobileOpened}
+                onClick={toggleMobile}
+                hiddenFrom="sm"
+                size="sm"
+                aria-label="Toggle navigation"
+                className={classes.navbarToggle}
+            />
 
             <AppShell.Navbar className={classes.shellNavbar}>
                 <DoubleNavbar collapsed={!linksOpened} onToggleCollapse={toggleLinks} />

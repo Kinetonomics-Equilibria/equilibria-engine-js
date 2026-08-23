@@ -9,3 +9,17 @@
      * step; the duration and easing are still AppShell's. */
     transition-property: transform, top, height, width;
 }
+
+.navbarToggle {
+    position: fixed;
+    top: var(--mantine-spacing-md);
+    right: var(--mantine-spacing-md);
+    /* On mobile the open navbar covers the whole viewport, so the burger has
+     * to sit above it or there is no way to close it again. AppShell puts the
+     * navbar's own z-index in this variable on the shell root — which the
+     * burger inherits, being a child of it — so this stays one above the
+     * navbar whatever the shell's `zIndex` prop is set to. Matching it is not
+     * enough: equal z-index falls back to DOM order, and the navbar is
+     * rendered after the burger. */
+    z-index: calc(var(--app-shell-navbar-z-index, 101) + 1);
+}
