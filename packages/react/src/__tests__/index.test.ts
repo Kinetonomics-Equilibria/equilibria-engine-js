@@ -11,6 +11,15 @@ describe('public API', () => {
         expect(typeof publicApi.useEquilibria).toBe('function');
     });
 
+    it('exports the stage and the arithmetic it is built on', () => {
+        expect(typeof publicApi.Stage).toBe('function');
+        // Exported separately from the component because an app that computes
+        // its own arrangement policy needs the numbers without rendering one.
+        expect(typeof publicApi.arrange).toBe('function');
+        expect(typeof publicApi.toCustomLayout).toBe('function');
+        expect(typeof publicApi.pixelBox).toBe('function');
+    });
+
     it('re-exports the engine constants unchanged', () => {
         expect(publicApi.KG_EVENTS).toBe(engineEvents);
         expect(publicApi.KG_CONTAINER_CLASS).toBe(engineContainerClass);
@@ -19,8 +28,16 @@ describe('public API', () => {
     it('exports nothing beyond the documented surface', () => {
         expect(Object.keys(publicApi).sort()).toEqual([
             'EquilibriaChart',
+            'FILMSTRIP_BELOW_PX',
+            'FOCUS_PARAM',
             'KG_CONTAINER_CLASS',
             'KG_EVENTS',
+            'MODE_PARAM',
+            'MODE_VALUE',
+            'Stage',
+            'arrange',
+            'pixelBox',
+            'toCustomLayout',
             'useEquilibria'
         ]);
     });

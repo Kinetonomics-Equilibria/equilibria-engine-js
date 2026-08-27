@@ -67,6 +67,11 @@ export interface UseEquilibriaReturn {
 /**
  * Core hook that manages the KineticGraph lifecycle.
  *
+ * `config` may be null, which mounts nothing. That is the honest state for a
+ * caller whose config depends on a measurement it has not taken yet — a stage
+ * that has to know its own size before it can place panels — and it was already
+ * the behaviour, guarded but not declared.
+ *
  * - Creates and mounts the engine when the ref is attached
  * - Destroys the engine on unmount
  * - Re-mounts when the config identity changes
@@ -77,7 +82,7 @@ export interface UseEquilibriaReturn {
  * re-mounts on every parent render.
  */
 export function useEquilibria(
-    config: Record<string, unknown>,
+    config: Record<string, unknown> | null,
     options?: UseEquilibriaOptions,
     eventCallbacks?: UseEquilibriaEventCallbacks
 ): UseEquilibriaReturn {
