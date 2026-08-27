@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "generate:indices": "node scripts/generateIndices.mjs"
+    "generate:indices": "node scripts/generateIndices.mjs",
+    "generate:indices:check": "node scripts/generateIndices.mjs --check"
   },
   "exports": {
     ".": "./src/ts/kg.ts"
