@@ -19,8 +19,17 @@ interface ParamDefinition {
     max?: any;        // Highest acceptable value (right bound of slider)
     round?: any;      // Interval to snap to (e.g. 0.01 or 1)
     precision?: any;  // Number of decimal places to display value to
+    presentation?: boolean; // Says how the diagram is shown, not what it shows
 }
 ```
+
+`presentation` marks a param that carries *arrangement* rather than *state* — a
+panel's [density level](./03-layouts.md#density-how-much-detail-a-panel-draws),
+which panel a host has focused. The engine declares its own that way, and a host
+should do the same for any param it uses to lay a screen out. Such a param is
+excluded from [`prev.changed`](#remembering-the-previous-state-prev), and has to
+be: `prev.changed` means *the student moved something*, and a panel resizing
+itself is not that.
 
 ### Example Usage
 
@@ -83,6 +92,8 @@ The engine keeps a one-deep memory of itself. Any evaluated string can read `pre
 `prev` is seeded at construction, so it is never undefined. At `t = 0`, `prev` equals the current state and a ghost drawn from it sits exactly under the live object. This matters more than it sounds: an unresolved name does not throw, it falls through `evaluate()` and reaches the renderer as its own source string, which is the silent-wrong-answer failure the engine works hard to close.
 
 `prev.changed` is what keeps a ghost off screen until something actually moves. The comparison is exact, which is correct here because `round` snaps every param onto a grid — there is no float dust to tolerate, and no author needs to invent an epsilon.
+
+Params marked [`presentation`](#paramdefinition-interface) are not part of the comparison. A panel choosing its own density from its measured size, or a host promoting one, changes a param and changes nothing the student did — and counting it would raise every ghost in the diagram before they had touched it.
 
 ### Example: a ghost of the old curve
 

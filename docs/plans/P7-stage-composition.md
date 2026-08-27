@@ -3,7 +3,9 @@
 **Lane:** bindings (with the arrangement policy in the app)
 **Depends on:** P1 (land first), P3 (geometry), P4 (rail legibility)
 **Unblocks:** the study screen; P8/P9/P10/P11 all render inside it
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Done.** `packages/react` has `arrange`/`toCustomLayout` and `Stage`; `apps/web` has
+the study screen. See [Findings](#findings) — building it turned up three engine defects, one of
+them introduced by P4 the day before.
 
 ## Goal
 
@@ -148,14 +150,71 @@ land first — the card teaches exactly the wrong model.
 
 ## Done when
 
-- [ ] The arrangement function is pure, tested, and produces the numbers the layout discussion
-      assumed.
-- [ ] Focus + rail renders from one engine instance with positioned chrome.
-- [ ] Promotion swaps panels without destroying the engine, or the plan records that it cannot and
-      says what that costs.
-- [ ] Rail panels are keyboard-reachable and promote on Enter/Space.
-- [ ] The grid toggle works and is not the landing state.
-- [ ] Below 900px the layout reflows without a separate code path.
+- [x] The arrangement function is pure, tested, and produces the numbers the layout discussion
+      assumed — `arrangement.test.ts`, 900×714 giving a 672px focal square and 180px rail panels.
+- [x] Focus + rail renders from one engine instance with positioned chrome. Asserted in the
+      browser: one `.kg-container`, one `svg`, six axes.
+- [x] Promotion swaps panels without destroying the engine — asserted twice, on the mock's
+      construct/destroy counts and on a marked SVG surviving a real click.
+- [x] Rail panels are keyboard-reachable and promote on Enter/Space, because they are `<button>`s.
+- [x] The grid toggle works and is not the landing state.
+- [x] Below 900px the layout reflows without a separate code path — the same `slots` function,
+      rotated.
+
+## Findings
+
+Six, and the three that matter most are engine defects the plan could not have predicted, because
+they only appear when something asks the engine for a *number* rather than a picture.
+
+1. **An expression beginning with a number was truncated to that number.** `Model.evaluate` opened
+   with `if (!isNaN(parseFloat(name))) return parseFloat(name)` — a fast path for a value that is
+   already a number. parseFloat reads a *prefix*, so `0.5 * calcs.Qe * (params.a - calcs.Pe)`
+   evaluated to `0.5` and never reached mathjs at all. Found by putting consumer surplus on a chip
+   and reading `$0.5` where `$40.5` belonged. No warning, no NaN, no missing shape: a number, and
+   the wrong one. This is the plans README's finding 1 in its plainest form yet, and it had been
+   there since the fork.
+
+2. **`label: { text: 'S' }` drew nothing, because mathjs knows what a siemens is.** Label text is
+   evaluated like any other updatable, and mathjs resolves `S` to a Unit and `E`/`e` to Euler's
+   number. `katex.render` threw on the Unit, the throw was caught and logged, and the label was
+   simply absent while its curve drew perfectly. Two objects in the econ library ship an invisible
+   `E`, and the KaTeX error had been visible in this repo's own test output for as long as anyone
+   had looked at it. A bare name is now drawn as written; a value is asked for with the documented
+   backtick template.
+
+3. **P4's `auto` density made every ghost appear.** `prev.changed` is "has the student moved
+   anything", and it gates every ghost and shift arrow. A panel resolving its own level from its
+   measured size writes a param — so as of the day before, an `auto` panel announced a student
+   action before the student had touched anything. Params now declare whether they carry
+   *presentation* or *state*, and only state is compared against the snapshot. `Stage`'s own focus
+   and mode params are declared the same way, or promoting a panel would have done it too.
+
+4. **The arrangement had to be scale-free, and was not.** With padding and rail widths in pixels,
+   the fractions were a function of the stage's *size*, so every pixel of a window drag produced a
+   new `CustomLayout` and a rebuilt diagram — the exact remount the plan is built to avoid, arriving
+   through a door it was not watching. It now computes in a normalised canvas and depends only on
+   the stage's *shape*, so a proportional resize costs nothing and only a real change of proportions
+   (quantised to a hundredth) rebuilds.
+
+5. **Step 5's premise was wrong, and the missing piece was small.** "The values come from `calcs`,
+   which the app already has via events" — it did not. `kg:param_changed` said what changed and what
+   moved, and not what anything *is*, so a host wanting a number had to reach into the model or
+   write the formula out a second time. The event now carries `calcs`, and `getCalcs()` gives the
+   same at rest. With that, the open question about a "headline value" answers itself: it is a calc
+   the diagram declares, named by the app, and a delta is `calcs.Pe - prev.calcs.Pe` — computed by
+   the engine from the same snapshot the ghosts use.
+
+6. **Density did not have to be arranged at all.** P4 recommends the host choose a level, because
+   the engine can see that a panel is small but not *why*. In this arrangement it can: the focal
+   panel is large *because* it is focal, so size and role are the same fact. `Stage` declares every
+   panel `auto` and promotion moves one param instead of four, which also sidesteps the
+   non-atomic multi-param update. The recommendation is still right in general and wrong here,
+   which is worth saying rather than quietly departing from.
+
+**Not built, deliberately:** the View Transition API (step 4's optional half). Promotion is already
+a param change with no remount, and the plan itself warns that view transitions do not compose with
+an SVG animating its own geometry. There is nothing to morph that the engine is not already
+moving.
 
 ## Out of scope
 

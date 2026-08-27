@@ -45,6 +45,7 @@ For detailed guidance on authoring YAML schemas with the KGAuthor transpiler:
 ### React Companion Package
 
 React bindings live in this monorepo at [`packages/react`](../packages/react) as an internal
-package: a `useEquilibria()` hook, a bare `<EquilibriaChart />` mount primitive, and event
-forwarding. It is deliberately not a component library — panel chrome and theming belong to
-the host application, which is the same boundary the engine itself draws.
+package: a `useEquilibria()` hook, a bare `<EquilibriaChart />` mount primitive, a `<Stage />`
+that places several panels in one engine, and event forwarding. It is deliberately not a
+component library — panel chrome and theming belong to the host application, which is the same
+boundary the engine itself draws.

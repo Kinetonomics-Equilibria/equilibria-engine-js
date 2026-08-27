@@ -138,6 +138,29 @@ When you call `update()` with `params`:
 > batched update path exists, order your params so every interim state is legal,
 > or set them in separate calls you can check.
 
+## Reading the current values
+
+```js
+const { Pe, CS } = kg.getCalcs();
+```
+
+`kg:param_changed` carries `calcs` alongside `params`, so a host putting a
+number beside a diagram never has to re-derive it — one definition serves the
+diagram and the readout, which is the only way the two cannot disagree.
+`getCalcs()` is the same thing at rest, for the first render, before anything
+has changed.
+
+A **delta** is an ordinary calc over [`prev`](./schema/02-parameters-and-interactions.md#remembering-the-previous-state-prev):
+
+```yaml
+calcs:
+  Pe: (params.a + params.c)/2
+  dPe: calcs.Pe - prev.calcs.Pe
+```
+
+Both arrive in the event. The delta is measured against the same snapshot the
+ghosts are drawn from, so a chip and a ghost always describe one movement.
+
 ## Setting a panel's level of detail
 
 ```js

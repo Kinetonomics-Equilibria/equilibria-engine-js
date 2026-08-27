@@ -7,9 +7,11 @@ code paths involved are untouched by those changes. Everything under **Fixed**
 is closed and named by the test that holds it in place; three items remain
 **Open** at the end.
 
-Issues 9 and 10 were found later, while implementing the plans in `docs/plans`,
-and are the same two shapes as the rest: a value written into the DOM in a form
-nothing could read, and an element created for text that nothing ever wrote.
+Issues 9 to 13 were found later, while implementing the plans in `docs/plans`,
+and mostly by the same move: building something that asks the engine for a
+*number* rather than for a picture. Issue 13 is the only regression in the list
+— introduced by the density work and caught the next day by the screen that
+consumed it.
 
 ## Why these went unnoticed
 
@@ -261,6 +263,57 @@ one. `Curve.draw()` called the first and no more.
 `indicator` panel — one that has dropped every visible label — is still describable; it was not,
 and neither was a full-detail one. Covered by the screen-reader cases in
 `src/__tests__/density.test.ts`.
+
+## 11. An expression beginning with a number was truncated to it — FIXED
+
+**Symptom:** `calcs.CS: '0.5 * calcs.Qe * (params.a - calcs.Pe)'` resolved to **0.5**. Any
+expression starting with a numeric literal returned that literal: `'2 * params.a'` was 2,
+`'30 - params.a'` was 30. No warning, no `NaN`, nothing missing from the diagram — just a
+number, and the wrong one.
+
+**Cause:** `Model.evaluate()` opened with
+
+```ts
+if (!isNaN(parseFloat(name))) { return parseFloat(name); }
+```
+
+intended as a fast path for a value that is already a number. `parseFloat` reads a *prefix*, so
+every such expression was replaced by its own first token and never reached mathjs at all.
+
+**Fix:** the fast path now requires the whole string to be a number. It was only ever an
+optimisation — mathjs parses a numeric literal correctly by itself. Covered by "an expression is
+not its first number" in `src/__tests__/authoring_contracts.test.ts`.
+
+## 12. A one-letter label drew nothing — FIXED
+
+**Symptom:** `label: { text: 'S' }` on a supply curve produced an empty label div. The curve, the
+axes and every other label were fine. `EconExchangeEquilibrium` and `EconOptimalBundle` both label
+a point `E`, and both had been invisible since the fork; the console said
+`Error rendering KaTeX: 2.718281828459045`, which was visible in this repo's own test output.
+
+**Cause:** a label's `text` is an updatable and is evaluated like any other, and mathjs knows more
+names than an author expects — `S` is siemens, `E` and `e` are Euler's number, `A` is amperes.
+`'S'` resolved to a `Unit` object, `katex.render` threw on it, and the throw was caught and logged.
+
+**Fix:** a bare name as label text is drawn as written. A *value* is asked for the documented way,
+with a backtick template (`` `(calcs.Pe)` ``), which a dotted path such as `calcs.Pe` still reaches
+too — neither is a bare name. Covered by "a label's text is text" in
+`src/__tests__/authoring_contracts.test.ts`.
+
+## 13. Resolving a panel's own density raised every ghost — FIXED
+
+**Symptom:** a panel declared `density: auto` drew its `prev` ghosts and shift arrows immediately,
+before the student had touched anything.
+
+**Cause:** introduced with the density work itself. `prev.changed` is `paramsDifferFromSnapshot()`,
+and an `auto` panel writes its resolved level into a param after the snapshot has been seeded — so
+the engine's own layout bookkeeping read as a student action. A host promoting a panel would have
+done the same.
+
+**Fix:** a param can declare itself `presentation: true` — it says how the diagram is *shown*, not
+what it shows — and presentation params are excluded from the comparison. The engine marks its
+density params, and `Stage` marks its focus and mode params. Covered by "a density is presentation,
+not state" in `src/__tests__/density.test.ts`.
 
 # Open
 
