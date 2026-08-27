@@ -67,7 +67,8 @@ export class ParametricFunction extends MathFunction implements IParametricFunct
         fn.scope = {
             params: fn.model.currentParamValues,
             calcs: fn.model.currentCalcValues,
-            colors: fn.model.currentColors
+            colors: fn.model.currentColors,
+            prev: fn.model.prevScope()
         };
         const originalXFunctionString = fn.xFunctionString;
         if (originalXFunctionString != fn.updateFunctionString(fn.xFunctionStringDef, fn.scope)) {

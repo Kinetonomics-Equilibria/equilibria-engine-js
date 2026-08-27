@@ -32,7 +32,7 @@ export class MathFunction extends UpdateListener implements IMathFunction {
         super(def);
     }
 
-    updateFunctionString(str: string, scope: { params: {}, calcs: {}, colors: {} }) {
+    updateFunctionString(str: string, scope: { params: {}, calcs: {}, colors: {}, prev?: {} }) {
         function getCalc(o, s) {
             s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
             s = s.replace(/^\./, '');           // strip a leading dot
@@ -53,7 +53,12 @@ export class MathFunction extends UpdateListener implements IMathFunction {
             return null;
         }
 
-        const re = /((calcs|params).[.\w]*)+/g;
+        // `prev` is listed first so `prev.params.a` matches whole rather than the
+        // scan finding the inner `params.a` and leaving a dangling `prev.` behind.
+        // A curve's fn string is substituted textually, not evaluated through
+        // Model.evaluate, so without this a ghost bound to prev compiles with an
+        // undefined symbol and throws from inside generateData.
+        const re = /((prev|calcs|params).[.\w]*)+/g;
         const references = str.match(re);
         if (references) {
             references.forEach(function (name) {

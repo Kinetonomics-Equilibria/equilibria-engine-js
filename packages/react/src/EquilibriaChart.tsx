@@ -2,15 +2,16 @@ import { useEffect } from 'react';
 import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { EquilibriaChartProps } from './types';
-import styles from './styles.module.css';
 
 /**
- * Minimal chart component — mounts the Equilibria engine into a div container
- * with no additional chrome. Use this when you want full control over the
- * surrounding UI and only need the graph itself.
+ * Mounts the engine into a div and does nothing else.
  *
- * For a styled wrapper with title, description, loading state, and error
- * handling, use `<EquilibriaCard />` instead.
+ * It has no styling opinion on purpose. Panel chrome — a heading, a description,
+ * a surface, a loading treatment, an error panel — belongs to whatever renders
+ * this, because on a study screen that chrome is the stage's job and a component
+ * that brought its own would be a second container competing with it. The
+ * package used to ship an `EquilibriaCard` that did all of that, along with its
+ * own `--eq-*` theme; both are gone, so there is one theming system on screen.
  */
 export function EquilibriaChart({
     config,
@@ -46,13 +47,10 @@ export function EquilibriaChart({
     // KG_CONTAINER_CLASS is rendered here rather than left to the engine's
     // classList.add: React owns this element's class attribute and rewrites it
     // on every render, which dropped the class the engine had added.
-    const classNames = [
-        KG_CONTAINER_CLASS,
-        styles.chartContainer,
-        !isReady || error ? styles.chartContainerLoading : styles.chartContainerReady,
-        className
-    ].filter(Boolean).join(' ');
+    const classNames = [KG_CONTAINER_CLASS, className].filter(Boolean).join(' ');
 
+    // Always rendered, including while erroring, so the ref stays attached and
+    // `retry()` has somewhere to mount into.
     return (
         <div
             ref={containerRef}

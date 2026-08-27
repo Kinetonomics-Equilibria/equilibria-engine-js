@@ -11,21 +11,21 @@ deliberately conditional on decisions that have not been made.
 ## Settle these first
 
 Three forks decide which lane several items belong to. Answer them differently and parts of these
-plans reshuffle.
+plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measurement.
 
 | Fork | Question | Current lean |
 | --- | --- | --- |
-| 1 | One engine per screen, or one per panel? | **A** — one engine, host-computed geometry (P3) |
+| 1 | One engine per screen, or one per panel? | ✅ **Settled 2026-08-27 — A**, one engine, host-computed geometry (P3). |
 | 2 | Does the author declare geometry, or roles? | **Roles**; existing layouts become presets |
-| 3 | Who grades a quiz? | **The app**; the schema declares only the target |
+| 3 | Who grades a quiz? | ✅ **Settled by P0 — the app grades.** A mistyped predicate reads as *correct*, silently. |
 
 ## The plans
 
 | ID | Title | Lane | Depends on |
 | --- | --- | --- | --- |
-| [P0](P0-authoring-spike.md) | Authoring spike: prove the free pile | cross | — |
-| [P1](P1-retire-react-component-surface.md) | Retire the React component surface | bindings | — |
-| [P2](P2-layout-defect-sweep.md) | Layout defect sweep | engine | — |
+| [P0](P0-authoring-spike.md) | Authoring spike: prove the free pile ✅ **done** — [findings](P0-findings.md) | cross | — |
+| [P1](P1-retire-react-component-surface.md) | Retire the React component surface ⚠️ **code complete**, npm unpublish outstanding | bindings | — |
+| [P2](P2-layout-defect-sweep.md) | Layout defect sweep ✅ **done** | engine | — |
 | [P3](P3-pass-through-layout.md) | Pass-through layout, and geometry that can move | engine | P2 |
 | [P4](P4-density-render-mode.md) | Density render mode | engine | P3 (if one canvas) |
 | [P5](P5-interaction-snapshot-and-prev-scope.md) | Interaction snapshot and the `prev` scope | engine | — |
@@ -56,8 +56,9 @@ which is exactly why they are the easiest to defer indefinitely and the most cos
 
 ## Reading order
 
-- Starting from nothing: **P0**, then **P2**, then **P1**. All three are independent of every fork
-  and none of them is blocked on a decision.
+- Starting from nothing: ~~**P0**~~ (done — read [P0-findings](P0-findings.md) instead),
+  ~~**P2**~~ (done), ~~**P1**~~ (code done; the npm unpublish and repo archive are the user's to
+  run). All three were independent of every fork and none was blocked on a decision.
 - Deciding the architecture: **P3** first, since its finding that `Scale`'s `rangeMin`/`rangeMax` are
   constants rather than updatables (`packages/engine/src/ts/view/scale.ts:34-36`) is what makes
   Fork 1 = A cheap.
@@ -65,17 +66,26 @@ which is exactly why they are the easiest to defer indefinitely and the most cos
 
 ## Three findings that cut across the set
 
-1. **A mistyped expression fails truthily.** `model.evaluate` returns the expression *as a string*
-   when mathjs cannot parse it (`packages/engine/src/ts/model/model.ts:180-188`) — deliberately,
-   since colors and label text legitimately fail to parse — and a non-empty string is truthy. So a
-   quiz predicate with a typo may render as *always correct*. P0 measures the real behaviour; P11
-   is blocked until it does.
+1. **A mistyped expression fails truthily. Confirmed by measurement.** `model.evaluate` returns the
+   expression *as a string* when mathjs cannot parse it
+   (`packages/engine/src/ts/model/model.ts:180-188`) — deliberately, since colors and label text
+   legitimately fail to parse — and a non-empty string is truthy. P0 ran it: a quiz predicate with a
+   typo renders as *always correct*, emits **no warning**, and reaches the screen. This settles
+   Fork 3. See [P0-findings](P0-findings.md) §4; pinned in
+   `packages/engine/src/__tests__/authoring_contracts.test.ts`.
 
 2. **Author-supplied names already survive.** `GraphObject` fills a random name only as a *default*
    via `setDefaults` (`KGAuthor/graphObjects/graphObject.ts:38-40`, `util.ts:1-9`), so stable object
    ids are mostly already available. P6 is smaller than it first appeared.
 
-3. **Panel geometry is one classification away from being animatable.** Positions already compose as
+3. **Multi-param updates are not atomic, and fail silently.** Found by P0 (§7), owned by no plan.
+   `kg.update({ params: [...] })` applies params one at a time and validates each alone, so a legal
+   destination reached through an illegal interim is rejected halfway and rolled back with no
+   diagnostic — leaving a state that is neither the start nor the target. Every scenario, lesson step
+   and question setup that moves more than one param is order-dependent today. A batched update that
+   validates once at the end is a precondition for P10 and P11.
+
+4. **Panel geometry is one classification away from being animatable.** Positions already compose as
    expressions through `addDefs`; they are frozen only because `Scale` lists `rangeMin`/`rangeMax`
    as constants. Move them to updatables and promotion becomes a param change with no remount.
 

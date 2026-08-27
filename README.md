@@ -14,7 +14,7 @@ aimed at economics diagrams.
 |---|---|---|
 | [`web`](./apps/web) | `apps/web` | The student-facing webapp (Vite + React). |
 | [`equilibria-engine-js`](./packages/engine) | `packages/engine` | The headless D3/mathjs rendering engine. |
-| [`equilibria-react`](./packages/react) | `packages/react` | React components and hooks wrapping the engine. |
+| [`equilibria-react`](./packages/react) | `packages/react` | Internal React bindings: the `useEquilibria()` hook and a bare mount primitive. |
 
 Both packages are internal workspace libraries — they are not published to npm.
 They export TypeScript source directly, so the app compiles them as part of its
@@ -41,8 +41,9 @@ rebuild, and no ordering constraint between the packages.
 
 The webapp's UI layer is [Mantine 9](https://mantine.dev/) (`@mantine/core` +
 `@mantine/hooks`), installed in `apps/web` only — the engine and its React
-bindings stay dependency-free and headless, so nothing Mantine-related leaks
-into a consumer of `equilibria-react`.
+bindings stay dependency-free and headless. The bindings own no chrome and no
+theme of their own, so the app is the only thing on screen with an opinion
+about how a panel looks.
 
 The setup follows Mantine's Vite guide:
 
@@ -58,9 +59,9 @@ what lets app styles win. And styling goes through Mantine props, `.module.css`
 files, and the `--mantine-*` CSS variables — not hard-coded hex or ad-hoc inline
 layout — so a change to `theme.ts` reaches the whole app.
 
-Mantine 9 requires React 19; the whole monorepo is on it, and
-`equilibria-react` still declares `^18 || ^19` peers so it remains usable from a
-React 18 host.
+Mantine 9 requires React 19 and the whole monorepo is on it. `packages/react`
+still declares `^18 || ^19` peers, which costs nothing and keeps the bindings
+usable from a React 18 host should one ever exist.
 
 ### Working on Mantine code with an AI agent
 

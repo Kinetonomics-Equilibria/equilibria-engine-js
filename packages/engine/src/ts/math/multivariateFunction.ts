@@ -95,7 +95,8 @@ export class MultivariateFunction extends MathFunction implements IMultivariateF
         fn.scope = {
             params: fn.model.currentParamValues,
             calcs: fn.model.currentCalcValues,
-            colors: fn.model.currentColors
+            colors: fn.model.currentColors,
+            prev: fn.model.prevScope()
         };
         const originalString = fn.fnString,
             originalDomainCondition = fn.domainConditionString;

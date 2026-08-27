@@ -1,5 +1,33 @@
 import { AuthoringObject } from "../parsers/authoringObject";
 
+/**
+ * Report a layout def key the engine accepts but cannot draw.
+ *
+ * `Controls`, `GameMatrix` and `Sidebar` were never implemented — the classes the
+ * layouts referred to are not exported from KGAuthor, and the `DivContainer` that
+ * would have held them was a stub that discarded its def. Two of the layouts also
+ * changed the geometry of the graphs that *did* render in order to reserve canvas
+ * for a widget that could not exist.
+ *
+ * Rather than implement three UI widgets inside a headless renderer — against the
+ * engine/host boundary stated in `docs/index.md` — the keys now warn by name. This
+ * matches the house style for a wrong answer the engine cannot give: say so once,
+ * name the thing, and carry on (`parsers/parsingFunctions.ts`, `model.ts`).
+ *
+ * @param consequence appended when dropping the key also moved the graphs.
+ */
+export function warnUnsupportedLayoutKeys(className: string, def: any, keys: string[], consequence?: string) {
+    if (!def) return;
+    keys.forEach(function (key) {
+        if (Object.prototype.hasOwnProperty.call(def, key)) {
+            console.warn(
+                `${className}: "${key}" is not rendered by the engine. Controls, game matrices and ` +
+                `sidebars are the host application's responsibility.` + (consequence ? ` ${consequence}` : ``)
+            );
+        }
+    });
+}
+
 
 
 export class Layout extends AuthoringObject {

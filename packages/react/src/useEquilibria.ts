@@ -45,6 +45,23 @@ export interface UseEquilibriaReturn {
      * updateParams([{ name: 'price', value: 15 }]);
      */
     updateParams: (params: { name: string; value: number }[]) => void;
+
+    /**
+     * Mark the current state as the one diagram expressions read as `prev` —
+     * scenario applied, answer revealed, lesson step started. In-diagram drags
+     * snapshot themselves; this is for boundaries only the app knows about.
+     */
+    snapshot: () => void;
+
+    /**
+     * Bracket a host-driven gesture so it takes one snapshot rather than one per
+     * tick. Map these onto the control's own gesture events — a Mantine `Slider`
+     * gives `onChangeStart` / `onChangeEnd`. Without them a slider scrub reaches
+     * the engine as an undifferentiated stream of updates and produces no usable
+     * ghost.
+     */
+    beginGesture: () => void;
+    endGesture: () => void;
 }
 
 /**
@@ -163,5 +180,17 @@ export function useEquilibria(
         }
     }, []);
 
-    return { containerRef, instance, error, isReady, retry, updateParams };
+    const snapshot = useCallback(() => {
+        instanceRef.current?.snapshot();
+    }, []);
+
+    const beginGesture = useCallback(() => {
+        instanceRef.current?.beginGesture();
+    }, []);
+
+    const endGesture = useCallback(() => {
+        instanceRef.current?.endGesture();
+    }, []);
+
+    return { containerRef, instance, error, isReady, retry, updateParams, snapshot, beginGesture, endGesture };
 }

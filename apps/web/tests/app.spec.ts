@@ -15,15 +15,15 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/');
 });
 
-test('renders the page and the card around the diagram', async ({ page }) => {
+test('renders the page and the app-owned panel around the diagram', async ({ page }) => {
     await expect(page).toHaveTitle('Equilibria');
     await expect(page.getByRole('heading', { name: 'Equilibria', level: 1 })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Market equilibrium' })).toBeVisible();
 });
 
 test('mounts the engine and draws the market', async ({ page, pageErrors }) => {
-    // The card renders its container before the engine mounts into it, so wait
-    // for the drawing itself rather than for the element that will hold it.
+    // The container is rendered before the engine mounts into it, so wait for
+    // the drawing itself rather than for the element that will hold it.
     await expect(page.locator('.kg-container svg')).toBeVisible();
 
     // Demand and supply, each drawn once.

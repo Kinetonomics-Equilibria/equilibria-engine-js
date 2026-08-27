@@ -1,7 +1,7 @@
 {
   "name": "equilibria-react",
   "version": "0.2.0",
-  "description": "React components for the Equilibria Engine — styled, drop-in chart cards with lifecycle management",
+  "description": "Internal React bindings for the Equilibria engine: the useEquilibria hook and a bare mount primitive. Not published.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
@@ -44,7 +44,6 @@
   ],
   "private": true,
   "dependencies": {
-    "equilibria-engine-js": "*",
-    "katex": "^0.16.8"
+    "equilibria-engine-js": "*"
   }
 }

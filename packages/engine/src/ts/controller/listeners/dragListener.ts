@@ -8,6 +8,12 @@ import { ListenerDefinition, IListener, Listener } from "./listener";
         directions?: string;
         vertical?: string;
         horizontal?: string;
+        /**
+         * Whether dragging this opens a gesture, and so takes a `prev` snapshot.
+         * Default true. Set false for a control whose movement is not something a
+         * ghost should remember.
+         */
+        snapshot?: boolean;
     }
 
     export interface IDragListener extends IListener {
@@ -27,6 +33,7 @@ import { ListenerDefinition, IListener, Listener } from "./listener";
 
         public directions;
         public draggable;
+        public snapshot;
 
         constructor(def: DragListenerDefinition) {
             if(def.hasOwnProperty('vertical')) {
@@ -40,9 +47,11 @@ import { ListenerDefinition, IListener, Listener } from "./listener";
                 def.expression = `params.${def.horizontal} + drag.dx`
             }
             setDefaults(def, {
-                directions: "xy"
+                directions: "xy",
+                snapshot: true
             });
             setProperties(def, 'updatables',['draggable', 'directions']);
+            setProperties(def, 'constants', ['snapshot']);
             super(def);
         }
 

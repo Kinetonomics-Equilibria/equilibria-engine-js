@@ -1,14 +1,6 @@
 
 import { Graph } from "../positionedObjects/graph";
-import { Layout } from "./layout";
-
-class DivContainer {
-    name: string; def: any; subObjects: any[]; tabbable: boolean; srTitle: string; srDesc: string;
-    constructor(def) { }
-    parseSelf(parsedData) { return parsedData; }
-    parse(parsedData) { return parsedData; }
-    addSecondGraph(graph) { }
-}
+import { Layout, warnUnsupportedLayoutKeys } from "./layout";
 
 export class TwoHorizontalGraphs extends Layout {
 
@@ -19,62 +11,20 @@ export class TwoHorizontalGraphs extends Layout {
         let leftGraphDef = def['leftGraph'],
             rightGraphDef = def['rightGraph'];
 
+        // `leftControls` / `rightControls` used to reserve a band below the graphs and
+        // shrink them to 0.5 height on a 1.8 canvas to make room for it. Nothing was
+        // ever drawn there, so the band was 40% of a taller canvas left blank. The keys
+        // now warn and the graphs use the full canvas.
+        warnUnsupportedLayoutKeys('TwoHorizontalGraphs', def, ['leftControls', 'rightControls'],
+            'The graphs now use the full canvas.');
+
         const leftX = 0.12,
             rightX = 0.58,
             topY = 0.1,
-            bottomY = 0.9,
             width = 0.35,
-            controlHeight = 0.25;
+            graphHeight = 0.9;
 
-        let includeControls = false;
-
-
-        if (def.hasOwnProperty('leftControls')) {
-
-            l.subObjects.push(new DivContainer({
-                position: {
-                    x: leftX,
-                    y: bottomY,
-                    width: width,
-                    height: controlHeight
-                },
-                children: [
-                    {
-                        type: "Controls",
-                        def: def['leftControls']
-                    }
-                ]
-            }));
-
-            includeControls = true;
-
-        }
-
-        if (def.hasOwnProperty('rightControls')) {
-
-            l.subObjects.push(new DivContainer({
-                position: {
-                    x: rightX,
-                    y: bottomY,
-                    width: width,
-                    height: controlHeight
-                },
-                children: [
-                    {
-                        type: "Controls",
-                        def: def['rightControls']
-                    }
-                ]
-            }));
-
-            includeControls = true;
-
-        }
-
-        let graphHeight = includeControls ? 0.5 : 0.9;
-
-        this.aspectRatio = includeControls ? 1.8 : 2.5;
-
+        this.aspectRatio = 2.5;
 
         leftGraphDef.position = {
             x: leftX,
@@ -94,8 +44,6 @@ export class TwoHorizontalGraphs extends Layout {
 
         l.subObjects.push(new Graph(rightGraphDef));
 
-
-
     }
 
 }
@@ -108,29 +56,21 @@ export class GameMatrixPlusGraph extends Layout {
         const l = this;
         let graphDef = def['graph'];
 
-        let gameDivDef = {
-            position: {
-                x: 0.05,
-                y: 0.1,
-                width: 0.35,
-                height: 0.7
-            },
-            children: [
-                {
-                    type: "GameMatrix",
-                    def: def.game
-                }
-            ]
-        };
+        // The left 40% of this canvas was reserved for a game matrix the engine cannot
+        // draw, and was therefore permanently blank. The class is kept rather than
+        // deleted so an existing config gets a full-width graph and an explicit message,
+        // instead of the "Unknown object type" warning and an empty container that
+        // deleting it would produce.
+        warnUnsupportedLayoutKeys('GameMatrixPlusGraph', def, ['game'],
+            'The graph now uses the full canvas; render the matrix in the host.');
 
         graphDef.position = {
-            x: 0.6,
+            x: 0.15,
             y: 0.1,
-            width: 0.35,
+            width: 0.74,
             height: 0.7
         };
 
-        l.subObjects.push(new DivContainer(gameDivDef));
         l.subObjects.push(new Graph(graphDef));
 
     }

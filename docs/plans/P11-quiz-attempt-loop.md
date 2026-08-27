@@ -33,11 +33,14 @@ all its traps.
 - **Verdicts are expressible as calcs today.** Expressions run through mathjs
   (`packages/engine/src/ts/model/model.ts:143-190`), so `correct: 'abs(params.a - 24) <= 0.5'` is an
   ordinary calc and any object can appear on it via `show`.
-- **But a mistyped predicate fails silently and truthily.** `model.evaluate` returns the expression
-  *as a string* when mathjs cannot parse it (`:180-188`) — deliberately, since colors and label text
-  legitimately fail — and a non-empty string is truthy. So `abs(params.aa - 24) <= 0.5` may render as
-  *always correct*. **P0 step 4 measures exactly what happens; this plan must not be built until it
-  has.** This single behaviour is the strongest argument for Fork 3's "app grades" lean.
+- **A mistyped predicate fails silently and truthily. Measured, not supposed.** P0 ran it: a calc
+  `abs(params.aa - 24) <= 0.5` (with `aa` undefined) settles to the **string** `"abs(params.aa - 24)
+  <= 0.5"`, which is truthy; **no warning is emitted**; and a `Label` gated on `show: 'calcs.correct'`
+  **renders for a wrong answer**. A well-formed predicate does resolve to a genuine JavaScript
+  `boolean`, so the happy path is clean — the trap is exclusively in the typo. `reportUnresolvedCalcs`
+  does not catch it, because it looks for an interpolated `undefined` token and a whole unparseable
+  expression contains none. Evidence and the pinned test: `docs/plans/P0-findings.md` §4,
+  `packages/engine/src/__tests__/authoring_contracts.test.ts`. **This settles Fork 3: the app grades.**
 - **Drag can be locked to one axis**: `horizontal:` / `vertical:` on a drag listener generates
   `params.X + drag.dx` (`packages/engine/src/ts/controller/listeners/dragListener.ts:33-42`) — which
   is what keeps "shift the curve" from becoming "rotate the curve", and therefore what makes a
@@ -52,12 +55,22 @@ all its traps.
   or app-held state until P5 lands.
 - Events (`kg:param_changed`, `kg:curve_dragged`) reach the app through the hook, which is the
   grading input under Fork 3.
+- **Loading a question's initial state is not atomic, and can land wrong.** P0 §7: `kg.update({params})`
+  applies params one at a time and validates each alone, so a legal starting state reached through an
+  illegal interim is rejected halfway and rolled back **silently** — leaving a state that is neither
+  the old one nor the requested one. Any question whose setup moves more than one param is
+  order-dependent today. Either order the params by hand and pin the order in a test, or wait for the
+  batched update path P0 recommends.
 
 ## Approach
 
-1. **Wait for P0's finding on the silent-string predicate, and let it decide the architecture.** If a
-   typo reads as `true`, schema-side grading is a trap for authors and grading belongs entirely in
-   the app. That is already the lean; P0 turns it into a decision with evidence.
+1. **~~Wait for P0's finding~~ — settled. Grading lives in the app.** P0 confirmed a typo reads as
+   `true`, silently, all the way to the screen. Schema-side grading is therefore a trap for authors
+   and this plan does not use it. Two consequences that were not obvious before the measurement:
+   the same trap catches **any** `show:` expression, not just a verdict, so it is worth its own small
+   engine change (let a calc be declared boolean and warn when it settles to a string) independently
+   of who grades; and because a *well-formed* predicate does return a real boolean, the fix is a type
+   assertion at the boundary, not a rewrite of `evaluate`.
 
 2. **Grade in the app; let the schema declare only the target.** A question names a param, a
    direction, and optionally a target and tolerance. The app listens for the commit, compares, and
@@ -142,15 +155,20 @@ interface Attempt {
   verdict only.
 - `apps/web/src/__tests__/quiz-a11y.test.tsx` — the slider answer path adjusts and commits by
   keyboard; the verdict is announced once; focus is not stolen mid-attempt.
-- `packages/engine/src/__tests__/` — if any predicate *is* left in the schema after step 1, a test
-  pinning what a mistyped predicate does, referencing P0's finding.
+- `packages/engine/src/__tests__/authoring_contracts.test.ts` — **already written by P0.** It pins the
+  mistyped-predicate behaviour (labelled as documenting a defect), the drag-freeze contract this plan's
+  commit step relies on, and the non-atomic multi-param update. Extend rather than duplicate.
 
 ## Risks and unknowns
 
-- **The silent-string predicate.** Until P0 reports, the safety of any schema-side verdict is
-  unknown. Build nothing on it before then.
-- Freeze-on-commit depends on `draggable` being re-read after mount. Declared updatable, unverified
-  in practice — P0 step 6.
+- ~~**The silent-string predicate.**~~ Resolved by measurement — see Current state. The residual risk
+  is that an author writes a `show:` expression anywhere else in the product and hits the same trap;
+  that is not this plan's to fix, but it is this plan's to have found.
+- ~~Freeze-on-commit depends on `draggable` being re-read after mount.~~ Verified — P0 §6 measured
+  `draggable: 'not(params.submitted)'` going true → false → true across updates with no remount. This
+  was flagged as the claim most likely to be wrong in practice; it is correct.
+- **Question setup is order-dependent** while multi-param updates stay non-atomic (P0 §7). A question
+  that positions two params can silently start in the wrong state.
 - Direction is ambiguous for a curve that moves both ways at once, and "up" versus "right" for a
   demand shift are the same event described two ways. The question vocabulary must match the
   convention taught, and that is a subject-matter decision, not a technical one.
@@ -163,7 +181,8 @@ interface Attempt {
 
 ## Done when
 
-- [ ] P0's predicate finding is recorded and the grading architecture reflects it.
+- [x] P0's predicate finding is recorded (`docs/plans/P0-findings.md` §4) and the grading
+      architecture reflects it: the app grades, the schema declares only the target.
 - [ ] Direction questions work end to end: prompt, drag, commit, verdict, reveal.
 - [ ] No target is visible during the attempt.
 - [ ] Magnitude questions validate tolerance against `round` and fail loudly when unhittable.

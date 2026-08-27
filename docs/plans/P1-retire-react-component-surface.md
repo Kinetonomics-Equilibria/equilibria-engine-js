@@ -3,7 +3,9 @@
 **Lane:** bindings (plus one app edit, plus registry actions the user runs)
 **Depends on:** nothing
 **Unblocks:** P7 — and should land *before* it, so the card's assumptions are not ported forward
-**Status:** Draft plan — not implemented
+**Status:** ⚠️ **Code complete** (2026-08-27); **step 8 is outstanding and only the user can do it.**
+Everything in steps 1–7 has landed. The npm unpublish and the GitHub archive have *not* been done —
+they are irreversible and are the user's to run.
 
 ## Goal
 
@@ -91,11 +93,19 @@ Ordered so the app builds at every step.
    `chartContainerLoading` / `chartContainerReady` were doing and make sure removing them does not
    leave the container invisible.
 
-5. **Untangle KaTeX.** Remove the `katex/dist/katex.min.css` side-effect import from `index.ts` and
-   the `katex` dependency from `packages/react/package.json`. The engine owns KaTeX; confirm the
-   engine actually ships or requires that stylesheet itself — if it does not, this is a real bug
-   that the React package was accidentally papering over, and the fix belongs in the engine, not in
-   restoring the import here.
+5. **Untangle KaTeX.** ✅ Done — **and the suspected bug was real.** The engine imports `katex` the
+   *library* (`view/viewObjects/label.ts:3`) but never imported `katex/dist/katex.min.css`. The
+   React package's side-effect import was the only thing supplying it, which means a non-React
+   consumer of the engine has been getting unstyled maths all along. Fixed where this plan says it
+   belongs — in the engine, beside the theme stylesheet it already imports
+   (`packages/engine/src/ts/kg.ts`) — rather than by restoring the import here. Verified by
+   Playwright: the four KaTeX annotations still render and are still styled.
+
+   What is *not* fixed, and is genuinely out of scope: the engine's `exports` points at TypeScript
+   source, not a built bundle, so `equilibria-engine-js/dist/style.css` — which `README.md` and
+   `docs/getting-started.md` both told consumers to import — is not something this repository
+   produces. Whether the published `1.0.8` artifact carries either stylesheet is unverified. Both
+   docs now say so explicitly instead of asserting something unchecked.
 
 6. **Rewrite the nine documentation references.** Each becomes either a pointer to
    `packages/react` as an internal package, or is deleted where it exists only to sell the
@@ -145,28 +155,35 @@ and is about to be unpublished; a shim would be ceremony for an audience of nobo
 
 ## Risks and unknowns
 
-- Step 5 could expose that KaTeX styling was only ever arriving via the React package's side-effect
-  import. If diagram labels render unstyled after removing it, that is a pre-existing engine
-  packaging gap, not a regression introduced here — but it will look like one.
-- The card's loading fade may be masking a flash of unstyled or unsized diagram at mount. Removing
-  it might make an existing rough edge visible; that is worth seeing rather than hiding, but expect
-  it.
-- `apps/web/tests/app.spec.ts` and the screenshot script may assert on card DOM.
+- ✅ **Step 5 did expose exactly that**, and it was resolved by giving the engine the import. See
+  step 5. The residual packaging question is recorded in both READMEs rather than assumed away.
+- ✅ **The loading fade was not masking anything visible.** Screenshot after removal:
+  `apps/web/screenshots/p1-after-card-removal.png`. The diagram mounts clean, and it now renders at
+  its natural size rather than inside the stylesheet's `min-height: 300px` box — which makes the
+  fix visible rather than merely asserted.
+- ✅ `apps/web/tests/app.spec.ts` asserted only on the heading text (`Market equilibrium`), which
+  the app-owned `Title` still renders, so all four Playwright tests passed unchanged. Two test names
+  and one comment referring to "the card" were updated to say "the app-owned panel".
 - Unpublishing is irreversible in a way the rest of this plan is not. Everything else here can be
   reverted with `git revert`; that cannot.
-- Deleting `styles.module.css` also deletes the only dark-mode handling the chart container had.
-  Until the app supplies equivalent theming, diagrams may sit on the wrong ground in dark mode.
+- **Still open: deleting `styles.module.css` removed the only dark-mode handling the chart
+  container had.** The app's `Paper` supplies the surface, and the engine's own
+  `css/kgjs-theme.css` hangs text and background colours on `.kg-container` — but this has only
+  been checked in light mode. Dark mode is unverified and worth a look before P7 builds on it.
 
 ## Done when
 
-- [ ] `EquilibriaCard`, its types, its tests and `styles.module.css` are gone.
-- [ ] `apps/web` renders its diagram through app-owned markup and the suite passes.
-- [ ] `EquilibriaChart` is a bare mount primitive with no styling opinion.
-- [ ] `katex` is a dependency of the engine only, and the package no longer imports a stylesheet.
-- [ ] The nine doc references are rewritten or removed; `packages/react/README.md` is internal notes
-      covering the three non-obvious behaviours.
-- [ ] The user has run the unpublish and archived the repo, and the engine's README fix is queued
-      for the next release.
+- [x] `EquilibriaCard`, its types, its tests and `styles.module.css` are gone. `css.d.ts` went with
+      the stylesheet, since nothing else in the package imports CSS.
+- [x] `apps/web` renders its diagram through app-owned markup — a Mantine `Paper` with a `Title`
+      and `Text` — and the whole suite passes: 162 engine, 32 React, 4 Playwright.
+- [x] `EquilibriaChart` is a bare mount primitive with no styling opinion. Its container is still
+      rendered through a failed mount, so the ref stays attached and `retry()` has somewhere to go.
+- [x] `katex` is a dependency of the engine only, and the package no longer imports a stylesheet.
+- [x] The nine doc references are rewritten or removed; `packages/react/README.md` is internal notes
+      covering the three non-obvious behaviours (plus the un-fixed remount-on-config-identity one).
+- [ ] **The user has run the unpublish and archived the repo** — outstanding, see step 8.
+      The engine's published README fix is queued for whatever version ships next.
 
 ## Out of scope
 

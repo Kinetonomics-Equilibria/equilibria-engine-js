@@ -11,12 +11,13 @@ Welcome to the **Equilibria Engine** (`equilibria-engine-js`), a headless Javasc
 npm install equilibria-engine-js
 ```
 
-You will also need to import the engine's CSS and the KaTeX CSS (for math rendering) in your application:
+The engine imports both stylesheets it needs — its own theme and KaTeX's — as a side effect of
+`kg.ts`, so consuming it from source requires no CSS import in your application.
 
-```javascript
-import "equilibria-engine-js/dist/style.css";
-import "katex/dist/katex.min.css"; 
-```
+> **Unresolved:** this package's `exports` points at TypeScript source (`./src/ts/kg.ts`), not a
+> built bundle, so `equilibria-engine-js/dist/style.css` — which older docs told consumers to
+> import — is not something this repository produces. Whether the published `1.0.8` artifact
+> carries the KaTeX stylesheet has not been verified. Packaging is its own piece of work.
 
 ## Documentation
 
@@ -35,23 +36,16 @@ The engine relies heavily on:
 
 * [D3](https://d3js.org) for drawing 2D diagrams
 * [mathjs](https://mathjs.org/) for mathematical constraint solving and evaluation
-* [KaTeX](https://katex.org) for rendering mathematical typographic text (requires `katex/dist/katex.min.css`)
+* [KaTeX](https://katex.org) for rendering mathematical typographic text — `kg.ts` imports `katex/dist/katex.min.css` itself, since the engine is what uses it
 
 ## React Integration
 
-For React and Next.js applications, the companion package [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react) provides drop-in components with lifecycle management, event forwarding, and styled card wrappers:
-
-```bash
-npm install equilibria-react equilibria-engine-js
-```
-
-It provides:
-- **`<EquilibriaChart />`** — Minimal chart component
-- **`<EquilibriaCard />`** — Styled card with title, loading skeleton, and error handling
-- **`useEquilibria()`** — Full-control hook with `updateParams` and event callbacks
-- Automatic re-export of `KG_EVENTS` for event subscriptions
-
-See the [equilibria-react README](https://github.com/Kinetonomics-Equilibria/equilibria-react) for full API documentation.
+React bindings live alongside this package in the same monorepo, at `packages/react`. They
+are **internal** — a `useEquilibria()` hook and a bare `<EquilibriaChart />` mount primitive,
+not a published component library — and they are not on npm. If you are consuming this engine
+from React outside the monorepo, mount it yourself: create a container, render
+`KG_CONTAINER_CLASS` on it from React (the engine's own `classList.add` is dropped when React
+rewrites the attribute), and call `mount()` in an effect.
 
 ## Repository
 [https://github.com/Kinetonomics-Equilibria/equilibria-engine-js](https://github.com/Kinetonomics-Equilibria/equilibria-engine-js)

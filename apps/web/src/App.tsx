@@ -1,6 +1,6 @@
-import { AppShell, Burger } from '@mantine/core';
+import { AppShell, Burger, Paper, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { EquilibriaCard } from 'equilibria-react';
+import { EquilibriaChart } from 'equilibria-react';
 import { DoubleNavbar } from './components/DoubleNavbar';
 import classes from './App.module.css';
 
@@ -33,11 +33,27 @@ const linearEquilibrium = {
                 xAxis: { title: 'Q', min: 0, max: 20 },
                 yAxis: { title: 'P', min: 0, max: 20 },
                 objects: [
+                    // Demand is draggable vertically, which is what makes the
+                    // ghost below mean anything: `prev` remembers where the
+                    // curve was when the student grabbed it.
                     {
                         type: 'Line',
                         def: {
                             yIntercept: 'params.a', slope: -1,
-                            color: 'colors.demand', label: { text: 'D' }
+                            color: 'colors.demand', label: { text: 'D' },
+                            drag: [{ vertical: 'a' }]
+                        }
+                    },
+                    // The ghost: where demand was before this drag. No shadow
+                    // param, no duplicated calc — `prev.params.a` is the same
+                    // value the live curve is bound to, one snapshot ago, and
+                    // `prev.changed` keeps it off screen until something moves.
+                    {
+                        type: 'Line',
+                        def: {
+                            yIntercept: 'prev.params.a', slope: -1,
+                            color: 'colors.demand', lineStyle: 'dashed',
+                            strokeOpacity: 0.35, show: 'prev.changed'
                         }
                     },
                     {
@@ -53,6 +69,29 @@ const linearEquilibrium = {
                             x: 'calcs.Qe', y: 'calcs.Pe',
                             color: 'colors.equilibriumPrice',
                             droplines: { vertical: 'Q^*', horizontal: 'P^*' }
+                        }
+                    },
+                    // Where the market cleared before. `prev.calcs` is stored,
+                    // not recomputed, so this is the equilibrium the student
+                    // actually saw rather than a reconstruction of it.
+                    {
+                        type: 'Point',
+                        def: {
+                            x: 'prev.calcs.Qe', y: 'prev.calcs.Pe',
+                            color: 'colors.equilibriumPrice',
+                            strokeOpacity: 0.35, opacity: 0.35,
+                            show: 'prev.changed'
+                        }
+                    },
+                    // …and the move between them, which is the sentence the
+                    // diagram is trying to say out loud.
+                    {
+                        type: 'Arrow',
+                        def: {
+                            begin: ['prev.calcs.Qe', 'prev.calcs.Pe'],
+                            end: ['calcs.Qe', 'calcs.Pe'],
+                            color: 'colors.equilibriumPrice',
+                            show: 'prev.changed'
                         }
                     }
                 ]
@@ -122,13 +161,26 @@ export function App() {
                         Interactive economics diagrams for students.
                     </p>
 
-                    <EquilibriaCard
-                        config={linearEquilibrium}
-                        title="Market equilibrium"
-                        description="Linear supply and demand. The equilibrium price and quantity are solved from the curve parameters rather than drawn in by hand."
-                        variant="elevated"
-                        onError={(error) => console.error('Equilibria failed to mount:', error)}
-                    />
+                    {/* The panel around the diagram is the app's, not the
+                      * binding's. `EquilibriaChart` is a bare mount primitive
+                      * with no styling opinion, so the heading, the prose and
+                      * the surface are ordinary Mantine elements themed by the
+                      * app's tokens — one theming system on screen instead of
+                      * two. P7 replaces this with the stage. */}
+                    <Paper withBorder radius="md" p="lg" shadow="sm">
+                        <Title order={2} size="h4" mb={4}>
+                            Market equilibrium
+                        </Title>
+                        <Text c="dimmed" size="sm" mb="lg">
+                            Linear supply and demand. The equilibrium price and quantity are
+                            solved from the curve parameters rather than drawn in by hand.
+                        </Text>
+
+                        <EquilibriaChart
+                            config={linearEquilibrium}
+                            onError={(error) => console.error('Equilibria failed to mount:', error)}
+                        />
+                    </Paper>
                 </div>
             </AppShell.Main>
         </AppShell>

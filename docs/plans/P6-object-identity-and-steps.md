@@ -49,7 +49,11 @@ Better than expected on identity, absent on everything else.
   (`view/viewObjects/viewObject.ts:129`) — the closest thing to a human-readable description today,
   but they are accessibility text, not identity.
 - `show` is updatable (same line), so `show: 'params.step >= 3'` per object gives a staged build-up
-  **now**. Verified in principle by reading; P0 confirms in practice and measures how verbose it is.
+  **now**. **P0 §5 confirmed it in practice**, including un-revealing on the way back. It also
+  measured the verbosity, which is this plan's justification: 24 characters per object, the step
+  number duplicated into every object in that step, and renumbering a step means touching all of
+  them. The capability is not the argument for declared step order — the *authoring cost* is, and it
+  is now a number rather than an intuition.
 - Econ composites carry human meaning implicitly: `linearEquilibrium.ts` composes demand, supply and
   an equilibrium point with `colors.demand` / `colors.supply` / `colors.equilibriumPrice`, so the
   concept "this is the demand curve" exists at authoring time and is then thrown away.

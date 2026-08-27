@@ -3,7 +3,8 @@
 **Lane:** cross (authoring only — no source changes)
 **Depends on:** nothing
 **Unblocks:** P5, P6, P10, P11 (each leans on a claim proved or disproved here)
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Complete** (2026-08-27). Findings: [P0-findings.md](P0-findings.md).
+Tests: `packages/engine/src/__tests__/authoring_contracts.test.ts`.
 
 ## Goal
 
@@ -158,16 +159,17 @@ handful of tests.
 
 ## Done when
 
-- [ ] Seven configs exist and have been run, with the outcome of each recorded.
-- [ ] `docs/plans/P0-findings.md` states holds / holds-with-caveats / fails for each claim, with
+- [x] Seven configs exist and have been run, with the outcome of each recorded.
+- [x] `docs/plans/P0-findings.md` states holds / holds-with-caveats / fails for each claim, with
       evidence.
-- [ ] The specific behaviour of a mistyped predicate is documented, and P11 has been updated to
-      match it.
-- [ ] Every plan whose assumptions the spike contradicted has been corrected.
-- [ ] Confirmed claims that other plans depend on are pinned by tests in
-      `packages/engine/src/__tests__/`.
-- [ ] The scratch page is deleted or clearly marked as scratch; nothing from it leaks into
-      `apps/web`'s real screen.
+- [x] The specific behaviour of a mistyped predicate is documented, and P11 has been updated to
+      match it (Fork 3 settled: the app grades).
+- [x] Every plan whose assumptions the spike contradicted has been corrected — P5, P6, P10, P11 and
+      the plans README.
+- [x] Confirmed claims that other plans depend on are pinned by tests in
+      `packages/engine/src/__tests__/authoring_contracts.test.ts` (10 tests).
+- [x] No scratch page was created — the spike ran through the existing jsdom harness, so nothing
+      could leak into `apps/web`. The three scratch probe files used during the spike are deleted.
 
 ## Out of scope
 

@@ -110,7 +110,7 @@ The `layout` property is the primary way to define the visual arrangement of gra
 }
 ```
 
-Available layout types include: `OneGraph`, `OneWideGraph`, `TwoHorizontalGraphs`, `TwoVerticalGraphs`, `ThreeHorizontalGraphs`, `FourGraphs`, and specialized economic layouts like `EdgeworthBox`. See the [Schema Layouts guide](./schema/03-layouts.md) for the full list.
+There are 16 layouts. The [Schema Layouts guide](./schema/03-layouts.md) lists every one with its aspect ratio and graph keys, along with the def keys the engine accepts but cannot render.
 
 ## 7. Scales (`scales`)
 

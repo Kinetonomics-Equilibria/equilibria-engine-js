@@ -101,7 +101,8 @@ export class UnivariateFunction extends MathFunction implements IUnivariateFunct
         fn.scope = {
             params: fn.model.currentParamValues,
             calcs: fn.model.currentCalcValues,
-            colors: fn.model.currentColors
+            colors: fn.model.currentColors,
+            prev: fn.model.prevScope()
         };
         const originalString = fn.fnString;
         if (originalString != fn.updateFunctionString(fn.fnStringDef, fn.scope)) {

@@ -1,16 +1,5 @@
-
 import { Graph } from "../positionedObjects/graph";
-import { Layout } from "./layout";
-
-class DivContainer {
-    name: string; def: any; subObjects: any[]; tabbable: boolean; srTitle: string; srDesc: string;
-    constructor(def) { }
-    parseSelf(parsedData) { return parsedData; }
-    parse(parsedData) { return parsedData; }
-    addSecondGraph(graph) { }
-}
-
-
+import { Layout, warnUnsupportedLayoutKeys } from "./layout";
 
 export class ThreeHorizontalGraphs extends Layout {
 
@@ -22,84 +11,21 @@ export class ThreeHorizontalGraphs extends Layout {
             middleGraphDef = def['middleGraph'],
             rightGraphDef = def['rightGraph'];
 
+        // As in TwoHorizontalGraphs: the `*Controls` keys reserved a band that nothing
+        // could fill, at the cost of dropping the graphs to 0.5 height on a canvas half
+        // as wide. See warnUnsupportedLayoutKeys for why they warn rather than render.
+        warnUnsupportedLayoutKeys('ThreeHorizontalGraphs', def,
+            ['leftControls', 'middleControls', 'rightControls'],
+            'The graphs now use the full canvas.');
+
         const leftX = 0.05,
             middleX = 0.35,
             rightX = 0.65,
             topY = 0.025,
-            bottomY = 0.65,
             width = 0.25,
-            controlHeight = 0.3;
+            graphHeight = 0.9;
 
-        let includeControls = false;
-
-
-        if (def.hasOwnProperty('leftControls')) {
-
-            l.subObjects.push(new DivContainer({
-                position: {
-                    x: leftX,
-                    y: bottomY,
-                    width: width,
-                    height: controlHeight
-                },
-                children: [
-                    {
-                        type: "Controls",
-                        def: def['leftControls']
-                    }
-                ]
-            }));
-
-            includeControls = true;
-
-        }
-
-        if (def.hasOwnProperty('middleControls')) {
-
-            l.subObjects.push(new DivContainer({
-                position: {
-                    x: middleX,
-                    y: bottomY,
-                    width: width,
-                    height: controlHeight
-                },
-                children: [
-                    {
-                        type: "Controls",
-                        def: def['middleControls']
-                    }
-                ]
-            }));
-
-            includeControls = true;
-
-        }
-
-        if (def.hasOwnProperty('rightControls')) {
-
-            l.subObjects.push(new DivContainer({
-                position: {
-                    x: rightX,
-                    y: bottomY,
-                    width: width,
-                    height: controlHeight
-                },
-                children: [
-                    {
-                        type: "Controls",
-                        def: def['rightControls']
-                    }
-                ]
-            }));
-
-            includeControls = true;
-
-        }
-
-        let graphHeight = includeControls ? 0.5 : 0.9;
-
-        this.aspectRatio = includeControls ? 2 : 4;
-
+        this.aspectRatio = 4;
 
         leftGraphDef.position = {
             x: leftX,
@@ -119,7 +45,6 @@ export class ThreeHorizontalGraphs extends Layout {
 
         l.subObjects.push(new Graph(middleGraphDef));
 
-
         rightGraphDef.position = {
             "x": rightX,
             "y": topY,
@@ -129,16 +54,6 @@ export class ThreeHorizontalGraphs extends Layout {
 
         l.subObjects.push(new Graph(rightGraphDef));
 
-
-
-
-
-
-
-
-
     }
-
-
 
 }

@@ -16,6 +16,7 @@ import * as d3 from "d3";
 
 export interface ViewOptions {
     legacyUrlOverrides?: boolean;
+    snapshotOn?: 'gesture' | 'change' | 'never';
 }
 
 export interface TypeAndDef {
@@ -42,6 +43,8 @@ export interface ViewDefinition {
     idioms?: {};
     custom?: string;
     restrictions?: RestrictionDefinition[];
+    /** When the model captures `prev` automatically. See docs/schema/02-parameters-and-interactions.md. */
+    snapshotOn?: 'gesture' | 'change' | 'never';
     objects?: TypeAndDef[];
     layout?: TypeAndDef;
     explanation?: TypeAndDef;
@@ -73,8 +76,6 @@ export class View implements IView {
     private model: Model;
     private scales: Scale[];
     private aspectRatio: number;
-    private sidebar?: any;
-    private explanation?: any;
     private svgContainerDiv: any;
     private clearColor: string;
     private viewOptions: ViewOptions;
@@ -159,6 +160,8 @@ export class View implements IView {
             custom: data.custom || "",
             idioms: data.idioms || {},
             restrictions: data.restrictions,
+            // The constructor option wins over the config key, matching legacyUrlOverrides.
+            snapshotOn: this.viewOptions.snapshotOn || data.snapshotOn,
             clipPaths: data.clipPaths || [],
             markers: data.markers || [],
             scales: data.scales || [{
@@ -194,7 +197,13 @@ export class View implements IView {
         }
 
         if (data.hasOwnProperty('explanation')) {
-            data.objects.push({ type: "Explanation", def: data.explanation });
+            // There is no `Explanation` class exported from KGAuthor, so this only ever
+            // produced `Unknown object type "Explanation"` and was dropped. Prose beside a
+            // diagram is the host application's job — say so by name, as the layout keys do.
+            console.warn(
+                'View: "explanation" is not rendered by the engine. Prose beside a diagram is ' +
+                "the host application's responsibility."
+            );
         }
 
         if (data.hasOwnProperty('schema')) {
@@ -392,33 +401,7 @@ export class View implements IView {
             width = clientWidth;
             height = width / view.aspectRatio;
 
-            let sidebarHeight = 0, explanationHeight = 0;
-
-            // position the sidebar to the right if the screen is wide enough, or below if it isn't
-            if (view.sidebar) {
-                if (width > view.sidebar.triggerWidth) {
-                    height = height * 77 / 126;
-                    let s_height;
-                    if (view.explanation) {
-                        s_height = height + view.explanation.rootElement.node().clientHeight + 10;
-                    } else {
-                        s_height = height;
-                    }
-                    view.sidebar.positionRight(width, s_height);
-                    width = width * 77 / 126; // make width of graph the same width as main Tufte column
-                } else {
-                    view.sidebar.positionBelow(width, height);
-                    sidebarHeight = view.sidebar.rootElement.node().clientHeight + 30;
-                }
-            }
-
-            // position the explanation below
-            if (view.explanation) {
-                view.explanation.position(width, height + sidebarHeight + 10);
-                explanationHeight = view.explanation.rootElement.node().clientHeight + 20;
-            }
-
-            displayHeight = height + sidebarHeight + explanationHeight + 10
+            displayHeight = height + 10
 
         }
 
@@ -427,13 +410,14 @@ export class View implements IView {
 
         // set the height of the div
 
-        view.svgContainerDiv.style('width', width);
-        view.svgContainerDiv.style('height', height);
+        // `svgContainerDiv` is deliberately unsized: it is a zero-size positioning origin
+        // at (0,0), which is all the absolutely positioned label divs need. It used to carry
+        // .style('width', <number>) calls, which d3 stringified to "800" — not a valid CSS
+        // length, so the browser discarded them. Do not "fix" those by adding px; that would
+        // give the div a real box for the first time and move every label.
 
         if (view.svg) {
-            // set the dimensions of the svg
-            view.svg.style('width', width);
-            view.svg.style('height', height);
+            // set the dimensions of the svg — attributes, not styles, are what size it
             view.svg.attr('width', width);
             view.svg.attr('height', height);
         }

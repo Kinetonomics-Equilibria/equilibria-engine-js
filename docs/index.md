@@ -44,4 +44,7 @@ For detailed guidance on authoring YAML schemas with the KGAuthor transpiler:
 
 ### React Companion Package
 
-For React and Next.js applications, see the companion package [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react), which provides drop-in components (`<EquilibriaChart />`, `<EquilibriaCard />`), the `useEquilibria()` hook, and automatic event forwarding.
+React bindings live in this monorepo at [`packages/react`](../packages/react) as an internal
+package: a `useEquilibria()` hook, a bare `<EquilibriaChart />` mount primitive, and event
+forwarding. It is deliberately not a component library — panel chrome and theming belong to
+the host application, which is the same boundary the engine itself draws.

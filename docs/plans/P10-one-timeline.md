@@ -28,17 +28,28 @@ still available.
 
 ## Current state
 
-- **The mechanism already exists per object.** `show` is updatable
+- **The mechanism already exists per object, and it works.** `show` is updatable
   (`packages/engine/src/ts/view/viewObjects/viewObject.ts:129`), so `show: 'params.step >= 3'`
-  gives a build-up today, hand-written on each object. P0 measures how verbose that is; P6 makes it
-  declarable once per diagram and compiles down to the same thing.
+  gives a build-up today, hand-written on each object. **P0 §5 ran it:** objects reveal in order as
+  the param advances and **un-reveal when it goes back**, which is what makes a scrubber viable
+  rather than a one-way animation. So this plan has a genuine fallback and is *not* blocked on P6.
+  P0 also measured the cost it was asked to measure: 24 characters per object, with the step number
+  duplicated into every object belonging to that step, so renumbering a step means editing all of
+  them. For a twenty-object diagram that is ~480 characters of boilerplate whose only content is an
+  integer. Ship the fallback for a small diagram; do not ship it for a large one.
 - `apps/web/src/App.tsx` has no router, no state management and no content model — there is nowhere
   for a lesson to live yet, which is this plan's biggest unstated dependency.
 - Params are the only state the engine holds; a step position is therefore either a param (visible
   to expressions, which is what makes `show: 'params.step >= n'` work) or app state (invisible to the
   diagram). It probably has to be **both**: a param the engine can read, driven by app state that
   knows about prompts and progress.
-- `updateParams` applies param changes from the app (`packages/react/src/useEquilibria.ts:160-164`).
+- `updateParams` applies param changes from the app (`packages/react/src/useEquilibria.ts:160-164`) —
+  but **not atomically**. P0 §7: params are applied one at a time and each is validated alone, so a
+  step that moves several params to a legal destination through an illegal interim is rejected
+  halfway and rolled back silently, landing somewhere the lesson never described. Any lesson step
+  setting more than one param is order-dependent today. This is the single most likely source of a
+  "the diagram is in the wrong state and nothing said why" bug in a scrubbable timeline, and it
+  argues for the batched update path P0 recommends before this plan grows multi-param steps.
 - The narration strip (P8) occupies the region directly above the track and both want to speak when
   something changes — they must take turns rather than compete.
 

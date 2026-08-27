@@ -24,6 +24,9 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
     private clickListeners: ClickListener[];
     private element;
 
+    /** One gesture per drag, opened on first movement rather than on mousedown. */
+    private gestureOpen: boolean = false;
+
     constructor(def: InteractionHandlerDefinition) {
         def.dragListeners = def.dragListeners || [];
         def.clickListeners = def.clickListeners || [];
@@ -92,6 +95,18 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                     handler.scope.drag.y0 = handler.viewObject.yScale.scale.invert(event.y);
                 })
                 .on('drag', function (event, d) {
+                    // Opened here, not in `start`: d3.drag fires `start` on every
+                    // mousedown, including ones where the pointer never moves, and
+                    // snapshotting there would burn a render and a ghost on a stray
+                    // click. At this instant no updateParam has run for this
+                    // gesture, so currentParamValues is still the object frozen
+                    // into scope.params at `start` — the snapshot is drag-start
+                    // state exactly.
+                    if (!handler.gestureOpen && handler.dragListeners.some(function (dl) { return dl.snapshot !== false })) {
+                        handler.gestureOpen = true;
+                        handler.model.beginGesture();
+                    }
+
                     let drag = handler.scope.drag;
                     drag.x = handler.viewObject.xScale.scale.invert(event.x);
                     drag.y = handler.viewObject.yScale.scale.invert(event.y);
@@ -103,6 +118,10 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                 })
                 .on('end', function (event, d) {
                     //handler.element.style("cursor","default");
+                    if (handler.gestureOpen) {
+                        handler.gestureOpen = false;
+                        handler.model.endGesture();
+                    }
                 })
             );
         }

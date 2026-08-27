@@ -403,10 +403,21 @@ duplicating the calcs as `Qe0: '(params.a0 - params.c0)/2'` and
 `Pe0: '(params.a0 + params.c0)/2'`; adding dashed, low-opacity `Line` and `Point`
 objects bound to the shadows with `show: 'a != a0'`; and calling
 `updateParams([{ name: 'a0', value: previousA }, { name: 'c0', value: previousC }])`
-whenever the app decides "this is now the before".
+whenever the app decides "this is now the before". Note that this two-param call
+is itself unsafe: P0 §7 found `updateParams` applies params sequentially and
+validates each alone, so writing `a0` and `c0` together can be rejected halfway
+and rolled back silently — the shadow pair can end up mismatched, which is a
+ghost drawn from a state that never existed.
 
-**It cannot ship ghosts at all**, for one decisive reason: to write the before
-value, the app has to know it, and the app only knows values it pushed itself.
+P0 §1 and §2 confirmed the *drawing* half of this fallback: a pinned dashed line
+renders alongside a live one with the authored `lineStyle` and `strokeOpacity`,
+and `show` bound to a param toggles it at runtime with no remount. So ghosts can
+be drawn today, and this plan is an enhancement — remembering a ghost — rather
+than a prerequisite for having one.
+
+**The fallback still cannot ship ghosts**, for one decisive reason: to write the
+before value, the app has to know it, and the app only knows values it pushed
+itself.
 `kg:param_changed` does not fire (verified above), so a drag is invisible to the
 host. Shadow params work only for changes the app originates. Ghosts exist
 precisely to answer "what did I just do?" after a drag. The fallback covers the

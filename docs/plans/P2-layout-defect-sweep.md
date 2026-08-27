@@ -3,7 +3,8 @@
 **Lane:** engine
 **Depends on:** nothing
 **Unblocks:** P3 (reuses the test helper and the canvas-bounds invariant); any product work that puts more than one graph on screen
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Complete** (2026-08-27). Tests: `packages/engine/src/__tests__/layouts.test.ts`
+(64 cases; 11 of them fail against the pre-sweep source, verified by stashing it).
 
 ## Goal
 
@@ -460,17 +461,72 @@ above (verify: it should still match after step 6).
 - **The geometry changes are real.** No config in this repo is affected, but a
   ported KGJS config passing `leftControls` will render differently. The warning
   is the mitigation; the changelog entry is the other half.
-- **The Edgeworth clamp constant (0.62) is a guess** that satisfies the arithmetic.
-  It has not been looked at rendered. Flagged in step 3 as the one item needing a
-  visual check.
+- **The Edgeworth clamp (0.62) has now been looked at rendered, and the trade-off is real.**
+  Screenshots: `apps/web/screenshots/p2-edgeworth-check.png` (the clamp as shipped) and
+  `p2-edgeworth-ar084.png` (this plan's stated alternative). Both were captured through
+  `apps/web/scripts/screenshot.mjs` against a temporary Edgeworth config in `App.tsx`, since the
+  app itself only ever mounts `OneGraph`; the temporary config was reverted.
+
+  - **As shipped (aspectRatio 1.22, clamp 0.62):** the box renders correctly with both agents'
+    axes and the auxiliary graphs sit below it, on-canvas. It is legible and the broken case is
+    fixed. But with equal goods the box is visibly **wider than tall** (0.738W × 0.508W), and an
+    Edgeworth box with equal endowments reads as *wanting* to be square.
+  - **The alternative (aspectRatio 0.84, same clamp):** the box is exactly square. The arithmetic
+    is not a coincidence — 0.62 · W/0.84 = 0.738W — so the clamp this plan chose and an 0.84
+    canvas happen to compose into a square box. It looks clearly better. The cost is a portrait
+    canvas roughly 1.19× as tall as it is wide, in *every* case including unequal goods, which is
+    a large change to make on one example.
+
+  **Decision: left as the clamp.** Working the proportionality through is what settled it, and it
+  shows this plan's 0.84 suggestion to be *incomplete on its own*.
+
+  For the box to be proportional to the goods, its pixel ratio must equal `tg1/tg2`:
+
+  ```
+  pixel w / pixel h  =  0.738·W / (h · W/AR)  =  0.738·AR / h  =  tg1 / tg2
+                 ⇒   h  =  0.738 · AR · tg2 / tg1
+  ```
+
+  At `AR = 1.22` that is `h = 0.900 · tg2/tg1` — which is exactly the existing first branch. **The
+  current formula is already correct for the current aspect ratio.** At `AR = 0.84` the coefficient
+  becomes `0.62`, so switching the aspect ratio *without also changing the base height from 0.9 to
+  0.62* leaves every unequal-goods box proportionally wrong: 20:10 goods would render at a pixel
+  ratio of 1.38 instead of 2.0. The square box in the screenshot is the equal-goods case only, and
+  it is square by the coincidence that the clamp value and the proposed aspect ratio happen to
+  compose — not because 0.84 is right.
+
+  A coherent version of the alternative exists — `AR = 0.84` **and** `h = 0.62 · tg2/tg1`, dropping
+  the clamp to a cap — but it changes every Edgeworth-with-auxiliary case, not just the broken one,
+  and it still does not address the tall-box branch, which needs the box's *width* shrunk rather
+  than its height under any aspect ratio. That is a real piece of geometry work with a rendered
+  review attached, not a constant swap. The clamp stays until someone does it.
+- **The two branches were left inconsistent, deliberately — this plan's instruction to make them
+  consistent was not followed, and here is why.** Step 3 asked that both scale `height` by
+  `height` rather than one by `width`. Working the geometry through: for the box to be proportional
+  to the goods on a 1.22 canvas, `h = 0.9 · totalGood2 / totalGood1`, which is exactly the *first*
+  branch. For a taller-than-wide box that formula exceeds the canvas, so the correct response is to
+  shrink the box's **width**, not to shrink its height further. Making the branches "consistent"
+  moves that case from 0.369 to 0.45 — shorter and wider, i.e. further from proportional, not
+  closer. It also contradicts this plan's own statement two paragraphs earlier that the unequal
+  cases are "already below the clamp and are **unchanged**". So the clamp landed and the branch
+  inconsistency is documented in a code comment as a known defect awaiting a rendered look.
 - **Test case 8 may need rework.** I have not confirmed the minimal def that makes
   `CrossGraphSegment` construct cleanly; if it turns out fiddly, assert
   `addSecondGraph` reached the sub-objects some other way rather than dropping
   the case — that wiring is the only thing distinguishing `TwoVerticalGraphs`
   from a generic two-graph stack.
-- **`generate:indices` may reorder `KGAuthor/index.ts`.** The checked-in order is
-  not alphabetical and looks glob-dependent. If re-running it churns unrelated
-  lines, split that into its own commit so the sweep's diff stays readable.
+- ⚠️ **`generate:indices` is broken and must not be run — worse than this plan supposed.**
+  Running `npm run generate:indices` does not merely reorder: it **destroys a hand-edit**. The
+  checked-in `KGAuthor/index.ts` ends with a hand-written block that populates
+  `classRegistry.ts` through lazy getters (`Object.defineProperty(KGAuthorClasses, key,
+  { get: … })`) — evidently to break a circular-import cycle, since every consumer imports
+  `KGAuthorClasses` from `classRegistry`, not from `index`. The generator emits
+  `export const KGAuthorClasses = AllClasses;` instead and drops the registry wiring entirely.
+  It also rewrites the five `Dropline` exports from `./graphObjects/segment` back to
+  `./graphObjects/dropline`, meaning the checked-in index is hand-maintained in at least two
+  places. **The regeneration was reverted**; deleting `rectanglePlusTwoSquares.ts` left
+  `index.ts` unchanged, as this plan required, because that file exported nothing. Fixing the
+  generator is its own piece of work and is out of scope here.
 - **`EntryDeterrence` is left where it is.** It is a no-op `Tree` subclass
   (`econ/layouts/gameTree.ts:9-20`) misfiled under `layouts/`. Moving it changes
   only the generated index's import path, but it buys nothing behavioural, so
@@ -478,15 +534,18 @@ above (verify: it should still match after step 6).
 
 ## Done when
 
-- No `DivContainer` declaration remains in the tree.
-- Every layout def key the engine cannot honour produces one named warning.
-- `layouts.test.ts` exists, covers all 16 concrete layouts, and cases 4, 5 and 6
-  fail against the pre-sweep code.
-- `rectanglePlusTwoSquares.ts` is gone and `KGAuthor/index.ts` is unchanged by it.
-- `docs/schema/03-layouts.md` lists every layout with its aspect ratio and keys,
-  and `docs/configuration.md:113` points at it.
-- `npx vitest run` in `packages/engine` is green, and
-  `__snapshots__/snapshot.test.ts.snap` is byte-identical.
+- [x] No `DivContainer` declaration remains in the tree.
+- [x] Every layout def key the engine cannot honour produces one named warning —
+      including the top-level `explanation` (step 6).
+- [x] `layouts.test.ts` exists, covers all 16 concrete layouts, and cases 4, 5 and 6
+      fail against the pre-sweep code. Verified by stashing the source: 11 of the 64
+      cases fail, including all three of those.
+- [x] `rectanglePlusTwoSquares.ts` is gone and `KGAuthor/index.ts` is unchanged by it.
+- [x] `docs/schema/03-layouts.md` lists every layout with its aspect ratio and keys,
+      and `docs/configuration.md` points at it.
+- [x] `npx vitest run` in `packages/engine` is green (162 tests, up from 88), and
+      `__snapshots__/snapshot.test.ts.snap` is byte-identical — confirmed by running
+      with `-u` and seeing no diff, which also proves step 6's deletions were no-ops.
 
 ## Out of scope
 

@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { KG_EVENTS, KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { EquilibriaChart } from '../EquilibriaChart';
-import styles from '../styles.module.css';
 import { engineControl, resetEngineMock, latestInstance } from './engineMock';
 
 vi.mock('equilibria-engine-js', async () => {
@@ -31,15 +30,16 @@ describe('<EquilibriaChart />', () => {
         expect(latestInstance().container).toBe(containerOf(container));
     });
 
-    it('applies the caller className and style alongside its own classes', () => {
+    it('applies the caller className and style, and adds no styling of its own', () => {
         const { container } = render(
             <EquilibriaChart config={config} className="my-chart" style={{ height: 300 }} />
         );
         const el = containerOf(container);
 
-        expect(el.className).toContain('my-chart');
-        expect(el.className).toContain(styles.chartContainer);
         expect(el.style.height).toBe('300px');
+        // exactly the engine's class and the caller's — nothing from the package
+        expect(el.className.split(' ').filter(Boolean).sort())
+            .toEqual([KG_CONTAINER_CLASS, 'my-chart'].sort());
     });
 
     // Regression: the engine styles its container by adding .kg-container to it,
@@ -58,20 +58,18 @@ describe('<EquilibriaChart />', () => {
         expect(containerOf(container).className).toContain('my-chart');
     });
 
-    it('marks the container ready once the engine has mounted', () => {
-        const { container } = render(<EquilibriaChart config={config} />);
-
-        expect(containerOf(container).className).toContain(styles.chartContainerReady);
-    });
-
-    it('marks the container as loading when the mount failed', () => {
+    // The container used to carry a loading/ready class that faded the diagram in.
+    // That treatment belongs to whatever renders this, but the *container itself*
+    // must stay mounted through a failure or the ref detaches and retry() has
+    // nowhere to build into.
+    it('keeps the container mounted when the mount failed', () => {
         engineControl.mountFailure = new Error('view failed to build');
 
         const { container } = render(<EquilibriaChart config={config} />);
         const el = containerOf(container);
 
-        expect(el.className).toContain(styles.chartContainerLoading);
-        expect(el.className).not.toContain(styles.chartContainerReady);
+        expect(el).toBeTruthy();
+        expect(el.className).toContain(KG_CONTAINER_CLASS);
     });
 
     describe('lifecycle callbacks', () => {

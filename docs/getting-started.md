@@ -18,13 +18,16 @@ Within your javascript or typescript files, you can then import the engine class
 
 ```js
 import { KineticGraph, KG_EVENTS } from "equilibria-engine-js";
-import "equilibria-engine-js/dist/style.css"; // Engine styles
-import "katex/dist/katex.min.css"; // Required for math rendering
+// No CSS import needed: kg.ts imports the engine theme and the KaTeX stylesheet itself.
 ```
 
 ### Option 2: Using CDN (For Vanilla HTML/JS)
 
 You can load the bundled module directly in your browser. Since the engine exposes an ES module, you can instantiate it directly inside a `<script type="module">` tag.
+
+> The CDN path below describes the **published** package, whose bundle this repository does not
+> currently build — `exports` points at TypeScript source. Treat these two `<link>` tags as
+> unverified against `1.0.8`.
 
 ```html
 <!-- Required CSS -->
@@ -41,13 +44,13 @@ You can load the bundled module directly in your browser. Since the engine expos
 </script>
 ```
 
-### Option 3: Using React (Recommended for React/Next.js)
+### Option 3: Using React
 
-The [`equilibria-react`](https://github.com/Kinetonomics-Equilibria/equilibria-react) companion package wraps the engine with React-idiomatic components and handles mounting, unmounting, resizing, error handling, and event forwarding automatically:
-
-```bash
-npm install equilibria-react equilibria-engine-js
-```
+React bindings live in this monorepo at [`packages/react`](../packages/react) as an
+**internal** package — a `useEquilibria()` hook and a bare `<EquilibriaChart />` mount
+primitive. They are not published to npm and there is nothing to install separately; the
+app imports them as a workspace dependency. They handle mounting, unmounting, resizing,
+error surfacing and event forwarding.
 
 ```tsx
 import { useMemo } from 'react';
@@ -73,7 +76,9 @@ function App() {
 }
 ```
 
-See the [`equilibria-react` documentation](https://github.com/Kinetonomics-Equilibria/equilibria-react) for `<EquilibriaCard />`, event callbacks (`onParamChanged`, `onCurveDragged`, `onNodeHover`), the `useEquilibria()` hook, and the `updateParams` API.
+See [`packages/react/README.md`](../packages/react/README.md) for the event callbacks
+(`onParamChanged`, `onCurveDragged`, `onNodeHover`), the `useEquilibria()` hook and its
+`updateParams` API, and the three non-obvious behaviours worth knowing before changing it.
 
 ## Initializing the Engine
 
@@ -154,9 +159,9 @@ import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 <div ref={containerRef} className={`${KG_CONTAINER_CLASS} my-chart`} />
 ```
 
-`equilibria-react`'s `<EquilibriaChart />` and `<EquilibriaCard />` already do this.
-
-Ensure the container has a defined width logic (e.g. `width: 100%`) in your CSS.
+`<EquilibriaChart />` renders this class itself, which is the only reason it works under
+React. It applies **no other styling** — sizing the container is the caller's job, so give
+it a defined width (e.g. `width: 100%`) in your own CSS.
 
 ## Error Handling
 

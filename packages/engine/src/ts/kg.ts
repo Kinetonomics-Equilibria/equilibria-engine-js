@@ -2,6 +2,12 @@ import { View } from "./view/view";
 import { KG_EVENTS } from "./constants";
 import { EventEmitter } from "eventemitter3";
 import "../css/kgjs-theme.css";
+// Labels are rendered by KaTeX (view/viewObjects/label.ts), which needs its own
+// stylesheet to lay the maths out — without it the glyphs still appear but the
+// spacing, sizing and alignment do not. This import used to live in the React
+// package's index.ts, which meant a non-React consumer of the engine silently
+// got unstyled maths. The engine uses KaTeX, so the engine asks for its CSS.
+import "katex/dist/katex.min.css";
 
 export { KG_EVENTS };
 
@@ -19,6 +25,29 @@ export const KG_CONTAINER_CLASS = 'kg-container';
 export interface KineticGraphOptions {
     /** Enable legacy URL query param and div attribute overrides (default: false) */
     legacyUrlOverrides?: boolean;
+
+    /**
+     * When the engine captures the previous state that expressions read as `prev`.
+     *
+     * - `'gesture'` (default) — one snapshot per drag or host gesture, taken on
+     *   the first actual movement. This is what makes a ghost sit where the curve
+     *   was when the student grabbed it.
+     * - `'change'` — one per accepted param change. Offered, but a trap for
+     *   continuous input: a drag fires ~60 changes a second, so `prev` ends up one
+     *   tick behind and the ghost hides under the live curve. A real gesture still
+     *   coalesces even in this mode.
+     * - `'never'` — only `snapshot()` moves it.
+     *
+     * Also settable as `snapshotOn` at the config root; this option wins.
+     */
+    snapshotOn?: 'gesture' | 'change' | 'never';
+}
+
+/** What `getSnapshot()` hands back — copies, never the model's live objects. */
+export interface EquilibriaSnapshot {
+    params: Record<string, number>;
+    calcs: Record<string, any>;
+    seq: number;
 }
 
 export class KineticGraph extends EventEmitter {
@@ -47,7 +76,8 @@ export class KineticGraph extends EventEmitter {
 
             // The View binds to the DOM and sets up D3 automatically
             this.view = new View(this.container, configClone, {
-                legacyUrlOverrides: !!this.options.legacyUrlOverrides
+                legacyUrlOverrides: !!this.options.legacyUrlOverrides,
+                snapshotOn: this.options.snapshotOn
             });
 
             // Pass the event emitter to the view so objects can emit events
@@ -97,6 +127,50 @@ export class KineticGraph extends EventEmitter {
                 (this.view as any).model.update(true);
             }
         }
+    }
+
+    /**
+     * Mark the current state as the one expressions should read as `prev`.
+     *
+     * Use it for boundaries the engine cannot see: applying a scenario, revealing
+     * a quiz answer, starting a lesson step. In-diagram drags snapshot themselves.
+     */
+    public snapshot() {
+        (this.view as any)?.model?.snapshot();
+    }
+
+    /**
+     * Declare the start of a host-driven gesture, so a continuous control takes
+     * one snapshot rather than one per tick.
+     *
+     * The engine cannot infer this: a slider scrub reaches it as an
+     * undifferentiated stream of `update({ params })` calls. Map these onto the
+     * control's own gesture events — for a Mantine `Slider` that is
+     * `onChangeStart` / `onChangeEnd`. Without it, a slider produces no usable
+     * ghost.
+     */
+    public beginGesture() {
+        (this.view as any)?.model?.beginGesture();
+    }
+
+    public endGesture() {
+        (this.view as any)?.model?.endGesture();
+    }
+
+    /**
+     * The state at the last snapshot, or `null` if none has been taken.
+     *
+     * Returns copies. The engine must not hand a caller an object it will later
+     * read back as authoritative.
+     */
+    public getSnapshot(): EquilibriaSnapshot | null {
+        const model = (this.view as any)?.model;
+        if (!model || model.snapshotSeq === 0) return null;
+        return {
+            params: { ...model.prevParamValues },
+            calcs: { ...model.prevCalcValues },
+            seq: model.snapshotSeq
+        };
     }
 
     public destroy() {

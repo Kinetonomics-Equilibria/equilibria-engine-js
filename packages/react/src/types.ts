@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import type { KineticGraphOptions } from 'equilibria-engine-js';
 
 /**
@@ -10,7 +10,7 @@ export interface ParamChangeEvent {
 }
 
 /**
- * Props for the minimal EquilibriaChart component.
+ * Props for EquilibriaChart, the package's only component.
  */
 export interface EquilibriaChartProps {
     /** Engine configuration object (parsed JSON/YAML). */
@@ -39,32 +39,4 @@ export interface EquilibriaChartProps {
 
     /** Callback fired when the user hovers over an interactive node. */
     onNodeHover?: (data: unknown) => void;
-}
-
-/**
- * Card style variants.
- */
-export type CardVariant = 'elevated' | 'outlined' | 'flat';
-
-/**
- * Props for the styled EquilibriaCard component.
- */
-export interface EquilibriaCardProps extends EquilibriaChartProps {
-    /** Card title displayed above the chart. */
-    title?: string;
-
-    /** Subtitle / description displayed below the title. */
-    description?: string;
-
-    /** Footer content rendered below the chart. */
-    footer?: ReactNode;
-
-    /** Override the loading state (auto-detected by default). */
-    loading?: boolean;
-
-    /** Custom error UI. Can be a ReactNode or a render function receiving the error. */
-    errorFallback?: ReactNode | ((error: Error) => ReactNode);
-
-    /** Card container style variant. Default: 'elevated'. */
-    variant?: CardVariant;
 }
