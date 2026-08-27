@@ -4,6 +4,7 @@ import { CurveDefinition, Curve } from "../../../../KGAuthor/graphObjects/curve"
 import { PointDefinition, Point } from "../../../../KGAuthor/graphObjects/point";
 import { GraphObjectGenerator } from "../../../defObjects/graphObjectGenerator";
 import { setStrokeColor, copyJSON, multiplyDefs, raiseDefToDef, divideDefs, invertDef, subtractDefs } from "../../../parsers/parsingFunctions";
+import { anonymizeCopy } from "../../../parsers/nameRegistry";
 
 
 
@@ -69,13 +70,13 @@ import { setStrokeColor, copyJSON, multiplyDefs, raiseDefToDef, divideDefs, inve
             invCurveDef.show = "((" + def.show + ") && (calcs. " + def.name + ".elastic))";
 
             // define the control point
-            let pointDef = copyJSON(def.point || {});
+            let pointDef = anonymizeCopy(copyJSON(def.point || {}));
             pointDef.color = pointDef.color || def.color;
             pointDef.show = pointDef.show || def.show;
 
             // define the second control point, if applicable
             if(def.hasOwnProperty('point2')) {
-                let point2Def = copyJSON(def.point2);
+                let point2Def = anonymizeCopy(copyJSON(def.point2));
                 point2Def.color = point2Def.color || def.color;
                 point2Def.show = point2Def.show || def.show;
             }

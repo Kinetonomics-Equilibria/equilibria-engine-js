@@ -5,6 +5,7 @@ import { LabelDefinition, Label } from "./label";
 import { setStrokeColor, parseFn, parseFill, copyJSON, replaceVariable } from "../parsers/parsingFunctions";
 import { AreaDefinition, Area } from "./area";
 import { GraphObjectDefinition, GraphObject } from "./graphObject";
+import { anonymizeCopy } from "../parsers/nameRegistry";
 
 
 
@@ -62,7 +63,7 @@ export class Curve extends GraphObject {
         }
 
         if (def.hasOwnProperty('label')) {
-            let labelDef = copyJSON(def);
+            let labelDef = anonymizeCopy(copyJSON(def));
             delete labelDef.label;
             labelDef = setDefaults(labelDef, def.label);
             labelDef = setDefaults(labelDef, {

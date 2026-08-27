@@ -9,8 +9,59 @@ All graph objects share certain common definitions (from `GraphObjectDefinition`
 - `color`: The stroke/fill color (e.g., `blue`, `red`).
 - `layer`: The z-index/drawing order layer.
 - `show`: A math expression evaluating to boolean/number indicating whether to show the object (e.g. `show: (price > 10)`).
-- `name`: Used to reference this object inside the math evaluations (`calcs.name.x`, etc.).
+- `name`: Used to reference this object inside the math evaluations (`calcs.name.x`, etc.), and the object's address from outside the engine — see [Names and titles](#names-and-titles).
+- `title`: The object's human name, for prose about it. Not drawn.
 - `strokeWidth`, `lineStyle`: For objects with strokes (e.g. `dashed`, `dotted`).
+
+## Names and titles
+
+An object has two kinds of name, and they answer different questions.
+
+`name` is its **address**. It is the calc key its geometry publishes under
+(`calcs.demand.slope`), and it is how anything outside the engine refers to the
+object. Names are checked for uniqueness at parse time: two objects answering to
+one name warns, because whichever parses second loses its calcs and any
+reference to that name becomes ambiguous. An object you do not name gets a
+generated one (`KGID_…`) and is deliberately **not addressable** — nothing
+refers to it, so a collision between two generated names is neither an error nor
+reported.
+
+`title` is its **word in a sentence**: "demand" where the drawn label is `D` and
+the name is `demand`. It exists so a host can write *"demand shifts right"*
+without knowing calc keys. It is never rendered.
+
+Titles default so that a diagram narrates without being hand-annotated:
+
+| Case | `title` |
+|---|---|
+| You wrote one | yours |
+| You named the object | the `name` you gave it |
+| An econ composite named it | the composite's word — `demand`, `supply`, `marginal revenue`, `the PPF` |
+| A second unnamed object of the same kind | the word, numbered: `demand 2` |
+| Nothing named it | none — a generated name is not a word for anything |
+
+```yaml
+- type: Line
+  def:
+    name: demand          # the address, and the calc key
+    title: market demand  # the word for prose about it
+    yIntercept: params.a
+    slope: -1
+```
+
+### Decorations do not share an object's identity
+
+A point's droplines and axis labels, and a curve's own label, are built by
+copying the object's def — so they used to carry its name as well. They now get
+their own, because three things answering to `equilibrium` makes the address
+ambiguous and would narrate one movement three times. A single object drawn as
+*several* curves — an indifference curve either side of its asymptote — is the
+opposite case and keeps its one name, deliberately.
+
+Composites that publish calcs but draw nothing themselves hand the title to the
+object that *is* drawn. `EconLinearEquilibrium` publishes `calcs.equilibrium.Q`
+and `.P` and draws a point named `equilibrium_point` titled `equilibrium`: the
+point is the thing that moves, so the point is the thing narration talks about.
 
 ## `Point`
 

@@ -3,7 +3,7 @@ import { UnivariateFunctionDefinition } from "../../math/univariateFunction";
 import { TypeAndDef } from "../../view/view";
 import { Curve } from "../graphObjects/curve";
 import { KGAuthorClasses } from "../classRegistry";
-import { resetNameRegistry } from "./nameRegistry";
+import { resetNameRegistry, claimNameOnce, reuseName } from "./nameRegistry";
 
 export function extractTypeAndDef(def) {
     if (def.hasOwnProperty('type')) {
@@ -199,8 +199,13 @@ export function makeDraggable(def: any) {
 }
 
 export function curvesFromFunctions(fns: (UnivariateFunctionDefinition | ParametricFunctionDefinition)[], def, graph) {
+    // One named object, drawn as several curves. The name is claimed here, once,
+    // and each copy is marked as reusing it — otherwise the second branch reads
+    // as a second object answering to the same name.
+    claimNameOnce(def);
+
     return fns.map(function (fn) {
-        let curveDef = copyJSON(def);
+        let curveDef = reuseName(copyJSON(def));
         if (curveDef.hasOwnProperty('min')) {
             fn.min = curveDef.min;
         }

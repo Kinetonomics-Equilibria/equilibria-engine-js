@@ -44,7 +44,7 @@ import { setEconName } from "../../../parsers/nameRegistry";
 
             def = setStrokeColor(def);
 
-            setEconName(def, 'ppf');
+            setEconName(def, 'ppf', 'the PPF');
 
             setDefaults(def, {
                 color: 'colors.supply',

@@ -56,7 +56,14 @@ export class EconLinearEquilibrium extends GraphObjectGenerator {
         if (graph) {
 
             if (def.hasOwnProperty('equilibrium')) {
+                // The composite is not itself drawn — the point is. Narration is
+                // about what moved on screen, so the point carries the human word,
+                // and a name of its own so a lesson step can address it. It cannot
+                // simply be called `equilibrium`: that key already holds the
+                // composite's Q and P, and Point.parseSelf assigns over it.
                 def.equilibrium = setDefaults(def.equilibrium, {
+                    "name": le.name + "_point",
+                    "title": le.title || le.name,
                     "color": "colors.equilibriumPrice",
                     "x": le.Q,
                     "y": le.P,

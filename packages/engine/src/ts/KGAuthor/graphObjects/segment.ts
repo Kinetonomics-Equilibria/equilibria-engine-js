@@ -4,6 +4,7 @@ import { KGAuthorClasses } from "../classRegistry";
 import { setStrokeColor, averageDefs, copyJSON } from "../parsers/parsingFunctions";
 import { Tree } from "../positionedObjects/tree";
 import { GraphObjectDefinition, GraphObject } from "./graphObject";
+import { anonymizeCopy } from "../parsers/nameRegistry";
 
 
 
@@ -58,7 +59,7 @@ export class Segment extends GraphObject {
         }
 
         if (def.hasOwnProperty('label')) {
-            let labelDef = copyJSON(def);
+            let labelDef = anonymizeCopy(copyJSON(def));
             delete labelDef.label;
             if (typeof def.label === "string") {
                 def.label = { text: def.label }

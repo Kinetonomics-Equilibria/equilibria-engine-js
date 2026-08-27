@@ -158,6 +158,7 @@ export class EconLinearDemand extends Line {
 
             if (def.hasOwnProperty('marginalRevenue')) {
                 let marginalRevenueDef = setDefaults(def.marginalRevenue || {}, {
+                    "title": "marginal revenue",
                     "color": "colors.marginalRevenue",
                     "yIntercept": ld.yIntercept,
                     "slope": multiplyDefs(2, ld.slope),

@@ -6,6 +6,7 @@ import { setFillColor, makeDraggable, copyJSON } from "../parsers/parsingFunctio
 import { Graph } from "../positionedObjects/graph";
 import { Tree } from "../positionedObjects/tree";
 import { GraphObjectDefinition, GraphObject } from "./graphObject";
+import { anonymizeCopy } from "../parsers/nameRegistry";
 import { EdgeDefinition, Edge, Segment } from "./segment";
 
 
@@ -45,7 +46,7 @@ export class Point extends GraphObject {
         def = makeDraggable(def);
 
         if (def.hasOwnProperty('label')) {
-            let labelDef = copyJSON(def);
+            let labelDef = anonymizeCopy(copyJSON(def));
             delete labelDef.label;
             labelDef = setDefaults(labelDef, def.label);
             labelDef = setDefaults(labelDef, {
@@ -59,7 +60,7 @@ export class Point extends GraphObject {
 
         if (def.hasOwnProperty('droplines')) {
             if (def.droplines.hasOwnProperty('vertical')) {
-                let verticalDroplineDef = copyJSON(def);
+                let verticalDroplineDef = anonymizeCopy(copyJSON(def));
 
                 // only drag vertical droplines horizontally
                 if (verticalDroplineDef.hasOwnProperty('drag')) {
@@ -68,7 +69,7 @@ export class Point extends GraphObject {
 
                 if (def.droplines.hasOwnProperty('top')) {
                     verticalDroplineDef.y = graph.yScale.max;
-                    let xTopAxisLabelDef = copyJSON(verticalDroplineDef);
+                    let xTopAxisLabelDef = anonymizeCopy(copyJSON(verticalDroplineDef));
                     xTopAxisLabelDef.y = 'OPPAXIS';
                     setDefaults(xTopAxisLabelDef, {
                         text: def.droplines.top,
@@ -81,7 +82,7 @@ export class Point extends GraphObject {
                 verticalDroplineDef.a = [verticalDroplineDef.x, graph.xScale.intercept];
                 verticalDroplineDef.b = [verticalDroplineDef.x, verticalDroplineDef.y];
                 p.subObjects.push(new Segment(verticalDroplineDef, graph));
-                let xAxisLabelDef = copyJSON(verticalDroplineDef);
+                let xAxisLabelDef = anonymizeCopy(copyJSON(verticalDroplineDef));
                 xAxisLabelDef.y = 'AXIS';
                 setDefaults(xAxisLabelDef, {
                     text: def.droplines.vertical,
@@ -90,7 +91,7 @@ export class Point extends GraphObject {
                 p.subObjects.push(new Label(xAxisLabelDef, graph));
             }
             if (def.droplines.hasOwnProperty('horizontal')) {
-                let horizontalDroplineDef = copyJSON(def);
+                let horizontalDroplineDef = anonymizeCopy(copyJSON(def));
 
                 // only drag horizontal droplines vertically
                 if (horizontalDroplineDef.hasOwnProperty('drag')) {
@@ -103,7 +104,7 @@ export class Point extends GraphObject {
                 horizontalDroplineDef.b = [horizontalDroplineDef.x, horizontalDroplineDef.y];
                 p.subObjects.push(new Segment(horizontalDroplineDef, graph));
 
-                let yAxisLabelDef = copyJSON(horizontalDroplineDef);
+                let yAxisLabelDef = anonymizeCopy(copyJSON(horizontalDroplineDef));
                 yAxisLabelDef.x = 'AXIS';
                 setDefaults(yAxisLabelDef, {
                     text: def.droplines.horizontal,

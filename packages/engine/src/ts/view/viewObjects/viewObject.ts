@@ -11,6 +11,12 @@ export interface ViewObjectDefinition extends UpdateListenerDefinition {
     layer?: any;
     svgContainerDiv?: any;
     name?: string;
+    /**
+     * The object's human name, for prose about it. Carried through from the
+     * authoring layer and never drawn — it exists so something outside the engine
+     * can say *which* object moved without knowing calc keys.
+     */
+    title?: string;
     tabbable?: boolean;
     srTitle?: string;
     srDesc?: string;
@@ -90,6 +96,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
     public inDef;
     public interactionHandler;
 
+    public title;
     public tabbable;
     public srTitle;
     public srDesc;
@@ -137,6 +144,11 @@ export class ViewObject extends UpdateListener implements IViewObject {
         super(def);
 
         let vo = this;
+
+        // Assigned rather than declared a constant: UpdateListener coerces a
+        // constant that parses as a number, and a title of "2" is a word, not a
+        // quantity.
+        vo.title = def.title;
 
         if (vo.hasOwnProperty('xScale') && vo.xScale) {
             def.xScaleMin = vo.xScale.def.domainMin;

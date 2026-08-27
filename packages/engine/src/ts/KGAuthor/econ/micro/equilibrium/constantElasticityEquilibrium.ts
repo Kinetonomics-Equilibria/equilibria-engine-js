@@ -34,7 +34,11 @@ import { EconConstantElasticityCurveDefinition, EconConstantElasticityCurve } fr
 
             let cee = this;
 
+            // As in EconLinearEquilibrium: the composite is not drawn, the point is,
+            // so the point carries the human word. It keeps a generated name here
+            // because this same def is handed on to both curves as their `point`.
             def.equilibrium.color = def.equilibrium.color || "colors.green";
+            def.equilibrium.title = def.equilibrium.title || cee.title || def.name;
             const equilibrium = new Point(def.equilibrium, graph);
             cee.Q = equilibrium.x;
             cee.P = equilibrium.y;

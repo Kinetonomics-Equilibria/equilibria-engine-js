@@ -35,7 +35,7 @@ import { setEconName } from "../../../../parsers/nameRegistry";
             // instead of overwriting another one. Going through the registry
             // covers the remaining case: a second *unnamed* contract curve is
             // numbered (cc2) rather than overwriting the first.
-            setEconName(def, 'cc');
+            setEconName(def, 'cc', 'the contract curve');
 
             setDefaults(def, {
                 interpolation: 'curveMonotoneX',

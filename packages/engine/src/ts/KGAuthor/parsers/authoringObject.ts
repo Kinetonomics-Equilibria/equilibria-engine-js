@@ -5,6 +5,8 @@ import { Graph } from "../positionedObjects/graph";
 
 export interface AuthoringObjectDefinition {
     name?: string;
+    /** Human name for prose about this object; see `GraphObjectDefinition.title`. */
+    title?: string;
     tabbable?: boolean;
     srTitle?: string;
     srDesc?: string;
@@ -17,6 +19,7 @@ export interface IAuthoringObject {
 export class AuthoringObject implements IAuthoringObject {
 
     public name: any;
+    public title: any;
     public def: any;
     public subObjects: AuthoringObject[];
     public tabbable: boolean;
@@ -26,6 +29,7 @@ export class AuthoringObject implements IAuthoringObject {
     constructor(def: AuthoringObjectDefinition) {
         this.def = def;
         this.name = def.name;
+        this.title = def.title;
         this.subObjects = [];
 
 

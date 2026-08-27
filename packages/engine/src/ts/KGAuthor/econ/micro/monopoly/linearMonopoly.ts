@@ -33,7 +33,7 @@ export class EconLinearMonopoly extends GraphObjectGenerator {
 
     constructor(def: EconLinearMonopolyDefinition, graph) {
 
-        setEconName(def, 'monopoly');
+        setEconName(def, 'monopoly', 'the monopolist');
 
         setDefaults(def, {
             showCS: false,
