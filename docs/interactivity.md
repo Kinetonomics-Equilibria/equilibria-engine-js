@@ -13,11 +13,11 @@ The `KineticGraph` class extends `EventEmitter3`. This gives the host applicatio
 
 The engine exposes a `KG_EVENTS` object with the following event keys:
 
-| Event Key | Event Name | Description |
-|-----------|------------|-------------|
-| `KG_EVENTS.PARAM_CHANGED` | `'kg:param_changed'` | Fired when a parameter value changes (e.g., via drag interaction). |
-| `KG_EVENTS.CURVE_DRAGGED` | `'kg:curve_dragged'` | Fired when a curve element is dragged by the user. |
-| `KG_EVENTS.NODE_HOVER` | `'kg:node_hover'` | Fired when the user hovers over an interactive node. |
+| Event Key | Event Name | Fired when |
+|-----------|------------|------------|
+| `KG_EVENTS.PARAM_CHANGED` | `'kg:param_changed'` | A param change is **accepted** — from a drag, a click, or `update()`. A change a restriction rejects does not fire. |
+| `KG_EVENTS.CURVE_DRAGGED` | `'kg:curve_dragged'` | A drag on an object starts moving and when it ends. `dragging` says which. |
+| `KG_EVENTS.NODE_HOVER` | `'kg:node_hover'` | The pointer enters or leaves an interactive object. `hovering` says which. Only draggable and clickable objects receive pointer events at all. |
 
 ### Listening for Events
 
@@ -27,16 +27,68 @@ import { KineticGraph, KG_EVENTS } from "equilibria-engine-js";
 const kg = new KineticGraph(config);
 kg.mount(document.getElementById('container'));
 
-// Listen for parameter changes from user interactions
-kg.on(KG_EVENTS.PARAM_CHANGED, (eventData) => {
-    console.log("Parameter changed!", eventData);
+kg.on(KG_EVENTS.PARAM_CHANGED, (e) => {
+    // { name, value, previousValue, params, affected }
+    console.log(`${e.name}: ${e.previousValue} → ${e.value}`);
 });
 
-// Listen for curve drag interactions
-kg.on(KG_EVENTS.CURVE_DRAGGED, (eventData) => {
-    console.log("Curve dragged!", eventData);
+kg.on(KG_EVENTS.CURVE_DRAGGED, (e) => {
+    // { name, title, dragging }
+    console.log(e.dragging ? `dragging ${e.title}` : `let go of ${e.title}`);
 });
 ```
+
+### What moved: the `affected` array
+
+`kg:param_changed` carries what the change did to the diagram, which is the
+difference between a readout and an explanation:
+
+```js
+{
+  name: 'a', value: 24, previousValue: 20,
+  params: { a: 24, ... },
+  affected: [
+    { name: 'demand', title: 'demand',
+      movement: { kind: 'shift', dx: 0, dy: 4, axis: 'y', sign: 1 } },
+    { name: 'equilibrium_point', title: 'equilibrium',
+      movement: { kind: 'move', dx: 2, dy: 2, axis: 'both', sign: 0 } }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `kind` | `move` (a point), `shift` (every sampled point translated together), `rotate` (the shape pivoted). |
+| `dx`, `dy` | Mean change, **in domain units** — so it means the same thing whatever size the panel is drawn at. |
+| `axis` | `x`, `y`, or `both`. |
+| `sign` | `1` or `-1` along `axis`; `0` when `axis` is `both`. |
+| `steeper` | On `rotate` only: whether the chord through the shape got steeper. |
+
+Three things this deliberately does **not** do.
+
+It does not write the sentence. `{ kind: 'shift', axis: 'x', sign: 1 }`, never
+"shifts right" — phrasing, tense, tone and translation are product copy, and
+belong where they can be revised without editing a diagram.
+
+It does not pick between "up" and "right" for something that moved both ways.
+That is a question about economics rather than geometry — for a demand curve the
+convention is horizontal — so `axis` is `both` and the app decides.
+
+It does not report movement it is not sure of. A change smaller than a tenth of
+a percent of the visible axis range is treated as no movement, because an app
+told "shifted right" by rounding noise says something confidently false to a
+student. Only objects with a [`title`](./schema/05-graph-objects.md#names-and-titles)
+that are currently on screen are ever described; an untitled object has no word
+an app could use for it.
+
+Movement is measured **from the last snapshot**, not from the previous frame —
+the same comparison `prev` makes. A bracketed drag therefore reports the whole
+movement from where the student grabbed the curve, and a ghost drawn from `prev`
+and a sentence written from `affected` always describe the same event. See
+[Gestures and Snapshots](#gestures-and-snapshots).
+
+Nothing is measured when nothing is listening: with no `kg:param_changed`
+subscriber the engine skips the comparison entirely.
 
 ### Error Handling
 

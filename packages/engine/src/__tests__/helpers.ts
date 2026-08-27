@@ -45,6 +45,8 @@ export interface MountOptions {
     schema?: string;
     xAxis?: any;
     yAxis?: any;
+    /** When the engine captures `prev`; see docs/schema/02-parameters-and-interactions.md. */
+    snapshotOn?: 'gesture' | 'change' | 'never';
 }
 
 /** Mount a list of graph objects in a OneGraph layout and return what it resolved to. */
@@ -54,7 +56,8 @@ export function mountObjects(objects: any[], options: MountOptions = {}): MountR
         calcs,
         schema = 'EconSchema',
         xAxis = { title: 'x', min: 0, max: 30 },
-        yAxis = { title: 'y', min: 0, max: 30 }
+        yAxis = { title: 'y', min: 0, max: 30 },
+        snapshotOn
     } = options;
 
     const config: any = {
@@ -63,6 +66,7 @@ export function mountObjects(objects: any[], options: MountOptions = {}): MountR
         layout: { OneGraph: { graph: { xAxis, yAxis, objects } } }
     };
     if (calcs) config.calcs = calcs;
+    if (snapshotOn) config.snapshotOn = snapshotOn;
 
     return mountConfig(config);
 }

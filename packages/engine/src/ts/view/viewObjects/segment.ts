@@ -1,4 +1,5 @@
 import { setDefaults, setProperties } from "../../util";
+import { Sample } from "../movement";
 import { Scale } from "../scale";
 import { ViewObjectDefinition, ViewObject } from "./viewObject";
 
@@ -35,6 +36,11 @@ export class Segment extends ViewObject {
         setProperties(def, 'constants', ['xScale2', 'yScale2', 'startArrow', 'endArrow']);
         setProperties(def, 'updatables', ['x1', 'y1', 'x2', 'y2']);
         super(def);
+    }
+
+    sampleGeometry(): Sample[] | null {
+        const s = this;
+        return [{ x: +s.x1, y: +s.y1 }, { x: +s.x2, y: +s.y2 }];
     }
 
     // create SVG elements

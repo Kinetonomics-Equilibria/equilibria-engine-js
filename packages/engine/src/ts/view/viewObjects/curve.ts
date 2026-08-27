@@ -4,9 +4,13 @@ import * as d3 from "d3";
 import { ParametricFunctionDefinition, ParametricFunction } from "../../math/parametricFunction";
 import { UnivariateFunctionDefinition, UnivariateFunction } from "../../math/univariateFunction";
 import { ViewObjectDefinition, ViewObject } from "./viewObject";
+import { Sample } from "../movement";
 import { setDefaults, setProperties } from "../../util";
 
 
+
+/** How many points a curve is thinned to when its movement is measured. */
+const SAMPLE_POINTS = 16;
 
 export interface CurveDefinition extends ViewObjectDefinition {
     univariateFunction?: UnivariateFunctionDefinition;
@@ -70,6 +74,36 @@ export class Curve extends ViewObject {
         curve.path.on("focus", function () { curve.dragPath.style('fill', 'yellow') });
         curve.path.on("blur", function () { curve.dragPath.style('fill', 'none') });
         return curve.addClipPathAndArrows().addInteraction();
+    }
+
+    /**
+     * The curve's shape, thinned to a fixed handful of points.
+     *
+     * Reads the data the last redraw already generated rather than resampling:
+     * this runs on every accepted param change, beside a redraw that is doing
+     * the real work, and a second full sampling pass there would land the cost
+     * exactly where interaction is most latency-sensitive. A curve that did not
+     * redraw did not change, so its data is current either way.
+     *
+     * Sixteen points is enough to tell a translation from a rotation on any
+     * shape a student can see, and few enough that the comparison is free.
+     */
+    sampleGeometry(): Sample[] | null {
+        const curve = this;
+        const fn = curve.univariateFunction || curve.parametricFunction;
+        const data: any[] = fn && (fn as any).data;
+        if (!data || data.length === 0) return null;
+
+        const wanted = Math.min(SAMPLE_POINTS, data.length);
+        if (wanted === 1) return [{ x: +data[0].x, y: +data[0].y }];
+
+        const step = (data.length - 1) / (wanted - 1);
+        const samples: Sample[] = [];
+        for (let i = 0; i < wanted; i++) {
+            const d = data[Math.round(i * step)];
+            samples.push({ x: +d.x, y: +d.y });
+        }
+        return samples;
     }
 
     // update properties

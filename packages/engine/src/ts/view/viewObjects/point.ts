@@ -1,4 +1,5 @@
 import { setDefaults, setProperties } from "../../util";
+import { Sample } from "../movement";
 import { ViewObjectDefinition, ViewObject } from "./viewObject";
 
 
@@ -36,6 +37,11 @@ import { ViewObjectDefinition, ViewObject } from "./viewObject";
             });
             setProperties(def, 'updatables',['x', 'y', 'r']);
             super(def);
+        }
+
+        sampleGeometry(): Sample[] | null {
+            const p = this;
+            return [{ x: +p.x, y: +p.y }];
         }
 
         // create SVG elements

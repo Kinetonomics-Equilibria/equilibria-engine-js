@@ -80,8 +80,10 @@ export class KineticGraph extends EventEmitter {
                 snapshotOn: this.options.snapshotOn
             });
 
-            // Pass the event emitter to the view so objects can emit events
-            (this.view as any).emitter = this;
+            // Pass the event emitter to the view so objects can emit events. The
+            // view reads it back to decide whether describing a movement is worth
+            // the work, so it must be installed before any interaction, not lazily.
+            this.view.emitter = this;
 
             // Set up a ResizeObserver scoped to the container for responsive resizing
             this.resizeObserver = new ResizeObserver(() => {

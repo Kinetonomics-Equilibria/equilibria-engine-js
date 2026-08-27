@@ -6,7 +6,9 @@ import { RestrictionDefinition } from "../model/restriction";
 import { randomString } from "../model/updateListener";
 import { ScaleDefinition, Scale } from "./scale";
 import { MarkerDefinition, Marker } from "./viewObjects/marker";
-import { ViewObjectDefinition } from "./viewObjects/viewObject";
+import { ViewObjectDefinition, ViewObject } from "./viewObjects/viewObject";
+import { Sample, Movement, describeMovement, noiseFor } from "./movement";
+import { KG_EVENTS } from "../constants";
 import { parse } from "../KGAuthor/parsers/parsingFunctions";
 import "../KGAuthor/index"; // side-effect: registers all KGAuthor classes into the registry
 import { ViewObjectClasses } from "./viewObjects/index";
@@ -68,9 +70,52 @@ export function addView(name, def) {
 }
 
 
+/** One object the app can name, and what it just did. */
+export interface AffectedObject {
+    name: string;
+    title: string;
+    movement: Movement;
+}
+
+/** The payload of `kg:param_changed`. Additive: `affected` may be empty. */
+export interface ParamChangedEvent {
+    name: string;
+    value: any;
+    previousValue: any;
+    params: { [name: string]: any };
+    affected: AffectedObject[];
+}
+
 export class View implements IView {
 
     public parsedData;
+
+    /**
+     * Every drawn object, kept so the view can be asked what moved.
+     *
+     * They were previously constructed and dropped on the floor — the model held
+     * them as update listeners and nothing else could reach them, which is why
+     * the engine could not answer "which object did that param move?".
+     */
+    public viewObjects: ViewObject[] = [];
+
+    /**
+     * The event emitter, installed by `KineticGraph` after construction.
+     *
+     * Declared here rather than bolted on as `(view as any).emitter`, because
+     * the view now decides whether to do work based on whether anyone is
+     * listening.
+     */
+    public emitter: any = null;
+
+    /**
+     * Geometry as it was at the last snapshot, keyed by view-object id.
+     *
+     * Keyed by `id` and not by `name`: one object may legitimately be drawn as
+     * several curves sharing a name (an indifference curve either side of its
+     * asymptote), and keying by name would silently keep only the last.
+     */
+    private geometryAtSnapshot: { [id: string]: Sample[] } = {};
     private div: any;
     private svg: any;
     private model: Model;
@@ -269,6 +314,13 @@ export class View implements IView {
 
         view.addViewObjects(parsedData);
         this.parsedData = parsedData;
+
+        // The "before" every later comparison is made against. Taken once here so
+        // the very first interaction has one, then re-taken on every snapshot.
+        view.captureGeometry();
+
+        view.model.onSnapshot = function () { view.captureGeometry() };
+        view.model.onParamChange = function (change) { view.reportParamChange(change) };
     }
 
     // add view information (model, layer, scales) to an object
@@ -286,6 +338,10 @@ export class View implements IView {
         }
 
         def.model = view.model;
+        // A live reference, not the emitter itself: `KineticGraph` installs the
+        // emitter after the view is built, so an object that captured it here
+        // would capture null.
+        def.view = view;
         def.layer = layer;
         def.svgContainerDiv = view.svgContainerDiv;
         def.xScale = getScale(def['xScaleName']);
@@ -382,7 +438,7 @@ export class View implements IView {
                                 `panels linked — in CustomLayout that is "linkTo".`
                             );
                         } else if (Object.prototype.hasOwnProperty.call(ViewObjectClasses, td.type)) {
-                            new ViewObjectClasses[td.type](def);
+                            view.viewObjects.push(new ViewObjectClasses[td.type](def));
                         } else {
                             console.warn("ViewObject type not found in ViewObjectClasses: ", td.type);
                         }
@@ -399,7 +455,7 @@ export class View implements IView {
                 let def: ViewObjectDefinition = td.def;
                 def = view.addViewToDef(def, divLayer);
                 if (Object.prototype.hasOwnProperty.call(ViewObjectClasses, td.type)) {
-                    new ViewObjectClasses[td.type](def);
+                    view.viewObjects.push(new ViewObjectClasses[td.type](def));
                 } else {
                     console.warn("ViewObject type not found in ViewObjectClasses: ", td.type);
                 }
@@ -407,6 +463,89 @@ export class View implements IView {
         }
 
         view.updateDimensions();
+    }
+
+    /**
+     * The objects the engine is willing to describe: the ones with a human name,
+     * that are on screen, and whose geometry means something.
+     *
+     * A title is the gate because an untitled object has nothing an app could
+     * call it — narration would be reduced to reading out `KGID_9fA…`. Hidden
+     * objects are excluded because they also do not redraw, so their sampled
+     * geometry is whatever it was when they were last visible; saying that a
+     * curve nobody can see shifted right would be both useless and wrong.
+     */
+    private narratableObjects(): ViewObject[] {
+        return this.viewObjects.filter(function (vo) {
+            return !!vo.title && !!vo.show && !vo.inDef;
+        });
+    }
+
+    /**
+     * Record where everything is now, as the state later changes are measured
+     * against. Called as `prev` is captured, so a ghost and a sentence about the
+     * same interaction are always describing the same "before".
+     */
+    captureGeometry() {
+        const view = this;
+        view.geometryAtSnapshot = {};
+        view.narratableObjects().forEach(function (vo) {
+            const samples = vo.sampleGeometry();
+            if (samples) view.geometryAtSnapshot[vo.id] = samples;
+        });
+    }
+
+    /**
+     * Which named objects have moved since the snapshot, and how.
+     *
+     * Measured against the snapshot rather than against the previous frame, so
+     * a drag reports the whole movement from where the student grabbed it —
+     * the same comparison `prev.changed` makes, which is what keeps the ghost
+     * and the sentence describing one event rather than two.
+     */
+    whatMoved(): AffectedObject[] {
+        const view = this;
+        const affected: AffectedObject[] = [];
+
+        view.narratableObjects().forEach(function (vo) {
+            const before = view.geometryAtSnapshot[vo.id],
+                after = vo.sampleGeometry();
+            if (!before || !after) return;
+
+            const movement = describeMovement(
+                before, after,
+                noiseFor(vo.xScale.domainMin, vo.xScale.domainMax),
+                noiseFor(vo.yScale.domainMin, vo.yScale.domainMax)
+            );
+            if (movement) {
+                affected.push({ name: vo.name, title: vo.title, movement: movement });
+            }
+        });
+
+        return affected;
+    }
+
+    /**
+     * Announce an accepted param change, with what it did to the diagram.
+     *
+     * Nothing is measured when nothing is listening. Comparing geometry is
+     * cheap — a subtraction per sampled point, against data the redraw beside
+     * it already generated — but "cheap" is not "free" on a path that runs
+     * sixty times a second, and a diagram with no host attached should not pay
+     * for a feature no one asked for.
+     */
+    private reportParamChange(change: { name: string, value: any, previousValue: any }) {
+        const view = this;
+        if (!view.emitter || view.emitter.listenerCount(KG_EVENTS.PARAM_CHANGED) === 0) return;
+
+        const payload: ParamChangedEvent = {
+            name: change.name,
+            value: change.value,
+            previousValue: change.previousValue,
+            params: { ...view.model.currentParamValues },
+            affected: view.whatMoved()
+        };
+        view.emitter.emit(KG_EVENTS.PARAM_CHANGED, payload);
     }
 
     // update dimensions, either when first rendering or when the window is resized

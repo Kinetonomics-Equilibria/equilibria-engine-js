@@ -82,6 +82,20 @@ export class Model implements IModel {
     /** True when any calc definition mentions `prev`; see the constructor. */
     private usesPrev: boolean = false;
 
+    /**
+     * Seams the View installs so it can watch state change without the Model
+     * knowing what a view object is.
+     *
+     * `onSnapshot` fires as `prev` is captured and before anything re-renders,
+     * which is the one instant the drawn geometry is still the "before" an
+     * author's ghost is drawn from. `onParamChange` fires after an accepted
+     * change has been broadcast, so every listener has already recomputed.
+     * Both are null unless something installed them, and neither is called for
+     * the construction-time seed.
+     */
+    public onSnapshot: (() => void) | null = null;
+    public onParamChange: ((change: { name: string, value: any, previousValue: any }) => void) | null = null;
+
     constructor(parsedData) {
         let model = this;
         model.params = parsedData.params.map(function (def) {
@@ -179,6 +193,9 @@ export class Model implements IModel {
      */
     snapshot(opts?: { render?: boolean; seed?: boolean }) {
         const model = this;
+        if (!opts || !opts.seed) {
+            if (model.onSnapshot) model.onSnapshot();
+        }
         model.prevParamValues = model.currentParamValues;
         model.prevCalcValues = model.currentCalcValues;
         if (!opts || !opts.seed) model.snapshotSeq++;
@@ -442,12 +459,21 @@ export class Model implements IModel {
                 // real gesture still coalesces, or the ghost would track one tick
                 // behind the curve for the whole drag.
                 if (model.snapshotOn === 'change' && model.gestureDepth === 0) {
+                    // Same instant as snapshot()'s hook, reached by the other road:
+                    // nothing has re-rendered yet, so the view still holds "before".
+                    if (model.onSnapshot) model.onSnapshot();
                     model.prevParamValues = oldParamValues;
                     model.prevCalcValues = oldCalcValues;
                     model.snapshotSeq++;
                 }
                 // If the hypothetical is strictly legal, proceed with a full broadcast update
                 model.update(false);
+
+                // After the broadcast, so anything asking what this change did to
+                // the diagram reads a diagram that has already responded to it.
+                if (model.onParamChange) {
+                    model.onParamChange({ name: name, value: param.value, previousValue: oldValue });
+                }
             } else {
                 // Otherwise rollback safely
                 param.update(oldValue);

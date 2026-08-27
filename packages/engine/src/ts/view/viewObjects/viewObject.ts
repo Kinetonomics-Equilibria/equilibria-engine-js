@@ -3,6 +3,7 @@ import { ClickListenerDefinition, ClickListener } from "../../controller/listene
 import { DragListenerDefinition, DragListener } from "../../controller/listeners/dragListener";
 import { UpdateListenerDefinition, IUpdateListener, UpdateListener } from "../../model/updateListener";
 import { setDefaults, setProperties } from "../../util";
+import { Sample } from "../movement";
 import { Scale } from "../scale";
 
 
@@ -10,6 +11,8 @@ import { Scale } from "../scale";
 export interface ViewObjectDefinition extends UpdateListenerDefinition {
     layer?: any;
     svgContainerDiv?: any;
+    /** The View this object belongs to; set by `View.addViewToDef`. */
+    view?: any;
     name?: string;
     /**
      * The object's human name, for prose about it. Carried through from the
@@ -96,6 +99,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
     public inDef;
     public interactionHandler;
 
+    public view;
     public title;
     public tabbable;
     public srTitle;
@@ -134,7 +138,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
         });
 
         setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc']);
-        setProperties(def, 'constants', ['xScale', 'yScale', 'clipPath', 'clipPath2', 'interactive', 'alwaysUpdate', 'inDef', 'checkOnGraph', 'tabbable']);
+        setProperties(def, 'constants', ['xScale', 'yScale', 'clipPath', 'clipPath2', 'interactive', 'alwaysUpdate', 'inDef', 'checkOnGraph', 'tabbable', 'view']);
         setProperties(def, 'colorAttributes', ['stroke', 'fill', 'color']);
 
         if (def.inDef) {
@@ -319,6 +323,20 @@ export class ViewObject extends UpdateListener implements IViewObject {
         const vo = this;
         return !!((vo.xScale && vo.xScale.hasChanged) || (vo.yScale && vo.yScale.hasChanged)
             || (vo.xScale2 && vo.xScale2.hasChanged) || (vo.yScale2 && vo.yScale2.hasChanged));
+    }
+
+    /**
+     * This object's geometry in domain units, for comparing one state to another.
+     *
+     * `null` means "cannot say", which is the honest answer for most objects and
+     * the default: an axis, a label, a marker, a clip path. Only shapes whose
+     * position carries meaning override it — a point, a curve, a segment — and
+     * only those are ever described as having moved. Domain units rather than
+     * pixels, so a panel that slides across the canvas is not mistaken for its
+     * contents moving.
+     */
+    sampleGeometry(): Sample[] | null {
+        return null;
     }
 
     update(force) {

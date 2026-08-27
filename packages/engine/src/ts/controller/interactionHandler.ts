@@ -2,6 +2,7 @@ import { UpdateListenerDefinition, IUpdateListener, UpdateListener } from "../mo
 import { ViewObject } from "../view/viewObjects/viewObject";
 import { ClickListener } from "./listeners/clickListener";
 import { DragListener } from "./listeners/dragListener";
+import { KG_EVENTS } from "../constants";
 import * as d3 from "d3";
 
 
@@ -26,6 +27,23 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
 
     /** One gesture per drag, opened on first movement rather than on mousedown. */
     private gestureOpen: boolean = false;
+
+    /**
+     * Announce something the student did to a specific object.
+     *
+     * `kg:curve_dragged` and `kg:node_hover` have been declared in `constants.ts`
+     * and documented as fired since the fork, and the React bindings offer
+     * `onCurveDragged` / `onNodeHover` props for them — but nothing in the engine
+     * ever emitted either one. They say *which* object the student is working
+     * on, which is exactly what a narration strip needs to lead with, so they
+     * are emitted here rather than deleted.
+     */
+    private announce(event: string, extra?: any) {
+        const vo = this.viewObject as any;
+        const emitter = vo && vo.view && vo.view.emitter;
+        if (!emitter || emitter.listenerCount(event) === 0) return;
+        emitter.emit(event, { name: vo.name, title: vo.title, ...(extra || {}) });
+    }
 
     constructor(def: InteractionHandlerDefinition) {
         def.dragListeners = def.dragListeners || [];
@@ -84,6 +102,13 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
             })
         }
 
+        // Hover reaches only objects that are interactive: pointer-events are
+        // 'none' on everything else, so there is nothing to hover.
+        if (handler.dragListeners.length > 0 || handler.clickListeners.length > 0) {
+            element.on("mouseenter", function () { handler.announce(KG_EVENTS.NODE_HOVER, { hovering: true }) });
+            element.on("mouseleave", function () { handler.announce(KG_EVENTS.NODE_HOVER, { hovering: false }) });
+        }
+
         // add drag listeners
         if (handler.dragListeners.length > 0) {
             element.call(d3.drag()
@@ -107,6 +132,8 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                         handler.model.beginGesture();
                     }
 
+                    handler.announce(KG_EVENTS.CURVE_DRAGGED, { dragging: true });
+
                     let drag = handler.scope.drag;
                     drag.x = handler.viewObject.xScale.scale.invert(event.x);
                     drag.y = handler.viewObject.yScale.scale.invert(event.y);
@@ -121,6 +148,7 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                     if (handler.gestureOpen) {
                         handler.gestureOpen = false;
                         handler.model.endGesture();
+                        handler.announce(KG_EVENTS.CURVE_DRAGGED, { dragging: false });
                     }
                 })
             );
