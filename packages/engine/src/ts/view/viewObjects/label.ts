@@ -11,7 +11,8 @@ export interface LabelDefinition extends ViewObjectDefinition {
     text: string;
 
     plainText?: boolean;
-    fontSize?: number;
+    /** Points. An expression now, not only a number — see the constructor. */
+    fontSize?: any;
     xPixelOffset?: number;
     yPixelOffset?: number;
     align?: string;
@@ -26,7 +27,7 @@ export class Label extends ViewObject {
     private y: number;
     private text: string;
     private plainText: boolean;
-    private fontSize: number;
+    private fontSize: any;
     private xPixelOffset: number;
     private yPixelOffset: number;
     private align: string;
@@ -77,8 +78,17 @@ export class Label extends ViewObject {
         });
 
         // define constant and updatable properties
-        setProperties(def, 'constants', ['xPixelOffset', 'yPixelOffset', 'fontSize', 'plainText']);
-        setProperties(def, 'updatables', ['x', 'y', 'text', 'align', 'valign', 'rotate', 'color', 'bgcolor']);
+        //
+        // `fontSize` moved out of the constants, and it was not only a missing
+        // feature. A constant is read once, in the UpdateListener constructor,
+        // and kept as-is unless it parses as a number — so `fontSize:
+        // 'params.big ? 14 : 10'` was stored as that string and written into
+        // the DOM as `font-size: params.big ? 14 : 10pt`, which is not a CSS
+        // length. The browser discarded the declaration and the label rendered
+        // at whatever size it inherited, with nothing anywhere saying so. As an
+        // updatable it evaluates, and `redraw()` applies it.
+        setProperties(def, 'constants', ['xPixelOffset', 'yPixelOffset', 'plainText']);
+        setProperties(def, 'updatables', ['x', 'y', 'text', 'align', 'valign', 'rotate', 'color', 'bgcolor', 'fontSize']);
 
         super(def);
 
@@ -97,7 +107,8 @@ export class Label extends ViewObject {
         label.rootElement = container.selectAll('div.rootElement-' + label.id).data([1]).join('div')
             .attr('class', 'rootElement-' + label.id + ' draggable')
             .style('position', 'absolute')
-            .style('font-size', label.fontSize + 'pt')
+            // No font-size here: it is an updatable now, and draw() runs before
+            // the first update, so this would write "undefinedpt". redraw() sets it.
             .style('text-align', 'center')
             .style('padding-left', '3px')
             .style('padding-right', '3px')
@@ -109,8 +120,14 @@ export class Label extends ViewObject {
     redraw() {
         let label = this;
 
-        label.rootElement.style('color', label.color).style('background-color', label.bgcolor)
-            ;
+        label.rootElement
+            .style('color', label.color)
+            .style('background-color', label.bgcolor)
+            // Applied here as well as in draw(): the size can now change after
+            // the div exists, and the measurements below (clientWidth/Height,
+            // which the alignment offsets are computed from) have to be taken
+            // after the text has been re-sized, not before.
+            .style('font-size', label.fontSize + 'pt');
 
         const x = label.xScale.scale(label.x) + (+label.xPixelOffset),
             y = label.yScale.scale(label.y) - (+label.yPixelOffset);

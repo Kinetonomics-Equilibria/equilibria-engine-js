@@ -1,5 +1,6 @@
 import { View } from "./view/view";
 import { StepDefinition } from "./KGAuthor/parsers/steps";
+import { DensityLevel } from "./KGAuthor/parsers/density";
 import { KG_EVENTS } from "./constants";
 import { EventEmitter } from "eventemitter3";
 import "../css/kgjs-theme.css";
@@ -11,6 +12,7 @@ import "../css/kgjs-theme.css";
 import "katex/dist/katex.min.css";
 
 export { KG_EVENTS };
+export type { DensityLevel };
 
 /**
  * The class the engine applies to its container, which the theme stylesheet
@@ -178,6 +180,21 @@ export class KineticGraph extends EventEmitter {
      */
     public steps(): StepDefinition[] {
         return (this.view?.parsedData?.steps as StepDefinition[]) || [];
+    }
+
+    /**
+     * Set how much detail one panel draws.
+     *
+     * Only a panel that declared a `density` can be set — declaring it is what
+     * creates the level to move — and a panel declared `'auto'` is the engine's
+     * to choose, so setting one warns rather than fighting it silently.
+     *
+     * This is a param update underneath, which is the point: a panel changes
+     * level without a remount, so a rail panel being promoted to the stage can
+     * gain its axis labels *as* it grows rather than after it arrives.
+     */
+    public setDensity(key: string, level: DensityLevel) {
+        this.view?.setDensity(key, level);
     }
 
     /**

@@ -55,7 +55,7 @@ import { ViewObjectDefinition, ViewObject } from "./viewObject";
                 .style('fill', rect.fill)
                 .style('fill-opacity', rect.opacity)
                 .style('stroke', rect.stroke)
-                .style('stroke-width', `${rect.strokeWidth}px`)
+                .style('stroke-width', `${rect.drawnStrokeWidth()}px`)
                 .style('stroke-opacity', rect.strokeOpacity)
             ;
             return rect;

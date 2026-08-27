@@ -109,6 +109,13 @@ export class Curve extends ViewObject {
     // update properties
     redraw() {
         let curve = this;
+        // `draw()` creates the <title>/<desc> elements; something has to put the
+        // text in them. Only `Point` did, so every curve in every diagram has
+        // carried an *empty* <title> — the author's `srTitle` was accepted,
+        // stored, and announced to nobody. Found by the density tests, which
+        // assert that an indicator panel is still describable: it was not, and
+        // neither was a full one.
+        curve.updateScreenReaderDescriptions();
         if (curve.univariateFunction != undefined) {
             const fn = curve.univariateFunction,
                 scale = fn.ind == 'y' ? curve.yScale : curve.xScale;

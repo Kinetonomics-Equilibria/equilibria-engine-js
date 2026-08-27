@@ -16,6 +16,8 @@ export interface LabelDefinition extends GraphObjectDefinition {
     rotate?: number;
     align?: string;
     position?: string;
+    /** What kind of chrome this label is; see `AXIS_TITLE` in graphObjects/axis.ts. */
+    furniture?: string;
 }
 
 export class Label extends GraphObject {

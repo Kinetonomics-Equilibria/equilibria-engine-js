@@ -66,7 +66,7 @@ import { ViewObjectDefinition, ViewObject } from "./viewObject";
             p.circle.style('fill', p.fill);
             p.circle.style('fill-opacity', p.opacity);
             p.circle.style('stroke', p.stroke);
-            p.circle.style('stroke-width', `${p.strokeWidth}px`);
+            p.circle.style('stroke-width', `${p.drawnStrokeWidth()}px`);
             p.circle.style('stroke-opacity', p.strokeOpacity);
             return p;
         }

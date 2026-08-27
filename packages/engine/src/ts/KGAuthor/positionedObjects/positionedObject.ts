@@ -46,11 +46,18 @@ import { addDefs, extractTypeAndDef } from "../parsers/parsingFunctions";
         }
         xAxis?: AxisDefinition,
         yAxis?: AxisDefinition
+        /**
+         * How much detail this panel draws: `full`, `compact`, `indicator` or
+         * `auto`. See `KGAuthor/parsers/density.ts`. Absent means `full`, so
+         * nothing authored before this existed changes.
+         */
+        density?: string
     }
 
     export class PositionedObject extends AuthoringObject {
         public xScale;
         public yScale;
+        public density;
 
         constructor(def) {
 
@@ -107,15 +114,33 @@ import { addDefs, extractTypeAndDef } from "../parsers/parsingFunctions";
 
             po.subObjects = [po.xScale, po.yScale];
 
+            po.density = def.density;
+
             if(po.def.hasOwnProperty('objects')) {
                 po.def.objects.map(extractTypeAndDef);
             }
 
-        
+        }
 
-    
-
-
-}
+        /**
+         * Publish the panel itself, not only its scales.
+         *
+         * A panel's *contents* survive parsing — the scales, and every object
+         * naming them — but the panel did not, so nothing downstream could say
+         * "this graph, at this level of detail". The scale names are carried
+         * here rather than re-derived from the panel name, because they are what
+         * an object's `xScaleName` actually matches against.
+         */
+        parseSelf(parsedData: ViewDefinition) {
+            const po = this;
+            parsedData.panels = parsedData.panels || [];
+            parsedData.panels.push({
+                name: po.name,
+                density: po.density,
+                xScaleName: po.xScale.name,
+                yScaleName: po.yScale.name
+            });
+            return parsedData;
+        }
 
 }

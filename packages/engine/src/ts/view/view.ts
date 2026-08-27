@@ -11,6 +11,10 @@ import { Sample, Movement, describeMovement, noiseFor } from "./movement";
 import { KG_EVENTS } from "../constants";
 import { parse } from "../KGAuthor/parsers/parsingFunctions";
 import { StepDefinition, compileSteps } from "../KGAuthor/parsers/steps";
+import {
+    AUTO_DENSITY, DensityLevel, DensityPanel, PanelDefinition,
+    DENSITY_LEVELS, compileDensity, densityIndex, levelForSize
+} from "../KGAuthor/parsers/density";
 import "../KGAuthor/index"; // side-effect: registers all KGAuthor classes into the registry
 import { ViewObjectClasses } from "./viewObjects/index";
 import * as d3 from "d3";
@@ -55,6 +59,10 @@ export interface ViewDefinition {
     steps?: StepDefinition[];
 
     // The rest of these are usually generated
+    /** Every graph that was drawn, in construction order; see `PositionedObject.parseSelf`. */
+    panels?: PanelDefinition[];
+    /** The subset whose density was compiled; see `KGAuthor/parsers/density.ts`. */
+    densityPanels?: DensityPanel[];
     scales?: ScaleDefinition[];
     clipPaths?: ClipPathDefinition[];
     markers?: MarkerDefinition[];
@@ -119,6 +127,15 @@ export class View implements IView {
      * asymptote), and keying by name would silently keep only the last.
      */
     private geometryAtSnapshot: { [id: string]: Sample[] } = {};
+
+    /**
+     * The panels whose level the engine chooses, resolved once.
+     *
+     * Held rather than filtered on demand because the refresh runs on every
+     * accepted param change — a drag is ~60 a second — and the overwhelmingly
+     * common case is a config with none, which should cost a length check.
+     */
+    private autoDensityPanels: DensityPanel[] = [];
     private div: any;
     private svg: any;
     private model: Model;
@@ -272,6 +289,13 @@ export class View implements IView {
             parsedData = compileSteps(data.steps, parsedData);
         }
 
+        // After steps, for the same reason and one more: both conjoin into
+        // `show`, and a step's reveal predicate and a density level are two
+        // independent claims about whether an object is on screen. Composing
+        // them in either order gives the same conjunction; composing only one
+        // would be a silent wrong answer.
+        parsedData = compileDensity(parsedData);
+
         return parsedData;
     }
 
@@ -324,30 +348,47 @@ export class View implements IView {
                 .style('pointer-events', 'none');
         }
 
-        view.addViewObjects(parsedData);
+        // Before the objects are built, not after: `addViewObjects` ends by
+        // calling `updateDimensions`, which resolves every `auto` panel's level
+        // from its measured size — and it reads that list off `parsedData`. Set
+        // afterwards, the first frame drew at full detail and only corrected on
+        // the next resize.
         this.parsedData = parsedData;
+        view.autoDensityPanels = (parsedData.densityPanels || [])
+            .filter((p: DensityPanel) => p.declared === AUTO_DENSITY);
+        view.addViewObjects(parsedData);
 
         // The "before" every later comparison is made against. Taken once here so
         // the very first interaction has one, then re-taken on every snapshot.
         view.captureGeometry();
 
         view.model.onSnapshot = function () { view.captureGeometry() };
-        view.model.onParamChange = function (change) { view.reportParamChange(change) };
+        view.model.onParamChange = function (change) {
+            // Density first, so the payload below describes a diagram that has
+            // finished responding. A panel promoted by a param change grows in
+            // the same tick, and an `auto` panel that grew past a threshold has
+            // to change level with it or the promotion animates into a glyph.
+            if (view.refreshAutoDensity()) view.model.update(false);
+            view.reportParamChange(change);
+        };
+    }
+
+    /** The scale of that name, or null. Duplicated names keep the last, which `render` warns about. */
+    private getScale(name): Scale | null {
+        let result: Scale | null = null;
+        this.scales.forEach(function (scale) {
+            if (scale.name == name) {
+                result = scale;
+            }
+        });
+        return result;
     }
 
     // add view information (model, layer, scales) to an object
     addViewToDef(def, layer) {
         const view = this;
 
-        function getScale(name) {
-            let result = null;
-            view.scales.forEach(function (scale) {
-                if (scale.name == name) {
-                    result = scale;
-                }
-            });
-            return result;
-        }
+        const getScale = (name) => view.getScale(name);
 
         def.model = view.model;
         // A live reference, not the emitter itself: `KineticGraph` installs the
@@ -560,6 +601,89 @@ export class View implements IView {
         view.emitter.emit(KG_EVENTS.PARAM_CHANGED, payload);
     }
 
+    /**
+     * A panel's short side, in pixels.
+     *
+     * The scales hold the panel's edges as fractions and its `extent` as the
+     * canvas dimension along that axis, both already recomputed for this tick —
+     * so the panel's box is available without measuring the DOM, which is what
+     * makes this cheap enough to run on a param change.
+     */
+    private panelShortSidePx(panel: DensityPanel): number {
+        const view = this,
+            xs = view.getScale(panel.xScaleName),
+            ys = view.getScale(panel.yScaleName);
+        if (!xs || !ys || xs.extent == undefined || ys.extent == undefined) return NaN;
+        const width = Math.abs(xs.rangeMax - xs.rangeMin) * xs.extent,
+            height = Math.abs(ys.rangeMax - ys.rangeMin) * ys.extent;
+        return Math.min(width, height);
+    }
+
+    /**
+     * Choose a level for every `auto` panel from its measured size, and report
+     * whether any of them moved.
+     *
+     * Written straight onto the param rather than through `updateParam`, and
+     * the difference matters: a density change is the layout answering a
+     * question about itself, not a student changing the state. Going through
+     * `updateParam` would submit it to the restrictions — a level could be
+     * *rejected*, leaving a panel drawing furniture it has no room for — and
+     * would announce a `kg:param_changed` that no one caused. The caller
+     * broadcasts once instead.
+     */
+    private refreshAutoDensity(): boolean {
+        const view = this,
+            panels = view.autoDensityPanels;
+        if (panels.length === 0) return false;
+
+        let changed = false;
+        panels.forEach(function (panel) {
+            const px = view.panelShortSidePx(panel);
+            if (!isFinite(px)) return;
+            const param = view.model.getParam(panel.param);
+            if (!param) return;
+            const wanted = densityIndex(levelForSize(px));
+            if (param.value !== wanted) {
+                param.update(wanted);
+                changed = true;
+            }
+        });
+        return changed;
+    }
+
+    /**
+     * Set one panel's level of detail.
+     *
+     * A param update and nothing else, so a panel changes level without a
+     * remount — which is what lets it change *as* it grows, rather than
+     * snapping when the animation ends.
+     */
+    setDensity(key: string, level: DensityLevel) {
+        const view = this,
+            panels: DensityPanel[] = (view.parsedData && view.parsedData.densityPanels) || [],
+            panel = panels.filter(p => p.key === key)[0];
+
+        if (!panel) {
+            const known = panels.map(p => `"${p.key}"`).join(', ');
+            console.warn(`setDensity: no panel "${key}" declares a density, so there is nothing to set. ` +
+                (known ? `Panels that do: ${known}.` : `Declare "density" on a panel to make it settable.`));
+            return;
+        }
+
+        if (DENSITY_LEVELS.indexOf(level) < 0) {
+            console.warn(`setDensity: "${level}" is not a level. Use one of ${DENSITY_LEVELS.join(', ')}.`);
+            return;
+        }
+
+        if (panel.declared === AUTO_DENSITY) {
+            console.warn(`setDensity: panel "${key}" is declared density "${AUTO_DENSITY}", so the engine ` +
+                `will choose again from its measured size on the next update and overwrite this. ` +
+                `Declare a level instead of "${AUTO_DENSITY}" to drive it from the host.`);
+        }
+
+        view.model.updateParam(panel.param, densityIndex(level));
+    }
+
     // update dimensions, either when first rendering or when the window is resized
     updateDimensions(printing?: boolean) {
         let view = this;
@@ -607,6 +731,12 @@ export class View implements IView {
         view.scales.forEach(function (scale) {
             scale.updateDimensions(width, height);
         });
+
+        // Between the scales and the broadcast: an `auto` panel's level is a
+        // function of the size just computed, and setting it here means the one
+        // update below carries both the new geometry and the level that goes
+        // with it, rather than drawing the old level for a frame.
+        view.refreshAutoDensity();
 
         // once the scales are updated, update the coordinates of all view objects
         view.model.update(true);

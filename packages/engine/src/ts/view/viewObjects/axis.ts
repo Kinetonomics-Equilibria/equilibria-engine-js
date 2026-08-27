@@ -17,6 +17,15 @@ export interface AxisDefinition extends ViewObjectDefinition {
     tickValues?: number[];
 }
 
+/**
+ * Ticks an axis draws when the author asked for no particular number.
+ *
+ * Named because density composes over it: an axis def carries no `ticks` until
+ * this class is constructed, which is after parsing, so the density compiler
+ * would otherwise have to duplicate the number and drift from it.
+ */
+export const DEFAULT_TICKS = 5;
+
 export class Axis extends ViewObject {
 
     private orient: 'top' | 'bottom' | 'left' | 'right';
@@ -30,12 +39,18 @@ export class Axis extends ViewObject {
     constructor(def: AxisDefinition) {
 
         setDefaults(def, {
-            ticks: 5,
+            ticks: DEFAULT_TICKS,
             intercept: 0
         });
 
         setProperties(def, 'constants', ['orient']);
-        setProperties(def, 'updatables', ['ticks', 'intercept', 'label', 'min', 'max', 'otherMin', 'otherMax', 'tickPrepend', 'tickPrecision', 'tickValues']);
+        // `label` used to be listed here and is not, because `redraw()` never drew
+        // it: an axis *title* is a separate `Label` object built by the authoring
+        // Axis class from `title`, and this updatable was evaluated on every tick
+        // and read by nothing. It is the kind of dead surface that gets planned
+        // against — P4 read it as "the axis title is already updatable" and it
+        // never was.
+        setProperties(def, 'updatables', ['ticks', 'intercept', 'min', 'max', 'otherMin', 'otherMax', 'tickPrepend', 'tickPrecision', 'tickValues']);
 
         super(def);
 

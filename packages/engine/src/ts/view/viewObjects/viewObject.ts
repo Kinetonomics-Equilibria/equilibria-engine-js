@@ -41,6 +41,17 @@ export interface ViewObjectDefinition extends UpdateListenerDefinition {
     opacity?: string;
     stroke?: string;
     strokeWidth?: string;
+    /**
+     * A multiplier on `strokeWidth`, carried separately so a density level can
+     * thicken a stroke without knowing what it was.
+     *
+     * `strokeWidth`'s default lives in each view class (`Curve` 2, `Point` 1)
+     * and is applied when that class is constructed, which is *after* parsing —
+     * so a compiler working over the parsed defs has no base to multiply. A
+     * factor has one either way, and it composes: an author's own `strokeWidth`
+     * expression keeps working untouched.
+     */
+    strokeScale?: any;
     strokeOpacity?: string;
     lineStyle?: string;
     clearColor?: string;
@@ -118,6 +129,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
     public opacity;
     public stroke;
     public strokeWidth;
+    public strokeScale;
     public strokeOpacity;
     public lineStyle;
     public clearColor;
@@ -130,6 +142,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
             fillOpacity: 0.2,
             stroke: 'colors.blue',
             strokeWidth: 1,
+            strokeScale: 1,
             strokeOpacity: 1,
             show: true,
             inDef: false,
@@ -137,7 +150,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
             checkOnGraph: true
         });
 
-        setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc']);
+        setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'strokeScale', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc']);
         setProperties(def, 'constants', ['xScale', 'yScale', 'clipPath', 'clipPath2', 'interactive', 'alwaysUpdate', 'inDef', 'checkOnGraph', 'tabbable', 'view']);
         setProperties(def, 'colorAttributes', ['stroke', 'fill', 'color']);
 
@@ -259,10 +272,25 @@ export class ViewObject extends UpdateListener implements IViewObject {
         return this;
     }
 
+    /**
+     * The width to draw a stroke at: what the author asked for, times the
+     * panel's density factor. Every site that writes a stroke width goes
+     * through here so the factor cannot be applied in some places and not
+     * others — a panel drawn half-thickened would be worse than one not
+     * thickened at all.
+     */
+    drawnStrokeWidth() {
+        const vo = this,
+            width = +vo.strokeWidth,
+            scale = +vo.strokeScale;
+        if (isNaN(width)) return vo.strokeWidth;
+        return width * (isNaN(scale) ? 1 : scale);
+    }
+
     drawStroke(el) {
         const vo = this;
         el.attr('stroke', vo.stroke);
-        el.attr('stroke-width', vo.strokeWidth);
+        el.attr('stroke-width', vo.drawnStrokeWidth());
         el.style('stroke-opacity', vo.strokeOpacity);
         if (vo.lineStyle == 'dashed') {
             el.style('stroke-dashArray', '10,10');

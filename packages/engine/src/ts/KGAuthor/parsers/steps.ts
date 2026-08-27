@@ -36,8 +36,14 @@ export interface StepDefinition {
 /** The param the compiled predicates read. Authors may declare it themselves. */
 export const STEP_PARAM = 'step';
 
-/** Every parsed object that can carry a `show`, across the layers and the divs. */
-function allObjects(parsedData: ViewDefinition): any[] {
+/**
+ * Every parsed object that can carry a `show`, across the layers and the divs.
+ *
+ * Exported because density compiles the same way steps do — over the parsed
+ * objects, conjoining predicates — and two walks of `layers`/`divs` that could
+ * drift apart would be one walk too many.
+ */
+export function allObjects(parsedData: ViewDefinition): any[] {
     const layers: any[] = (parsedData.layers || []) as any[];
     return layers.reduce((all: any[], layer: any[]) => all.concat(layer), [])
         .concat(parsedData.divs || []);
@@ -52,7 +58,7 @@ function allObjects(parsedData: ViewDefinition): any[] {
  * silent wrong answer of exactly the kind this engine keeps producing. Both
  * hold, or the object stays hidden.
  */
-function combineShow(existing: any, predicate: string): string {
+export function combineShow(existing: any, predicate: string): string {
     if (existing === undefined || existing === null || existing === true || existing === 'true') {
         return predicate;
     }

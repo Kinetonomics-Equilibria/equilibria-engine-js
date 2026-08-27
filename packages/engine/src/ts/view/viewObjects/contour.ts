@@ -88,7 +88,7 @@ export class Contour extends ViewObject {
                 c.path.style('fill', c.fillAbove);
                 c.path.style('fill-opacity', c.opacity);
                 c.path.style('stroke', c.stroke);
-                c.path.style('stroke-width', c.strokeWidth);
+                c.path.style('stroke-width', c.drawnStrokeWidth());
                 c.path.style('stroke-opacity', c.strokeOpacity);
 
                 c.negativePath.attr("d", c.negativeFn.contour(-1 * c.level, c.xScale, c.yScale));
