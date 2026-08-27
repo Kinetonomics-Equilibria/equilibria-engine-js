@@ -198,6 +198,22 @@ export class KineticGraph extends EventEmitter {
     }
 
     /**
+     * Every calc, as it now stands.
+     *
+     * `kg:param_changed` carries the same thing, but only once something has
+     * changed — so a host putting a number beside a diagram had nothing to show
+     * until the student moved something, and either left the space blank or
+     * wrote the calc out a second time in its own code. This is the value at
+     * rest.
+     *
+     * A shallow copy, matching `getSnapshot()`: nested calc objects are shared,
+     * so treat what comes back as read-only.
+     */
+    public getCalcs(): Record<string, any> {
+        return { ...((this.view as any)?.model?.currentCalcValues || {}) };
+    }
+
+    /**
      * The state at the last snapshot, or `null` if none has been taken.
      *
      * Returns copies. The engine must not hand a caller an object it will later

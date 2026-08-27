@@ -30,6 +30,9 @@ export function containsUndefinedToken(value: any): boolean {
     return typeof value === 'string' && /\bundefined\b/.test(value);
 }
 
+/** A string that is a number and nothing else — leading sign, decimals and exponent included. */
+const BARE_NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/;
+
 export class Model implements IModel {
 
     private restrictions: Restriction[];
@@ -42,6 +45,9 @@ export class Model implements IModel {
     // objects that store definitions of params, calcs, and colors
     private params: Param[];
     private initialParams: ParamDefinition[];
+
+    /** Names of params that describe presentation, not state; see `ParamDefinition.presentation`. */
+    private presentationParams: Set<string> = new Set();
     private calcs: {};
     public colors: {};
     public idioms: {};
@@ -102,6 +108,7 @@ export class Model implements IModel {
             return new Param(def)
         });
         model.initialParams = parsedData.params;
+        model.presentationParams = new Set(model.params.filter(p => p.presentation).map(p => p.name));
         model.calcs = parsedData.calcs;
         model.colors = parsedData.colors;
         model.idioms = parsedData.idioms;
@@ -259,10 +266,17 @@ export class Model implements IModel {
      * here: `Param.update()` snaps every value onto a `round` grid, so there is
      * no float dust to tolerate, and computing it in the engine saves every
      * author from writing their own epsilon comparison and getting it wrong.
+     *
+     * Presentation params are excluded, and have to be: this is what `prev.changed`
+     * reads, and `prev.changed` gates every ghost in the diagram. A panel that
+     * resolved its own density from its measured size, or a host that promoted a
+     * panel, would otherwise announce that the student had moved something —
+     * ghosts and shift arrows appearing over an untouched diagram.
      */
     paramsDifferFromSnapshot(): boolean {
         const model = this;
         for (const name in model.currentParamValues) {
+            if (model.presentationParams.has(name)) continue;
             if (model.currentParamValues[name] !== model.prevParamValues[name]) return true;
         }
         return false;
@@ -341,9 +355,21 @@ export class Model implements IModel {
 
         const model = this;
 
-        // don't just evaluate numbers
-        if (!isNaN(parseFloat(name))) {
-            //console.log('interpreted ', name, 'as a number.');
+        // A bare number, and *only* a bare number.
+        //
+        // This was `if (!isNaN(parseFloat(name))) return parseFloat(name)`, and
+        // parseFloat reads a *prefix*: every expression beginning with a numeric
+        // literal was silently truncated to that literal and never reached
+        // mathjs at all. `0.5 * calcs.Qe * (params.a - calcs.Pe)` evaluated to
+        // 0.5; `2 * params.a` evaluated to 2. No warning, no NaN, no missing
+        // shape — just a number that is wrong, which is this codebase's
+        // signature failure and the reason `econ_values.test.ts` asserts values
+        // rather than counts.
+        //
+        // The fast path is only an optimisation: mathjs parses a numeric
+        // literal correctly by itself, so requiring the whole string to be one
+        // costs nothing.
+        if (BARE_NUMBER.test(name)) {
             return parseFloat(name);
         }
 

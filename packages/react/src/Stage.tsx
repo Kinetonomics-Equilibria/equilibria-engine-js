@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
-import type { KineticGraphOptions } from 'equilibria-engine-js';
+import type { KineticGraph, KineticGraphOptions } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { UseEquilibriaEventCallbacks } from './useEquilibria';
 import {
@@ -70,6 +70,15 @@ export interface StageProps extends UseEquilibriaEventCallbacks {
     /** Reported when the engine fails to mount. The stage renders no error UI of its own. */
     onError?: (error: Error) => void;
 
+    /**
+     * The engine, once it has mounted, and again after any rebuild.
+     *
+     * For the state a host needs *at rest* — `getCalcs()` for a value to put
+     * beside a panel, `snapshot()` for a boundary only the app knows about.
+     * Events cover what changes; this covers what is.
+     */
+    onReady?: (engine: KineticGraph) => void;
+
     options?: KineticGraphOptions;
     className?: string;
     style?: CSSProperties;
@@ -115,6 +124,7 @@ export function Stage({
     renderChrome,
     promoteLabel,
     onError,
+    onReady,
     options,
     className,
     style,
@@ -219,6 +229,7 @@ export function Stage({
         useEquilibria(stageConfig, options, events);
 
     useEffect(() => { if (error && onError) onError(error) }, [error, onError]);
+    useEffect(() => { if (isReady && instance && onReady) onReady(instance) }, [isReady, instance, onReady]);
 
     const focusIndex = Math.max(0, keys.indexOf(focused as string));
     const modeValue = MODE_VALUE[mode];
@@ -324,6 +335,10 @@ const OVERLAY: CSSProperties = {
 /** A button with no opinion about how it looks. The app's chrome supplies that. */
 const PROMOTE_BUTTON: CSSProperties = {
     pointerEvents: 'auto',
+    // A button centres its content vertically and horizontally by default,
+    // which put a panel's name across the middle of its diagram. The chrome
+    // places itself; the button is only a hit area and a role.
+    display: 'block',
     background: 'none',
     border: 0,
     padding: 0,

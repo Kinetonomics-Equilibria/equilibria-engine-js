@@ -21,6 +21,25 @@ export interface LabelDefinition extends ViewObjectDefinition {
     bgcolor?: string;
 }
 
+/**
+ * A label whose text is a bare name draws that name.
+ *
+ * `text` is evaluated like any other updatable, and mathjs knows more names
+ * than an author expects: `S` is siemens, `E` and `e` are Euler's number, `A`
+ * is amperes. So `label: { text: 'S' }` on a supply curve resolved to a Unit
+ * object, `katex.render` threw on it, the throw was caught and logged, and the
+ * label drew **nothing** — with the curve, the axes and everything else
+ * perfectly fine. Two objects in the econ library shipped with an invisible
+ * `E`, and the KaTeX error was visible in this repo's own test output as
+ * "Error rendering KaTeX: 2.718281828459045".
+ *
+ * A bare name as label text is a name to draw, not a value to look up. A value
+ * is asked for the documented way, with a backtick template — `` `(calcs.Pe)` ``
+ * — which `redraw` substitutes below and which a dotted path like `calcs.Pe`
+ * still reaches too, since neither is a bare name.
+ */
+const BARE_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
 export class Label extends ViewObject {
 
     private x: number;
@@ -132,7 +151,18 @@ export class Label extends ViewObject {
         const x = label.xScale.scale(label.x) + (+label.xPixelOffset),
             y = label.yScale.scale(label.y) - (+label.yPixelOffset);
 
-        let displayText = label.text;
+        const source = (label.def as LabelDefinition).text;
+        let displayText: any = label.text;
+
+        if (typeof source === 'string' && BARE_NAME.test(source)) {
+            displayText = source;
+        } else if (undefined != displayText && typeof displayText !== 'string' && typeof displayText !== 'number') {
+            // Evaluation produced something that is not text — a unit, a
+            // matrix, a function. Whatever the author wrote is closer to what
+            // they meant than a value KaTeX cannot draw.
+            displayText = source;
+        }
+
         if (undefined != displayText) {
             if (typeof displayText === 'string') {
                 // Dynamically evaluate templates wrapped in `(varName)` using the model
@@ -149,7 +179,7 @@ export class Label extends ViewObject {
             } else {
                 //console.log('rendering label as LaTeX: ', displayText)
                 try {
-                    katex.render(displayText, label.rootElement.node());
+                    katex.render(String(displayText), label.rootElement.node());
                 }
                 catch (e) {
                     console.log("Error rendering KaTeX: ", displayText);

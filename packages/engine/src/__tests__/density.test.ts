@@ -393,6 +393,52 @@ describe('setDensity', () => {
     });
 });
 
+// --- a level is not a student action -----------------------------------------------
+
+describe('a density is presentation, not state', () => {
+
+    /**
+     * `prev.changed` is "has the student moved anything", and it gates every
+     * ghost and shift arrow an author draws. A panel resolving its own level
+     * from its measured size is the engine talking to itself, and counting it
+     * would put a ghost over a diagram nobody had touched — which is precisely
+     * what happened the first time an `auto` panel was put on a screen.
+     */
+    const ghosted = (density: string) => {
+        const panel: any = {
+            key: 'market', x: 0.7, y: 0.05, width: 0.2, height: 0.2, density: density, ...axes(),
+            objects: [
+                { Curve: { name: 'demand', fn: '30 - (x)' } },
+                { Label: { name: 'ghost', text: 'moved', x: 5, y: 5, plainText: true, show: 'prev.changed' } }
+            ]
+        };
+        const r = mount({ schema: 'EconSchema', params: [{ name: 'a', value: 1, min: 0, max: 5, round: 1 }], layout: { CustomLayout: { panels: [panel] } } });
+        const shown = shownLabels(r, 'market').map((o: any) => o.text);
+        return { r, shown };
+    };
+
+    it('does not report a student action when auto picks a level', () => {
+        const { r, shown } = ghosted('auto');
+        expect(shown).not.toContain('moved');
+        r.destroy();
+    });
+
+    it('does not report one when the host sets a level either', () => {
+        const { r } = ghosted('full');
+        r.kg.setDensity('market', 'indicator');
+        // The label is hidden at `indicator` anyway, so read the model directly.
+        expect((r.kg as any).view.model.paramsDifferFromSnapshot()).toBe(false);
+        r.destroy();
+    });
+
+    it('still reports one when a param the diagram is built on moves', () => {
+        const { r } = ghosted('auto');
+        r.kg.update({ params: [{ name: 'a', value: 3 }] });
+        expect((r.kg as any).view.model.paramsDifferFromSnapshot()).toBe(true);
+        r.destroy();
+    });
+});
+
 // --- auto ------------------------------------------------------------------------
 
 describe('auto chooses from the panel\'s measured size', () => {

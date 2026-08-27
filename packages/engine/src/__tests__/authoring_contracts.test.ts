@@ -22,6 +22,94 @@ function hidden(container: HTMLElement, selector: string): boolean[] {
     });
 }
 
+/**
+ * The one that got away for longest, and the plainest instance of the failure
+ * this whole suite exists to catch: an expression that produced a number, and
+ * the wrong one, with nothing on screen or in the console to say so.
+ *
+ * `Model.evaluate` opened with `if (!isNaN(parseFloat(name))) return
+ * parseFloat(name)`, meant as a fast path for a value that *is* a number.
+ * parseFloat reads a prefix, so any expression beginning with a numeric literal
+ * never reached mathjs at all: it was replaced by its own first token. Found by
+ * putting a consumer-surplus figure on a study screen and reading `$0.5` where
+ * `$40.5` belonged.
+ */
+describe('an expression is not its first number', () => {
+
+    const values = (calcs: Record<string, string>) => {
+        const r = mountObjects([{ type: 'Point', def: { coordinates: [1, 1] } }], {
+            params: [{ name: 'a', value: 20, min: 0, max: 30, round: 0.1 }],
+            calcs: calcs
+        });
+        const out = r.calcs;
+        r.destroy();
+        return out;
+    };
+
+    it('evaluates a product that starts with a literal', () => {
+        expect(values({ x: '2 * params.a' }).x).toBe(40);
+    });
+
+    it('evaluates one that starts with a decimal', () => {
+        expect(values({ x: '0.5 * params.a' }).x).toBe(10);
+    });
+
+    it('evaluates a difference and a sum that start with a literal', () => {
+        const v = values({ x: '30 - params.a', y: '5 + params.a' });
+        expect(v.x).toBe(10);
+        expect(v.y).toBe(25);
+    });
+
+    it('composes through other calcs, which is where it was found', () => {
+        // Consumer surplus for demand P = a - Q against supply P = 2 + Q:
+        // Q* = 9, P* = 11, CS = 0.5 * 9 * (20 - 11) = 40.5.
+        const v = values({
+            Qe: '(params.a - 2)/2',
+            Pe: '(params.a + 2)/2',
+            CS: '0.5 * calcs.Qe * (params.a - calcs.Pe)'
+        });
+        expect(v.CS).toBeCloseTo(40.5, 6);
+    });
+
+    it('still reads a bare number as a number, in every spelling', () => {
+        const v = values({ a: '42', b: ' 7 ', c: '-3.5', d: '.25', e: '1e3' });
+        expect([v.a, v.b, v.c, v.d, v.e]).toEqual([42, 7, -3.5, 0.25, 1000]);
+    });
+});
+
+/**
+ * The same failure in its other costume: an expression that *did* parse, into
+ * something nobody wanted. mathjs knows units and constants, so a one-letter
+ * label collides with them — and the label then draws nothing at all, while the
+ * curve it belongs to is drawn perfectly.
+ */
+describe('a label\'s text is text', () => {
+
+    const drawn = (text: string) => {
+        const r = mountObjects([
+            { type: 'Label', def: { x: 5, y: 5, text: text } }
+        ], { params: [] });
+        const divs = Array.from(r.container.querySelectorAll('div[class^="rootElement-"]'))
+            .map(d => (d.textContent || ''));
+        r.destroy();
+        return divs.join('|');
+    };
+
+    it('draws a supply curve labelled S, which mathjs reads as siemens', () => {
+        expect(drawn('S')).toContain('S');
+    });
+
+    it('draws an equilibrium labelled E, which mathjs reads as Euler\'s number', () => {
+        const out = drawn('E');
+        expect(out).toContain('E');
+        expect(out).not.toContain('2.718');
+    });
+
+    it('still draws ordinary LaTeX', () => {
+        expect(drawn('Q^*')).toContain('Q^*');
+    });
+});
+
 describe('authored ghosts (P5)', () => {
     it('draws a pinned dashed line alongside a live one', () => {
         const r = mountObjects([

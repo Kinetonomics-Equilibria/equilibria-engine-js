@@ -211,6 +211,12 @@ describe('every arrangement compiles into one layout', () => {
         expect(layout.params[0].max).toBe(KEYS.length - 1);
     });
 
+    it('declares them as presentation, so a promotion is not a student action', () => {
+        // `prev.changed` gates every ghost in a diagram. Promoting a panel is
+        // the host rearranging the screen, not the student moving a curve.
+        expect(layout.params.every(p => p.presentation)).toBe(true);
+    });
+
     it('gives every panel an expression rather than a number', () => {
         layout.panels.forEach(p => {
             expect(typeof p.x).toBe('string');

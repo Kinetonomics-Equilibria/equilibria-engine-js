@@ -11,6 +11,18 @@ export interface ParamDefinition {
     max?: any;        // ditto for max
     round?: any;      // interval to snap to as user changes 
     precision?: any;  // number of decimal places to display value to; automatically sets itself based on "round" - i.e., if round = 0.01 then precision will automatically choose 2 decimal places
+
+    /**
+     * True when this param says how the diagram is *shown* rather than what it
+     * shows: a panel's density level, which panel a host has focused.
+     *
+     * The distinction is not cosmetic. `prev.changed` is "has the student moved
+     * anything", and it gates every ghost and shift arrow an author draws. A
+     * panel resizing itself, or a host promoting one, would otherwise light all
+     * of them up before the student had touched the diagram — which is exactly
+     * what an `auto` density did the first time one was put on a screen.
+     */
+    presentation?: boolean;
 }
 
 export interface IParam {
@@ -30,6 +42,7 @@ export class Param implements IParam {
     public max: number;
     public round: number;
     public precision: number;
+    public presentation: boolean;
 
     constructor(def: ParamDefinition) {
 
@@ -50,6 +63,7 @@ export class Param implements IParam {
 
         this.name = def.name;
         this.label = def.label;
+        this.presentation = !!def.presentation;
 
         if (typeof def.value == 'boolean') {
             this.value = +def.value;

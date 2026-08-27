@@ -202,7 +202,12 @@ export function compileDensity(parsedData: ViewDefinition): ViewDefinition {
                 value: level === AUTO_DENSITY ? 0 : densityIndex(level as DensityLevel),
                 min: 0,
                 max: DENSITY_LEVELS.length - 1,
-                round: 1
+                round: 1,
+                // How the panel is drawn, not what it draws. Without this, a
+                // panel resolving its own level would read as the student
+                // having moved something and every ghost in the diagram would
+                // appear before they had touched it.
+                presentation: true
             });
         }
 

@@ -94,6 +94,20 @@ export interface ParamChangedEvent {
     value: any;
     previousValue: any;
     params: { [name: string]: any };
+    /**
+     * Every calc, as it now stands.
+     *
+     * The event said what *changed* and what *moved*, and not what anything
+     * *is* — so a host wanting to put a number beside a diagram had to either
+     * reach into the model or re-derive the calc in its own code, which is the
+     * duplication the calcs exist to prevent. A delta belongs here too, and is
+     * an ordinary calc over `prev`: `'calcs.Pe - prev.calcs.Pe'` is computed by
+     * the engine, from the same snapshot the ghosts are drawn from.
+     *
+     * A shallow copy, matching `getSnapshot()`: nested calc objects are shared,
+     * so treat them as read-only.
+     */
+    calcs: { [name: string]: any };
     affected: AffectedObject[];
 }
 
@@ -596,6 +610,7 @@ export class View implements IView {
             value: change.value,
             previousValue: change.previousValue,
             params: { ...view.model.currentParamValues },
+            calcs: { ...view.model.currentCalcValues },
             affected: view.whatMoved()
         };
         view.emitter.emit(KG_EVENTS.PARAM_CHANGED, payload);

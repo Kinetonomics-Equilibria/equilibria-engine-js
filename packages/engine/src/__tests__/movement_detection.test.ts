@@ -153,6 +153,50 @@ describe('what the diagram reports about itself', () => {
         r.destroy();
     });
 
+    it('carries the calcs as they now stand, so a host need not re-derive them', () => {
+        // The event named what changed and what moved, and not what anything
+        // *is*. A host putting a number beside a diagram was left to reach into
+        // the model or to write the formula out a second time in its own code —
+        // which is the duplication calcs exist to prevent, and the way a panel
+        // ends up disagreeing with the diagram beside it.
+        const r = mountObjects([{
+            EconLinearEquilibrium: {
+                demand: { yIntercept: 'params.a', slope: -1 },
+                supply: { yIntercept: 2, slope: 1 },
+                equilibrium: {}
+            }
+        }], {
+            params: [{ name: 'a', value: 20, min: 5, max: 28, round: 0.1 }],
+            calcs: { Pe: '(params.a + 2)/2', dPe: '(params.a + 2)/2 - prev.calcs.Pe' },
+            xAxis: { title: 'Q', min: 0, max: 20 },
+            yAxis: { title: 'P', min: 0, max: 20 }
+        });
+        let event: any = null;
+        r.kg.on(KG_EVENTS.PARAM_CHANGED, (e: any) => { event = e; });
+
+        r.kg.snapshot();
+        r.kg.update({ params: [{ name: 'a', value: 24 }] });
+
+        expect(event.calcs.Pe).toBeCloseTo(13, 6);
+        // And a delta is an ordinary calc over `prev`, computed by the engine
+        // from the same snapshot the ghosts are drawn from — not bookkeeping
+        // the host has to do for itself.
+        expect(event.calcs.dPe).toBeCloseTo(2, 6);
+        r.destroy();
+    });
+
+    it('hands out a copy, not the model\'s own calc object', () => {
+        const r = market();
+        let event: any = null;
+        r.kg.on(KG_EVENTS.PARAM_CHANGED, (e: any) => { event = e; });
+
+        r.kg.update({ params: [{ name: 'a', value: 24 }] });
+        event.calcs.equilibrium = 'clobbered';
+
+        expect((r.kg as any).view.model.currentCalcValues.equilibrium).not.toBe('clobbered');
+        r.destroy();
+    });
+
     it('names the objects that moved, by their human titles', () => {
         const r = market();
         let event: any = null;

@@ -245,7 +245,11 @@ export interface LayoutPanel {
 export interface StageLayout {
     aspectRatio: number;
     panels: LayoutPanel[];
-    params: { name: string; value: number; min: number; max: number; round: number }[];
+    params: {
+        name: string; value: number; min: number; max: number; round: number;
+        /** Arrangement, not state; see `params` in `toCustomLayout`. */
+        presentation: boolean;
+    }[];
 }
 
 /** `a == b ? t : f`, with both branches already parenthesised by their caller. */
@@ -317,9 +321,13 @@ export function toCustomLayout(input: ArrangeInput): StageLayout {
             height: component(key, 'height'),
             density: 'auto'
         })),
+        // Declared as presentation params, and it matters: `prev.changed` gates
+        // every ghost an author draws, and promoting a panel is not the student
+        // moving anything. Without the flag, clicking a rail panel would put a
+        // ghost and a shift arrow over a diagram nobody had touched.
         params: [
-            { name: FOCUS_PARAM, value: 0, min: 0, max: Math.max(0, keys.length - 1), round: 1 },
-            { name: MODE_PARAM, value: MODE_VALUE.focus, min: 0, max: 1, round: 1 }
+            { name: FOCUS_PARAM, value: 0, min: 0, max: Math.max(0, keys.length - 1), round: 1, presentation: true },
+            { name: MODE_PARAM, value: MODE_VALUE.focus, min: 0, max: 1, round: 1, presentation: true }
         ]
     };
 }
