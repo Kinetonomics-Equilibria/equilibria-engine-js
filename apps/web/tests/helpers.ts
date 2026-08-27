@@ -1,4 +1,4 @@
-import { test as base, type Locator } from '@playwright/test';
+import { test as base, type Locator, type Page } from '@playwright/test';
 
 /**
  * The engine's rendered elements, by the class prefixes it names them with.
@@ -44,6 +44,92 @@ interface TickPosition {
     value: number;
     x: number;
     y: number;
+}
+
+/**
+ * The equilibrium point in whichever panel is focal, in graph coordinates.
+ *
+ * On a stage there are several panels drawing several equilibria, all against
+ * the same one-canvas SVG, so "the first visible circle" is whichever panel
+ * happens to be first in the DOM — not the one being read. Only the focal panel
+ * carries tick labels (the rail draws at `indicator`), so the ticked axes both
+ * give the scale *and* say which box to look in.
+ */
+export async function focalPointCoordinates(page: Page): Promise<{ x: number; y: number }> {
+    return page.evaluate(() => {
+        const centre = (node: Element) => {
+            const box = node.getBoundingClientRect();
+            return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        };
+
+        const ticked = [...document.querySelectorAll('g.axis')]
+            .map((axis) => ({
+                axis,
+                ticks: [...axis.querySelectorAll('g.tick')].map((tick) => ({
+                    value: Number(tick.textContent),
+                    ...centre(tick.querySelector('line') ?? tick)
+                }))
+            }))
+            .filter((a) => a.ticks.length >= 2 && a.ticks.every((t) => Number.isFinite(t.value)));
+
+        const spread = (ticks: TickPosition[], along: 'x' | 'y') =>
+            Math.max(...ticks.map((t) => t[along])) - Math.min(...ticks.map((t) => t[along]));
+        const xAxis = ticked.find((a) => spread(a.ticks, 'x') > spread(a.ticks, 'y'));
+        const yAxis = ticked.find((a) => spread(a.ticks, 'y') > spread(a.ticks, 'x'));
+        if (!xAxis || !yAxis) throw new Error('No ticked pair of axes — is a panel drawn at full detail?');
+
+        const scale = (ticks: TickPosition[], along: 'x' | 'y') => {
+            const sorted = [...ticks].sort((a, b) => a.value - b.value);
+            const low = sorted[0], high = sorted[sorted.length - 1];
+            const pixelsPerUnit = (high[along] - low[along]) / (high.value - low.value);
+            return (pixels: number) => low.value + (pixels - low[along]) / pixelsPerUnit;
+        };
+        const toX = scale(xAxis.ticks, 'x'), toY = scale(yAxis.ticks, 'y');
+
+        // The focal panel's box, from the two axes that frame it.
+        const xBox = xAxis.axis.getBoundingClientRect(), yBox = yAxis.axis.getBoundingClientRect();
+        const inside = (p: { x: number; y: number }) =>
+            p.x >= yBox.x - 4 && p.x <= xBox.x + xBox.width + 4 &&
+            p.y >= yBox.y - 4 && p.y <= yBox.y + yBox.height + 4;
+
+        const point = [...document.querySelectorAll('svg circle[class^="circle-"]')]
+            .map(centre)
+            .find(inside);
+        if (!point) throw new Error('No point drawn inside the focal panel');
+
+        return { x: toX(point.x), y: toY(point.y) };
+    });
+}
+
+/**
+ * Which drag hit-area belongs to the focal panel.
+ *
+ * Every panel draws its own, and the first in DOM order belongs to whichever
+ * panel the author declared first — not to the one on the stage. Dragging the
+ * wrong one lands on a rail panel's promote button and silently promotes it
+ * instead, which looks exactly like a drag that did nothing.
+ */
+export async function focalDragPathIndex(page: Page): Promise<number> {
+    return page.evaluate(() => {
+        const ticked = [...document.querySelectorAll('g.axis')]
+            .filter((axis) => axis.querySelectorAll('g.tick').length >= 2)
+            .map((axis) => axis.getBoundingClientRect());
+        if (ticked.length === 0) throw new Error('No panel is drawn at full detail');
+
+        const left = Math.min(...ticked.map((b) => b.x)),
+            top = Math.min(...ticked.map((b) => b.y)),
+            right = Math.max(...ticked.map((b) => b.x + b.width)),
+            bottom = Math.max(...ticked.map((b) => b.y + b.height));
+
+        const paths = [...document.querySelectorAll('.kg-container path[class^="dragPath"]')];
+        const index = paths.findIndex((p) => {
+            const b = p.getBoundingClientRect();
+            const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+            return cx >= left && cx <= right && cy >= top && cy <= bottom;
+        });
+        if (index === -1) throw new Error('No drag target inside the focal panel');
+        return index;
+    });
 }
 
 /**

@@ -1,0 +1,65 @@
+/* The study screen's own chrome. Anything about where the panels *are* is the
+ * stage's arithmetic, not CSS — these rules only style what floats above them. */
+
+.screen {
+    /* The stage measures the element it renders, so something above it has to
+     * have a height for it to take a share of. This is that something. */
+    height: calc(100vh - 2 * var(--mantine-spacing-md));
+}
+
+.stageBox {
+    flex: 1;
+    min-height: 0;
+}
+
+/* A panel's chrome never sits over the panel itself, where the curves are: it
+ * is placed *outside* the box the stage gave it, relative to that box rather
+ * than by a guessed offset. Both variants are laid out the same way and differ
+ * only in weight, so a panel reads as the same panel before and after a
+ * promotion.
+ *
+ * The stage positions each panel's wrapper absolutely at the panel's box, which
+ * makes that box the containing block these two measure themselves against. */
+.focalChrome,
+.railChrome {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: baseline;
+    gap: var(--mantine-spacing-xs);
+}
+
+.focalChrome {
+    /* Above the panel, in the band the page heading has already made room for. */
+    bottom: 100%;
+    padding-bottom: 4px;
+}
+
+.railChrome {
+    /* Below the panel, in the gap the arrangement leaves between rail slots.
+     * Above would collide with the curve, which on these diagrams starts at the
+     * top-left corner. */
+    top: 100%;
+    padding-top: 3px;
+    border-radius: var(--mantine-radius-sm);
+}
+
+.panelName {
+    font-size: var(--mantine-font-size-sm);
+    font-weight: 600;
+}
+
+.focalChrome .panelName {
+    font-size: var(--mantine-font-size-md);
+}
+
+.railChrome .panelName {
+    color: var(--mantine-color-dimmed);
+}
+
+.headline {
+    font-size: var(--mantine-font-size-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--mantine-color-dimmed);
+}
