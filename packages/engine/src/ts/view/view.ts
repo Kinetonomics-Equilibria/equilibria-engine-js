@@ -10,6 +10,7 @@ import { ViewObjectDefinition, ViewObject } from "./viewObjects/viewObject";
 import { Sample, Movement, describeMovement, noiseFor } from "./movement";
 import { KG_EVENTS } from "../constants";
 import { parse } from "../KGAuthor/parsers/parsingFunctions";
+import { StepDefinition, compileSteps } from "../KGAuthor/parsers/steps";
 import "../KGAuthor/index"; // side-effect: registers all KGAuthor classes into the registry
 import { ViewObjectClasses } from "./viewObjects/index";
 import * as d3 from "d3";
@@ -50,6 +51,8 @@ export interface ViewDefinition {
     objects?: TypeAndDef[];
     layout?: TypeAndDef;
     explanation?: TypeAndDef;
+    /** Declared build-up order; see KGAuthor/parsers/steps.ts. */
+    steps?: StepDefinition[];
 
     // The rest of these are usually generated
     scales?: ScaleDefinition[];
@@ -260,7 +263,16 @@ export class View implements IView {
 
 
 
-        return parse(data.objects, parsedData);
+        parsedData = parse(data.objects, parsedData);
+
+        // After parse, not before: a step names objects, and the objects do not
+        // exist until the layout and its composites have been built.
+        if (data.steps) {
+            parsedData.steps = data.steps;
+            parsedData = compileSteps(data.steps, parsedData);
+        }
+
+        return parsedData;
     }
 
     render(data, div) {

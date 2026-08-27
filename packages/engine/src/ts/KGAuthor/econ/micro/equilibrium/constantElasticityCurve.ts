@@ -60,14 +60,18 @@ import { anonymizeCopy } from "../../../parsers/nameRegistry";
             curveDef.fn = multiplyDefs("calcs." + def.name + ".coefficient", raiseDefToDef("(y)", "calcs." + curveDef.name + ".elasticity"));
             curveDef.ind = 'y';
             curveDef.samplePoints = 500;
-            curveDef.show = "((" + def.show + ") && !(calcs. " + def.name + ".elastic))";
+            // `and`, not `&&` — mathjs has no `&&`, so this expression used to fail
+            // to parse, come back as its own source string, and read as truthy:
+            // the curve and its inverse were both drawn, always, whatever the
+            // elasticity. The space in `calcs. ` went the same way.
+            curveDef.show = "((" + def.show + ") and not (calcs." + def.name + ".elastic))";
 
             let invCurveDef = copyJSON(def);
             invCurveDef.name = def.name + "inverse";
             invCurveDef.fn = multiplyDefs("calcs." + invCurveDef.name + ".coefficient", raiseDefToDef("(x)", "calcs." + invCurveDef.name + ".elasticity"));
             invCurveDef.samplePoints = 500;
             invCurveDef.ind = 'x';
-            invCurveDef.show = "((" + def.show + ") && (calcs. " + def.name + ".elastic))";
+            invCurveDef.show = "((" + def.show + ") and (calcs." + def.name + ".elastic))";
 
             // define the control point
             let pointDef = anonymizeCopy(copyJSON(def.point || {}));

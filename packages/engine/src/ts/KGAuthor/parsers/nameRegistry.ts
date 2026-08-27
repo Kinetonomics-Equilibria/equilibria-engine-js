@@ -130,6 +130,10 @@ export function reuseName(def) {
  * and a title meant for one of them narrates as three.
  */
 export function anonymizeCopy(def) {
+    // Keep a back-reference to what this decorates. It is the only thing that
+    // still ties the two together once the name is gone, and a lesson step that
+    // reveals a point plainly means to reveal its droplines with it.
+    if (def && def.name && !def.partOf) def.partOf = def.name;
     delete def.name;
     delete def.title;
     return def;

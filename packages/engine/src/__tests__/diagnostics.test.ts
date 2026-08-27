@@ -53,6 +53,36 @@ describe('unresolved calc reporting', () => {
         expect(warnings).toEqual([]);
     });
 
+    // mathjs has no `&&`, `||` or `!`. It throws, evaluate() catches, and the
+    // expression flows on as its own source string — which is non-empty and so
+    // reads as *true*. A `show` written that way is permanently visible and
+    // nothing on screen says so. Two curves in this repo shipped like that.
+    it('names a JavaScript logical operator rather than letting it read as true', () => {
+        const { warnings } = captureWarnings(() =>
+            modelWith({ visible: 'params.a > 1 && params.b > 1' })
+        );
+
+        expect(warnings.some(w => w.includes('logical operator'))).toBe(true);
+        expect(warnings.some(w => w.includes('"and", "or" and "not"'))).toBe(true);
+    });
+
+    it('catches || the same way', () => {
+        const { warnings } = captureWarnings(() => modelWith({ visible: 'a || b' }));
+        expect(warnings.some(w => w.includes('logical operator'))).toBe(true);
+    });
+
+    it('reports each unparseable operator once, not once per frame', () => {
+        const { result: model, warnings } = captureWarnings(() =>
+            modelWith({ visible: 'a && b' })
+        );
+        expect(warnings.filter(w => w.includes('logical operator'))).toHaveLength(1);
+
+        const second = captureWarnings(() => model.update(true));
+        expect(second.warnings.filter(w => w.includes('logical operator'))).toHaveLength(0);
+    });
+
+    // The general case has to stay quiet: colors, LaTeX and forward references
+    // all fail to parse legitimately. None of them contains `&&`.
     it('stays quiet for a diagram that resolves cleanly', () => {
         const { result, warnings } = captureWarnings(() => mountObjects([{
             type: 'EconLinearEquilibrium',

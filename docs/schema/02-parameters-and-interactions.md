@@ -155,3 +155,76 @@ drag:
 `prev` joins `params`, `calcs`, `colors`, `idioms` and `d3` as a name the expression scope reserves, and `seq` and `changed` are reserved inside it. A param or calc named `prev` shadows the memory; the engine warns once on the console and carries on rather than throwing, in keeping with every other diagnostic here.
 
 A calc whose definition reads `prev.calcs` also warns. It is well defined — the value one snapshot ago, not a fixpoint — but it is the spelling most likely to surprise, and `prev.params` is almost always what was meant.
+
+## Declared Build-Up Order (`steps`)
+
+A staged reveal has always been possible one object at a time —
+`show: 'params.step >= 3'` works, and un-reveals on the way back. What it costs
+is 24 characters on every object, the step number duplicated into each one, and
+an edit to all of them when a step is renumbered.
+
+`steps`, at the root of the config, says it once:
+
+```yaml
+steps:
+  - reveal: [axes]
+  - reveal: [demand]
+  - reveal: [supply]
+  - reveal: [equilibrium]
+    set: { a: 24 }
+```
+
+This compiles to exactly the mechanism above, so there is one code path for
+visibility and hand-written `show` expressions keep working beside it.
+
+| Key | Meaning |
+|---|---|
+| `reveal` | Object names to bring on screen at this step. They stay on at later steps. |
+| `set` | Params this step establishes. **Read by the host, not applied by the engine** — see below. |
+
+Steps are numbered from 1. The engine declares a `step` param for you
+(`value: 0`, `max:` the number of steps) unless you declare your own — do that
+if you want a different starting step or range. Advancing the build-up is an
+ordinary param change:
+
+```js
+kg.update({ params: [{ name: 'step', value: 2 }] });
+```
+
+**Objects no step mentions are visible from the start.** A build-up names what
+appears late; it does not require you to list the whole diagram.
+
+**Only objects you named can be revealed.** A `reveal` naming something no
+object answers to warns — otherwise a typo produces a step that silently does
+nothing. See [Names and titles](./05-graph-objects.md#names-and-titles).
+
+**A reveal takes an object's decorations with it.** A point's droplines and axis
+labels are separate objects with names of their own, and revealing the point
+brings them along. Naming an econ composite reveals what it draws:
+`reveal: [equilibrium]` brings up the equilibrium point.
+
+**A `show` you wrote yourself is combined, not replaced.** An object revealed at
+step 2 *and* written `show: params.showMR` is making two claims, and both have
+to hold for it to appear. Honouring one by discarding the other would be a
+silent wrong answer.
+
+> [!WARNING]
+> Expressions are mathjs, which spells logical operators `and`, `or` and `not`.
+> **`&&`, `||` and `!` do not parse** — and an expression that does not parse is
+> returned as its own text, which is non-empty and therefore reads as *true*. A
+> `show: 'a && b'` is not occasionally wrong; it is permanently visible. The
+> engine now warns when it sees one.
+
+### Why the engine will not apply a step's `set`
+
+`kg.steps()` hands back the declared steps so a host can read each one's `set`
+and apply it itself. The engine deliberately does not do it, because
+[a multi-param update is not atomic](../interactivity.md#updating-param-state-programmatically):
+each param is validated alone, so a legal destination reached through an illegal
+interim is rejected halfway and rolled back with no diagnostic. Which order to
+move them in has to be decided with the diagram in view. That decision is the
+host's, and it should be made visibly rather than taken quietly here.
+
+The timeline itself — scrubbing, back and forward, lesson prompts — is the host
+application's too. The engine supplies addressable objects and a reveal
+predicate; nothing else.

@@ -7,6 +7,8 @@ export interface AuthoringObjectDefinition {
     name?: string;
     /** Human name for prose about this object; see `GraphObjectDefinition.title`. */
     title?: string;
+    /** Set on a decoration (a dropline, an axis label) to name what it belongs to. */
+    partOf?: string;
     tabbable?: boolean;
     srTitle?: string;
     srDesc?: string;

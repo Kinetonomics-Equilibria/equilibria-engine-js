@@ -64,6 +64,8 @@ export class EconLinearEquilibrium extends GraphObjectGenerator {
                 def.equilibrium = setDefaults(def.equilibrium, {
                     "name": le.name + "_point",
                     "title": le.title || le.name,
+                    // So a step that reveals `equilibrium` reveals the point too.
+                    "partOf": le.name,
                     "color": "colors.equilibriumPrice",
                     "x": le.Q,
                     "y": le.P,

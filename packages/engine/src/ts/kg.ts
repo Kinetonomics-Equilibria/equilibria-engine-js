@@ -1,4 +1,5 @@
 import { View } from "./view/view";
+import { StepDefinition } from "./KGAuthor/parsers/steps";
 import { KG_EVENTS } from "./constants";
 import { EventEmitter } from "eventemitter3";
 import "../css/kgjs-theme.css";
@@ -157,6 +158,26 @@ export class KineticGraph extends EventEmitter {
 
     public endGesture() {
         (this.view as any)?.model?.endGesture();
+    }
+
+    /**
+     * The build-up the config declared, in order, or `[]` if it declared none.
+     *
+     * Reveals are already compiled into the diagram — they are `show` predicates
+     * on `params.step`, so advancing the build-up is `update({ params: [{ name:
+     * 'step', value: n }] })` and nothing else. What is handed back here is what
+     * the engine will *not* do for you: each step's `set` params, and how many
+     * steps there are.
+     *
+     * The engine declines to apply a step's `set` on purpose. A multi-param
+     * update is not atomic — each param is validated alone, so a legal
+     * destination reached through an illegal interim is rejected halfway and
+     * rolled back with no diagnostic. Which order to move them in is a decision
+     * that has to be made with the diagram in view, so it is the host's, and it
+     * is made visibly rather than quietly here.
+     */
+    public steps(): StepDefinition[] {
+        return (this.view?.parsedData?.steps as StepDefinition[]) || [];
     }
 
     /**

@@ -383,10 +383,39 @@ export class Model implements IModel {
             // Not every failure here is a defect — colors, label text and forward
             // references all fail legitimately — so reporting happens once the
             // calcs have settled, in reportUnresolvedCalcs().
+            model.warnAboutJsLogicalOperators(name);
             return name;
 
         }
 
+    }
+
+    /**
+     * The one unparseable expression that is never legitimate.
+     *
+     * mathjs spells conjunction `and`, disjunction `or` and negation `not`; it
+     * has no `&&`, `||` or `!`, and throws on them. That throw is caught above
+     * and the expression flows on as its own source string — which is non-empty,
+     * and therefore *truthy*. A `show: 'a && b'` is not "sometimes wrong": it is
+     * permanently visible, and nothing on screen says so. Two curves in this
+     * repo shipped that way.
+     *
+     * Colors, LaTeX and forward references also fail to parse and are all
+     * legitimate, which is why the general case stays quiet — but none of them
+     * contains `&&` or `||`, so this test is specific enough to be loud.
+     */
+    private warnAboutJsLogicalOperators(expression: string) {
+        const model = this;
+        if (typeof expression !== 'string') return;
+        if (!/&&|\|\|/.test(expression)) return;
+
+        const message = `Expression "${expression}" uses a JavaScript logical operator. mathjs ` +
+            `spells these "and", "or" and "not" — "&&" and "||" do not parse, and an expression ` +
+            `that does not parse is returned as text, which reads as true. Rewrite it with "and"/"or".`;
+        if (!model.warnedExpressions.has(message)) {
+            model.warnedExpressions.add(message);
+            console.warn(message);
+        }
     }
 
     // Walk the settled calcs and report any that still carry an interpolated
