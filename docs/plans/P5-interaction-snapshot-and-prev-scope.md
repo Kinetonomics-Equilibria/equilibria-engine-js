@@ -3,7 +3,7 @@
 **Lane:** engine
 **Depends on:** nothing
 **Unblocks:** ghosts (product idea 1); P12 — Refusals that speak (outlined below, split out of this plan); P13 — `ghost:` authoring shorthand (out of scope, named below)
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Complete** (2026-08-27). Tests: `packages/engine/src/__tests__/interaction_snapshot.test.ts` (27 cases). Docs: `docs/schema/02-parameters-and-interactions.md`, `docs/interactivity.md`.
 **Note:** the sub-plans this document splits out were renumbered P12 and P13 to avoid colliding with P6 (object identity) and P7 (stage composition).
 
 ## Goal

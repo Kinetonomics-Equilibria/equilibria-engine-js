@@ -10,7 +10,14 @@ import { test as base, type Locator } from '@playwright/test';
  */
 export const RENDERED = {
     point: 'svg circle[class^="circle-"]',
-    curve: 'svg path[class^="path-"]'
+    curve: 'svg path[class^="path-"]',
+
+    // The `prev` ghosts are in the DOM from the first frame — they are ordinary
+    // objects whose `show` is bound to `prev.changed`, so the engine hides them with
+    // display:none until the student moves something. Counting elements therefore
+    // counts the ghosts too; counting *visible* ones is what says what is on screen.
+    visiblePoint: 'svg circle[class^="circle-"]:visible',
+    visibleCurve: 'svg path[class^="path-"]:visible'
 } as const;
 
 /**

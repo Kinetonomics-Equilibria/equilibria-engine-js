@@ -170,6 +170,8 @@ To enable this, supply the `drag` directive inside an object's `def`:
 
 In the example above, the point can be dragged horizontally (`directions: "x"`). As it moves, its relative `x` pixel coordinate is inverted to mathematical space to modify the parameter `baseWidth`.
 
+A drag also opens a *gesture*, which is when the engine snapshots the state that expressions read as `prev`. Add `"snapshot": false` to a drag directive for a control whose movement is not something a ghost should remember.
+
 ## 9. Additional Properties
 
 | Property | Type | Description |
@@ -178,3 +180,4 @@ In the example above, the point can be dragged horizontally (`directions: "x"`).
 | `clearColor` | string | Background color of the canvas (default: `"#FFFFFF"`). |
 | `custom` | string | Custom CSS to inject into the rendering context. |
 | `idioms` | object | Custom reusable definitions or macros for the schema. |
+| `snapshotOn` | string | When the engine captures the state expressions read as `prev`: `"gesture"` (default), `"change"` or `"never"`. See [Remembering the Previous State](./schema/02-parameters-and-interactions.md#remembering-the-previous-state-prev). |

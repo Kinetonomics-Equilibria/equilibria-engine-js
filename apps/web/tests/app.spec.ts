@@ -26,9 +26,10 @@ test('mounts the engine and draws the market', async ({ page, pageErrors }) => {
     // the drawing itself rather than for the element that will hold it.
     await expect(page.locator('.kg-container svg')).toBeVisible();
 
-    // Demand and supply, each drawn once.
-    await expect(page.locator(RENDERED.curve)).toHaveCount(2);
-    await expect(page.locator(RENDERED.point)).toHaveCount(1);
+    // Demand and supply, each drawn once, plus the equilibrium. The ghost twins
+    // are in the DOM beside them but hidden, so this counts what is on screen.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(2);
+    await expect(page.locator(RENDERED.visiblePoint)).toHaveCount(1);
 
     // An unresolved param or calc reaches the DOM as a NaN in a coordinate
     // attribute, which draws as nothing at all rather than as an error.
@@ -37,8 +38,17 @@ test('mounts the engine and draws the market', async ({ page, pageErrors }) => {
     expect(pageErrors).toEqual([]);
 });
 
+test('keeps the prev ghosts hidden until something moves', async ({ page }) => {
+    // The ghost demand curve, the ghost equilibrium and the shift arrow all read
+    // `show: prev.changed`, which is 0 until a param differs from the snapshot. They
+    // are drawn and hidden rather than absent, which is what lets them appear on the
+    // first drag with no remount.
+    await expect(page.locator(RENDERED.curve)).toHaveCount(3);
+    await expect(page.locator(RENDERED.point)).toHaveCount(2);
+});
+
 test('solves the equilibrium its config describes', async ({ page }) => {
-    const point = page.locator(RENDERED.point);
+    const point = page.locator(RENDERED.visiblePoint);
     await expect(point).toBeVisible();
 
     // Not just "a point was drawn": the point is where the supply and demand
