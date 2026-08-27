@@ -138,6 +138,21 @@ When you call `update()` with `params`:
 > batched update path exists, order your params so every interim state is legal,
 > or set them in separate calls you can check.
 
+## Setting a panel's level of detail
+
+```js
+kg.setDensity('firm', 'full');
+```
+
+A panel that declared a `density` draws at a level matched to its size — a full diagram at 620px, a
+recognisable glyph at 190px. The level lives in a param, so this is a param update with no remount:
+a panel promoted from a rail to the stage can gain its axis labels **as** it grows.
+
+Only a panel that declared a `density` can be set, and a panel declared `'auto'` is the engine's to
+choose — setting one warns, because the next resize will overwrite it. See
+[Density](./schema/03-layouts.md#density-how-much-detail-a-panel-draws) for the levels, what each
+one drops, and how a level composes with what the author wrote.
+
 ## Gestures and Snapshots
 
 The engine keeps a one-deep memory of its own state, which diagram expressions read as `prev` — see [Remembering the Previous State](./schema/02-parameters-and-interactions.md#remembering-the-previous-state-prev) for the authoring side. Drags inside the diagram snapshot themselves. The host has to take part in two cases: its own continuous controls, and boundaries only the app knows about.

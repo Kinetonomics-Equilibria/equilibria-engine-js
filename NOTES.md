@@ -4,8 +4,12 @@ Findings from building the first real consumer of the engine (`apps/web`) and
 from auditing the econ object library. These are pre-existing defects inherited
 from the KGJS fork, not regressions from the monorepo or packaging work — the
 code paths involved are untouched by those changes. Everything under **Fixed**
-is closed and named by the test that holds it in place; two items remain **Open**
-at the end.
+is closed and named by the test that holds it in place; three items remain
+**Open** at the end.
+
+Issues 9 and 10 were found later, while implementing the plans in `docs/plans`,
+and are the same two shapes as the rest: a value written into the DOM in a form
+nothing could read, and an element created for text that nothing ever wrote.
 
 ## Why these went unnoticed
 
@@ -228,6 +232,36 @@ Covered by `src/__tests__/diagnostics.test.ts`.
 
 Covered by `src/__tests__/calc_keys.test.ts` and `src/__tests__/econ_values.test.ts`.
 
+## 9. A label's font size was silently discarded — FIXED
+
+**Symptom:** `fontSize: 'params.big ? 14 : 10'` on a `Label` produced a label at whatever size it
+inherited, with no warning and nothing wrong-looking in the config. A literal `fontSize: 18` worked,
+so the key appeared to function.
+
+**Cause:** `fontSize` was declared a **constant** (`view/viewObjects/label.ts:80`). A constant is
+read once in the `UpdateListener` constructor and kept as-is unless it parses as a number, so the
+expression was stored as its own source text and written out as `font-size: params.big ? 14 : 10pt`
+— not a valid CSS length. The browser discards an invalid declaration and says nothing, which is
+the same shape as issue 7: a value that looks like it means something and is dropped on the floor.
+
+**Fix:** `fontSize` is an updatable, evaluated on every model update and applied in `redraw()`
+rather than only in `draw()` — it has to be applied before the label's own width and height are
+measured for alignment, not after. Covered by `src/__tests__/updatables_contract.test.ts`.
+
+## 10. A curve's screen-reader text was never written — FIXED
+
+**Symptom:** every `Curve` carried an **empty** `<title>` element. An author's `srTitle` and
+`srDesc` were accepted, stored on the object, and announced to nobody.
+
+**Cause:** `ViewObject.addScreenReaderDescriptions()` creates the `<title>`/`<desc>` elements and
+`updateScreenReaderDescriptions()` fills them, and only `Point.redraw()` ever called the second
+one. `Curve.draw()` called the first and no more.
+
+**Fix:** `Curve.redraw()` now updates them. Found by P4's density tests, which assert that an
+`indicator` panel — one that has dropped every visible label — is still describable; it was not,
+and neither was a full-detail one. Covered by the screen-reader cases in
+`src/__tests__/density.test.ts`.
+
 # Open
 
 ## A. `multiplyDefs()` treats `0 * Infinity` as `0`
@@ -242,7 +276,19 @@ bearing for horizontal and vertical line handling, so it is recorded rather than
 changed. `divideDefs()` had the analogous flaw and *was* implicated (issue 2),
 which is why that one was fixed and this one was not.
 
-## B. Missing required keys produce opaque errors
+## B. A decoration's own `show` is dropped when its parent has one
+
+A curve's, point's or segment's label is built by copying the parent's def, so it inherits the
+parent's `show` — which is right, since a hidden curve's name must hide with it. But `setDefaults`
+skips keys that already exist, so `label: { show: '...' }` is then **silently ignored**: there is no
+way to hide a curve's label without hiding the curve. The two predicates should conjoin, the way
+[a step's reveal](docs/schema/02-parameters-and-interactions.md) and a density level already do.
+
+Recorded rather than fixed because it is the same one-line change in four constructors and none of
+them is in P4's scope. Density does not depend on it — it conjoins onto the parsed def directly,
+after the copy has been made — which is how the gap was found.
+
+## C. Missing required keys produce opaque errors
 
 An econ object built without the keys it needs interpolates `undefined` into its
 generated expressions and surfaces as a mathjs type error naming neither the

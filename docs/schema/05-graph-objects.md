@@ -137,5 +137,5 @@ By default, creating an `Area` requires two bounding mathematical functions. How
 - **`Rectangle`** / **`Area`**: Fills a geometric boundary. Can accept vertices (`[x,y]` pairs) or function domains. 
 - **`Circle`** / **`Ellipse`**: Standard basic shapes defined by center points and radii.
 - **`Axis`** / **`Grid`**: Under-the-hood objects usually handled by the `Graph` itself. You rarely declare these manually in `objects`.
-- **`Label`**: Floating text defined by `x`, `y`, and `text`. If your label depends on parameter values dynamically (e.g. to say "Price: \$10"), wrap the parameter or calculation name inside backticks and parentheses: `` `\((price))` ``. The engine will evaluate and inject the live value during rendering.
+- **`Label`**: Floating text defined by `x`, `y`, and `text`. If your label depends on parameter values dynamically (e.g. to say "Price: \$10"), wrap the parameter or calculation name inside backticks and parentheses: `` `\((price))` ``. The engine will evaluate and inject the live value during rendering. `fontSize` is in points, defaults to 10, and is an ordinary evaluated expression — a label can change size in response to a param, not only at mount.
 - **`Arrow`** / **`Angle`**: Markers for geometric demonstrations.

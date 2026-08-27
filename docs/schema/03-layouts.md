@@ -61,6 +61,7 @@ layout:
 | `key` | The panel's handle. Optional; a panel without one is `panel0`, `panel1`, … by position. |
 | `x`, `y`, `width`, `height` | The rect, as fractions of the canvas. Required. |
 | `linkTo` | The key of the panel whose scales this panel's objects may also reference. |
+| `density` | How much detail this panel draws — see [below](#density-how-much-detail-a-panel-draws). Optional; absent means `full`. |
 
 Everything else on a panel is an ordinary graph def — `xAxis`, `yAxis`, `objects`.
 
@@ -110,6 +111,73 @@ own aspect ratio independent of its rect — a square panel on a wide canvas is 
 and height fractions happen to produce a square at the current canvas size. This is a real
 constraint on any focus-and-rail arrangement, not an oversight.
 
+## Density: how much detail a panel draws
+
+A 190px panel in a rail and a 620px panel on the stage have **different jobs**, not the same job at
+different sizes. At 620px a panel is read: the values matter, the axis titles matter. At 190px it
+answers one question — did something change here, and is it worth clicking? Below roughly 220px,
+10pt tick labels and KaTeX curve labels collide with each other and with the curve, so a rail of
+full-detail panels is noise.
+
+`density` says which job a panel has. It is available on any graph def, not only a `CustomLayout`
+panel, but the panel must be **named** — the key is what addresses it.
+
+```yaml
+panels:
+  - key: market
+    density: full            # full | compact | indicator | auto
+  - key: firm
+    density: indicator
+```
+
+| Level | Axis titles | Ticks and tick labels | Curve and point labels | Strokes |
+|---|---|---|---|---|
+| `full` | drawn | as authored | drawn | as authored |
+| `compact` | hidden | half as many | drawn | as authored |
+| `indicator` | hidden | none; the axis line stays | hidden | ×2 |
+| `auto` | the engine picks a level from the panel's measured short side | | | |
+
+Curve geometry, shaded areas, points and droplines are **never** dropped. They are what makes a
+small panel recognisable, and recognition is the whole job at that size.
+
+### A level composes; it does not overrule
+
+Nothing here replaces a value you wrote.
+
+- `show` is **conjoined**, exactly as a [step's reveal predicate](./02-parameters-and-interactions.md)
+  is. A level can hide more; it can never reveal something you hid. An object with its own `show`
+  keeps deciding, inside whatever the level allows.
+- `ticks` is **scaled**. `ticks: 20` at `compact` is 10, not the level's own number. (d3 treats a
+  tick count as a hint and quantises the step, so the rendered count is not always exactly half.)
+- Stroke width is scaled by a separate factor (`strokeScale`), so your `strokeWidth` — expression
+  or number — is untouched.
+
+### Changing level at runtime
+
+```ts
+kg.setDensity('firm', 'full');
+```
+
+A level lives in a param (`density_<key>`, declared for you unless you declare it yourself), so
+this is a param update and nothing else: no remount, and a panel being promoted from the rail can
+gain its labels **as** it grows rather than after it arrives. Only a panel that declared a
+`density` can be set — declaring it is what creates the level to move — and `setDensity` names the
+panels that can be when given one that cannot.
+
+### `auto`, and what it does and does not follow
+
+`auto` chooses from the panel's measured **short side**: under 240px it is an `indicator`, under
+420px `compact`, otherwise `full`. Those two numbers are working values from typographic reasoning
+about the 10pt default, not measurements taken with real diagrams in front of real students.
+
+It is re-chosen whenever the panel's box changes — on a container resize, and on a param change
+that moves the panel, so an `auto` panel promoted by [an expression in its
+rect](#a-panels-position-can-be-an-expression) changes level in the same tick that it grows.
+
+`auto` is opt-in on purpose. The engine can see that a panel is small; it cannot see *why*, and a
+190px rail panel and a 190px panel on a phone want different treatment. A host that knows why
+should say so with a level.
+
 ## The base classes
 
 Three classes exist only to be inherited from, and their aspect ratios are what a concrete layout
@@ -129,6 +197,7 @@ silently picks up when it does not set its own.
 | Class | Aspect ratio | Graph keys |
 |---|---|---|
 | `CustomLayout` | 2, or `aspectRatio` | `panels` — see [above](#customlayout-the-host-decides) |
+
 | `OneGraph` | 1.22 | `graph` |
 | `OneTree` | 1.22 | `tree` |
 | `OneWideGraph` | 2.44 | `graph` |

@@ -6,8 +6,8 @@ citations, numbered approach, tests, risks, and an explicit out-of-scope section
 plan owns what it excludes.
 
 They began as drafts to argue with, several deliberately conditional on decisions that had not been
-made. **Six have since landed** — P0, P1 (code), P2, P3, P5 and P6 — and each carries a Findings
-section recording where the plan was wrong. The rest are still drafts.
+made. **Seven have since landed** — P0, P1 (code), P2, P3, P4, P5 and P6 — and each carries a
+Findings section recording where the plan was wrong. The rest are still drafts.
 
 ## Settle these first
 
@@ -28,7 +28,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P1](P1-retire-react-component-surface.md) | Retire the React component surface ⚠️ **code complete**, npm unpublish outstanding | bindings | — |
 | [P2](P2-layout-defect-sweep.md) | Layout defect sweep ✅ **done** | engine | — |
 | [P3](P3-pass-through-layout.md) | Pass-through layout, and geometry that can move ✅ **done** | engine | P2 |
-| [P4](P4-density-render-mode.md) | Density render mode | engine | P3 (if one canvas) |
+| [P4](P4-density-render-mode.md) | Density render mode ✅ **done** | engine | P3 (if one canvas) |
 | [P5](P5-interaction-snapshot-and-prev-scope.md) | Interaction snapshot and the `prev` scope ✅ **done** | engine | — |
 | [P6](P6-object-identity-and-steps.md) | Object identity, names and step ordering ✅ **done** | engine | P5 (for derived movement) |
 | [P7](P7-stage-composition.md) | Stage composition: focus, rail and promotion | bindings | P1, P3, P4 |
@@ -47,14 +47,16 @@ Four chains. Only the first crosses all three lanes.
 
 ```
 Fork 1  →  P3 pass-through layout  →  P7 stage components  →  focus + rail screen
-           P4 density mode         →  P7 panel chrome      →  legible rail
+           P4 density mode ✅      →  P7 panel chrome      →  legible rail
            P5 snapshot + prev      →  ─────────────────────→  remembered ghosts → P11 reveal
            P6 names + direction    →  ─────────────────────→  P8 narration strip
 ```
 
-P5 and P6 needed no binding work at all — they were engine changes that land straight in the
+P4, P5 and P6 needed no binding work at all — they were engine changes that land straight in the
 product, which is exactly why they were the easiest to defer indefinitely and the most costly to.
-Both are now done, so P8's blocker is P7 alone.
+All three are now done. **Every engine-lane plan has landed**, so P7 is unblocked on both of its
+engine dependencies and is the only thing standing between here and the focus + rail screen; P8's
+blocker is P7 alone.
 
 ## Reading order
 
@@ -66,9 +68,10 @@ Both are now done, so P8's blocker is P7 alone.
 - Deciding the architecture: **P3** first, since its finding that `Scale`'s `rangeMin`/`rangeMax` are
   constants rather than updatables (`packages/engine/src/ts/view/scale.ts:34-36`) is what makes
   Fork 1 = A cheap.
-- Chasing the product: **P8** is the highest-value single component, and ~~**P6**~~ (done) has
-  unblocked it — `kg:param_changed` now carries an `affected` array of what moved, and every
-  object worth narrating has a `title`.
+- Chasing the product: **P7** is unblocked — P1, P3 and P4 are all done — and is now the only
+  thing between here and the focus + rail screen. **P8** is the highest-value single component, and
+  ~~**P6**~~ (done) has unblocked half of it: `kg:param_changed` carries an `affected` array of
+  what moved, and every object worth narrating has a `title`.
 
 ## Findings that cut across the set
 
@@ -104,7 +107,17 @@ Both are now done, so P8's blocker is P7 alone.
    positions already composed as expressions through `addDefs` and were frozen only because `Scale`
    listed `rangeMin`/`rangeMax` as constants. Promotion is now a param change with no remount.
 
-5. **A documented event is not an emitted one.** `kg:param_changed`, `kg:curve_dragged` and
+5. **A property being listed as updatable does not mean anything draws it.** P4's "Current state"
+   read `Axis`'s updatables list and concluded that the axis title could already be changed at
+   runtime. `Axis.redraw()` had never drawn `label` — the title is a separate `Label` object built
+   at construction — so the list was describing a property that was evaluated on every tick and read
+   by nobody. The same section read `setProperties(def, 'updatables', [])` in `Curve` as *emptying*
+   the list when the function appends, and concluded stroke width was frozen when it had always
+   moved. Three of that section's claims were wrong in both directions, and every one of them was
+   settled in minutes by mounting a diagram and changing a param. **The declaration is not the
+   behaviour; run it.** `updatables_contract.test.ts` now pins what actually responds.
+
+6. **A documented event is not an emitted one.** `kg:param_changed`, `kg:curve_dragged` and
    `kg:node_hover` were declared, documented as firing, and wired to React callback props — and
    nothing in the engine emitted any of them, because the React tests emit them by hand against a
    mock. P6 emits all three. Worth carrying forward as a habit: an integration point that is only

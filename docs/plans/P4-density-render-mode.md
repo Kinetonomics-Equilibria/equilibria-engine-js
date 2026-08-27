@@ -3,7 +3,8 @@
 **Lane:** engine
 **Depends on:** P3 (only if stage and rail share one canvas — see the mixed-size problem below)
 **Unblocks:** P7's rail; the focus + rail design as a whole
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Done.** See [Findings](#findings) for where the plan was wrong — three of its
+statements about current behaviour were, and two of them in the direction that mattered.
 
 ## Goal
 
@@ -144,6 +145,9 @@ Pixel snapshots are worthless here; assert on the parsed/rendered structure inst
   and `Label.fontSize` respond to an update after step 5, with a note that this test exists to
   catch a regression back to the frozen behaviour.
 
+  *Written.* The stroke-width cases turned out to be regression guards on behaviour that already
+  worked (finding 1); the `fontSize` cases are the ones that fail against the previous code.
+
 ## Risks and unknowns
 
 - **`Curve` deliberately empties its updatables in both branches.** That looks intentional and the
@@ -163,15 +167,88 @@ Pixel snapshots are worthless here; assert on the parsed/rendered structure inst
 
 ## Done when
 
-- [ ] The hand-authored control from step 1 exists and its result is recorded, so the engine
-      feature's value is stated honestly.
-- [ ] Three levels are implemented as resolved defaults over existing properties, with author
-      overrides winning.
-- [ ] `strokeWidth` and `fontSize` respond to updates, with the `Curve` decision understood and
-      documented.
-- [ ] Two panels at different densities render correctly in one canvas.
-- [ ] Screen-reader descriptions are unaffected at every level, and an `indicator` panel is
-      demonstrably still describable.
+- [x] The hand-authored control from step 1 exists and its result is recorded, so the engine
+      feature's value is stated honestly — `updatables_contract.test.ts`, and finding 1 below.
+- [x] Three levels are implemented as resolved values over existing properties. Not "with author
+      overrides winning" — with author values *composed with*, which is stronger; see finding 3.
+- [x] `strokeWidth` and `fontSize` respond to updates. The `Curve` decision turned out not to be a
+      decision at all (finding 1), and `fontSize` turned out to be a live defect (finding 2).
+- [x] Two panels at different densities render correctly in one canvas — `density.test.ts`,
+      "two panels at different levels in one canvas".
+- [x] Screen-reader descriptions are unaffected at every level, and an `indicator` panel is
+      demonstrably still describable — which it was not, at any level, until finding 4.
+
+## Findings
+
+Five things differed from the plan. Every one was settled by running the code; three of them read
+the opposite way from the plan's "Current state" section, which had been written from reading it.
+
+1. **`Curve` never froze its updatables, and the axis title was never one of them.** Both halves of
+   step 5's premise were wrong, and in opposite directions.
+
+   `setProperties(def, 'updatables', [])` *appends* — the empty array only makes sure the key
+   exists — and `ViewObject`'s own list, `strokeWidth` included, is pushed by the `super(def)` call
+   immediately after. So curve and point stroke widths have always responded to a param change, and
+   there was no deliberate decision to understand. Measured: `strokeWidth: 'params.w'` goes 2 → 6.
+
+   The other half cost more. `Axis` listed `label` as an updatable and `Axis.redraw()` never drew
+   it: an axis *title* is a separate `Label` object the authoring class builds from `title`, at
+   construction, only when the title is non-empty. "Drop the axis title, drop to 2 ticks is already
+   expressible today, with no engine change" was therefore half true — the ticks were, the title
+   was not, and nothing could address it at runtime at all. The dead updatable is removed.
+
+   What the control actually shows: **ticks and stroke width were reachable by hand; axis titles
+   and object labels were not.** A curve's `label: { show: ... }` is dropped whenever the curve def
+   carries its own `show`, because the label def is a copy of it and `setDefaults` skips keys that
+   already exist — so there was no reliable way to hide a curve's name without hiding the curve.
+   Density is a capability gain, not only an ergonomic one, but a smaller one than the plan implied.
+
+2. **`Label.fontSize` was not a missing feature but a silent failure.** As a constant it was read
+   once and kept as-is unless it parsed as a number, so `fontSize: 'params.f'` was written into the
+   DOM as `font-size: params.fpt` — not a valid CSS length. The browser discarded the declaration
+   and the label rendered at whatever it inherited, with nothing anywhere saying so. This is the
+   repo's signature failure mode (plans README, finding 1) in a third costume. Fixed independently
+   of density, which does not use it: density drops labels rather than shrinking them, and adding a
+   level that shrinks them on the strength of a hypothesis is what P6's finding 4 warns against.
+
+3. **"Explicit beats default" is not implementable, and composition is better anyway.** By the time
+   the compiler runs, `Axis`'s `ticks: 5` default has not been applied yet — it is applied in the
+   view class, after parsing — and an author's `ticks: 5` and no `ticks` at all are indistinguish-
+   able the moment it has been. So the rule became: **a level never replaces an authored value.**
+   `show` is conjoined, exactly as a step's reveal predicate is, so density can only hide more and
+   never reveal; `ticks` and stroke width are scaled, so `ticks: 20` at `compact` is 10 rather than
+   the level's own number. That is a stronger guarantee than the plan asked for and a simpler one
+   to state.
+
+   Stroke width could not be scaled in place: the defaults live in the view classes (`Curve` 2,
+   `Point` 1) and are applied after parsing, so a compiler over parsed defs has no base to multiply.
+   Hence `strokeScale`, a factor carried beside `strokeWidth` and applied at every site that writes
+   one.
+
+4. **The accessible description was not intact to begin with.** Step 7 asked that density never
+   strip `srTitle`/`srDesc` and that an `indicator` panel still be describable. Writing that test
+   found that a **curve's screen-reader text was never written at all**: `Curve.draw` creates the
+   `<title>` and `<desc>` elements and only `Point.redraw` ever called
+   `updateScreenReaderDescriptions`. Every curve in every diagram has carried an empty `<title>` —
+   the author's `srTitle` accepted, stored, and announced to nobody. Fixed, and the test now passes
+   for the reason it was supposed to.
+
+5. **`auto` had to follow a promotion, not only a resize.** The plan filed this under risks
+   ("density interacts with P3's movable geometry"). It is not a risk, it is the main case: under
+   P3 a panel is promoted by a param change, so an `auto` level recomputed only on container resize
+   would animate a panel to full size and leave it drawn as a glyph. The level is refreshed from
+   the seam the View already installs on the model (`onParamChange`) as well as from
+   `updateDimensions`, and the refresh writes the param directly rather than through `updateParam`
+   — a density change is the layout answering a question about itself, and submitting it to the
+   restriction set could see a level *rejected*, leaving a panel drawing furniture it has no room
+   for.
+
+   Cheap enough to run on every accepted change: the panel's box comes from the scales' fractions
+   and extent, which have already recomputed for the tick, so nothing is measured from the DOM.
+
+**Not done, deliberately:** the KaTeX cost in the plan's risk list is still assumed rather than
+measured. Dropping labels at `indicator` is justified by legibility on its own, and measuring
+render cost to justify it further would not change what the level does.
 
 ## Out of scope
 
