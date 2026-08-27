@@ -80,6 +80,7 @@ export { VerticalDropline } from './graphObjects/segment';
 export { CrossGraphVerticalDropline } from './graphObjects/segment';
 export { HorizontalDropline } from './graphObjects/segment';
 export { CrossGraphHorizontalDropline } from './graphObjects/segment';
+export { CustomLayout } from './layouts/customLayout';
 export { FourGraphs } from './layouts/fourGraphs';
 export { Layout } from './layouts/layout';
 export { SquareLayout } from './layouts/layout';

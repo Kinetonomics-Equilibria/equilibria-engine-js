@@ -2,7 +2,8 @@
 
 The `layout` property defines the canvas and the arrangement of graphs within it. A layout class
 does exactly two things: it sets the canvas **aspect ratio**, and it writes a fractional
-`{x, y, width, height}` position onto each graph it names. Everything else on screen — controls,
+`{x, y, width, height}` position onto each graph it names. `CustomLayout` takes those fractions
+from the host instead of hardcoding them. Everything else on screen — controls,
 prose, sidebars — is the host application's job (see [the engine/host boundary](../index.md)).
 
 ## Both spellings
@@ -26,6 +27,89 @@ two arrangements on one page, mount two engines.
 A top-level `aspectRatio` on the config **overrides** the layout's
 (`view.aspectRatio = data.aspectRatio || parsedData.aspectRatio || 1`, `view/view.ts:220`).
 
+## `CustomLayout`: the host decides
+
+Every other class on this page is a hardcoded arrangement — a table of fractions with a name.
+`CustomLayout` is the same code path with the table supplied from outside, so an application can
+measure its own viewport and say "focus panel on the left, three indicators down the right"
+without one of the presets happening to match.
+
+```yaml
+layout:
+  CustomLayout:
+    aspectRatio: 1.26
+    panels:
+      - key: market
+        x: 0.04
+        y: 0.03
+        width: 0.52
+        height: 0.90
+        xAxis: { title: Q, min: 0, max: 20 }
+        yAxis: { title: P, min: 0, max: 20 }
+        objects: [ ... ]
+      - key: firm
+        x: 0.62
+        y: 0.03
+        width: 0.16
+        height: 0.28
+        linkTo: market
+        objects: [ ... ]
+```
+
+| Panel key | Meaning |
+|---|---|
+| `key` | The panel's handle. Optional; a panel without one is `panel0`, `panel1`, … by position. |
+| `x`, `y`, `width`, `height` | The rect, as fractions of the canvas. Required. |
+| `linkTo` | The key of the panel whose scales this panel's objects may also reference. |
+
+Everything else on a panel is an ordinary graph def — `xAxis`, `yAxis`, `objects`.
+
+### The key is what makes a panel addressable
+
+A panel's key names its scales: `market` gets `market_x` and `market_y`. The authoring objects are
+discarded once a config is parsed, so the scale names are the only part of a panel that survives
+into `parsedData` — which is what every view object resolves against. Two panels sharing a key is
+therefore a real fault and warns twice: once for the duplicate key, once because a scale lookup now
+keeps whichever panel was built last.
+
+### Linking panels
+
+`linkTo` is what lets an object on one panel reference another panel's scales — a line drawn
+across two graphs, a dropline connecting them. It is **one directed link per panel**, not a mesh,
+because the underlying mechanism (`addSecondGraph`) holds exactly one second graph per object. A
+panel may link forwards to one declared after it.
+
+A link that names a key which does not exist warns and is dropped; a cross-graph object left
+unlinked warns and is not drawn. Neither takes the rest of the diagram down with it.
+
+### A panel's position can be an expression
+
+A rect is an ordinary evaluated string, so it can name a param:
+
+```yaml
+panels:
+  - key: firm
+    x: params.focus == 1 ? 0.05 : 0.62
+    y: 0.03
+    width: params.focus == 1 ? 0.52 : 0.16
+    height: params.focus == 1 ? 0.90 : 0.28
+```
+
+Promoting that panel is then `kg.update({ params: [{ name: 'focus', value: 1 }] })` — a param
+change, with no remount and no config-shape change. The panel's scales re-evaluate their range and
+everything drawn against them follows: axis, curves, points, and the clip path their contents are
+masked by.
+
+Positions given as expressions are **not** bounds-checked, because their value is not known until
+the model exists. Numeric ones are, and a panel outside the canvas warns by key.
+
+### One canvas, one aspect ratio
+
+A host arranging panels is choosing the **canvas** shape too. There is no way to give one panel its
+own aspect ratio independent of its rect — a square panel on a wide canvas is a rect whose width
+and height fractions happen to produce a square at the current canvas size. This is a real
+constraint on any focus-and-rail arrangement, not an oversight.
+
 ## The base classes
 
 Three classes exist only to be inherited from, and their aspect ratios are what a concrete layout
@@ -44,6 +128,7 @@ silently picks up when it does not set its own.
 
 | Class | Aspect ratio | Graph keys |
 |---|---|---|
+| `CustomLayout` | 2, or `aspectRatio` | `panels` — see [above](#customlayout-the-host-decides) |
 | `OneGraph` | 1.22 | `graph` |
 | `OneTree` | 1.22 | `tree` |
 | `OneWideGraph` | 2.44 | `graph` |

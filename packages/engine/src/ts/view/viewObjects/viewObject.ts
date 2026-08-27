@@ -291,11 +291,29 @@ export class ViewObject extends UpdateListener implements IViewObject {
 
     }
 
+    /**
+     * True when a scale this object is drawn against moved this tick.
+     *
+     * `hasChanged` only ever tracked an object's *own* updatables — its coordinates,
+     * its function, its color — because a scale used to be fixed for the life of the
+     * mount. Now that a panel's range is an updatable (`view/scale.ts`), a panel can
+     * move without any object inside it changing by its own reckoning: the axis slid
+     * across the canvas while every curve stayed at the pixels it was last drawn at.
+     *
+     * Scales are registered as update listeners before any view object, so by the time
+     * this is read the scale has already recomputed for this tick.
+     */
+    private scalesMoved(): boolean {
+        const vo = this;
+        return !!((vo.xScale && vo.xScale.hasChanged) || (vo.yScale && vo.yScale.hasChanged)
+            || (vo.xScale2 && vo.xScale2.hasChanged) || (vo.yScale2 && vo.yScale2.hasChanged));
+    }
+
     update(force) {
         let vo = super.update(force);
         if ((vo.show && vo.onGraph()) || vo.inDef) {
             vo.displayElement(true);
-            if (vo.hasChanged) {
+            if (vo.hasChanged || vo.scalesMoved()) {
                 vo.redraw();
             }
         }

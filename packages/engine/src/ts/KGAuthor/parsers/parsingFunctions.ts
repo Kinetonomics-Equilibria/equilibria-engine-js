@@ -30,13 +30,24 @@ export function parse(data: TypeAndDef[], parsedData) {
 
 }
 
+/**
+ * A bare number or a name (`x`, `params.a`) can be dropped into a composed expression
+ * as it stands. Anything else is wrapped, because the operator it is about to be joined
+ * with may bind tighter than the operators inside it.
+ *
+ * This used to wrap only strings containing `* / + -`, which let a comparison or a
+ * ternary through unparenthesised — and those bind *looser* than arithmetic, so they
+ * were exactly the ones that needed it. `addDefs('params.focus == 0 ? 0.05 : 0.5', 0.4)`
+ * composed to `(params.focus == 0 ? 0.05 : 0.5+0.4)`, where the `+ 0.4` disappeared into
+ * the ternary's false branch: a panel that was 0.4 of the canvas wide when promoted and
+ * zero wide when not. mathjs parsed it happily, which is the failure mode this codebase
+ * keeps meeting — a valid-looking string that means something else.
+ */
+const BARE_ATOM = /^\s*(-?\d+(\.\d+)?|[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*)\s*$/;
+
 export function getDefinitionProperty(def) {
     if (typeof def == 'string') {
-        if (def.match(/[\*/+-]/)) {
-            return '(' + def + ')'
-        } else {
-            return def;
-        }
+        return BARE_ATOM.test(def) ? def : '(' + def + ')';
     } else {
         return def;
     }

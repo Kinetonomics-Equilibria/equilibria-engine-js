@@ -3,7 +3,10 @@
 **Lane:** engine
 **Depends on:** P2 (reuses its canvas-bounds invariant and layout test helper; not strictly blocking)
 **Unblocks:** P7 (stage composition), and through it the whole study screen
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Complete** (2026-08-27), with step 6 deliberately not taken — see Findings.
+Tests: `packages/engine/src/__tests__/custom_layout.test.ts` (19 cases),
+`scale_updatable_range.test.ts` (9 cases), plus 3 precedence cases in `parsing_functions.test.ts`.
+Docs: `docs/schema/03-layouts.md`.
 
 ## Goal
 
@@ -181,14 +184,60 @@ being a one-line commit.
 
 ## Done when
 
-- [ ] `CustomLayout` parses, renders N panels at host-given fractions, and warns by key on
-      out-of-bounds or unknown `linkTo`.
-- [ ] The golden preset test passes against all eleven existing layouts, before and after their
-      refactor.
-- [ ] A panel's position can be driven by a param, demonstrated by a test that moves one and
-      asserts the axis, a curve and a clipped area all follow — **or** the plan is amended to record
-      that this is not feasible and P7 takes the remount path.
-- [ ] `docs/schema/03-layouts.md` documents `CustomLayout` and the one-aspect-ratio constraint.
+- [x] `CustomLayout` parses, renders N panels at host-given fractions, and warns by key on
+      out-of-bounds, no extent, a missing rect, a duplicate key, an unknown `linkTo` and a
+      self-link.
+- [x] The golden preset test passes against all fifteen existing layout classes. It was already
+      written — `layouts.test.ts` from P2 pins every aspect ratio and every panel rect — so no
+      second `layout_presets.test.ts` was written. Its registry case now names `CustomLayout`.
+- [x] A panel's position can be driven by a param: `scale_updatable_range.test.ts` moves one and
+      asserts the axis, a curve, a point and the clip path an area is drawn through all follow,
+      while the panel's domain and width are unchanged. **Promotion is a param change, not a
+      remount** — P7 does not need the fallback path.
+- [x] `docs/schema/03-layouts.md` documents `CustomLayout`, the key-to-scale-name rule, `linkTo`'s
+      one-second-graph limit, positions as expressions, and the one-aspect-ratio constraint.
+
+## Findings
+
+Three things differed from the plan. All three were verified by running the code, not by reading it.
+
+1. **Step 4 was half the change, not the whole one.** Reclassifying `rangeMin`/`rangeMax` as
+   updatables did make the range move — and nothing else moved with it. A view object only redraws
+   when `hasChanged`, which tracks its *own* updatables (`viewObject.ts`), and a panel sliding
+   across the canvas changes nothing an object knows about itself. Measured: the scale's `rangeMin`
+   went 0.05 → 0.5 while every path in the panel kept its original `d`. The fix is a `scalesMoved()`
+   check beside `hasChanged`, which works because scales are registered as update listeners before
+   any view object and so have already recomputed for the tick. Nothing downstream turned out to
+   cache pixel geometry — the clip path, the case the plan expected to break, follows correctly.
+
+2. **Step 5's risk was real, and the cause was a live bug in shared code.** A ternary *did* compose
+   into a valid-looking string that meant something else, but not because of the ternary:
+   `getDefinitionProperty` parenthesised a string operand only when it contained `* / + -`, so
+   comparisons and ternaries — which bind *looser* than arithmetic, and therefore need it most —
+   went in bare. `addDefs('params.focus == 0 ? 0.05 : 0.5', 0.4)` composed to
+   `(params.focus == 0 ? 0.05 : 0.5+0.4)`, giving a panel that was 0.4 of the canvas wide when
+   promoted and **zero wide** when not. That is a defect in every composed expression, not only in
+   layout: `multiplyDefs('params.a > 3', 2)` had the same shape. Fixed by parenthesising any operand
+   that is not a bare name or number, which leaves existing generated expressions byte-identical
+   (the DOM snapshot test is unchanged) and is pinned in `parsing_functions.test.ts`. The plan's
+   fallback — plain fractions and a remount on promote — was not needed.
+
+3. **An unresolved cross-graph link took the whole diagram down.** Pre-existing, and confirmed
+   against unmodified `master`: an object whose `xScale2Name` resolved to nothing read `.scale` off
+   `null` while drawing, so mount() reported a failed render and the container was empty. A
+   `linkTo` warning is worthless if the diagram it describes is blank, so the unresolved case now
+   warns and skips the object. Also added: `View` warns when two scales share a name, because
+   `addViewToDef`'s lookup keeps the *last* match and every object naming that scale would silently
+   be drawn against the wrong panel.
+
+**Step 6 — re-expressing the eleven presets on the shared path — was deliberately not done.** The
+saving is about three lines per class (the `new Graph(...)` push and the two `addSecondGraph`
+loops); everything else in each preset is its own key-mapping and its own arithmetic. The Edgeworth
+classes are not position writers at all — they compute a box from `totalGood1`/`totalGood2`, invert
+agentB's rect deliberately, and clamp a band — so routing them through `CustomLayout`'s
+host-facing validation would produce spurious warnings about the negative extents that are correct
+there. The refactor is available whenever it earns itself; `layouts.test.ts` is the safety net when
+it does.
 
 ## Out of scope
 

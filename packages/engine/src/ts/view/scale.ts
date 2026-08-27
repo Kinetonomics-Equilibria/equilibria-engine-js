@@ -33,8 +33,17 @@ export class Scale extends UpdateListener implements IScale {
         setDefaults(def, {
             log: false
         });
-        def.constants = ['rangeMin', 'rangeMax', 'axis', 'name'];
-        def.updatables = ['domainMin', 'domainMax', 'intercept'];
+        // `rangeMin`/`rangeMax` are the panel's edges as fractions of the canvas, and
+        // they are updatables rather than constants so a panel can *move*. A constant is
+        // read once, in the UpdateListener constructor, and is coerced with parseFloat —
+        // so a composed expression like "(params.focus==0?0.05:0.62)+(0.3)" stayed a
+        // string forever and reached `rangeMin * extent` as NaN. As an updatable it is
+        // evaluated on every model update, which is what makes promoting a panel a param
+        // change rather than a remount. Scales are registered as update listeners before
+        // any view object (view.ts creates them first), so an object always reads a range
+        // its scale has already recomputed this tick.
+        def.constants = ['axis', 'name'];
+        def.updatables = ['domainMin', 'domainMax', 'intercept', 'rangeMin', 'rangeMax'];
         super(def);
         this.scale = def.log ? d3.scaleLog() : d3.scaleLinear();
         this.update(true);

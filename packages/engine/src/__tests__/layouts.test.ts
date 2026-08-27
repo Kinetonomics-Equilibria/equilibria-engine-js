@@ -365,6 +365,7 @@ describe('the registry', () => {
      */
     it('exports exactly these layout classes', () => {
         const expected = [
+            'CustomLayout',           // the pass-through: geometry comes from the host
             'EdgeworthBox',
             'EdgeworthBoxAboveOneGraphPlusSidebar',
             'EdgeworthBoxPlusSidebar',

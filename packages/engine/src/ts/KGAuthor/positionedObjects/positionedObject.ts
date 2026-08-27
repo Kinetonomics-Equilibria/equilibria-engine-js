@@ -74,8 +74,17 @@ import { addDefs, extractTypeAndDef } from "../parsers/parsingFunctions";
                 bottomEdge = addDefs(def.position.y, def.position.height),
                 topEdge = def.position.y;
 
+            // A named panel names its scales. `CustomLayout` sets `name` from the host's
+            // panel key, and the scale name is the only part of a panel that survives
+            // parsing — the authoring objects are discarded, while `parsedData.scales`
+            // is what every view object resolves against. So this is what makes a panel
+            // addressable from outside at all. Unnamed panels keep the random names.
+            const scaleName = function (axis: string) {
+                return po.name ? po.name + '_' + axis : randomString(10);
+            };
+
             po.xScale = new Scale({
-                "name": randomString(10),
+                "name": scaleName('x'),
                 "axis": "x",
                 "domainMin": xMin,
                 "domainMax": xMax,
@@ -86,7 +95,7 @@ import { addDefs, extractTypeAndDef } from "../parsers/parsingFunctions";
             });
 
             po.yScale = new Scale({
-                "name": randomString(10),
+                "name": scaleName('y'),
                 "axis": "y",
                 "domainMin": yMin,
                 "domainMax": yMax,

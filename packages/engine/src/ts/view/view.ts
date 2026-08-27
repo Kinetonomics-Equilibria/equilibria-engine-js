@@ -229,6 +229,20 @@ export class View implements IView {
         view.aspectRatio = data.aspectRatio || parsedData.aspectRatio || 1;
         view.model = new Model(parsedData);
 
+        // Two scales with one name is a silent wrong answer: `addViewToDef`'s lookup
+        // keeps the *last* match, so every object naming that scale is drawn against
+        // whichever panel happened to be built second.
+        const scaleNamesSeen: { [name: string]: boolean } = {};
+        parsedData.scales.forEach(function (def: ScaleDefinition) {
+            if (scaleNamesSeen[def.name]) {
+                console.warn(
+                    `View: two scales are named "${def.name}". Objects referring to it will be drawn ` +
+                    `against the last one defined. Panel keys and graph names must be unique.`
+                );
+            }
+            scaleNamesSeen[def.name] = true;
+        });
+
         // create scales
         view.scales = parsedData.scales.map(function (def: ScaleDefinition) {
             def.model = view.model;
@@ -279,6 +293,16 @@ export class View implements IView {
         if (def.hasOwnProperty('xScale2Name')) {
             def.xScale2 = getScale(def['xScale2Name']);
             def.yScale2 = getScale(def['yScale2Name']);
+
+            // A cross-graph object whose second graph was never wired used to take the
+            // whole diagram down: the object reads `xScale2.scale` while drawing, that
+            // threw, and mount() reported a failed render with nothing on screen. The
+            // two ways to get here are both authoring errors worth naming — a layout
+            // that never linked its panels (the name is still the empty string it was
+            // declared with), and a link to a panel key that does not exist.
+            if (!def.xScale2 || !def.yScale2) {
+                def.unresolvedSecondGraph = def['xScale2Name'] || def['yScale2Name'] || '(unlinked)';
+            }
         }
         return def;
     }
@@ -351,7 +375,13 @@ export class View implements IView {
                             def.endArrow = defURLS[def['endArrowName']]
                         }
                         def = view.addViewToDef(def, layer);
-                        if (Object.prototype.hasOwnProperty.call(ViewObjectClasses, td.type)) {
+                        if (def['unresolvedSecondGraph']) {
+                            console.warn(
+                                `View: ${td.type} refers to a second graph "${def['unresolvedSecondGraph']}" that ` +
+                                `no scale is named after, so it was not drawn. A cross-graph object needs its ` +
+                                `panels linked — in CustomLayout that is "linkTo".`
+                            );
+                        } else if (Object.prototype.hasOwnProperty.call(ViewObjectClasses, td.type)) {
                             new ViewObjectClasses[td.type](def);
                         } else {
                             console.warn("ViewObject type not found in ViewObjectClasses: ", td.type);

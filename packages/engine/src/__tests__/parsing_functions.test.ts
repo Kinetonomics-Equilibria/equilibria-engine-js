@@ -58,3 +58,34 @@ describe('addDefs and subtractDefs', () => {
         expect(subtractDefs(20, 20)).toBe(0);
     });
 });
+
+describe('operator precedence in composed expressions', () => {
+    /**
+     * The bug: only strings containing `* / + -` were parenthesised, so a comparison
+     * or a ternary — which bind *looser* than arithmetic, and so need it most — went
+     * in bare. The composed string parsed cleanly and meant something else.
+     *
+     * This is how a `CustomLayout` panel positioned at
+     * `params.focus == 0 ? 0.05 : 0.5` got a right edge of 0.05 rather than 0.45: the
+     * `+ width` was swallowed by the ternary's false branch.
+     */
+    it('parenthesises a ternary before joining it to anything', () => {
+        const composed = addDefs('params.focus == 0 ? 0.05 : 0.5', 0.4);
+
+        expect(composed).toBe('((params.focus == 0 ? 0.05 : 0.5)+0.4)');
+    });
+
+    it('parenthesises a comparison', () => {
+        expect(multiplyDefs('params.a > 3', 2)).toBe('((params.a > 3)*2)');
+    });
+
+    it('parenthesises an exponent, which binds tighter than the join', () => {
+        expect(subtractDefs('params.a^2', 1)).toBe('((params.a^2)-1)');
+    });
+
+    it('leaves a bare name or number alone, so generated expressions stay readable', () => {
+        expect(addDefs('params.a', 'params.b')).toBe('(params.a+params.b)');
+        expect(divideDefs('x', 'y')).toBe('(x/y)');
+        expect(divideDefs(0, '0')).toBe('(0/0)');
+    });
+});

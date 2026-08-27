@@ -26,9 +26,9 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P0](P0-authoring-spike.md) | Authoring spike: prove the free pile ✅ **done** — [findings](P0-findings.md) | cross | — |
 | [P1](P1-retire-react-component-surface.md) | Retire the React component surface ⚠️ **code complete**, npm unpublish outstanding | bindings | — |
 | [P2](P2-layout-defect-sweep.md) | Layout defect sweep ✅ **done** | engine | — |
-| [P3](P3-pass-through-layout.md) | Pass-through layout, and geometry that can move | engine | P2 |
+| [P3](P3-pass-through-layout.md) | Pass-through layout, and geometry that can move ✅ **done** | engine | P2 |
 | [P4](P4-density-render-mode.md) | Density render mode | engine | P3 (if one canvas) |
-| [P5](P5-interaction-snapshot-and-prev-scope.md) | Interaction snapshot and the `prev` scope | engine | — |
+| [P5](P5-interaction-snapshot-and-prev-scope.md) | Interaction snapshot and the `prev` scope ✅ **done** | engine | — |
 | [P6](P6-object-identity-and-steps.md) | Object identity, names and step ordering | engine | P5 (for derived movement) |
 | [P7](P7-stage-composition.md) | Stage composition: focus, rail and promotion | bindings | P1, P3, P4 |
 | [P8](P8-narration-strip.md) | The narration strip | app | P6, P5, P7 |
@@ -58,7 +58,9 @@ which is exactly why they are the easiest to defer indefinitely and the most cos
 
 - Starting from nothing: ~~**P0**~~ (done — read [P0-findings](P0-findings.md) instead),
   ~~**P2**~~ (done), ~~**P1**~~ (code done; the npm unpublish and repo archive are the user's to
-  run). All three were independent of every fork and none was blocked on a decision.
+  run), ~~**P5**~~ (done — `prev` ships, documented in
+  [02-parameters-and-interactions](../schema/02-parameters-and-interactions.md#remembering-the-previous-state-prev)).
+  All four were independent of every fork and none was blocked on a decision.
 - Deciding the architecture: **P3** first, since its finding that `Scale`'s `rangeMin`/`rangeMax` are
   constants rather than updatables (`packages/engine/src/ts/view/scale.ts:34-36`) is what makes
   Fork 1 = A cheap.
