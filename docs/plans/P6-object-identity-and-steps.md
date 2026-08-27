@@ -3,7 +3,11 @@
 **Lane:** engine (authoring vocabulary)
 **Depends on:** P5 for the geometry-comparison option in step 3; nothing otherwise
 **Unblocks:** P8 (narration — blocked entirely on the middle clause), P10 (declared step order)
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Complete** (2026-08-27), all five steps. Step 3 took option (b) as recommended.
+Tests: `packages/engine/src/__tests__/object_identity.test.ts` (13 cases),
+`movement_detection.test.ts` (20), `steps.test.ts` (14), plus 3 in `diagnostics.test.ts`.
+Docs: `docs/schema/05-graph-objects.md`, `docs/schema/02-parameters-and-interactions.md`,
+`docs/interactivity.md`.
 
 ## Goal
 
@@ -184,13 +188,16 @@ All additive. Configs without `title`, `responds` or `steps` behave exactly as t
 
 ## Done when
 
-- [ ] Author-supplied names survive, are checked for uniqueness, and are documented as the way to
-      address an object.
-- [ ] `title` exists and econ composites populate it by default for the common curves.
-- [ ] A param change reports which named objects moved and how, with the degenerate cases from
-      step 3 each covered by a test — including the no-movement case.
-- [ ] A `steps` array reveals objects in order, compiling to the existing `show` mechanism.
-- [ ] `docs/schema/` documents names, titles, `responds` and `steps`.
+- [x] Author-supplied names survive, are checked for uniqueness, and are documented as the way to
+      address an object. Generated names are deliberately exempt from the check — see Findings 2.
+- [x] `title` exists and econ composites populate it by default: demand, supply, equilibrium,
+      marginal revenue, the PPF, the contract curve, the monopolist.
+- [x] A param change reports which named objects moved and how, through `kg:param_changed`'s
+      `affected` array. Every degenerate case named in step 3 has its own fixture, the no-movement
+      case included.
+- [x] A `steps` array reveals objects in order, compiling to the existing `show` mechanism.
+- [x] `docs/schema/` documents names, titles and `steps`. **`responds` was not built** — see
+      Findings 4.
 
 ## Out of scope
 
@@ -200,3 +207,53 @@ All additive. Configs without `title`, `responds` or `steps` behave exactly as t
   plan resolves Fork 2; noted here so it does not get quietly absorbed.
 - Any attempt to explain *why* an object moved. Causality beyond "this param moved this object" is
   economics, not geometry.
+
+## Findings
+
+Five things differed from the plan. All were found by running the code.
+
+1. **Step 4 was "emit it", not "extend it".** `KG_EVENTS.PARAM_CHANGED`, `CURVE_DRAGGED` and
+   `NODE_HOVER` have been declared in `constants.ts`, documented in `docs/interactivity.md` as
+   fired, and given callback props by the React bindings (`onParamChanged`, `onCurveDragged`,
+   `onNodeHover`) since the fork — and **no code path in the engine ever emitted any of them**.
+   `view.emitter` was assigned at `kg.ts:84` and read nowhere; the React tests emit them by hand
+   against a mock, which is why the gap survived a green suite. All three now fire.
+
+2. **Names were already shared, invisibly.** The plan recorded that author-supplied names survive,
+   which is true. What it missed is that they were also *copied*: a point's droplines and axis
+   labels, and a curve's and a segment's own label, are built with `copyJSON(def)` taken after the
+   parent has been stamped with a name, so three objects answered to `equilibrium`. Harmless while
+   a name was only a calc key decorations never write to, and wrong the moment it became an
+   address. The opposite case had to be told apart from it rather than lumped in: an indifference
+   curve drawn as several curves from one def is one object the author named once, whose calcs
+   deliberately merge. Hence `anonymizeCopy` and `reuseName` as two named intentions.
+
+   Generated names are exempt from the uniqueness check. By the time a def reaches `GraphObject`
+   an author's name and a default already applied to a copy are indistinguishable except by
+   `randomString`'s `KGID_` prefix — and a collision between two generated names is not something
+   an author can see or fix, so reporting it would be noise.
+
+3. **`&&` does not parse, and therefore reads as true.** Found while writing the conjunction for
+   step 5. mathjs spells logical operators `and` / `or` / `not`; `&&` throws, `Model.evaluate`
+   catches, and the expression flows on as its own source string — non-empty, therefore truthy.
+   This is finding 1 of the plans README in a new costume, and it had already shipped:
+   `EconConstantElasticityCurve` gated a curve and its inverse on `&&` expressions, so **both were
+   drawn at once whatever the elasticity**. Fixed, and `Model.evaluate` now warns once when an
+   unparseable expression contains `&&` or `||` — narrow enough to be loud, where the general
+   unparsed case must stay quiet because colors, LaTeX and forward references all fail there
+   legitimately.
+
+4. **`responds` was not needed, so it was not built.** Step 3 recommended geometric derivation with
+   an author override. The derivation carried every case in the plan's degenerate list on its own —
+   pivot about an intercept, two objects moved by one param, movement below the noise floor — so
+   the override has nothing to override yet. Adding an authoring key on the strength of a
+   hypothetical is how a schema fills up with things nothing reads. It is a small addition whenever
+   a real diagram needs it.
+
+5. **Sampling did not have to be kept off the render path.** The plan's worry was a sampling pass
+   running on every drag frame. Two things made it cheap enough to run on every accepted change,
+   which is a better answer than a separate commit boundary: `Curve.sampleGeometry` reads the data
+   the redraw beside it has already generated rather than resampling, and the whole comparison is
+   skipped when nothing is listening for the event. Measuring against the **snapshot** rather than
+   the previous frame then fell out for free, and is what keeps a ghost drawn from `prev` and a
+   sentence written from `affected` describing one event rather than two.

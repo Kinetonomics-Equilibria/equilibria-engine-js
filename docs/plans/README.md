@@ -5,8 +5,9 @@ discussion. Each is self-contained: goal, reasoning, verified current state with
 citations, numbered approach, tests, risks, and an explicit out-of-scope section naming which other
 plan owns what it excludes.
 
-**None of these is scheduled or committed.** They are drafts to argue with, and several are
-deliberately conditional on decisions that have not been made.
+They began as drafts to argue with, several deliberately conditional on decisions that had not been
+made. **Six have since landed** — P0, P1 (code), P2, P3, P5 and P6 — and each carries a Findings
+section recording where the plan was wrong. The rest are still drafts.
 
 ## Settle these first
 
@@ -29,7 +30,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P3](P3-pass-through-layout.md) | Pass-through layout, and geometry that can move ✅ **done** | engine | P2 |
 | [P4](P4-density-render-mode.md) | Density render mode | engine | P3 (if one canvas) |
 | [P5](P5-interaction-snapshot-and-prev-scope.md) | Interaction snapshot and the `prev` scope ✅ **done** | engine | — |
-| [P6](P6-object-identity-and-steps.md) | Object identity, names and step ordering | engine | P5 (for derived movement) |
+| [P6](P6-object-identity-and-steps.md) | Object identity, names and step ordering ✅ **done** | engine | P5 (for derived movement) |
 | [P7](P7-stage-composition.md) | Stage composition: focus, rail and promotion | bindings | P1, P3, P4 |
 | [P8](P8-narration-strip.md) | The narration strip | app | P6, P5, P7 |
 | [P9](P9-instrument-dock.md) | The instrument dock | app | P7, P1 |
@@ -51,8 +52,9 @@ Fork 1  →  P3 pass-through layout  →  P7 stage components  →  focus + rail
            P6 names + direction    →  ─────────────────────→  P8 narration strip
 ```
 
-P5 and P6 need no binding work at all — they are engine changes that land straight in the product,
-which is exactly why they are the easiest to defer indefinitely and the most costly to.
+P5 and P6 needed no binding work at all — they were engine changes that land straight in the
+product, which is exactly why they were the easiest to defer indefinitely and the most costly to.
+Both are now done, so P8's blocker is P7 alone.
 
 ## Reading order
 
@@ -64,9 +66,11 @@ which is exactly why they are the easiest to defer indefinitely and the most cos
 - Deciding the architecture: **P3** first, since its finding that `Scale`'s `rangeMin`/`rangeMax` are
   constants rather than updatables (`packages/engine/src/ts/view/scale.ts:34-36`) is what makes
   Fork 1 = A cheap.
-- Chasing the product: **P8** is the highest-value single component, and **P6** is what unblocks it.
+- Chasing the product: **P8** is the highest-value single component, and ~~**P6**~~ (done) has
+  unblocked it — `kg:param_changed` now carries an `affected` array of what moved, and every
+  object worth narrating has a `title`.
 
-## Three findings that cut across the set
+## Findings that cut across the set
 
 1. **A mistyped expression fails truthily. Confirmed by measurement.** `model.evaluate` returns the
    expression *as a string* when mathjs cannot parse it
@@ -76,20 +80,35 @@ which is exactly why they are the easiest to defer indefinitely and the most cos
    Fork 3. See [P0-findings](P0-findings.md) §4; pinned in
    `packages/engine/src/__tests__/authoring_contracts.test.ts`.
 
-2. **Author-supplied names already survive.** `GraphObject` fills a random name only as a *default*
-   via `setDefaults` (`KGAuthor/graphObjects/graphObject.ts:38-40`, `util.ts:1-9`), so stable object
-   ids are mostly already available. P6 is smaller than it first appeared.
+   P6 met it again with teeth: mathjs has no `&&`, so every `show` written with one is
+   *permanently visible*, and two curves in the econ library had shipped that way. `Model.evaluate`
+   now warns when an expression it could not parse contains `&&` or `||` — narrow enough to be
+   loud, where the general case must stay quiet.
+
+2. **Author-supplied names already survive** — and were also being *copied*. `GraphObject` fills a
+   random name only as a *default* via `setDefaults`, so an author's name reaches the parsed data.
+   What P6 found on top: a point's droplines and labels are built by copying its def after the name
+   is stamped, so three objects answered to one name. Invisible while a name was only a calc key,
+   wrong the moment it became an address. Both halves are now pinned in `object_identity.test.ts`.
 
 3. **Multi-param updates are not atomic, and fail silently.** Found by P0 (§7), owned by no plan.
    `kg.update({ params: [...] })` applies params one at a time and validates each alone, so a legal
    destination reached through an illegal interim is rejected halfway and rolled back with no
    diagnostic — leaving a state that is neither the start nor the target. Every scenario, lesson step
    and question setup that moves more than one param is order-dependent today. A batched update that
-   validates once at the end is a precondition for P10 and P11.
+   validates once at the end is a precondition for P10 and P11. It is why P6's `steps` hands a
+   step's `set` params back to the host rather than applying them: choosing the order is a decision
+   that has to be made with the diagram in view, and the engine should not make it quietly.
 
-4. **Panel geometry is one classification away from being animatable.** Positions already compose as
-   expressions through `addDefs`; they are frozen only because `Scale` lists `rangeMin`/`rangeMax`
-   as constants. Move them to updatables and promotion becomes a param change with no remount.
+4. **Panel geometry is one classification away from being animatable.** Confirmed and done by P3:
+   positions already composed as expressions through `addDefs` and were frozen only because `Scale`
+   listed `rangeMin`/`rangeMax` as constants. Promotion is now a param change with no remount.
+
+5. **A documented event is not an emitted one.** `kg:param_changed`, `kg:curve_dragged` and
+   `kg:node_hover` were declared, documented as firing, and wired to React callback props — and
+   nothing in the engine emitted any of them, because the React tests emit them by hand against a
+   mock. P6 emits all three. Worth carrying forward as a habit: an integration point that is only
+   exercised through a mock is not exercised.
 
 ## Conventions
 
