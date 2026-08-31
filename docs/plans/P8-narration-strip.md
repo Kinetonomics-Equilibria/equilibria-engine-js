@@ -3,7 +3,7 @@
 **Lane:** app
 **Depends on:** P6 for the middle clause; P5 for snapshot semantics; P7 for the region it sits in
 **Unblocks:** the "why?" route into the maths explainer (P9); the verdict surface for P11
-**Status:** Draft plan — not implemented
+**Status:** ✅ **Done** — shipped in `apps/web`; see Findings below for where the plan was wrong
 
 ## Goal
 
@@ -140,13 +140,93 @@ re-parsing English.
 
 ## Done when
 
-- [ ] The strip renders cause and effect clauses from live events, formatted from `precision`.
-- [ ] It updates once per interaction, not per frame, and shows live values without arrows during a
+- [x] The strip renders cause and effect clauses from live events, formatted from `precision`.
+- [x] It updates once per interaction, not per frame, and shows live values without arrows during a
       drag.
-- [ ] "Why?" opens the maths explainer on the right calc; "undo" restores the previous state.
-- [ ] The middle clause appears when P6 lands, and is omitted rather than guessed when movement is
-      unknown.
-- [ ] The live region announces the settled chain once, as one utterance.
+- [x] "Why?" names the right calc and calls back with it; "undo" restores the previous state.
+      **The explainer it should open does not exist yet** — the control renders only when a host
+      supplies `onWhy`, and `StudyScreen` supplies none, because a "why?" that opens nothing is
+      worse than no "why?" at all. One prop, the day P9 lands.
+- [x] The middle clause appears — P6 had already landed — and is omitted rather than guessed when
+      movement is unknown.
+- [x] The live region announces the settled chain once, as one utterance.
+
+## Findings
+
+Seven. The plan's step 2 hedge — "hold previous state in the app, for now" — turned out to be
+unnecessary, and most of the rest of the work was deciding things the plan had deliberately left
+open.
+
+1. **The app never needed its own memory.** Step 2 said to keep previous params and calcs in app
+   state and switch to the engine's snapshot when P5 landed. P5 *had* landed, so the strip reads
+   `getSnapshot()` directly and holds no history at all. That is not a shortcut: it is the whole of
+   the plan's "the two must not disagree" risk, closed by construction rather than by care. The
+   sentence, the ghost, the shift arrow and the delta chip are now four readings of one snapshot,
+   and the browser test that asserts it — the chip's `calcs.Pe - prev.calcs.Pe` against the strip's
+   own arrow — could not fail without the engine disagreeing with itself.
+
+   It also made **undo** fall out for free. Restoring the snapshot's params leaves the params equal
+   to `prev`, so `prev.changed` goes false, every ghost hides itself, and the strip reads rest —
+   none of which anything had to be told to do.
+
+2. **The engine knew the precision and would not say.** Step 4 asks for numbers formatted from
+   `precision`, which `Param` derives from `round` and kept to itself. The host's options were a
+   hardcoded decimal count or its own copy of `decimalPlaces` — the plans README's finding 3 exactly
+   ("a value the engine computes and does not publish will be recomputed, worse, somewhere else").
+   `getParams()` now publishes it, with `label`, `min`, `max`, `round` and `presentation` alongside,
+   which is also most of what P9's sliders need.
+
+3. **`presentation` turned out to be load-bearing twice.** P7 added it so an `auto` density would
+   not raise every ghost. The strip needs the same bit for two more things: a promotion must not
+   narrate as `stageFocus 0.0 → 1.0`, and undo must not restore which panel was focal along with the
+   price. A host cannot tell these params apart by name, so `getParams()` reports the flag.
+
+   The subtler half: a promotion carries **no `affected`**, because movement is sampled in domain
+   units and a panel sliding across the canvas does not move its contents. So a strip that recomputed
+   on every param change would silently drop the middle clause from a sentence that was already
+   correct. The strip ignores changes to params it does not narrate, and a browser test holds it.
+
+4. **Calc precision: one decimal, everywhere.** Step 4 left the rule open. Inheriting from the params
+   a calc derives from means parsing its expression, and has no answer for a calc built from params
+   of differing precision. One decimal is what the panel chips already showed, and the requirement
+   was never maximal precision — it was that two places on screen never print one quantity
+   differently. Both now go through `formatValue`.
+
+5. **The phrasebook is literal geometry, and that is a decision, not a shortcut.** A `Curve` samples
+   at fixed x, so raising a demand curve's intercept is reported `axis: 'y', sign: 1` — *up*. The
+   textbook idiom is "shifts right", and mapping one to the other needs the curve's slope sign: up is
+   rightward for a downward-sloping curve and leftward for an upward-sloping one. The descriptor
+   does not carry it, and "supply shifts right" of a supply curve that shifted up would teach an
+   error. So the strip says "demand shifts up" and the mapping waits for a descriptor that carries
+   slope and a reviewer who teaches this.
+
+6. **Step 5's two open questions answered themselves once the data was in front of us.** A stage
+   draws one market three times, so the engine reports one demand curve three times — the same title,
+   the same movement. Duplicates are one object and are said once; two objects sharing a title and
+   disagreeing about what they did produce **no** clause, because there is no way to tell which is
+   wrong. And "name the driver" has a general rule after all: *curves shift, points move* — the
+   engine's own vocabulary. The equilibrium point's coordinates **are** the effects clause, so naming
+   its movement as the mechanism says the same thing twice. A shift outranks a move; where nothing
+   shifted, the point is the mechanism, because then it is what the student touched.
+
+7. **`key` is React's, and a structure that gets spread cannot use it.** The clause type named its
+   address `key`, which is the obvious word for it. Spread into JSX, React swallows that field as
+   the element's key and the component never receives it — a value that silently will not render.
+   It is `name` now, which is what the params and calcs it addresses call themselves anyway.
+
+**Also fixed on the way past, both exposed rather than caused by this work:**
+
+- The study diagram named the demand, supply and equilibrium objects in all three panels the same
+  thing, and the engine warned six times on every load that they were sharing calc keys. They are one
+  thing drawn three times, which is a shared **title**, not a shared **name** — names are addresses.
+  Panel-scoped names, one title each, no warnings, and narration still says "demand" once.
+- A rail panel's delta chip rendered as a bare `+` with the figure squeezed off, which is worse than
+  showing nothing: a delta with no digits still claims something changed. The panel's name gives way
+  now; the number never does.
+
+**Not built, deliberately:** the maths explainer behind "why?" (P9 owns it — see Done when), and any
+debounce. Step 3 offered three ways to solve the strobe and the engine already brackets a drag for
+its own snapshot, so the strip uses that boundary and there is no timer anywhere.
 
 ## Out of scope
 

@@ -4,14 +4,15 @@ Findings from building the first real consumer of the engine (`apps/web`) and
 from auditing the econ object library. These are pre-existing defects inherited
 from the KGJS fork, not regressions from the monorepo or packaging work — the
 code paths involved are untouched by those changes. Everything under **Fixed**
-is closed and named by the test that holds it in place; three items remain
+is closed and named by the test that holds it in place; four items remain
 **Open** at the end.
 
 Issues 9 to 13 were found later, while implementing the plans in `docs/plans`,
 and mostly by the same move: building something that asks the engine for a
 *number* rather than for a picture. Issue 13 is the only regression in the list
 — introduced by the density work and caught the next day by the screen that
-consumed it.
+consumed it. Issue D was found the opposite way, by looking at a screenshot,
+which is the one thing a numbers-first habit will never do for you.
 
 ## Why these went unnoticed
 
@@ -348,3 +349,25 @@ generated expressions and surfaces as a mathjs type error naming neither the
 object nor the missing key — for example `EconContractCurve` without `a`/`b`.
 The calc sweep from issue 7 reports these once they reach the model, but there is
 no up-front validation of required keys.
+
+## D. A stray horizontal line is drawn across a panel once a curve is dragged
+
+**Symptom:** drag the demand curve up on the study screen and a 2px near-black line
+(`rgb(16,16,16)`, distinct from the axis's `rgb(69,70,70)`) appears across the full width of the
+focal panel. It sits at exactly **P = a − 20** — the demand curve's value where it leaves the right
+edge — and tracks the drag. At rest `a = 20`, so it lies under the x-axis and is invisible; it only
+emerges once the curve is pulled above the panel's top.
+
+**Not narration's.** Reproduced on the P7 baseline with P8 stashed, so it predates the strip. Found
+by screenshotting the app rather than by any test: every browser assertion in `app.spec.ts` passes
+with it on screen, because none of them looks at a region no object claims.
+
+**What is established:** it is painted inside the engine's SVG — hiding the `<svg>` removes it — and
+it survives a forced repaint, so it is not a browser paint artifact. But no `path`, `line` or `rect`
+in the tree has geometry matching it: recolouring every element in turn does not turn it red, and no
+path's `d` contains a horizontal run at that height. That points at something drawn indirectly — a
+`marker`, or a fill whose own coordinates do not describe the mark it leaves.
+
+Recorded rather than chased further because it is nobody's plan and the hunt was already long.
+Whoever picks it up should start where it was left: the culprit is reached through `<defs>`, not
+through the object tree.

@@ -2,6 +2,7 @@ import { View } from "./view/view";
 import { StepDefinition } from "./KGAuthor/parsers/steps";
 import { DensityLevel } from "./KGAuthor/parsers/density";
 import { KG_EVENTS } from "./constants";
+import type { ParamInfo } from "./model/param";
 import { EventEmitter } from "eventemitter3";
 import "../css/kgjs-theme.css";
 // Labels are rendered by KaTeX (view/viewObjects/label.ts), which needs its own
@@ -13,6 +14,19 @@ import "katex/dist/katex.min.css";
 
 export { KG_EVENTS };
 export type { DensityLevel };
+
+/**
+ * The shape of what the engine tells a host about itself.
+ *
+ * Declared in the modules that compute them and re-exported here because
+ * `kg.ts` is the package's only entry point: a host wiring a `kg:param_changed`
+ * listener had no type for its own payload and typed it `unknown`, which is how
+ * `payload.calcs` gets read as `any` and a typo in a calc name reaches the
+ * screen as `undefined`.
+ */
+export type { ParamChangedEvent, AffectedObject } from "./view/view";
+export type { Movement } from "./view/movement";
+export type { ParamInfo } from "./model/param";
 
 /**
  * The class the engine applies to its container, which the theme stylesheet
@@ -211,6 +225,23 @@ export class KineticGraph extends EventEmitter {
      */
     public getCalcs(): Record<string, any> {
         return { ...((this.view as any)?.model?.currentCalcValues || {}) };
+    }
+
+    /**
+     * Every param's declaration and current value, in declared order.
+     *
+     * The counterpart of `getCalcs()`: what the diagram *takes*, where that
+     * gives what it *computes*. A host needs `precision` to print a value to the
+     * same number of decimals the diagram does, `label`/`min`/`max`/`round` to
+     * offer a control for it, and `presentation` to tell a param the student
+     * moved from one describing how the diagram is shown — an undo built without
+     * that last one restores a promoted panel along with the price.
+     *
+     * Copies, so mutating what comes back changes nothing; move a param with
+     * `update({ params })`.
+     */
+    public getParams(): ParamInfo[] {
+        return (this.view as any)?.model?.paramInfo() || [];
     }
 
     /**

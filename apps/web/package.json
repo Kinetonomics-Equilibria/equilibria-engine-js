@@ -10,25 +10,32 @@
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
     "test:browser:ui": "playwright test --ui",
-    "screenshot": "node scripts/screenshot.mjs"
+    "screenshot": "node scripts/screenshot.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@mantine/core": "^9.5.2",
     "@mantine/hooks": "^9.5.2",
     "@tabler/icons-react": "^3.46.0",
+    "equilibria-engine-js": "*",
     "equilibria-react": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.6.6",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "jsdom": "^22.1.0",
     "postcss": "^8.5.26",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "typescript": "^5.2.2",
-    "vite": "^4.4.9"
+    "vite": "^4.4.9",
+    "vitest": "^0.34.3"
   }
 }

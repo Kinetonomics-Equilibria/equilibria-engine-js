@@ -25,6 +25,36 @@ export interface ParamDefinition {
     presentation?: boolean;
 }
 
+/**
+ * A param's declaration and its value now, as a host sees it.
+ *
+ * `Param` holds everything a slider, a readout or a narration clause needs —
+ * `label`, `precision` derived from `round`, and whether the param carries
+ * presentation or state — and none of it was reachable from outside the engine.
+ * A host that wants to print a param's value to the right number of decimals
+ * had two choices: hardcode one, or re-derive `precision` from `round` with its
+ * own copy of `decimalPlaces`. Both end with the host and the diagram disagreeing
+ * about the same quantity, which is the duplication `calcs` in the event payload
+ * already exists to prevent.
+ *
+ * `presentation` is here for the same reason: a host filtering "params the
+ * student changed" from "params describing how the diagram is shown" cannot do
+ * it by name, and guessing gets an undo button that yanks a promoted panel back.
+ */
+export interface ParamInfo {
+    name: string;
+    /** The author's label, or the name when they gave none — never empty. */
+    label: string;
+    value: number;
+    min: number;
+    max: number;
+    round: number;
+    /** Decimal places implied by `round`, unless the author overrode it. */
+    precision: number;
+    /** True when the param says how the diagram is shown, not what it shows. */
+    presentation: boolean;
+}
+
 export interface IParam {
     name: string;
     label: string;
@@ -99,6 +129,24 @@ export class Param implements IParam {
             param.value = Math.round(newValue / param.round) * param.round;
         }
         return param.value;
+    }
+
+    /** This param's declaration and current value, copied, for a host to read. */
+    info(): ParamInfo {
+        const param = this;
+        return {
+            name: param.name,
+            // A label is what a host puts in front of the number, so an empty
+            // one is not a usable answer; the name is the word the author chose
+            // for this param and is what the diagram's own expressions call it.
+            label: param.label || param.name,
+            value: param.value,
+            min: param.min,
+            max: param.max,
+            round: param.round,
+            precision: param.precision,
+            presentation: param.presentation
+        };
     }
 
     // Displays current value of the parameter to desired precision

@@ -406,6 +406,57 @@ describe('the host surface', () => {
         r.destroy();
     });
 
+    it('getParams publishes what a host would otherwise re-derive', () => {
+        const r = mountObjects([{ type: 'Point', def: { x: 10, y: 10, color: 'colors.blue' } }], {
+            params: [
+                { name: 'a', label: 'Demand intercept', value: 20, min: 5, max: 28, round: 0.1 },
+                { name: 'zoom', value: 1, min: 0, max: 2, round: 1, presentation: true }
+            ]
+        });
+
+        const params = (r.kg as any).getParams();
+        expect(params.map((p: any) => p.name)).toEqual(['a', 'zoom']);
+
+        const a = params[0];
+        expect(a.label).toBe('Demand intercept');
+        expect(a.value).toBe(20);
+        expect(a.min).toBe(5);
+        expect(a.max).toBe(28);
+        expect(a.round).toBe(0.1);
+        // The whole reason a host asks: printing 13.000000000002 beside a
+        // diagram that says 13.0. `round: 0.1` means one decimal place.
+        expect(a.precision).toBe(1);
+        expect(a.presentation).toBe(false);
+
+        // A host telling "the student moved this" from "the host is showing it
+        // differently" cannot do it by name.
+        expect(params[1].presentation).toBe(true);
+
+        r.destroy();
+    });
+
+    it('getParams labels an unlabelled param with its own name', () => {
+        // An empty string is not an answer a host can put in front of a number,
+        // and `label` defaults to '' rather than to the name.
+        const r = mountObjects([], { params: [{ name: 'a', value: 20, min: 5, max: 28 }] });
+        expect((r.kg as any).getParams()[0].label).toBe('a');
+        r.destroy();
+    });
+
+    it('getParams reports values as they now stand, not as declared', () => {
+        const r = mountObjects([], { params: [{ name: 'a', value: 20, min: 5, max: 28, round: 0.1 }] });
+
+        r.kg.update({ params: [{ name: 'a', value: 24.5 }] });
+        expect((r.kg as any).getParams()[0].value).toBe(24.5);
+
+        // and mutating what came back must not reach the model
+        const copy = (r.kg as any).getParams()[0];
+        copy.value = 999;
+        expect((r.kg as any).getParams()[0].value).toBe(24.5);
+
+        r.destroy();
+    });
+
     it('honours snapshotOn from the config root', () => {
         const r = mountConfig({
             schema: 'EconSchema',

@@ -1,0 +1,78 @@
+/* The narration strip: one line, under the stage, that never moves.
+ *
+ * A fixed minimum height rather than a height that follows its content — the
+ * strip changes on every interaction, and a strip that grew and shrank would
+ * move the stage above it while the student was still looking at it. */
+
+.strip {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-sm);
+    min-height: 2rem;
+    padding: 0 var(--mantine-spacing-xs);
+    border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.chain {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px var(--mantine-spacing-sm);
+    min-width: 0;
+    font-size: var(--mantine-font-size-sm);
+}
+
+.reading {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    /* Digits that do not change width as the value does: the strip is read
+     * while it is being changed, and a number that jitters sideways is harder
+     * to read than one that is simply wrong. */
+    font-variant-numeric: tabular-nums;
+}
+
+.label {
+    font-weight: 600;
+}
+
+.was {
+    color: var(--mantine-color-dimmed);
+}
+
+.arrow {
+    color: var(--mantine-color-dimmed);
+}
+
+.arrow[data-direction='up'] {
+    color: var(--mantine-color-teal-6);
+}
+
+.arrow[data-direction='down'] {
+    color: var(--mantine-color-red-6);
+}
+
+/* The middle clause is prose among numbers, so it is set apart as prose. */
+.mechanism {
+    font-style: italic;
+    color: var(--mantine-color-dimmed);
+}
+
+.controls {
+    flex: none;
+}
+
+/* Visible to a screen reader, and to nothing else. Not `display: none`, which
+ * would take it out of the accessibility tree along with the announcement. */
+.announcement {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}

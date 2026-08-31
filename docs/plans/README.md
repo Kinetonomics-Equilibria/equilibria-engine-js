@@ -6,7 +6,7 @@ citations, numbered approach, tests, risks, and an explicit out-of-scope section
 plan owns what it excludes.
 
 They began as drafts to argue with, several deliberately conditional on decisions that had not been
-made. **Eight have since landed** — P0, P1 (code), P2, P3, P4, P5, P6 and P7 — and each carries a
+made. **Nine have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7 and P8 — and each carries a
 Findings section recording where the plan was wrong. The rest are still drafts.
 
 ## Settle these first
@@ -32,7 +32,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P5](P5-interaction-snapshot-and-prev-scope.md) | Interaction snapshot and the `prev` scope ✅ **done** | engine | — |
 | [P6](P6-object-identity-and-steps.md) | Object identity, names and step ordering ✅ **done** | engine | P5 (for derived movement) |
 | [P7](P7-stage-composition.md) | Stage composition: focus, rail and promotion ✅ **done** | bindings | P1, P3, P4 |
-| [P8](P8-narration-strip.md) | The narration strip | app | P6, P5, P7 |
+| [P8](P8-narration-strip.md) | The narration strip ✅ **done** | app | P6, P5, P7 |
 | [P9](P9-instrument-dock.md) | The instrument dock | app | P7, P1 |
 | [P10](P10-one-timeline.md) | One timeline: build, reveal, lesson | app | P6, P7, P9 |
 | [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop | app | P0, P10, P5 |
@@ -53,9 +53,10 @@ Fork 1  →  P3 pass-through layout  →  P7 stage components ✅ →  focus + r
 ```
 
 The first chain is complete: the focus + rail screen exists in `apps/web`, built on one engine, and
-promoting a panel is a param change with no remount. **Every engine-lane plan has landed and so has
-the binding-lane one that consumed them**, which leaves P8, P9, P10 and P11 — all app-lane, and all
-rendering inside the stage P7 built.
+promoting a panel is a param change with no remount. **Every engine-lane plan has landed, so has the
+binding-lane one that consumed them, and so has the first app-lane one** — the strip under the stage
+says what the student just did and what followed. That leaves P9, P10 and P11, all app-lane and all
+rendering inside the same stage.
 
 ## Reading order
 
@@ -67,9 +68,10 @@ rendering inside the stage P7 built.
 - Deciding the architecture: **P3** first, since its finding that `Scale`'s `rangeMin`/`rangeMax` are
   constants rather than updatables (`packages/engine/src/ts/view/scale.ts:34-36`) is what makes
   Fork 1 = A cheap.
-- Chasing the product: **P8** is the highest-value item left and is now fully unblocked —
-  ~~**P6**~~ gave it `affected` and object titles, ~~**P7**~~ gave it somewhere to render. After
-  that, **P9** and **P10**, which the same stage holds.
+- Chasing the product: ~~**P8**~~ is done — `affected` and object titles from P6, somewhere to render
+  from P7, and a "before" from P5's snapshot. **P9** is next and inherits two things from it: the
+  `getParams()` metadata its sliders need, and a "why?" affordance already wired to name a calc and
+  waiting for a maths instrument to open. Then **P10**, which the same stage holds.
 
 ## Findings that cut across the set
 
@@ -144,6 +146,22 @@ rendering inside the stage P7 built.
    nothing in the engine emitted any of them, because the React tests emit them by hand against a
    mock. P6 emits all three. Worth carrying forward as a habit: an integration point that is only
    exercised through a mock is not exercised.
+
+8. **A stage draws one thing several times, and the difference between a name and a title is the
+   whole of it.** A name is an *address* — a calc key, a lesson step's target, a thing an expression
+   refers to — and two objects answering to one is a fault (P6 made the engine warn about it). A
+   *title* is what the thing is called in prose, and three drawings of one market genuinely share
+   one. The study screen had conflated them since P7 and warned six times on every load. Narration
+   is what made the distinction pay: it groups by title, so one demand curve in three panels is
+   said once, while the addresses stay distinct. **Ask which of the two a field is before reusing
+   it for the other.**
+
+9. **What the engine does not publish, it also forbids.** Finding 3 said a value the engine computes
+   and withholds gets recomputed, worse, elsewhere. P8 met the other half: `Param.precision` was
+   withheld, and a host's only alternatives were to hardcode a decimal count or clone the engine's
+   `decimalPlaces`. Neither is "worse somewhere else" — both are a second definition of the same
+   fact. `getParams()` publishes it, and the same call carries `presentation`, without which a host
+   cannot tell a param the student moved from one describing how the diagram is shown.
 
 ## Conventions
 

@@ -15,10 +15,21 @@
 /** Demand's intercept is the one thing a student moves directly. */
 const DRAG_DEMAND = [{ vertical: 'a' }];
 
-const demand = (draggable = false) => ({
+/**
+ * A `name` is an address; a `title` is what the thing is called.
+ *
+ * These panels draw one market three ways, so each of them holds a demand
+ * curve, and the three are the same curve. Naming them all `demand` made them
+ * one *address*, which they are not: names double as calc keys, so the engine
+ * warned that two objects were sharing `calcs.demand` and only the first
+ * survived. Naming them per panel and titling them all `demand` says exactly
+ * what is true — three drawings, one thing — and narration says "demand" once
+ * because the title is what it groups by.
+ */
+const demand = (panel: string, draggable = false) => ({
     type: 'Line',
     def: {
-        name: 'demand',
+        name: 'demand_' + panel, title: 'demand',
         yIntercept: 'params.a', slope: -1,
         color: 'colors.demand',
         // Positioned by x along the line: a `Line` builds a univariate function
@@ -28,10 +39,10 @@ const demand = (draggable = false) => ({
     }
 });
 
-const supply = () => ({
+const supply = (panel: string) => ({
     type: 'Line',
     def: {
-        name: 'supply',
+        name: 'supply_' + panel, title: 'supply',
         yIntercept: 'params.c', slope: 1,
         color: 'colors.supply',
         label: { text: 'S', x: 16 }
@@ -54,10 +65,10 @@ const demandGhost = () => ({
     }
 });
 
-const equilibrium = () => ({
+const equilibrium = (panel: string) => ({
     type: 'Point',
     def: {
-        name: 'equilibrium',
+        name: 'equilibrium_' + panel, title: 'equilibrium',
         x: 'calcs.Qe', y: 'calcs.Pe',
         color: 'colors.equilibriumPrice',
         droplines: { vertical: 'Q^*', horizontal: 'P^*' },
@@ -102,7 +113,8 @@ export const studyDiagram = {
                     key: 'market',
                     ...axes(),
                     objects: [
-                        demand(true), demandGhost(), supply(), equilibrium(),
+                        demand('market', true), demandGhost(), supply('market'),
+                        equilibrium('market'),
                         // Where the market cleared before, and the move between
                         // the two — the sentence the diagram is trying to say.
                         {
@@ -127,7 +139,7 @@ export const studyDiagram = {
                     key: 'surplus',
                     ...axes(),
                     objects: [
-                        demand(true), supply(),
+                        demand('surplus', true), supply('surplus'),
                         // The two triangles either side of the clearing price,
                         // between each curve and P*, out to the quantity traded.
                         {
@@ -150,14 +162,14 @@ export const studyDiagram = {
                                 srTitle: 'Producer surplus'
                             }
                         },
-                        equilibrium()
+                        equilibrium('surplus')
                     ]
                 },
                 {
                     key: 'revenue',
                     ...axes(),
                     objects: [
-                        demand(true), supply(),
+                        demand('revenue', true), supply('revenue'),
                         {
                             type: 'Rectangle',
                             def: {
@@ -167,7 +179,7 @@ export const studyDiagram = {
                                 srTitle: 'Total revenue'
                             }
                         },
-                        equilibrium()
+                        equilibrium('revenue')
                     ]
                 }
             ]
@@ -189,3 +201,23 @@ export const PANELS = [
     { key: 'surplus', name: 'Consumer surplus', headline: 'CS', delta: 'dCS', unit: '$' },
     { key: 'revenue', name: 'Revenue', headline: 'TR', delta: 'dTR', unit: '$' }
 ] as const;
+
+/**
+ * The numbers the narration strip reports as consequences, most important first.
+ *
+ * Declared here for the same reason a panel's headline is: `calcs` holds
+ * everything the diagram computes, including a bag of geometry per named object,
+ * and which of them are *results a student should read* is a claim about
+ * economics rather than something a component could work out. This list is the
+ * panels' headlines plus `Qe`, which no panel headlines and every chain needs —
+ * a price that moved without a quantity is half an event.
+ *
+ * Order matters twice over: it is the order the clauses appear in, and the first
+ * entry is what "why?" opens the maths explainer on.
+ */
+export const NARRATED_CALCS = [
+    { name: 'Pe', label: 'P*', unit: '$' },
+    { name: 'Qe', label: 'Q*' },
+    { name: 'CS', label: 'CS', unit: '$' },
+    { name: 'TR', label: 'TR', unit: '$' }
+];

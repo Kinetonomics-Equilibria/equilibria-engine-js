@@ -197,3 +197,109 @@ test('promotes from the keyboard', async ({ page }) => {
     await expect(page.locator(panel('Revenue'))).toHaveCount(0);
     await expect(page.locator(panel('Market'))).toBeVisible();
 });
+
+/**
+ * The narration strip (P8).
+ *
+ * Two of its claims only exist in a browser. The first is that it narrates on
+ * *commit*: a drag fires ~60 param changes a second, and the difference between
+ * a line that rewrites per frame and one that rewrites per interaction cannot be
+ * seen by a test that calls the reducer twice. The second is that the strip and
+ * the diagram's own ghosts agree about what "before" means — two components with
+ * two ideas of it is a bug the student experiences as incoherence.
+ */
+const STRIP = '[data-kind]';
+
+/** The strip's chain, with the whitespace the flex gaps supply rather than the markup. */
+const chainText = (page: Page) =>
+    page.locator(`${STRIP} > div[aria-hidden="true"]`).textContent();
+
+test('the strip is at rest until something moves', async ({ page }) => {
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
+    await expect(page.getByText('Drag a curve to see what it changes.')).toBeVisible();
+
+    // Nothing to undo, and nothing has been announced.
+    await expect(page.getByRole('button', { name: 'undo' })).toHaveCount(0);
+    expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
+});
+
+test('the strip narrates once per interaction, not once per frame', async ({ page }) => {
+    const dragPath = page.locator('.kg-container path[class^="dragPath"]')
+        .nth(await focalDragPathIndex(page));
+    const box = (await dragPath.boundingBox())!;
+    const startX = box.x + box.width * 0.45, startY = box.y + box.height * 0.45;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY - 40, { steps: 10 });
+
+    // Mid-drag: live values and no arrows. "20.0 → 20.1" is a frame, not a
+    // mechanism, and a line rewritten at 60Hz is unreadable either way.
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'live');
+    expect(await chainText(page)).not.toContain('→');
+    expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
+
+    await page.mouse.up();
+
+    // Let go, and the whole interaction is one chain.
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
+    const chain = (await chainText(page))!;
+    expect(chain).toContain('a20.0→');
+    expect(chain, 'the middle clause names what the engine said moved').toContain('demand shifts up');
+    expect(chain).toMatch(/P\*\$11\.0→\$\d/);
+
+    // And one utterance, once.
+    expect(await page.locator(`${STRIP} [role="status"]`).textContent())
+        .toMatch(/^You changed a from 20\.0 to .*; demand shifts up; P\* from \$11\.0 to /);
+});
+
+test('the strip and the panel chips agree about "before"', async ({ page }) => {
+    await dragDemandDown(page);
+
+    // The chip's delta is `calcs.Pe - prev.calcs.Pe`, computed by the engine
+    // from the snapshot the ghosts are drawn from. The strip's arrow is
+    // computed by the app from `getSnapshot()`. If those were two different
+    // "before"s — the failure the plan warns about — these two numbers would
+    // disagree.
+    const chain = (await chainText(page))!;
+    const prices = chain.match(/P\*\$(\d+\.\d)→\$(\d+\.\d)/)!;
+    const narrated = Number(prices[2]) - Number(prices[1]);
+
+    const chip = (await page.getByText(/^[+−]\d/).first().textContent())!;
+    const charted = Number(chip.replace('−', '-').replace('+', ''));
+
+    expect(Math.abs(narrated - charted), `strip said ${narrated}, chip said ${chip}`).toBeLessThan(0.05);
+});
+
+test('undo puts the market back, and the diagram stands down with it', async ({ page }) => {
+    const before = await focalPointCoordinates(page);
+
+    await dragDemandDown(page);
+    // The ghosts are the diagram's own account of the same interaction.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
+
+    await page.getByRole('button', { name: 'undo' }).click();
+
+    const after = await focalPointCoordinates(page);
+    expect(Math.abs(after.x - before.x), 'Q* should be back where it started').toBeLessThan(TOLERANCE);
+    expect(Math.abs(after.y - before.y), 'P* should be back where it started').toBeLessThan(TOLERANCE);
+
+    // Nothing told the ghost to hide: the params equal the snapshot again, so
+    // `prev.changed` is false and the strip reads rest for the same reason.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
+    await expect(page.getByText(/^[+−]\d/)).toHaveCount(0);
+});
+
+test('promoting a panel does not rewrite what the student was told', async ({ page }) => {
+    await dragDemandDown(page);
+    const chain = await chainText(page);
+
+    // A promotion is a param change like any other, and it carries no `affected`
+    // — so a strip that narrated it would drop the middle clause from a sentence
+    // that was already correct, and claim the student had moved something.
+    await page.locator(panel('Consumer surplus')).click();
+    await expect(page.locator(panel('Market'))).toBeVisible();
+
+    expect(await chainText(page)).toBe(chain);
+});

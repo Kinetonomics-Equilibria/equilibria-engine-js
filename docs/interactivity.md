@@ -161,6 +161,28 @@ calcs:
 Both arrive in the event. The delta is measured against the same snapshot the
 ghosts are drawn from, so a chip and a ghost always describe one movement.
 
+### Reading the params
+
+```js
+kg.getParams();
+// [{ name: 'a', label: 'Demand intercept', value: 20, min: 12, max: 28,
+//    round: 0.1, precision: 1, presentation: false }, …]
+```
+
+The counterpart of `getCalcs()`: what the diagram *takes*, where that gives what
+it computes. In declared order, and copies — move a param with `update()`.
+
+Two fields exist because a host cannot work them out for itself:
+
+- **`precision`** is the number of decimal places `round` implies, and it is what
+  a value should be printed to. Without it a host either hardcodes a number or
+  re-derives it, and a readout ends up saying `13.000000000002` beside a diagram
+  that says `13.0`.
+- **`presentation`** marks a param that says how the diagram is *shown* rather
+  than what it shows — a panel's density, which panel a host has focused. A host
+  filtering "params the student moved" from those cannot do it by name: an undo
+  built without it restores a promoted panel along with the price.
+
 ## Setting a panel's level of detail
 
 ```js

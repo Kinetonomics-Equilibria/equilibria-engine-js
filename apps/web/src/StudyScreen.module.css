@@ -48,6 +48,17 @@
 .panelName {
     font-size: var(--mantine-font-size-sm);
     font-weight: 600;
+    /* Allowed to shrink and wrap, because it is the half that can afford to. */
+    min-width: 0;
+}
+
+/* The number and its delta are what the chip is *for*, so they never give way.
+ * Without this the flex row squeezes them along with the name, and a rail
+ * panel's badge renders as a bare "+" with the figure clipped off — which is
+ * worse than showing nothing, since a delta with no digits still claims
+ * something changed. */
+.values {
+    flex: none;
 }
 
 .focalChrome .panelName {

@@ -1,5 +1,5 @@
 import * as math from "mathjs";
-import { Param, ParamDefinition } from "./param";
+import { Param, ParamDefinition, ParamInfo } from "./param";
 import { Restriction } from "./restriction";
 import { UpdateListener } from "./updateListener";
 
@@ -280,6 +280,16 @@ export class Model implements IModel {
             if (model.currentParamValues[name] !== model.prevParamValues[name]) return true;
         }
         return false;
+    }
+
+    /**
+     * Every param's declaration and current value.
+     *
+     * In declared order, which is the order an author wrote them in and the only
+     * order a host could sensibly lay out controls or clauses in.
+     */
+    paramInfo(): ParamInfo[] {
+        return this.params.map(function (p) { return p.info() });
     }
 
     addUpdateListener(updateListener: UpdateListener) {
