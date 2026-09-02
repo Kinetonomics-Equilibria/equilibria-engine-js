@@ -167,6 +167,37 @@ drag:
 
 A calc whose definition reads `prev.calcs` also warns. It is well defined — the value one snapshot ago, not a fixpoint — but it is the spelling most likely to surprise, and `prev.params` is almost always what was meant.
 
+## Freezing a drag (`draggable`)
+
+A drag listener takes an expression for `draggable`, so whether a curve can be moved is part of the model rather than a fact about how it was mounted. It is re-read on every param change, so it goes false and true again without a rebuild.
+
+```yaml
+params:
+  - name: submitted
+    value: 0
+    min: 0
+    max: 1
+    round: 1
+    presentation: true      # it says how the diagram is *shown*, not what it shows
+
+objects:
+  - type: Line
+    def:
+      yIntercept: params.a
+      slope: -1
+      color: colors.demand
+      drag:
+        - vertical: a
+          draggable: not(params.submitted)
+```
+
+While `draggable` is false the listener refuses the drag *and* the object leaves the pointer path, so it stops showing a resize cursor. Both halves matter: a curve that still invites a drag and then declines it reads as a diagram that has broken rather than as an answer that has been taken.
+
+This is what a quiz's commit step is built on — see [P11](../plans/P11-quiz-attempt-loop.md). Two cautions worth having in advance:
+
+- **`draggable` on the *listener*, not on the object.** The object-level `draggable: true` shorthand is a different thing: it builds a drag listener from a point's `x`/`y` bindings, and it only fires for a literal `true`. An expression there silently produces no drag at all rather than a conditional one.
+- **It covers the diagram's own drags and nothing else.** A host slider writing the same param through `update({ params })` is not a drag and is not refused. A host that offers its own controls has to enforce the same freeze on them.
+
 ## Declared Build-Up Order (`steps`)
 
 A staged reveal has always been possible one object at a time —
