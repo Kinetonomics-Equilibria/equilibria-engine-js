@@ -6,8 +6,8 @@ citations, numbered approach, tests, risks, and an explicit out-of-scope section
 plan owns what it excludes.
 
 They began as drafts to argue with, several deliberately conditional on decisions that had not been
-made. **Eleven have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9 and P10 — and each
-carries a Findings section recording where the plan was wrong. P11 is still a draft.
+made. **All twelve have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9, P10 and P11 —
+and each carries a Findings section recording where the plan was wrong.
 
 ## Settle these first
 
@@ -35,7 +35,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P8](P8-narration-strip.md) | The narration strip ✅ **done** | app | P6, P5, P7 |
 | [P9](P9-instrument-dock.md) | The instrument dock ✅ **done** | app | P7, P1, P8 |
 | [P10](P10-one-timeline.md) | One timeline: build, reveal, lesson ✅ **done** | app | P6, P7, P9 |
-| [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop | app | P0, P10, P5 |
+| [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop ✅ **done** | app | P0, P10, P5 |
 
 Two further plans are outlined inside P5 rather than written separately: **P12 — Refusals that
 speak** (restriction rollbacks currently revert silently, which is wrong for a learner) and
@@ -53,12 +53,11 @@ Fork 1  →  P3 pass-through layout  →  P7 stage components ✅ →  focus + r
 ```
 
 The first chain is complete: the focus + rail screen exists in `apps/web`, built on one engine, and
-promoting a panel is a param change with no remount. **Every engine-lane plan has landed, so has the
-binding-lane one that consumed them, and so have three of the four app-lane ones** — the strip under
-the stage says what the student just did and what followed, the dock beside it holds the controls,
-the scenarios and the maths, and the track under both runs an authored lesson that draws the market
-up curve by curve and brings its other panels in as events. That leaves **P11**, which fills the
-`ask` slot P10 built for it.
+promoting a panel is a param change with no remount. **Every plan in every lane has landed** — the
+strip under the stage says what the student just did and what followed, the dock beside it holds the
+controls, the scenarios and the maths, the track under both runs an authored lesson that draws the
+market up curve by curve and brings its other panels in as events, and the lesson ends by asking the
+student to move demand themselves and marking where they put it.
 
 ## Reading order
 
@@ -74,8 +73,10 @@ up curve by curve and brings its other panels in as events. That leaves **P11**,
   from P7, and a "before" from P5's snapshot. ~~**P9**~~ (done) took the `getParams()` metadata for
   its sliders and gave the "why?" affordance somewhere to go. ~~**P10**~~ (done) turned P6's declared
   steps into a scrubbable track and an authored lesson, and did *not* register as a dock instrument —
-  the track is a row of its own under the stage. **P11** is next, and the slot is waiting for it: a
-  step carrying `ask` can be reached and not passed, and nothing else about a question is decided.
+  the track is a row of its own under the stage. ~~**P11**~~ (done) filled P10's `ask` slot: the app
+  grades, the schema declares only the target, and the verdict lives in a row of its own rather than
+  in the strip, because P10's arbitration would wipe a prompt off the screen the moment a student
+  moved something to answer it.
 
 ## Findings that cut across the set
 
@@ -197,8 +198,8 @@ API / schema surface, Tests, Risks and unknowns, Done when, Out of scope. Claims
 behaviour cite `path:line`. Where a plan could not verify something, it says so rather than
 assuming.
 
-11. **Reading the plan against the code before building it paid twice, and is now the habit.** P9's
-    read caught six things and predicted an integration defect. P10's caught ten, two of which
+11. **Reading the plan against the code before building it paid three times, and is now the habit.**
+    P9's read caught six things and predicted an integration defect. P10's caught ten, two of which
     needed *running* rather than reading and were both engine defects: the step param was not marked
     presentation, so advancing a build-up drew ghosts over an untouched diagram, and a step could
     not reveal a panel at all — a graph's axes and axis titles are never named, so the plan's own
@@ -219,3 +220,29 @@ assuming.
     test asserts a *level* that the engine picks from a measured size, it is asserting something
     about the viewport, and the viewport should be chosen deliberately rather than inherited from a
     device preset.
+
+14. **A property that reports the right value and is read by nobody passes every test that asks it
+    what it says.** This is finding 6 with the sharpest possible edge. P0 measured `draggable` going
+    true → false → true across updates, called it "the claim most likely to be wrong in practice",
+    and concluded freeze-on-commit was authorable. The field was right and nothing consulted it:
+    `Listener.onChange` moved the param regardless. P11 measured the *param* instead and found the
+    curve still dragging after a commit. **Assert the effect. A field is not a behaviour, and a
+    field that has been carefully verified is still not a behaviour.**
+
+15. **Half the state in the engine and half in React survives only until the engine is rebuilt.**
+    `Stage` rebuilds its config — remounting the engine — when the box's quantised aspect ratio
+    changes. Correct, and cheap, until a lesson existed: a rebuilt engine starts from the config, so
+    `params.step` goes back to 0, every reveal is undone and the student's drag is discarded, while
+    the track underneath still reads "8 / 9". Nothing announced it. Whatever the host keeps outside
+    the engine, it owes the engine back after a remount — and `onReady` firing again is the only
+    notice it gets. Found by screenshotting the finished feature; the capture resized the viewport
+    and the diagram in the picture was empty.
+
+16. **An ordering contract with a library is decided by where the handlers are attached, and the
+    docs do not say where the library attached its own.** The engine's gesture contract is
+    `beginGesture` *before* the value moves. Mantine's `Slider` handles keys in `onKeyDownCapture`
+    on its own root, set after `...others`, and calls `onChange` and `onChangeEnd` inside that one
+    handler — so the obvious wiring, a bubble-phase `onKeyDown` prop, runs after the change. The
+    dock had shipped that way since P9: arrow keys drew no ghost, narrated nothing, and left a
+    gesture open. The mouse path was fine, which is why nothing caught it until a plan needed the
+    keyboard to be a first-class input.

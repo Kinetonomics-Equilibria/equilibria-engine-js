@@ -7,12 +7,17 @@ code paths involved are untouched by those changes. Everything under **Fixed**
 is closed and named by the test that holds it in place; four items remain
 **Open** at the end.
 
-Issues 9 to 13 were found later, while implementing the plans in `docs/plans`,
+Issues 9 to 14 were found later, while implementing the plans in `docs/plans`,
 and mostly by the same move: building something that asks the engine for a
 *number* rather than for a picture. Issue 13 is the only regression in the list
 — introduced by the density work and caught the next day by the screen that
 consumed it. Issue D was found the opposite way, by looking at a screenshot,
 which is the one thing a numbers-first habit will never do for you.
+
+Issue 14 is the sharpest instance of the habit this file recommends, and the one
+that got closest to shipping behind a green test: a property that reported
+exactly the right value, was asserted to report it, and was read by nothing at
+all. **Assert the effect, not the field.**
 
 ## Why these went unnoticed
 
@@ -315,6 +320,34 @@ done the same.
 what it shows — and presentation params are excluded from the comparison. The engine marks its
 density params, and `Stage` marks its focus and mode params. Covered by "a density is presentation,
 not state" in `src/__tests__/density.test.ts`.
+
+## 14. A drag listener's `draggable` was read by nothing — FIXED
+
+**Symptom:** a curve bound to `draggable: 'not(params.submitted)'` went on dragging after
+`submitted` was set. The listener's own field reported `false` throughout, and the object kept the
+resize cursor and kept taking the pointer.
+
+**Cause:** inherited from the fork, and never exercised because nothing had needed to freeze a curve
+until P11's quiz. `DragListener` declared `draggable` as an updatable and evaluated it on every tick;
+`Listener.onChange` — which the interaction handler calls on every drag event — moved the param
+without consulting it, and `InteractionHandler.update` set `pointer-events` from `directions` alone.
+Two layers, neither of which asked.
+
+There was a second lock on the same door: the handler's recompute was gated on `ih.hasChanged`, which
+is the *handler's* own updatables, while `dragListeners` is registered as a **constant**. A listener
+whose `draggable` had just changed could not have reached the code that would have acted on it even
+if that code had been right.
+
+This is the failure this file exists to name, in its purest form. P0 had checked this exact claim,
+flagged it as the one most likely to be wrong in practice, and verified it by asserting that the
+*field* changed — which it did. **Assert the effect, not the field.**
+
+**Fix:** `DragListener.onChange` refuses when not draggable, and a listener that is not draggable
+contributes no direction, so the object leaves the pointer path and stops promising a drag. The
+handler compares the styles it would write against the ones it last wrote, which keeps the d3 calls
+off the drag path without missing the change. Covered by "refuses the drag itself, not merely the
+property" and "takes the hit area out of the pointer path while frozen" in
+`src/__tests__/authoring_contracts.test.ts` — both asserting the param, not the field.
 
 # Open
 
