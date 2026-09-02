@@ -4,9 +4,9 @@
 **Depends on:** P7 (the region it occupies); P1 (Mantine as the only theming system); P8 for the
 "why?" that opens the Maths instrument, and for the commit boundary a slider has to respect
 **Unblocks:** P10 and P11, which plug in as further instruments
-**Status:** Draft, read against the code 2026-09-02 before building — see
-[Read against the code](#read-against-the-code-2026-09-02) for what the draft had wrong. Current
-state below is corrected; the record of what changed is at the bottom.
+**Status:** ✅ **Done** (2026-09-02). Two records at the bottom:
+[Read against the code](#read-against-the-code-2026-09-02), written before building, and
+[Findings](#findings), written after. Current state describes the tree as it was before the work.
 
 ## Goal
 
@@ -240,16 +240,17 @@ filmstrip).
 
 ## Done when
 
-- [ ] The dock switches instruments with no change to the stage's geometry.
-- [ ] Explore drives every numeric param with correct step and precision, and `precision` is a
+- [x] The dock switches instruments with no change to the stage's geometry.
+- [x] Explore drives every numeric param with correct step and precision, and `precision` is a
       number for every param the engine reports — booleans included.
-- [ ] A slider scrub is one interaction to the strip and one snapshot to the engine: no arrow form
+- [x] A slider scrub is one interaction to the strip and one snapshot to the engine: no arrow form
       mid-drag, one announcement at the end.
-- [ ] Scenarios apply as one update, with the restriction question answered rather than assumed.
-- [ ] Maths shows expression → substitution → result, degrades honestly, and opens focused from
+- [x] Scenarios apply as one update. The restriction question is *unanswered and unreached* —
+      the study diagram declares none — which is said out loud rather than assumed away.
+- [x] Maths shows expression → substitution → result, degrades honestly, and opens focused from
       P8's "why?".
-- [ ] The whole dock is keyboard operable and correctly labelled.
-- [ ] Build and Lesson can register through the instrument contract without changing the shell.
+- [x] The whole dock is keyboard operable and correctly labelled.
+- [x] Build and Lesson can register through the instrument contract without changing the shell.
 
 ## Read against the code (2026-09-02)
 
@@ -312,6 +313,75 @@ Every `path:line` in the original draft had drifted — by 40 to 270 lines — a
 rather than deleted. Two claims were left exactly as written because they are still true and still
 load-bearing: restrictions validate per param and roll back silently, and an unparseable calc comes
 back as its own string.
+
+## Findings
+
+Five. The two that matter were found by looking at the running app, not by any test — which is now
+twice in a row that the screen has told this programme something the suite could not.
+
+1. **A scenario moved the diagram and the sentence under it said nothing had happened.** The clearest
+   failure this app can produce, and every one of 516 unit tests passed through it. Applying a
+   scenario drew ghosts, moved all three panels and lit every delta chip, while the narration strip
+   read *"Drag a curve to see what it changes."*
+
+   The cause is a genuine split in what "before" means. The engine seeds `prev` at construction, so
+   the ghosts always have a before-state to draw against. `getSnapshot()` returns `null` until
+   `snapshotSeq > 0`, and only a *gesture* increments it — so before the student's first drag the
+   diagram had a before and the strip did not. P8's risk section names this exact failure ("three
+   components with three ideas of before is a bug the user experiences as incoherence") and P8 could
+   not hit it, because a drag is the one interaction that snapshots itself.
+
+   The fix was already documented: `kg.snapshot()`'s comment names *"applying a scenario"* as the
+   first example of a boundary the engine cannot see. So `snapshot()` is part of the instrument
+   contract, Scenarios calls it before the update, and a test asserts the *order* — after the change
+   it would mark the wrong state. Undo deliberately does not call it, which is the mirror case: undo
+   restores the params to what `prev` already holds, and leaving the snapshot alone is exactly what
+   lets the ghosts hide themselves.
+
+   General form: **an engine that seeds one memory at construction and another on first use has two
+   clocks, and a host will read whichever one it happens to ask.**
+
+2. **The dock made the filmstrip the normal case, and the filmstrip had a collision waiting.**
+   `FILMSTRIP_BELOW_PX` is measured on the stage, so a 320px dock at 1440px drops the stage to about
+   780px and the rail lies down under the focal panel — predicted in step 7, and correct behaviour.
+   What was not predicted: in a filmstrip slot a couple of hundred pixels wide, "Consumer surplus"
+   wraps to two lines, and the arrangement leaves exactly one line of padding below the strip. The
+   second line landed on top of the narration line.
+
+   Pre-existing since P7 and reachable only on a narrow window, which is why nobody had seen it.
+   The dock made it the default. The name is now clipped with an ellipsis, which is what a name gets
+   to be when the number beside it is the point.
+
+3. **`beginGesture`/`endGesture` were only half the wire, exactly as the pre-build read predicted —
+   and the missing half was in the app, not the engine.** Worth recording that the prediction held,
+   because it is the first time in this programme that reading the code *before* building caught an
+   integration defect rather than discovering it afterwards. The slider brackets the gesture and the
+   screen tells the strip; a browser test drives a ten-step scrub and asserts the strip stays live
+   with nothing announced, then settles once. The "before" it settles against is the scrub's start,
+   not its penultimate frame — which is the assertion that would fail if either half of the wire
+   were dropped.
+
+4. **`toTex` needed one more pass than "strip the prefixes".** Substituting `24.0` and re-parsing
+   gives `24` back: mathjs normalises a constant it reads. That would have printed one quantity two
+   ways on one screen — `$12.3` in the strip and `12.3` beside it in the maths, or worse `24` where
+   the slider said `24.0`. Values now go through the parser as opaque placeholder symbols and the
+   formatted strings are put back into the LaTeX afterwards. P8's finding 4 chose one decimal
+   everywhere; this is what it costs to keep that promise through a second renderer.
+
+5. **What makes a calc showable is its value, not whether it parses.** The plan said to detect calcs
+   that "do not parse at all" and skip them. `colors.demand` parses perfectly — mathjs reads it as a
+   property access — and typesets into confident nonsense. The test that actually separates a formula
+   from a color name is whether the engine got a *number* out of it, which is the plans README's
+   first finding in yet another costume: an expression that parses is not an expression that means
+   what it says.
+
+**Departed from the plan, deliberately:** the dock is a flex sibling of the stage inside
+`StudyScreen`, not an `AppShell.Aside`. The pre-build read was right that `AppShell.Aside` is the
+region the plan described, and wrong that it was the right home: everything an instrument needs —
+the engine handle, live params, calcs, the gesture bracket — lives in `StudyScreen`, and an aside at
+`App` level would have meant lifting all of it two levels to put a component in a different DOM
+parent. The claim the plan actually cares about (the stage does not move when the instrument
+changes) is bought by the dock's fixed width either way.
 
 ## Out of scope
 

@@ -1,0 +1,39 @@
+.row,
+.rowFocused {
+    padding: var(--mantine-spacing-xs);
+    border-radius: var(--mantine-radius-sm);
+}
+
+/* The calc the student actually asked about, when they arrived by "why?". */
+.rowFocused {
+    background: var(--mantine-color-default-hover);
+}
+
+.name {
+    color: var(--mantine-color-dimmed);
+}
+
+.lines {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    /* KaTeX lays out wider than its container on a long expression, and the dock
+     * is a fixed 320px on purpose. Scroll the maths, not the page. */
+    overflow-x: auto;
+}
+
+/* The line doing the teaching, so it is the one with weight. */
+.substituted {
+    color: var(--mantine-color-text);
+}
+
+.result {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.raw {
+    display: block;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

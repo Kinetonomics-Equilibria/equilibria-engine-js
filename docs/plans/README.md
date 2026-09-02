@@ -6,7 +6,7 @@ citations, numbered approach, tests, risks, and an explicit out-of-scope section
 plan owns what it excludes.
 
 They began as drafts to argue with, several deliberately conditional on decisions that had not been
-made. **Nine have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7 and P8 — and each carries a
+made. **Ten have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8 and P9 — and each carries a
 Findings section recording where the plan was wrong. The rest are still drafts.
 
 ## Settle these first
@@ -33,7 +33,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P6](P6-object-identity-and-steps.md) | Object identity, names and step ordering ✅ **done** | engine | P5 (for derived movement) |
 | [P7](P7-stage-composition.md) | Stage composition: focus, rail and promotion ✅ **done** | bindings | P1, P3, P4 |
 | [P8](P8-narration-strip.md) | The narration strip ✅ **done** | app | P6, P5, P7 |
-| [P9](P9-instrument-dock.md) | The instrument dock | app | P7, P1 |
+| [P9](P9-instrument-dock.md) | The instrument dock ✅ **done** | app | P7, P1, P8 |
 | [P10](P10-one-timeline.md) | One timeline: build, reveal, lesson | app | P6, P7, P9 |
 | [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop | app | P0, P10, P5 |
 
@@ -54,9 +54,11 @@ Fork 1  →  P3 pass-through layout  →  P7 stage components ✅ →  focus + r
 
 The first chain is complete: the focus + rail screen exists in `apps/web`, built on one engine, and
 promoting a panel is a param change with no remount. **Every engine-lane plan has landed, so has the
-binding-lane one that consumed them, and so has the first app-lane one** — the strip under the stage
-says what the student just did and what followed. That leaves P9, P10 and P11, all app-lane and all
-rendering inside the same stage.
+binding-lane one that consumed them, and so have the first two app-lane ones** — the strip under the
+stage says what the student just did and what followed, and the dock beside it holds the controls,
+the scenarios and the maths. That leaves P10 and P11, both app-lane, both rendering inside the same
+stage, and both plugging into the instrument contract P9 defined rather than needing a place made
+for them.
 
 ## Reading order
 
@@ -69,9 +71,10 @@ rendering inside the same stage.
   constants rather than updatables (`packages/engine/src/ts/view/scale.ts:34-36`) is what makes
   Fork 1 = A cheap.
 - Chasing the product: ~~**P8**~~ is done — `affected` and object titles from P6, somewhere to render
-  from P7, and a "before" from P5's snapshot. **P9** is next and inherits two things from it: the
-  `getParams()` metadata its sliders need, and a "why?" affordance already wired to name a calc and
-  waiting for a maths instrument to open. Then **P10**, which the same stage holds.
+  from P7, and a "before" from P5's snapshot. ~~**P9**~~ (done) took the `getParams()` metadata for
+  its sliders and gave the "why?" affordance somewhere to go. **P10** is next, and registers through
+  P9's instrument contract — but read finding 10 first: it is about to move more than one param at a
+  time, which is the case the engine still handles badly.
 
 ## Findings that cut across the set
 
@@ -162,6 +165,27 @@ rendering inside the same stage.
    `decimalPlaces`. Neither is "worse somewhere else" — both are a second definition of the same
    fact. `getParams()` publishes it, and the same call carries `presentation`, without which a host
    cannot tell a param the student moved from one describing how the diagram is shown.
+
+
+10. **An engine with two memories has two clocks, and a host reads whichever it asks for.** `prev` is
+    seeded at construction, so a diagram's ghosts always have a "before". `getSnapshot()` returns
+    `null` until a gesture has incremented `snapshotSeq`. Between page load and the student's first
+    drag those disagree — and P9 found it in the plainest possible form: applying a scenario moved
+    all three panels, drew every ghost, lit every delta chip, and the narration strip underneath read
+    *"Drag a curve to see what it changes."* 516 unit tests passed through it; a screenshot did not.
+
+    The remedy was already written down — `kg.snapshot()`'s own comment names "applying a scenario"
+    as the first boundary the engine cannot see — which makes this less a defect than an
+    under-advertised obligation. It is now part of the instrument contract, and the test asserts the
+    *order*, since snapshotting after the change marks the wrong state. **P10 and P11 inherit this
+    directly:** a lesson step and a quiz reveal are the other two examples in that same comment.
+
+11. **Reading the plan against the code before building it paid, and is worth repeating.** Six
+    corrections before a line was written, five of them the plan describing a world a later plan had
+    already changed. One — that a dock slider would strobe the narration strip — was an integration
+    defect caught in advance rather than found afterwards, which is the first time that has happened
+    here. The habit generalises: **a plan written before its dependencies landed is a description of
+    a tree that no longer exists**, and P10 and P11 were both written before P7, P8 and P9.
 
 ## Conventions
 

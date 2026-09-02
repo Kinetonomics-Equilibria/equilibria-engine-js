@@ -48,8 +48,16 @@
 .panelName {
     font-size: var(--mantine-font-size-sm);
     font-weight: 600;
-    /* Allowed to shrink and wrap, because it is the half that can afford to. */
+    /* Allowed to shrink, because it is the half that can afford to — but not to
+     * wrap. A rail slot in filmstrip mode is a couple of hundred pixels wide,
+     * and a second line of name has nowhere to go: the arrangement leaves one
+     * line's worth of padding below the strip, so the wrap lands on top of the
+     * narration line underneath. Clipped with an ellipsis instead, which is what
+     * a name gets to be when the number beside it is the point. */
     min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* The number and its delta are what the chip is *for*, so they never give way.
@@ -73,4 +81,16 @@
     font-size: var(--mantine-font-size-sm);
     font-variant-numeric: tabular-nums;
     color: var(--mantine-color-dimmed);
+}
+
+/* Stage and dock, side by side.
+ *
+ * The row is the entire mechanism by which the dock affects the stage: it takes
+ * its fixed width, the stage gets what is left, and the stage's own
+ * ResizeObserver does the rest. Nothing here tells the stage anything. */
+.stageRow {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: var(--mantine-spacing-sm);
 }

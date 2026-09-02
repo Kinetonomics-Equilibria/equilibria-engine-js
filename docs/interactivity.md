@@ -166,13 +166,13 @@ ghosts are drawn from, so a chip and a ghost always describe one movement.
 ```js
 kg.getParams();
 // [{ name: 'a', label: 'Demand intercept', value: 20, min: 12, max: 28,
-//    round: 0.1, precision: 1, presentation: false }, …]
+//    round: 0.1, precision: 1, presentation: false, isBoolean: false }, …]
 ```
 
 The counterpart of `getCalcs()`: what the diagram *takes*, where that gives what
 it computes. In declared order, and copies — move a param with `update()`.
 
-Two fields exist because a host cannot work them out for itself:
+Three fields exist because a host cannot work them out for itself:
 
 - **`precision`** is the number of decimal places `round` implies, and it is what
   a value should be printed to. Without it a host either hardcodes a number or
@@ -182,6 +182,36 @@ Two fields exist because a host cannot work them out for itself:
   than what it shows — a panel's density, which panel a host has focused. A host
   filtering "params the student moved" from those cannot do it by name: an undo
   built without it restores a promoted panel along with the price.
+- **`isBoolean`** says the author declared this param as `true`/`false`. The
+  engine coerces one to 0/1 with numeric bounds before anything outside can see
+  it, so by this point it is indistinguishable from a small integer — and a
+  control panel that guesses offers a hundred-step slider for a toggle. Nothing
+  downstream can recover the fact, so it is recorded where it is still known.
+
+## Declaring a boundary the engine cannot see
+
+```js
+kg.snapshot();                                   // mark where the diagram is now
+kg.update({ params: [{ name: 'a', value: 26 }] });
+```
+
+`prev` — and every ghost, shift arrow and delta drawn from it — is updated at an
+*interaction boundary*. A drag brackets itself, and a host-driven scrub is
+bracketed with `beginGesture()` / `endGesture()`. A **discrete jump** is
+invisible: applying a scenario, revealing an answer, starting a lesson step all
+arrive as ordinary param updates, and nothing in them says a new "before" has
+begun.
+
+Call `snapshot()` **before** the change, since it marks the state as it stands.
+Skipping it is not a silent no-op — it produces the opposite of one. Before the
+student's first drag no snapshot has been taken at all, so `getSnapshot()`
+returns `null` while the diagram's own `prev` is still seeded from construction:
+the ghosts draw a movement and a host reading the snapshot is told nothing
+happened.
+
+The mirror case is an **undo**, which should *not* snapshot. Restoring the params
+to what `prev` already holds is what makes `prev.changed` false again, so the
+ghosts hide themselves and the diagram stands down on its own.
 
 ## Setting a panel's level of detail
 

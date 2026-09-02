@@ -20,6 +20,8 @@
     "@tabler/icons-react": "^3.46.0",
     "equilibria-engine-js": "*",
     "equilibria-react": "*",
+    "katex": "^0.16.9",
+    "mathjs": "^11.9.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

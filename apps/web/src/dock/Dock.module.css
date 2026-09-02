@@ -1,0 +1,39 @@
+/* The dock. Everything here exists to keep one promise: the stage does not move
+ * when the open instrument changes. */
+
+.dock {
+    /* Fixed, and fixed on purpose. A dock that sized itself to its contents
+     * would hand the stage a new width every time a student switched tabs, and
+     * the stage — which measures itself — would faithfully re-arrange for it.
+     * `flex: none` is the half that stops a long scenario list stretching it. */
+    flex: none;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--mantine-color-default-border);
+    padding-left: var(--mantine-spacing-sm);
+}
+
+.tabs {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.panel {
+    /* `min-height: 0` on both this and the flex parent is what lets the scroll
+     * area actually scroll instead of growing the column past the viewport. */
+    flex: 1;
+    min-height: 0;
+}
+
+.scroll {
+    height: 100%;
+}
+
+.panelInner {
+    padding-top: var(--mantine-spacing-sm);
+    padding-right: var(--mantine-spacing-xs);
+}

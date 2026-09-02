@@ -221,3 +221,55 @@ export const NARRATED_CALCS = [
     { name: 'CS', label: 'CS', unit: '$' },
     { name: 'TR', label: 'TR', unit: '$' }
 ];
+
+/**
+ * The calcs worth explaining, and their formulas.
+ *
+ * Derived from the config rather than restated, so a calc added above appears in
+ * the Maths instrument without anyone remembering to list it. The deltas are
+ * filtered out: `calcs.Pe - prev.calcs.Pe` is a true formula and a useless
+ * explanation — it says a change is a change. What a student asking "why?" wants
+ * is where the *level* comes from.
+ */
+export const EXPLAINED_CALCS: Record<string, string> = Object.keys(studyDiagram.calcs)
+    .filter(name => !/^d[A-Z]/.test(name))
+    .reduce((out, name) => {
+        out[name] = (studyDiagram.calcs as Record<string, string>)[name];
+        return out;
+    }, {} as Record<string, string>);
+
+/**
+ * Named param sets a student can jump to.
+ *
+ * Applied instantly rather than animated. Two curves sliding simultaneously is
+ * a pretty thing that teaches less than a sentence naming what shifted — and the
+ * sentence is already there, under the stage, generated from the same change.
+ *
+ * They live beside the diagram for now because a real content model is its own
+ * piece of work; expect this to move.
+ */
+export const SCENARIOS = [
+    {
+        id: 'demand-shock',
+        label: 'Demand shock',
+        description: 'Incomes rise and buyers want more at every price.',
+        params: { a: 26 }
+    },
+    {
+        id: 'input-costs',
+        label: 'Input costs rise',
+        description: 'Production gets dearer, so sellers need more to supply the same quantity.',
+        params: { c: 6 }
+    },
+    {
+        id: 'both',
+        label: 'Boom and cost squeeze',
+        description: 'Both at once — the quantity effects work against each other.',
+        params: { a: 26, c: 6 }
+    },
+    {
+        id: 'baseline',
+        label: 'Back to baseline',
+        params: { a: 20, c: 2 }
+    }
+];

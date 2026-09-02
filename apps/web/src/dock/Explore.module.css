@@ -1,0 +1,13 @@
+.head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--mantine-spacing-xs);
+}
+
+.value {
+    /* Tabular, or the readout jitters horizontally through a scrub and the eye
+     * follows the movement instead of the number. */
+    font-variant-numeric: tabular-nums;
+    color: var(--mantine-color-dimmed);
+}

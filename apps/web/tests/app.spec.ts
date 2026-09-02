@@ -303,3 +303,85 @@ test('promoting a panel does not rewrite what the student was told', async ({ pa
 
     expect(await chainText(page)).toBe(chain);
 });
+
+/**
+ * The dock (P9), and the one claim about it that a unit test cannot make.
+ *
+ * A slider raises no `kg:curve_dragged` — that event comes only from dragging
+ * inside the diagram — so the narration strip cannot tell a scrub from sixty
+ * separate interactions on its own. The wire that tells it runs from the
+ * instrument, through `StudyScreen`, to both the strip and the engine, and a
+ * component test of either end is exactly what misses a wire.
+ */
+
+test('the dock switches instruments without moving the stage', async ({ page }) => {
+    const stage = page.locator('.kg-container').first();
+    const before = (await stage.boundingBox())!;
+
+    await page.getByRole('tab', { name: 'Maths' }).click();
+    await expect(page.getByRole('tab', { name: 'Maths' })).toHaveAttribute('aria-selected', 'true');
+
+    const after = (await stage.boundingBox())!;
+    // The dock's width does not depend on what is open, so the stage — which
+    // measures its own box — has nothing to react to.
+    expect(Math.abs(after.width - before.width)).toBeLessThan(1);
+    expect(Math.abs(after.height - before.height)).toBeLessThan(1);
+});
+
+test('a slider scrub is one interaction, not one per frame', async ({ page }) => {
+    const slider = page.getByRole('slider', { name: 'a' });
+    const box = (await slider.boundingBox())!;
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 10 });
+
+    // Mid-scrub the strip is live: values without arrows, and nothing announced.
+    // Without `beginGesture` every one of those ten moves would have been a
+    // settled chain, and the live region would have read all ten.
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'live');
+    expect(await chainText(page)).not.toContain('→');
+    expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
+
+    await page.mouse.up();
+
+    // And the whole scrub is one chain, measured from where it began — not from
+    // the frame before last, which is what a per-change snapshot would give.
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
+    expect(await chainText(page)).toContain('a20.0→');
+});
+
+test('the maths instrument shows the calc the strip named', async ({ page }) => {
+    await dragDemandDown(page);
+    await page.getByRole('button', { name: 'why?' }).click();
+
+    // "Why?" is answered by the instrument the strip pointed at, opened on the
+    // calc it named — not by a list the student has to search.
+    await expect(page.getByRole('tab', { name: 'Maths' })).toHaveAttribute('aria-selected', 'true');
+
+    const names = await page.locator('[class*="rowFocused"]').first().textContent();
+    expect(names).toContain('Pe');
+});
+
+test('the maths instrument prints the same numbers as the diagram', async ({ page }) => {
+    await page.getByRole('tab', { name: 'Maths' }).click();
+
+    // The whole reframe: the explainer is the calc string typeset, so it cannot
+    // hold a number the diagram disagrees with. If these two differed, one of
+    // them would be doing its own arithmetic.
+    const open = page.getByRole('tabpanel');
+    await expect(open.getByText('= 11.0')).toBeVisible();
+
+    const chip = (await page.getByText('$11.0').first().textContent())!;
+    expect(chip).toContain('11.0');
+});
+
+test('a scenario applies every param it names', async ({ page }) => {
+    await page.getByRole('tab', { name: 'Scenarios' }).click();
+    await page.getByRole('button', { name: 'Boom and cost squeeze' }).click();
+
+    // Both params move, and the strip reports both as causes.
+    const chain = (await chainText(page))!;
+    expect(chain).toContain('a20.0→26.0');
+    expect(chain).toContain('c2.0→6.0');
+});
