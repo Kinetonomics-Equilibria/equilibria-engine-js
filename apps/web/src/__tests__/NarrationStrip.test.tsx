@@ -134,3 +134,47 @@ describe('the controls', () => {
         expect(screen.getByRole('button', { name: 'why?' }).tagName).toBe('BUTTON');
     });
 });
+
+/**
+ * Three things want the one line, and only one of them can have it (P12).
+ *
+ * The order is newest-and-most-surprising first: a refusal, then a lesson's
+ * sentence, then the chain. A refusal outranks even a step's sentence because a
+ * curve that stopped dead has already raised the question it answers — but only
+ * the eye is rationed. A screen reader gets the refusal *and* the chain, by the
+ * same argument that already gives it an authored sentence and the chain: the
+ * sighted student watched the diagram refuse, and there is nothing to watch if
+ * you cannot see it.
+ */
+describe('a refusal on the strip', () => {
+    const REFUSAL = 'a will not go above 28.0.';
+
+    it('takes the line from the chain', () => {
+        view(<NarrationStrip line={chain()} refusal={REFUSAL} />);
+
+        expect(visibleChain()).toBe(REFUSAL);
+        expect(visibleChain()).not.toContain('20.0');
+    });
+
+    it('takes the line from a lesson\'s sentence too', () => {
+        view(<NarrationStrip line={REST} authored="Incomes rise." refusal={REFUSAL} />);
+
+        expect(visibleChain()).toBe(REFUSAL);
+        expect(document.querySelector('[data-refusal]')).toBeTruthy();
+        // The strip stops calling itself authored, so nothing keys off both.
+        expect(document.querySelector('[data-kind]')!.getAttribute('data-authored')).toBeNull();
+    });
+
+    it('announces the refusal and the chain, in that order', () => {
+        view(<NarrationStrip line={chain()} refusal={REFUSAL} />);
+
+        const said = screen.getByRole('status').textContent!;
+        expect(said.startsWith(REFUSAL)).toBe(true);
+        expect(said).toContain('P*');
+    });
+
+    it('leaves undo reachable, since the move that was refused may still be undone', () => {
+        view(<NarrationStrip line={chain()} refusal={REFUSAL} onUndo={vi.fn()} />);
+        expect(screen.getByRole('button', { name: 'undo' })).toBeTruthy();
+    });
+});

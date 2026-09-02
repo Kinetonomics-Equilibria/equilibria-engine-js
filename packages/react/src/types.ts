@@ -34,6 +34,9 @@ export interface EquilibriaChartProps {
     /** Callback fired when a parameter value changes via user interaction (e.g. dragging a point). */
     onParamChanged?: (data: unknown) => void;
 
+    /** Callback fired when the engine refuses a change — a param bound, or a restriction. */
+    onParamBlocked?: (data: unknown) => void;
+
     /** Callback fired when a curve element is dragged by the user. */
     onCurveDragged?: (data: unknown) => void;
 

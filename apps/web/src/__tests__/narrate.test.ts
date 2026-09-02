@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { AffectedObject } from 'equilibria-engine-js';
 import { CALC_PRECISION, formatValue, narrate, toSentence, undoParams } from '../narration/narrate';
 import type { NarratedParam, NarrateInput, Snapshot } from '../narration/narrate';
-import { phraseMechanism, phraseMovement } from '../narration/phrasebook';
+import { phraseMechanism, phraseMovement, phraseRefusal } from '../narration/phrasebook';
+import type { ParamBlockedEvent } from 'equilibria-engine-js';
 
 /**
  * The narration core, as arithmetic.
@@ -312,5 +313,71 @@ describe('formatValue', () => {
         // is not there.
         expect(formatValue(-0.04, 1)).toBe('0.0');
         expect(formatValue(-0.06, 1)).toBe('-0.1');
+    });
+});
+
+
+/**
+ * The three sentences a refusal can be, and who each is addressed to (P12).
+ *
+ * The one that matters is the third. A restriction whose expression did not
+ * resolve refuses everything the student tries, and telling them "that isn't
+ * allowed" would be a lie landing as their mistake — so the copy has to name
+ * whose fault it is instead.
+ */
+describe('a refusal', () => {
+    const bounds = (over: Partial<ParamBlockedEvent> = {}): ParamBlockedEvent => ({
+        name: 'a', label: 'a', reason: 'bounds',
+        requestedValue: 31.4, attemptedValue: 28, value: 28,
+        min: 12, max: 28, limit: 'max', restrictions: [],
+        ...over
+    });
+
+    const format = (v: number) => formatValue(v, 1);
+
+    it('names the end the param stopped at', () => {
+        expect(phraseRefusal(bounds(), format)).toBe('a will not go above 28.0.');
+        expect(phraseRefusal(bounds({ limit: 'min', value: 12 }), format))
+            .toBe('a will not go below 12.0.');
+    });
+
+    it('reads with a label as readily as with a symbol', () => {
+        expect(phraseRefusal(bounds({ label: 'Demand intercept' }), format))
+            .toBe('Demand intercept will not go above 28.0.');
+    });
+
+    // The author wrote the economics, so the author writes the sentence. An app
+    // paraphrasing them would be guessing at a mechanism it does not know.
+    it('hands back the author\'s own sentence for a rule', () => {
+        const said = phraseRefusal(bounds({
+            reason: 'restriction',
+            restrictions: [{
+                name: 'trades', message: 'At these costs nothing would trade.',
+                expression: 'calcs.Qe', value: 0.5, min: 1
+            }]
+        }), format);
+
+        expect(said).toBe('At these costs nothing would trade.');
+    });
+
+    it('says something rather than nothing for a rule with no message', () => {
+        const said = phraseRefusal(bounds({
+            reason: 'restriction',
+            restrictions: [{ expression: 'calcs.Qe', value: 0.5, min: 1 }]
+        }), format);
+
+        expect(said).toMatch(/rule/);
+    });
+
+    it('blames the diagram, not the student, for a rule that is not a rule', () => {
+        const said = phraseRefusal(bounds({
+            reason: 'restriction',
+            restrictions: [{
+                expression: 'calcs.Qee', value: undefined, min: 1, unresolved: 'expression'
+            }]
+        }), format);
+
+        expect(said).toContain('fault in the diagram');
+        expect(said).not.toMatch(/you can|not allowed/i);
     });
 });

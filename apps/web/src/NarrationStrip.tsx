@@ -31,6 +31,22 @@ export interface NarrationStripProps {
     authored?: string | null;
 
     /**
+     * A move the diagram would not make, shown instead of everything else (P12).
+     *
+     * It outranks both the chain and a step's sentence, by the same rule that
+     * makes the chain outrank the sentence: the newest thing the student did
+     * wins the line. A refusal is also the only one of the three that is
+     * *surprising* — a curve that stopped dead has already raised the question
+     * this answers.
+     *
+     * Displacing rather than appending, because the strip is one line and sits
+     * above a stage that measures its own box. The chain is not lost: like an
+     * authored sentence, it is still announced, since a student who cannot see
+     * the diagram stop has nothing else to tell them what happened.
+     */
+    refusal?: string | null;
+
+    /**
      * What the strip says when nothing has moved yet.
      *
      * Passed rather than fixed because "what to do next" is not always "drag a
@@ -77,6 +93,7 @@ function Reading({ label, unit, from, to, direction }: NarrationLine['causes'][n
 export function NarrationStrip({
     line,
     authored,
+    refusal,
     restHint = 'Drag a curve to see what it changes.',
     onUndo,
     onWhy
@@ -94,23 +111,32 @@ export function NarrationStrip({
      * appending it here is not an inconsistency — it is the same information
      * reaching two senses that need different amounts of it.
      */
-    const sentence = authored
-        ? (chain ? authored + ' ' + chain : authored)
+    const said = refusal || authored;
+    const sentence = said
+        ? (chain ? said + ' ' + chain : said)
         : chain;
 
     return (
-        <div className={classes.strip} data-kind={line.kind} data-authored={authored ? 'true' : undefined}>
+        <div
+            className={classes.strip}
+            data-kind={line.kind}
+            data-authored={authored && !refusal ? 'true' : undefined}
+            data-refusal={refusal ? 'true' : undefined}
+        >
             {/* Read as elements the chain is a dozen fragments and a student
               * hears rubble, so the chips are hidden from assistive technology
               * and the same content is announced once, as one sentence, from the
               * live region below. Both are always in the DOM and in the same
               * place, so neither is a second source of truth. */}
             <div className={classes.chain} aria-hidden="true">
-                {/* A step's sentence displaces the chain rather than joining it.
-                  * The strip is one line and must not grow — it sits above the
-                  * stage's own measured box — and the chain comes back the
-                  * moment the student touches anything, which is the whole rule. */}
-                {authored ? (
+                {/* One of three, never two: a refusal, then a step's sentence,
+                  * then the chain. Each displaces the one below rather than
+                  * joining it, because the strip is one line and must not grow —
+                  * it sits above the stage's own measured box. The chain comes
+                  * back the moment the student moves something that moves. */}
+                {refusal ? (
+                    <Text component="span" size="sm" className={classes.refusal}>{refusal}</Text>
+                ) : authored ? (
                     <Text component="span" size="sm" className={classes.authored}>{authored}</Text>
                 ) : line.kind === 'rest' ? (
                     <Text component="span" size="sm" c="dimmed">{restHint}</Text>

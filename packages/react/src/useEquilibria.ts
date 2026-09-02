@@ -11,6 +11,15 @@ export interface UseEquilibriaEventCallbacks {
     /** Fired when a parameter value changes via user interaction (e.g. dragging a point). */
     onParamChanged?: (data: unknown) => void;
 
+    /**
+     * Fired when the engine refuses a change — a param bound, or a restriction
+     * the author declared. Once per cause, not per drag tick.
+     *
+     * Its counterpart, not its opposite: a clamped drag raises `onParamChanged`
+     * for the distance it *did* move and this for the rest, in that order.
+     */
+    onParamBlocked?: (data: unknown) => void;
+
     /** Fired when a curve element is dragged by the user. */
     onCurveDragged?: (data: unknown) => void;
 
@@ -134,6 +143,10 @@ export function useEquilibria(
             // Forward engine interaction events via stable refs
             kg.on(KG_EVENTS.PARAM_CHANGED, (data: unknown) => {
                 callbacksRef.current.onParamChanged?.(data);
+            });
+
+            kg.on(KG_EVENTS.PARAM_BLOCKED, (data: unknown) => {
+                callbacksRef.current.onParamBlocked?.(data);
             });
 
             kg.on(KG_EVENTS.CURVE_DRAGGED, (data: unknown) => {

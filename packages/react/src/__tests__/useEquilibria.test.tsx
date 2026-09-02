@@ -238,22 +238,25 @@ describe('useEquilibria', () => {
     describe('event forwarding', () => {
         it('forwards each engine interaction event to its callback', () => {
             const onParamChanged = vi.fn();
+            const onParamBlocked = vi.fn();
             const onCurveDragged = vi.fn();
             const onNodeHover = vi.fn();
 
             renderUseEquilibria({
                 config,
-                callbacks: { onParamChanged, onCurveDragged, onNodeHover }
+                callbacks: { onParamChanged, onParamBlocked, onCurveDragged, onNodeHover }
             });
             const instance = latestInstance();
 
             act(() => {
                 instance.emit(KG_EVENTS.PARAM_CHANGED, { name: 'price', value: 12 });
+                instance.emit(KG_EVENTS.PARAM_BLOCKED, { name: 'price', reason: 'bounds' });
                 instance.emit(KG_EVENTS.CURVE_DRAGGED, { curve: 'demand' });
                 instance.emit(KG_EVENTS.NODE_HOVER, { node: 'eq' });
             });
 
             expect(onParamChanged).toHaveBeenCalledWith({ name: 'price', value: 12 });
+            expect(onParamBlocked).toHaveBeenCalledWith({ name: 'price', reason: 'bounds' });
             expect(onCurveDragged).toHaveBeenCalledWith({ curve: 'demand' });
             expect(onNodeHover).toHaveBeenCalledWith({ node: 'eq' });
         });

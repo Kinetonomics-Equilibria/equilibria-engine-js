@@ -59,6 +59,29 @@ async function dragDemandDown(page: Page) {
 }
 
 /**
+ * Pull demand up until it stops, and then keep pulling.
+ *
+ * `a` is declared `min: 12, max: 28` against a panel drawn 0..20, so the top of
+ * the range is above the top of the panel and the curve visibly refuses to
+ * follow the pointer. This is the only route to a refusal in the whole app: the
+ * dock's sliders take their own ends from the param, so a control can never
+ * *ask* for a value out of range — only a drag can.
+ */
+async function dragDemandOffTheTop(page: Page) {
+    const dragPath = page.locator('.kg-container path[class^="dragPath"]')
+        .nth(await focalDragPathIndex(page));
+    const box = (await dragPath.boundingBox())!;
+    const startX = box.x + box.width * 0.45, startY = box.y + box.height * 0.45;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    // 0..20 over the panel's height, so 45% of it is nine units — past 28 and
+    // then some, which is what makes this a refusal rather than a long drag.
+    await page.mouse.move(startX, startY - box.height * 0.75, { steps: 15 });
+    await page.mouse.up();
+}
+
+/**
  * Run the lesson out to its end, which is where free exploration lives.
  *
  * P10 claims free exploration is not a mode beside the lesson but the track at
@@ -390,6 +413,51 @@ test('undo puts the market back, and the diagram stands down with it', async ({ 
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
     await expect(page.getByText(/^[+−]\d/)).toHaveCount(0);
+});
+
+/**
+ * A move the diagram would not make, said out loud (P12).
+ *
+ * Before this, dragging a curve past the end of its range stopped it dead and
+ * the app was told nothing at all: the first tick past the end reported that the
+ * curve had *moved* (as far as it could), and every tick after it reported
+ * nothing. A student pushing against an invisible ceiling could not tell a limit
+ * from a broken diagram.
+ *
+ * In a browser rather than in jsdom because a drag is the only way to reach it —
+ * jsdom performs no layout, so a synthesised drag moves the pointer nowhere and
+ * asks for nothing out of range.
+ */
+test('says why the curve stopped, when it stops', async ({ page }) => {
+    await dragDemandOffTheTop(page);
+
+    await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
+    await expect(page.getByText('a will not go above 28.0.')).toHaveCount(2);
+
+    // The chain is displaced on screen and kept in the announcement: the eye
+    // watched the curve stop, and a screen reader did not.
+    expect(await chainText(page)).toBe('a will not go above 28.0.');
+    expect(await page.locator(`${STRIP} [role="status"]`).textContent())
+        .toMatch(/^a will not go above 28\.0\..*P\*/);
+});
+
+test('says it once, however long the drag pushes against the end', async ({ page }) => {
+    await dragDemandOffTheTop(page);
+
+    // Twice is the eye and the live region; a third would be the strip having
+    // grown a second line, and a hundred would be a refusal per pointer move.
+    await expect(page.getByText('a will not go above 28.0.')).toHaveCount(2);
+});
+
+test('gives the strip back the moment something moves again', async ({ page }) => {
+    await dragDemandOffTheTop(page);
+    await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
+
+    await dragDemandDown(page);
+
+    await expect(page.locator(STRIP)).not.toHaveAttribute('data-refusal', 'true');
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
+    expect(await chainText(page)).toContain('demand shifts down');
 });
 
 test('promoting a panel does not rewrite what the student was told', async ({ page }) => {

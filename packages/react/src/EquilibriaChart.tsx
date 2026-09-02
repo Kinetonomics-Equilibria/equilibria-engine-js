@@ -21,11 +21,13 @@ export function EquilibriaChart({
     onError,
     onReady,
     onParamChanged,
+    onParamBlocked,
     onCurveDragged,
     onNodeHover,
 }: EquilibriaChartProps) {
     const { containerRef, error, isReady } = useEquilibria(config, options, {
         onParamChanged,
+        onParamBlocked,
         onCurveDragged,
         onNodeHover,
     });

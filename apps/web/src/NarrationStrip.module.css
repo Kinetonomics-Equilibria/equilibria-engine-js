@@ -62,6 +62,18 @@
     white-space: nowrap;
 }
 
+/* A refusal. Prose like an authored sentence, and coloured, because it is the
+ * one thing the strip ever says that is *news the student did not cause* — they
+ * pushed and nothing happened, and this is the answer to why. Amber rather than
+ * red: nothing has gone wrong, a limit was reached. */
+.refusal {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--mantine-color-orange-8);
+}
+
 /* The middle clause is prose among numbers, so it is set apart as prose. */
 .mechanism {
     font-style: italic;

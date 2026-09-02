@@ -4,7 +4,9 @@ import { useMediaQuery } from '@mantine/hooks';
 import { Stage } from 'equilibria-react';
 import type { StageMode, StagePanel } from 'equilibria-react';
 import { STEP_PARAM } from 'equilibria-engine-js';
-import type { KineticGraph, ParamChangedEvent, ParamInfo } from 'equilibria-engine-js';
+import type {
+    KineticGraph, ParamBlockedEvent, ParamChangedEvent, ParamInfo
+} from 'equilibria-engine-js';
 import {
     studyDiagram, EXPLAINED_CALCS, LESSON, NARRATED_CALCS, PANELS, QUESTION_APPARATUS, SCENARIOS
 } from './studyDiagram';
@@ -24,6 +26,7 @@ import { Maths } from './dock/Maths';
 import { Scenarios } from './dock/Scenarios';
 import type { Instrument, InstrumentProps } from './dock/types';
 import { formatValue, narrate, undoParams, CALC_PRECISION } from './narration/narrate';
+import { phraseRefusal } from './narration/phrasebook';
 import type { NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
 import classes from './StudyScreen.module.css';
 
@@ -115,6 +118,16 @@ export function StudyScreen() {
      */
     const [track, setTrack] = useState<TrackState>(AT_START);
     const [saying, setSaying] = useState<string | null>(null);
+
+    /**
+     * The last move the diagram would not make (P12).
+     *
+     * Held beside `saying` rather than folded into the narration line, because
+     * it is not part of the chain: nothing moved, so there is nothing to narrate.
+     * It stands until the student moves something that *does* move, which is the
+     * same rule that retires a lesson's sentence.
+     */
+    const [refusal, setRefusal] = useState<string | null>(null);
 
     /**
      * The question on screen, if any (P11).
@@ -243,6 +256,11 @@ export function StudyScreen() {
         // clause would quietly vanish from a sentence that was already correct.
         if (!isNarrated(event.name)) return;
 
+        // A move that landed retires the last refusal, even a lesson's — the
+        // diagram is no longer refusing anything and the sentence would be
+        // describing a boundary the student is no longer at.
+        setRefusal(null);
+
         // The arbitration, in one line and in the only place that knows both
         // sides: the student moved something themselves, so the lesson's
         // sentence gives way to what they just did.
@@ -268,6 +286,29 @@ export function StudyScreen() {
      * boundary — so what the strip calls one interaction and what the diagram
      * draws a ghost for are the same interaction by construction.
      */
+    /**
+     * A move the diagram would not make (P12).
+     *
+     * The same two filters the chain uses, for the same two reasons. A lesson
+     * step or a remount restore writing a param is not the student, so it must
+     * not put a sentence on the strip; and a presentation param being clamped is
+     * the stage's own bookkeeping — a rail panel's focus fraction pinned at 1 is
+     * not news anyone should read.
+     *
+     * The engine has already coalesced this: a curve held against the top of its
+     * range announces itself once rather than once per pointer move, so nothing
+     * here has to debounce.
+     */
+    const onParamBlocked = useCallback((data: unknown) => {
+        const event = data as ParamBlockedEvent;
+        if (applyingStep.current) return;
+        if (!isNarrated(event.name)) return;
+
+        const declared = narratedParams.filter(p => p.name === event.name)[0];
+        setSaying(null);
+        setRefusal(phraseRefusal(event, v => formatValue(v, declared ? declared.precision : 1)));
+    }, [isNarrated, narratedParams]);
+
     const onCurveDragged = useCallback((data: unknown) => {
         const isDragging = !!(data as { dragging: boolean }).dragging;
         if (isDragging === dragging.current) return;
@@ -354,6 +395,10 @@ export function StudyScreen() {
         // took. It comes back the moment the student touches anything.
         latest.current = null;
         setLine(REST);
+        // And a rebuilt engine has refused nothing yet: its `blocked` bookkeeping
+        // went with the old one, so a refusal left on screen would be the only
+        // party still remembering a boundary.
+        setRefusal(null);
     }, []);
 
     /**
@@ -821,6 +866,7 @@ export function StudyScreen() {
                         return `Show ${declared ? declared.name : key}`;
                     }}
                     onParamChanged={onParamChanged}
+                    onParamBlocked={onParamBlocked}
                     onCurveDragged={onCurveDragged}
                     onReady={onReady}
                     onError={error => console.error('Equilibria failed to mount:', error)}
@@ -849,6 +895,7 @@ export function StudyScreen() {
             <NarrationStrip
                 line={line}
                 authored={saying}
+                refusal={refusal}
                 restHint={track.position === 0 && STEPS.length > 0
                     ? 'Step forward to begin the lesson.'
                     : undefined}
