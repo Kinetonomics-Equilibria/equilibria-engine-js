@@ -16,6 +16,12 @@ export { KG_EVENTS };
 export type { DensityLevel };
 
 /**
+ * The param a declared build-up reads, so a host advancing one does not have to
+ * spell `'step'` and hope. See `steps()`.
+ */
+export { STEP_PARAM } from "./KGAuthor/parsers/steps";
+
+/**
  * The shape of what the engine tells a host about itself.
  *
  * Declared in the modules that compute them and re-exported here because
@@ -27,6 +33,7 @@ export type { DensityLevel };
 export type { ParamChangedEvent, AffectedObject } from "./view/view";
 export type { Movement } from "./view/movement";
 export type { ParamInfo } from "./model/param";
+export type { StepDefinition } from "./KGAuthor/parsers/steps";
 
 /**
  * The class the engine applies to its container, which the theme stylesheet

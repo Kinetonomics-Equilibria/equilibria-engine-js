@@ -3,9 +3,15 @@ import { ActionIcon, Badge, Group, SegmentedControl, Stack, Text, Title } from '
 import { useMediaQuery } from '@mantine/hooks';
 import { Stage } from 'equilibria-react';
 import type { StageMode, StagePanel } from 'equilibria-react';
+import { STEP_PARAM } from 'equilibria-engine-js';
 import type { KineticGraph, ParamChangedEvent, ParamInfo } from 'equilibria-engine-js';
-import { studyDiagram, EXPLAINED_CALCS, NARRATED_CALCS, PANELS, SCENARIOS } from './studyDiagram';
+import { studyDiagram, EXPLAINED_CALCS, LESSON, NARRATED_CALCS, PANELS, SCENARIOS } from './studyDiagram';
 import { NarrationStrip } from './NarrationStrip';
+import { Track } from './Track';
+import {
+    AT_START, paramsAt, paramsBetween, revealedPanels, sayAt, trackReducer
+} from './track/track';
+import type { LessonStep, TrackState } from './track/track';
 import { Dock } from './dock/Dock';
 import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
@@ -41,6 +47,18 @@ type Readout = Record<string, number>;
 
 const REST: NarrationLine = { kind: 'rest', causes: [], mechanism: null, effects: [], whyTarget: null };
 
+/**
+ * The lesson, and the panels it can bring in.
+ *
+ * `LESSON` is the same array the config hands the engine, which is what keeps
+ * one ordered list rather than two — `kg.steps()` would return it too, and is
+ * there for a host rendering a config it did not write. This screen wrote it,
+ * and needs it before the engine has mounted: the stage has to know at its first
+ * render that only one panel has arrived, or three appear and then two vanish.
+ */
+const STEPS = LESSON as LessonStep[];
+const PANEL_KEYS = PANELS.map(p => p.key) as string[];
+
 export function StudyScreen() {
     const [focused, setFocused] = useState<string>(PANELS[0].key);
     const [mode, setMode] = useState<StageMode>('focus');
@@ -59,6 +77,32 @@ export function StudyScreen() {
     const [instrument, setInstrument] = useState('explore');
     const [focus, setFocus] = useState<{ calc?: string } | undefined>(undefined);
     const [sheetOpen, setSheetOpen] = useState(false);
+
+    /**
+     * Where the lesson has got to, and what it last said.
+     *
+     * One number, because what is revealed *is* `params.step` — the engine
+     * compiled the reveals into `show` predicates over it, and a second record
+     * of the same fact is the kind of thing that ends up disagreeing with the
+     * diagram it describes.
+     *
+     * `saying` is separate because it is not derived: a step's sentence stands
+     * until the student does something, and what they did is not a position.
+     */
+    const [track, setTrack] = useState<TrackState>(AT_START);
+    const [saying, setSaying] = useState<string | null>(null);
+
+    /**
+     * True only while a step's own param update is in flight.
+     *
+     * A step that sets params fires `kg:param_changed` for the very params the
+     * strip narrates, so the plain rule — any narrated change clears the step's
+     * sentence — would clear it in the same tick it was set. The engine's update
+     * is synchronous, so a flag held across the call is enough, and it is the
+     * whole of what "the student's own action wins" needs in order to be able to
+     * tell whose action it was.
+     */
+    const applyingStep = useRef(false);
 
     // The engine, and the state to narrate against — refs rather than state
     // because a drag writes to them sixty times a second and none of those
@@ -129,6 +173,11 @@ export function StudyScreen() {
         // event carries no `affected` for a presentation change, so the middle
         // clause would quietly vanish from a sentence that was already correct.
         if (!isNarrated(event.name)) return;
+
+        // The arbitration, in one line and in the only place that knows both
+        // sides: the student moved something themselves, so the lesson's
+        // sentence gives way to what they just did.
+        if (!applyingStep.current) setSaying(null);
 
         latest.current = event;
         retell(dragging.current);
@@ -220,6 +269,106 @@ export function StudyScreen() {
     const updateParams = useCallback((next: { name: string; value: number }[]) => {
         if (next.length > 0) engineRef.current?.update({ params: next });
     }, []);
+
+    /**
+     * Move the lesson, and tell the engine in the right order.
+     *
+     * Three things happen and the order of all three is load-bearing.
+     *
+     * `snapshot()` first, when the move establishes params or goes backwards: it
+     * marks where the diagram is *now* as the state its ghosts and the sentence
+     * under it should both call "before". A lesson step is invisible to the
+     * engine — it arrives as ordinary param updates — and P9 shipped exactly
+     * this bug for scenarios: the diagram moved, every ghost appeared, and the
+     * strip read "drag a curve to see what it changes".
+     *
+     * Going back re-bases it for the opposite reason. Scrubbing back un-draws
+     * and deliberately leaves the values alone, so without a snapshot the ghost
+     * and the delta chip go on describing a shift the lesson has scrubbed away
+     * from — a panel reading "+3.0" three steps after anything moved. A forward
+     * move that only reveals does *not* re-base, because the ghost of the step
+     * before it is usually the thing the new step is talking about.
+     *
+     * Then one `update`, with the step param first so the reveal lands before
+     * the values move — a curve arriving and then shifting, rather than arriving
+     * already shifted. It is one call rather than several because a multi-param
+     * update is applied and validated one param at a time and rolls back
+     * silently, so keeping the ordering in one place is the most a host can do
+     * about it until the engine offers a batched update. The study diagram
+     * declares no restrictions, so nothing here can trip today; that is luck,
+     * not design.
+     *
+     * The sentence last, after the events the update raised have already been
+     * handled, so it is not cleared by the change that caused it.
+     */
+    const applyStep = useCallback((
+        params: { name: string; value: number }[], position: number, rebase: boolean
+    ) => {
+        const engine = engineRef.current;
+        if (!engine) return;
+
+        applyingStep.current = true;
+        try {
+            if (params.length > 0 || rebase) engine.snapshot();
+            engine.update({ params: [{ name: STEP_PARAM, value: position }, ...params] });
+        } finally {
+            applyingStep.current = false;
+        }
+    }, []);
+
+    const goTo = useCallback((position: number) => {
+        const next = trackReducer(track, { type: 'goTo', position }, STEPS);
+        if (next === track) return;
+
+        const backwards = next.position < track.position;
+        applyStep(paramsBetween(STEPS, track.position, next.position), next.position, backwards);
+
+        // The step param is presentation, so its own change is not narrated and
+        // the chain would otherwise still be describing the move we just
+        // re-based away from. Recomputed rather than blanked: it reads the
+        // engine, which now agrees with itself, and comes back as rest.
+        if (backwards) retell(false);
+
+        setTrack(next);
+        setSaying(sayAt(STEPS, next.position));
+    }, [track, applyStep, retell]);
+
+    /**
+     * Put the params back where this step established them.
+     *
+     * The escape hatch scrubbing back requires. Going back un-draws and
+     * deliberately leaves the student's own values alone — their work is never
+     * destroyed by navigation — so restoring the state the author described has
+     * to be something they ask for. It is every `set` up to here, not the last
+     * one written: the state at step 4 is what steps 1 to 4 between them said.
+     */
+    const resetToStep = useCallback(() => {
+        const authored = paramsAt(STEPS, track.position);
+        const params = Object.keys(authored).map(name => ({ name, value: authored[name] }));
+        if (params.length === 0) return;
+
+        applyingStep.current = true;
+        try {
+            engineRef.current?.snapshot();
+            engineRef.current?.update({ params });
+        } finally {
+            applyingStep.current = false;
+        }
+        setSaying(sayAt(STEPS, track.position));
+    }, [track.position]);
+
+    /**
+     * Which panels the lesson has brought in.
+     *
+     * The same rule the engine applies to the objects inside them, because it
+     * has to be: the stage arranges these and the diagram draws them, and a
+     * panel the stage made room for but the diagram is hiding is an empty square
+     * with a name over it.
+     */
+    const revealed = useMemo(
+        () => revealedPanels(STEPS, track.position, PANEL_KEYS),
+        [track.position]
+    );
 
     // Deliberately not called for undo, which is the mirror case: undo restores
     // the params to what `prev` already holds, so leaving the snapshot alone is
@@ -317,8 +466,9 @@ export function StudyScreen() {
                 <div>
                     <Title order={2} size="h4">A market, and what it does to everything else</Title>
                     <Text c="dimmed" size="sm">
-                        Drag the demand curve. The panels on the right are the same market
-                        seen three ways — click one to bring it forward.
+                        Step through the lesson below, or drag a curve at any point. The
+                        panels are the same market seen three ways, and they arrive as the
+                        lesson reaches them.
                     </Text>
                 </div>
                 <Group gap="xs" wrap="nowrap">
@@ -357,6 +507,7 @@ export function StudyScreen() {
                 <Stage
                     config={config}
                     focused={focused}
+                    revealed={revealed}
                     mode={mode}
                     onPromote={setFocused}
                     renderChrome={chrome}
@@ -386,7 +537,24 @@ export function StudyScreen() {
               * that change. `onWhy` opens the maths instrument on the calc the
               * chain ended with; until P9 there was nothing to open, and the
               * strip hid the control rather than offer a dead one. */}
-            <NarrationStrip line={line} onUndo={onUndo} onWhy={onWhy} />
+            {/* The default hint tells a student to drag a curve, which at the
+              * start of a build-up is advice about a curve that has not been
+              * drawn yet. What to do next is different before the lesson has
+              * begun, so the strip is told which one applies. */}
+            <NarrationStrip
+                line={line}
+                authored={saying}
+                restHint={track.position === 0 && STEPS.length > 0
+                    ? 'Step forward to begin the lesson.'
+                    : undefined}
+                onUndo={onUndo}
+                onWhy={onWhy}
+            />
+
+            {/* Under the strip, spanning the same width. Free exploration is
+              * this track at its last position — everything revealed, the
+              * scrubber still there — rather than a mode beside it. */}
+            <Track steps={STEPS} state={track} onGoTo={goTo} onReset={resetToStep} />
 
             {narrow ? (
                 <Dock

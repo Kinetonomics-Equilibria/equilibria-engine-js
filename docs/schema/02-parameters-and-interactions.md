@@ -246,7 +246,11 @@ silent wrong answer.
 ### Why the engine will not apply a step's `set`
 
 `kg.steps()` hands back the declared steps so a host can read each one's `set`
-and apply it itself. The engine deliberately does not do it, because
+and apply it itself. **Keys the engine does not recognise ride along untouched**,
+so a host can write its own alongside the reveals — a sentence for the student, a
+question — and get them back from the same call. `steps<T>()` is generic in the
+step type for exactly that. One ordered list, rather than an application-side
+list shadowing this one and drifting from it. The engine deliberately does not do it, because
 [a multi-param update is not atomic](../interactivity.md#updating-param-state-programmatically):
 each param is validated alone, so a legal destination reached through an illegal
 interim is rejected halfway and rolled back with no diagnostic. Which order to

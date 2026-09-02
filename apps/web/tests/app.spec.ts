@@ -49,9 +49,29 @@ async function dragDemandDown(page: Page) {
     await page.mouse.up();
 }
 
+/**
+ * Run the lesson out to its end, which is where free exploration lives.
+ *
+ * P10 claims free exploration is not a mode beside the lesson but the track at
+ * its last position — everything revealed, every control still there. This file
+ * is the test of that claim, and it makes it in the strongest available way: it
+ * is the suite that was written before the track existed, describing a screen
+ * with three panels and no lesson, and it passes unchanged from here on. If the
+ * end of the track were a different place from "no lesson at all", these would
+ * start failing and say so.
+ */
+async function toTheEnd(page: Page) {
+    const markers = page.locator('button[data-kinds]');
+    const last = (await markers.count()) - 1;
+    if (last < 1) return;
+    await markers.nth(last).click();
+    await expect(markers.nth(last)).toHaveAttribute('aria-current', 'step');
+}
+
 test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.locator('.kg-container svg').waitFor();
+    await toTheEnd(page);
 });
 
 test('renders the study screen', async ({ page }) => {
@@ -189,6 +209,38 @@ test('the grid toggle rearranges the same panels, and is not the landing state',
     expect(focal.width).toBeGreaterThan(0);
 });
 
+test('a panel arrives without rebuilding the diagram', async ({ page }) => {
+    // Back to the step before the surplus panel exists, then forward again.
+    // A reveal changes what the stage arranges, which is the one thing that
+    // used to mean a new engine and a flash.
+    const markers = page.locator('button[data-kinds]');
+    await markers.nth(3).click();
+    await expect(page.locator(panel('Consumer surplus'))).toHaveCount(0);
+
+    await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
+
+    await markers.nth(4).click();
+    await expect(page.locator(panel('Consumer surplus'))).toBeVisible();
+    await expect(page.locator('.kg-container svg[data-witness="1"]')).toHaveCount(1);
+});
+
+test('a panel that has not arrived is neither drawn nor reachable', async ({ page }) => {
+    const markers = page.locator('button[data-kinds]');
+    await markers.nth(0).click();
+
+    // Nothing to promote, because nothing else is on the stage; and the market
+    // panel is drawn as a frame with nothing in it yet.
+    await expect(page.locator('[aria-label^="Show "]')).toHaveCount(0);
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(0);
+
+    // The whole stage is the one panel that has arrived, rather than a focal
+    // square with two empty slots beside it.
+    const wide = (await page.locator('[data-panel="market"]').boundingBox())!;
+    await markers.nth(4).click();
+    const narrower = (await page.locator('[data-panel="market"]').boundingBox())!;
+    expect(wide.width).toBeGreaterThan(narrower.width);
+});
+
 test('promotes from the keyboard', async ({ page }) => {
     const target = page.locator(panel('Revenue'));
     await target.focus();
@@ -215,10 +267,27 @@ const chainText = (page: Page) =>
     page.locator(`${STRIP} > div[aria-hidden="true"]`).textContent();
 
 test('the strip is at rest until something moves', async ({ page }) => {
+    // At rest, and — since the lesson has just finished — carrying its closing
+    // line rather than the generated chain. Nothing has moved, so there is
+    // nothing to undo and no chain to read.
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
-    await expect(page.getByText('Drag a curve to see what it changes.')).toBeVisible();
+    await expect(page.locator(STRIP)).toHaveAttribute('data-authored', 'true');
+    // Twice over, and on purpose: once in the chain area for the eye, and once
+    // in the live region for a screen reader.
+    await expect(page.getByText('Back where we started.', { exact: false })).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'undo' })).toHaveCount(0);
+});
 
-    // Nothing to undo, and nothing has been announced.
+test('before the lesson begins, the strip offers the lesson rather than a curve', async ({ page }) => {
+    // The default hint says to drag a curve; at the start of a build-up there
+    // is no curve to drag. A fresh load, because `beforeEach` runs the lesson
+    // out to its end.
+    await page.goto('/');
+    await page.locator('.kg-container svg').waitFor();
+
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
+    await expect(page.getByText('Step forward to begin the lesson.')).toBeVisible();
+
     await expect(page.getByRole('button', { name: 'undo' })).toHaveCount(0);
     expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
 });
@@ -268,7 +337,13 @@ test('the strip and the panel chips agree about "before"', async ({ page }) => {
     const chip = (await page.getByText(/^[+−]\d/).first().textContent())!;
     const charted = Number(chip.replace('−', '-').replace('+', ''));
 
-    expect(Math.abs(narrated - charted), `strip said ${narrated}, chip said ${chip}`).toBeLessThan(0.05);
+    // A tenth, because both sides print to one decimal and they round at
+    // different points: the strip rounds each end of the move and this test
+    // subtracts them, while the chip rounds a delta the diagram computed. A
+    // true delta of -1.25 is "-1.2" one way and "-1.3" the other, and that is
+    // the whole of the disagreement this tolerance admits. Reading a *different*
+    // snapshot — the failure the test exists for — is not a tenth out.
+    expect(Math.abs(narrated - charted), `strip said ${narrated}, chip said ${chip}`).toBeLessThan(0.11);
 });
 
 test('undo puts the market back, and the diagram stands down with it', async ({ page }) => {

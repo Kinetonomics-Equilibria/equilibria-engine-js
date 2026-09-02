@@ -10,6 +10,24 @@
 .stageBox {
     flex: 1;
     min-height: 0;
+
+    /* Room under the panels for the furniture the engine draws outside them.
+     *
+     * An axis title is placed by a fixed pixel offset — 40px past the axis —
+     * while the arrangement's own padding is a fraction of the canvas, about
+     * 14px here. That was invisible while the focal panel always had a rail or a
+     * filmstrip between it and the bottom edge; a lesson that starts with one
+     * panel gives that panel the whole stage, and "Q" landed on the narration
+     * line underneath.
+     *
+     * Bottom only. The focal square is centred horizontally with slack either
+     * side, so the y-axis title has room already, and the panel chrome above it
+     * borrows from the heading's margin as it always has.
+     *
+     * Fixed pixels, because the thing being made room for is fixed pixels — a
+     * fraction that reserved 44px here would reserve 90 on a large screen, and
+     * the label does not grow. */
+    padding-bottom: 2.75rem;
 }
 
 /* A panel's chrome never sits over the panel itself, where the curves are: it

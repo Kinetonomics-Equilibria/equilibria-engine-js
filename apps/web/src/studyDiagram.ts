@@ -81,8 +81,67 @@ const axes = () => ({
     yAxis: { title: 'P', min: 0, max: 20 }
 });
 
+/**
+ * The lesson, in order (P10).
+ *
+ * Inline beside the diagram, and that is a deliberate stopgap rather than a
+ * design: a real content model would let several lessons address one diagram
+ * and would live somewhere a teacher could edit. Expect this to move, and keep
+ * it as data so that moving it is a cut and a paste.
+ *
+ * `reveal` and `set` are the engine's — `compileSteps` turns a reveal into
+ * `show: 'params.step >= n'` on the objects or the panel it names, and hands
+ * `set` back rather than applying it. `say` is the app's and rides on the same
+ * objects. One list, one order: the engine sees the whole thing and returns the
+ * whole thing from `kg.steps()`, so nothing app-side can disagree with the
+ * diagram about how many steps there are.
+ *
+ * The market panel's frame is not revealed by any step, so it is there from the
+ * start: the lesson draws *into* a pair of labelled axes rather than beginning
+ * with a blank rectangle. The other two panels are revealed by their key, which
+ * takes their axes and axis titles with them — the whole point being that the
+ * second panel arrives as an event with a sentence attached, rather than
+ * sitting there from the first frame waiting to be explained.
+ */
+export const LESSON = [
+    {
+        reveal: ['demand_market'],
+        say: 'Demand slopes down: at a higher price, buyers want less.'
+    },
+    {
+        reveal: ['supply_market'],
+        say: 'Supply slopes up: a higher price is worth producing more at.'
+    },
+    {
+        reveal: ['equilibrium_market'],
+        say: 'Where they cross, the market clears — one price, one quantity.'
+    },
+    {
+        reveal: ['surplus'],
+        say: 'The same market, shaded: what buyers and sellers gain by trading at that price.'
+    },
+    {
+        set: { a: 26 },
+        say: 'Incomes rise, so buyers want more at every price. Watch both panels.'
+    },
+    {
+        reveal: ['revenue'],
+        say: 'And the money that changes hands: the price times the quantity sold.'
+    },
+    // The lesson hands the market back where it found it, which is what makes
+    // "free exploration is the track at its last position" true rather than
+    // nearly true: the end of the build-up is the diagram as the config
+    // declares it, with everything drawn and nothing left mid-demonstration.
+    {
+        set: { a: 20 },
+        say: 'Back where we started. Now move demand yourself, and watch all three.'
+    }
+];
+
 export const studyDiagram = {
     schema: 'EconSchema',
+
+    steps: LESSON,
 
     params: [
         { name: 'a', value: 20, min: 12, max: 28, round: 0.1 },

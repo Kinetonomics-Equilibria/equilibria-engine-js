@@ -1,0 +1,100 @@
+/* One row under the narration strip: the lesson, in order.
+ *
+ * Fixed height, like the strip above it, for the same reason — everything in
+ * this column sits under a stage that measures its own box, and a row that grew
+ * as the lesson went on would resize the diagram mid-sentence. */
+
+.track {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-xs);
+    min-height: 2.25rem;
+    padding: 0 var(--mantine-spacing-xs);
+    border-top: 1px solid var(--mantine-color-default-border);
+}
+
+/* The markers are the track. They take the space, so the position readout and
+ * the reset control sit at the end rather than in the middle of the line. */
+.markers {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.marker {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font: inherit;
+    font-size: var(--mantine-font-size-xs);
+    line-height: 1;
+    color: var(--mantine-color-dimmed);
+    background: var(--mantine-color-default);
+    border: 1px solid var(--mantine-color-default-border);
+    border-radius: var(--mantine-radius-sm);
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+/* A step already passed is filled; one still ahead is an outline. The
+ * distinction is carried by weight rather than by colour alone, since a
+ * build-up read by someone who cannot separate two hues is still a build-up. */
+.marker[data-reached='true'] {
+    color: var(--mantine-color-text);
+    background: var(--mantine-color-default-hover);
+    border-color: var(--mantine-color-dimmed);
+}
+
+/* Where the student is. The ring sits outside the border so it reads at a
+ * glance along a row of otherwise identical boxes. */
+.marker[aria-current='step'] {
+    color: var(--mantine-color-bright);
+    border-color: var(--mantine-color-blue-6);
+    box-shadow: 0 0 0 2px var(--mantine-color-blue-light);
+}
+
+/* A step the track will not reach yet — past an unanswered question. Still a
+ * button, still focusable, and clicking it moves as far as it can. Dimming it
+ * says why the diagram will not follow. */
+.marker[data-reachable='false'] {
+    opacity: 0.45;
+}
+
+/* A step that asks something is the only kind that stops the track, so it is
+ * the only one that gets a colour of its own. */
+.marker[data-kinds~='ask'] {
+    border-color: var(--mantine-color-yellow-6);
+}
+
+/* A step that moves the diagram is the one a student has to watch. */
+.marker[data-kinds~='set'][data-reached='true'] {
+    border-color: var(--mantine-color-teal-6);
+}
+
+.marker:focus-visible {
+    outline: 2px solid var(--mantine-color-blue-6);
+    outline-offset: 1px;
+}
+
+.position {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.blocked {
+    flex: none;
+}
+
+/* The transition is a nicety on a control that is fully usable without it. */
+@media (prefers-reduced-motion: reduce) {
+    .marker {
+        transition: none;
+    }
+}

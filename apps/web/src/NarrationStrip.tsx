@@ -20,7 +20,23 @@ import classes from './NarrationStrip.module.css';
 export interface NarrationStripProps {
     line: NarrationLine;
 
-    /** What the strip says when nothing has moved yet. */
+    /**
+     * A sentence the lesson wrote, shown instead of the generated chain (P10).
+     *
+     * The arbitration is not here. This component renders what it is handed, and
+     * the rule — the student's own action always wins, and a step's sentence
+     * persists until they act — lives in the screen, which is the only thing
+     * that knows both what the author said and what the student just did.
+     */
+    authored?: string | null;
+
+    /**
+     * What the strip says when nothing has moved yet.
+     *
+     * Passed rather than fixed because "what to do next" is not always "drag a
+     * curve": at the start of a build-up there is no curve to drag. Undefined
+     * takes the default, so a host with nothing to add says nothing.
+     */
     restHint?: string;
 
     /**
@@ -60,23 +76,43 @@ function Reading({ label, unit, from, to, direction }: NarrationLine['causes'][n
 
 export function NarrationStrip({
     line,
+    authored,
     restHint = 'Drag a curve to see what it changes.',
     onUndo,
     onWhy
 }: NarrationStripProps) {
 
     const settled = line.kind === 'settled';
-    const sentence = toSentence(line);
+    const chain = toSentence(line);
+
+    /**
+     * Both, for a screen reader, where the eye gets only one.
+     *
+     * A sighted student reads the author's sentence and *watches* the diagram
+     * move; there is nothing to watch if you cannot see it, so the numbers are
+     * the only account of what the step did. Replacing the chain on screen and
+     * appending it here is not an inconsistency — it is the same information
+     * reaching two senses that need different amounts of it.
+     */
+    const sentence = authored
+        ? (chain ? authored + ' ' + chain : authored)
+        : chain;
 
     return (
-        <div className={classes.strip} data-kind={line.kind}>
+        <div className={classes.strip} data-kind={line.kind} data-authored={authored ? 'true' : undefined}>
             {/* Read as elements the chain is a dozen fragments and a student
               * hears rubble, so the chips are hidden from assistive technology
               * and the same content is announced once, as one sentence, from the
               * live region below. Both are always in the DOM and in the same
               * place, so neither is a second source of truth. */}
             <div className={classes.chain} aria-hidden="true">
-                {line.kind === 'rest' ? (
+                {/* A step's sentence displaces the chain rather than joining it.
+                  * The strip is one line and must not grow — it sits above the
+                  * stage's own measured box — and the chain comes back the
+                  * moment the student touches anything, which is the whole rule. */}
+                {authored ? (
+                    <Text component="span" size="sm" className={classes.authored}>{authored}</Text>
+                ) : line.kind === 'rest' ? (
                     <Text component="span" size="sm" c="dimmed">{restHint}</Text>
                 ) : (
                     <>

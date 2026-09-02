@@ -21,7 +21,22 @@ export default defineConfig({
         screenshot: 'only-on-failure',
         trace: 'retain-on-failure'
     },
-    projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+    projects: [{
+        name: 'chromium',
+        use: {
+            ...devices['Desktop Chrome'],
+            // Larger than the device default's 1280x720, and the reason is a
+            // measurement rather than a preference. At 1280x720 the focal panel
+            // came out 424px across — four pixels above P4's 420px `compact`
+            // threshold — so "the focal panel is drawn in full" was true by a
+            // margin of four pixels, and P10's track row under the stage was
+            // enough to cross it. The claims this suite makes about density are
+            // claims about a screen with room on it; this is a screen with room
+            // on it. The compact behaviour at a smaller viewport is the design
+            // working, not a regression.
+            viewport: { width: 1440, height: 900 }
+        }
+    }],
     webServer: {
         command: `npm run dev -- --port ${port} --strictPort`,
         url: baseURL,

@@ -53,6 +53,15 @@
     color: var(--mantine-color-red-6);
 }
 
+/* A lesson's own sentence. Prose where the chain is chips, and not dimmed: it
+ * is the most important thing on the strip while it is there. */
+.authored {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* The middle clause is prose among numbers, so it is set apart as prose. */
 .mechanism {
     font-style: italic;
