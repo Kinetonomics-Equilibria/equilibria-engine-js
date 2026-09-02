@@ -29,6 +29,17 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
     private gestureOpen: boolean = false;
 
     /**
+     * What was last written to the element, so it is written only when it moves.
+     *
+     * These used to be recomputed behind `hasChanged`, which is the handler's own
+     * updatables — and `dragListeners` is a *constant*, so a listener whose
+     * `draggable` had just gone false never reached this code and the object went
+     * on taking the pointer. Comparing the answer instead of guessing at the
+     * question keeps the d3 writes off the drag path without missing the change.
+     */
+    private wrote: { pointerEvents: string; cursor: string } | null = null;
+
+    /**
      * Announce something the student did to a specific object.
      *
      * `kg:curve_dragged` and `kg:node_hover` have been declared in `constants.ts`
@@ -61,11 +72,19 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
         let ih = super.update(force);
 
         // first update dragListeners
-        if (ih.hasChanged && ih.hasOwnProperty('dragListeners') && (ih.element != undefined)) {
+        if (ih.hasOwnProperty('dragListeners') && (ih.element != undefined)) {
             let xDrag = false,
                 yDrag = false;
             ih.dragListeners.forEach(function (dul) {
                 dul.update(force);
+                // A listener that is not draggable right now contributes no
+                // direction, so the object stops taking the pointer and the
+                // cursor stops promising a drag. Without this a frozen curve
+                // still looks and feels draggable and merely refuses, which
+                // reads as a broken diagram rather than as an answer taken.
+                if (!dul.draggable) {
+                    return;
+                }
                 if (dul.directions == "x") {
                     xDrag = true;
                 } else if (dul.directions == "y") {
@@ -75,8 +94,13 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                     yDrag = true;
                 }
             });
-            ih.element.style("pointer-events", (xDrag || yDrag) ? "all" : "none");
-            ih.element.style("cursor", (xDrag && yDrag) ? "move" : xDrag ? "ew-resize" : "ns-resize");
+            const pointerEvents = (xDrag || yDrag) ? "all" : "none",
+                cursor = (xDrag && yDrag) ? "move" : xDrag ? "ew-resize" : "ns-resize";
+            if (!ih.wrote || ih.wrote.pointerEvents != pointerEvents || ih.wrote.cursor != cursor) {
+                ih.wrote = { pointerEvents: pointerEvents, cursor: cursor };
+                ih.element.style("pointer-events", pointerEvents);
+                ih.element.style("cursor", cursor);
+            }
         }
 
         if (ih.hasOwnProperty('clickListeners') && (ih.element != undefined)) {

@@ -291,6 +291,114 @@ describe('drag constraints and freeze-on-commit (P11)', () => {
         r.destroy();
     });
 
+    /**
+     * The half the test above could not see, and P11 needed.
+     *
+     * `draggable` reported the right value from the moment it was authored, and
+     * nothing consulted it: `Listener.onChange` moved the param unconditionally
+     * and the interaction handler set `pointer-events` from `directions` alone.
+     * So a curve bound to `not(params.submitted)` went on dragging after commit,
+     * with a field on a listener recording that it should not have.
+     *
+     * This asserts the effect rather than the property — which is the habit
+     * NOTES.md names for exactly this class of defect — by calling what the drag
+     * handler calls, with the scope it builds.
+     */
+    it('refuses the drag itself, not merely the property', () => {
+        const r = mountConfig({
+            schema: 'EconSchema',
+            params: [
+                { name: 'a', value: 20, min: 5, max: 28, round: 0.1 },
+                { name: 'submitted', value: 0, min: 0, max: 1, round: 1 }
+            ],
+            layout: {
+                OneGraph: {
+                    graph: {
+                        xAxis: { title: 'x', min: 0, max: 30 },
+                        yAxis: { title: 'y', min: 0, max: 30 },
+                        objects: [{
+                            type: 'Line',
+                            def: {
+                                slope: -1, yIntercept: 'params.a', color: 'colors.blue',
+                                drag: [{ vertical: 'a', draggable: 'not(params.submitted)' }]
+                            }
+                        }]
+                    }
+                }
+            }
+        });
+
+        const model: any = (r.kg as any).view.model;
+        const [dl] = dragListeners(r.kg);
+        // exactly what interactionHandler's d3 'drag' handler passes
+        const drag = (dy: number) => dl.onChange({
+            params: model.currentParamValues,
+            calcs: model.currentCalcValues,
+            colors: model.currentColors,
+            drag: { x0: 0, y0: 0, x: 0, y: dy, dx: 0, dy: dy }
+        });
+
+        drag(3);
+        expect(model.currentParamValues.a).toBe(23);
+
+        r.kg.update({ params: [{ name: 'submitted', value: 1 }] });
+        drag(3);
+        expect(model.currentParamValues.a).toBe(23);
+
+        r.kg.update({ params: [{ name: 'submitted', value: 0 }] });
+        drag(3);
+        expect(model.currentParamValues.a).toBe(26);
+
+        r.destroy();
+    });
+
+    /**
+     * And it stops *looking* draggable, which is the other half of a commit.
+     *
+     * A frozen curve that still takes the pointer and still shows a resize
+     * cursor reads as a diagram that has broken, not as an answer that has been
+     * taken.
+     */
+    it('takes the hit area out of the pointer path while frozen', () => {
+        const r = mountConfig({
+            schema: 'EconSchema',
+            params: [
+                { name: 'a', value: 20, min: 5, max: 28, round: 0.1 },
+                { name: 'submitted', value: 0, min: 0, max: 1, round: 1 }
+            ],
+            layout: {
+                OneGraph: {
+                    graph: {
+                        xAxis: { title: 'x', min: 0, max: 30 },
+                        yAxis: { title: 'y', min: 0, max: 30 },
+                        objects: [{
+                            type: 'Line',
+                            def: {
+                                slope: -1, yIntercept: 'params.a', color: 'colors.blue',
+                                drag: [{ vertical: 'a', draggable: 'not(params.submitted)' }]
+                            }
+                        }]
+                    }
+                }
+            }
+        });
+
+        // The handler is attached to the object's root group, not to the hit
+        // area inside it (`viewObject.ts:263`), so that is what carries it.
+        const style = () => (r.container.querySelector('g[class^="rootElement"]')
+            ?.getAttribute('style') || '');
+
+        expect(style()).toContain('pointer-events: all');
+
+        r.kg.update({ params: [{ name: 'submitted', value: 1 }] });
+        expect(style()).toContain('pointer-events: none');
+
+        r.kg.update({ params: [{ name: 'submitted', value: 0 }] });
+        expect(style()).toContain('pointer-events: all');
+
+        r.destroy();
+    });
+
     it('toggles a 0/1 param through the default click transitions', () => {
         const r = mountConfig({
             schema: 'EconSchema',

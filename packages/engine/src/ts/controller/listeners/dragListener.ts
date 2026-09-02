@@ -63,6 +63,25 @@ import { ListenerDefinition, IListener, Listener } from "./listener";
             return dl;
         }
 
+        /**
+         * Refuse the drag when `draggable` says so.
+         *
+         * The property was updatable, reported the right value, and was read by
+         * nothing: `Listener.onChange` moved the param regardless, and the
+         * interaction handler set `pointer-events` from `directions` alone. So
+         * `draggable: 'not(params.submitted)'` froze the value of a field and
+         * not the curve — measured, and it is the plans README's finding 6
+         * again (the declaration is not the behaviour).
+         *
+         * P0 checked the property and concluded freeze-on-commit was authorable;
+         * it read `dl.draggable` going true to false to true, which is the shape
+         * rather than the effect. P11 needs the effect.
+         */
+        onChange(scope) {
+            if (!this.draggable) return;
+            super.onChange(scope);
+        }
+
     
 
 

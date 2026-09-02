@@ -3,7 +3,8 @@
 **Lane:** app
 **Depends on:** P0 (the predicate failure mode), P10 (`ask` steps), P5 (the reveal ghost), P7/P8
 **Unblocks:** assessment that uses the diagram rather than multiple choice about it
-**Status:** Draft plan — not implemented
+**Status:** 🚧 **In progress** (2026-09-02). Read against the code before building — see
+[Read against the code](#read-against-the-code-2026-09-02) for what the draft had wrong.
 
 ## Goal
 
@@ -195,3 +196,101 @@ interface Attempt {
 - Scoring models, gradebooks, and anything that reports to a teacher.
 - Question types that are not "move this thing" — multiple choice, numeric entry, free text.
 - The engine growing any notion of a question. Fork 3's lean is that it must not.
+
+## Read against the code (2026-09-02)
+
+Ten corrections before a line was written. The first needed *running* rather than reading, and it
+invalidates the plan's central claim about the commit step — which P0 had checked, and checked the
+wrong way.
+
+1. **`draggable` was dead, so freeze-on-commit was not authorable.** P0 §6 measured the *property* —
+   `dl.draggable` going true → false → true across updates — and concluded "P11's commit step needs
+   no app-side unmounting". Nothing read it. `Listener.onChange` moved the param unconditionally
+   (`packages/engine/src/ts/controller/listeners/listener.ts:36`), and the interaction handler set
+   `pointer-events` from `directions` alone. A curve bound to `not(params.submitted)` went on
+   dragging after commit, with a field on a listener recording that it should not have. Measured by
+   calling what the d3 `drag` handler calls: `a` moved 20 → 23 with `draggable` false.
+
+   This is the plans README's finding 6 landing on the one claim P0 flagged as *most likely to be
+   wrong in practice* — and P0 then verified it by asserting the shape rather than the effect, which
+   is the exact habit NOTES.md was written to break. Fixed in the engine:
+   `DragListener.onChange` refuses when not draggable, and a listener that is not draggable
+   contributes no direction, so the object leaves the pointer path and stops showing a resize cursor.
+   Both halves pinned in `authoring_contracts.test.ts` by asserting the param, not the field.
+
+   Found alongside, and the reason the second half could never have worked: the handler's
+   pointer-events recompute was gated on `ih.hasChanged`, which is the *handler's* own updatables,
+   while `dragListeners` is registered as a **constant**
+   (`packages/engine/src/ts/controller/interactionHandler.ts:62`). A listener whose `draggable` had
+   just changed never reached the code that would have acted on it. It now compares the answer it
+   would write against the answer it last wrote, which keeps the d3 calls off the drag path without
+   missing the change.
+
+   And a trap next door for anyone who puts `draggable` on the object instead of on the listener:
+   `makeDraggable` only builds a drag from the shorthand when the value is literally `true` or
+   `'true'` (`KGAuthor/parsers/parsingFunctions.ts:186-198`), so an *expression* there silently
+   produces no drag at all rather than a conditional one.
+
+2. **The plan's tolerance rule is both too strict and too lenient.** "Tolerance must be at least the
+   param's `round` interval" fails in both directions: a target that sits on the rounding grid is
+   hittable with no tolerance at all, and a target outside the param's `min`/`max` satisfies the rule
+   and is still unreachable. The exact question is whether *some achievable value* lies within
+   tolerance of the target, and the achievable values are `Math.round(v / round) * round` clamped to
+   `[min, max]` — `Param.update` clamps *before* rounding (`model/param.ts:153-163`), so the two ends
+   are exactly `min` and `max` whatever the grid says. P11 validates that, which subsumes the round
+   check and catches the out-of-range case the plan's rule waves through.
+
+3. **The prompt cannot live in the narration strip.** P10's arbitration rule is that the student's
+   own action always wins, so the instant they drag to answer, the step's sentence is cleared — and
+   the question vanishes from the screen while they are answering it. The prompt therefore lives in
+   the question row and the strip goes on doing its job, which during an attempt is narrating the
+   attempt. The plan's "render the verdict in the narration strip's region (P8)" survives as
+   *region*, not as *component*: the strip is one line that must not grow, and a verdict is two
+   clauses and up to three controls.
+
+4. **The reveal needs an apparatus per askable param, not "a third curve".** "The correct position is
+   an authored constant, drawn as a third curve shown on a `revealed` param" is right for a diagram
+   with one askable param and quietly wrong for two, because the curve is bound to a *particular*
+   param's geometry. The diagram declares the apparatus and the app maps asked param → apparatus, so
+   a question about a param with no apparatus draws nothing and says so in dev rather than drawing
+   the wrong curve.
+
+5. **The start ghost cannot be `prev`.** Step 6 says "the student's own start can be the ghost", and
+   P5's snapshot is per *gesture*: a second drag re-snapshots, so `prev` becomes the start of that
+   drag while the graded start stays where the question began. The drawn "before" and the graded
+   "before" would be two different numbers, which is the failure this whole strip and ghost
+   apparatus exists to prevent. The question's start is its own presentation param, written once when
+   the question is armed, so the ghost and the grade read the same number by construction.
+
+6. **A frozen curve is only half a freeze.** `draggable` stops the diagram's own drag and says
+   nothing about a host control. P9's Explore instrument writes the same param through
+   `updateParams`, so a committed answer could still be moved with a slider — and P11's step 8 makes
+   that slider the *equal* answer path, so this is not a corner. The screen guards the one place
+   every host param write goes through.
+
+7. **The plan's `Attempt` records the reveal twice.** It specifies a four-state machine *and* a
+   `revealed: boolean`, which are the same fact (`phase === 'reveal'`). That is the plans README's
+   finding 3 in miniature — a value already held, kept a second time, free to disagree. One phase
+   field, and direction and magnitude hang off the grade rather than off the attempt.
+
+8. **An `ask` step's `say` is the prompt.** The plan's YAML already writes it that way, and P10
+   routes every `say` to the strip, so without a rule the two collide (see 3). The screen routes an
+   ask step's sentence to the question row and passes the strip nothing.
+
+9. **Attempt data is not persisted, and the plan half-assumes it is.** `TrackState.resolved` is what
+   survives navigation; the attempt itself is discarded when the student leaves the step, so a
+   question they come back to is asked again and the track stays unblocked. The plan's own risk list
+   says attempt data is the first thing in the app that looks like it needs persistence, and that is
+   still true and still deferred. What is *not* deferred is the trap it names: the start is
+   snapshotted when the question is armed, never at first drag.
+
+10. **"Up" needed defining, and "did not move" needed a tolerance.** The plan names the ambiguity
+    (up versus right for a demand shift) and leaves the vocabulary open. `up`/`down` are defined as
+    the **param's value** rising or falling — the author's prose is where the taught convention
+    lives. And "did not move" is `|committed − start| < round / 2`, not equality: the param lives on
+    a rounding grid and exact-zero is a claim about floating point rather than about the student.
+
+What survived untouched: grading in the app (Fork 3, settled by P0 and unchanged by any of this),
+direction before magnitude, no visible target during the attempt, the slider as an equal answer path
+rather than a fallback, and the judgement that a wrong answer should leave a diagram rather than a
+cross.
