@@ -1,6 +1,7 @@
 import * as math from "mathjs";
 import { Param, ParamDefinition, ParamInfo } from "./param";
 import { Restriction } from "./restriction";
+import type { RestrictionCheck } from "./restriction";
 import { UpdateListener } from "./updateListener";
 
 
@@ -32,6 +33,60 @@ export function containsUndefinedToken(value: any): boolean {
 
 /** A string that is a number and nothing else — leading sign, decimals and exponent included. */
 const BARE_NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/;
+
+/** One restriction that said no, as a host sees it. */
+export interface BlockedRestriction {
+    /** The author's id for this rule, if they gave one. */
+    name?: string;
+    /** The author's sentence for the learner, if they wrote one. */
+    message?: string;
+    expression: string;
+    /** What the expression evaluated to. A string means it did not parse. */
+    value: any;
+    min?: any;
+    max?: any;
+    /**
+     * Set when this restriction is not a rule at all — its expression or one of
+     * its bounds did not resolve to a number, so it refuses everything. The
+     * student did nothing wrong and should not be told they did; this sentence
+     * is addressed to whoever wrote the config.
+     */
+    unresolved?: 'expression' | 'min' | 'max';
+}
+
+/**
+ * A move the diagram would not make, and why.
+ *
+ * Two mechanisms refuse a param, and from the student's side they are
+ * indistinguishable: the curve stops. `reason` is what separates them, and a
+ * host that only wants to coach on the author's own rules can filter on it.
+ *
+ * - `'bounds'` — the value asked for was outside the param's declared `min`/`max`
+ *   and was clamped to the nearest end. Much the commoner of the two, and the
+ *   quieter: the *first* push past the end reports an ordinary `kg:param_changed`
+ *   (the curve did move, as far as it could), and every push after it reported
+ *   nothing at all before this event existed.
+ * - `'restriction'` — the value was legal for the param but the state it implied
+ *   broke a rule the author declared, so the whole change was rolled back.
+ */
+export interface ParamBlockedEvent {
+    name: string;
+    /** The param's label, so a host can write a sentence without a second lookup. */
+    label: string;
+    reason: 'bounds' | 'restriction';
+    /** What was asked for, before clamping or rounding. */
+    requestedValue: number;
+    /** The value actually tried — after the clamp and the round. */
+    attemptedValue: number;
+    /** Where the param stands now: the clamped end, or the value it reverted to. */
+    value: number;
+    min: number;
+    max: number;
+    /** `'bounds'` only: which end was hit. */
+    limit?: 'min' | 'max';
+    /** `'restriction'` only; empty otherwise. */
+    restrictions: BlockedRestriction[];
+}
 
 export class Model implements IModel {
 
@@ -96,11 +151,28 @@ export class Model implements IModel {
      * which is the one instant the drawn geometry is still the "before" an
      * author's ghost is drawn from. `onParamChange` fires after an accepted
      * change has been broadcast, so every listener has already recomputed.
-     * Both are null unless something installed them, and neither is called for
+     * `onParamBlocked` fires for a change that was refused, *after* any
+     * `onParamChange` the same call raised — a clamp both moves the param as far
+     * as it will go and refuses the rest, and the refusal is the later news.
+     * All three are null unless something installed them, and none is called for
      * the construction-time seed.
      */
     public onSnapshot: (() => void) | null = null;
     public onParamChange: ((change: { name: string, value: any, previousValue: any }) => void) | null = null;
+    public onParamBlocked: ((refusal: ParamBlockedEvent) => void) | null = null;
+
+    /**
+     * The refusal each param is currently standing against, so one is announced
+     * once rather than per tick.
+     *
+     * A pointer held still produces nothing — d3 fires `drag` on movement — so
+     * the storm this exists to stop is a pointer *moving* past a boundary: one
+     * refusal per pointer move, every one of them with an identical cause. The
+     * key is therefore the cause rather than a clock. An accepted, unclamped
+     * change to that param clears it, so pulling back and pushing again is a new
+     * refusal and speaks again.
+     */
+    private blocked: { [paramName: string]: string } = {};
 
     constructor(parsedData) {
         let model = this;
@@ -307,6 +379,9 @@ export class Model implements IModel {
         // fresh diagram. Seeded rather than counted: a reset is not a student move.
         model.snapshot({ render: false, seed: true });
         model.snapshotSeq = 0;
+        // Nothing is standing against anything any more, so the next refusal is
+        // the first one and says so.
+        model.blocked = {};
     }
 
     evalParams() {
@@ -503,7 +578,19 @@ export class Model implements IModel {
         // the pre-change generation is otherwise unreachable.
         const oldParamValues = model.currentParamValues,
             oldCalcValues = model.currentCalcValues;
+
+        // Which end the request fell outside, decided from the *raw* request and
+        // before `update()` folds the clamp and the round together. Rounding is
+        // not a refusal — asking for 20.04 of a param that moves in tenths is
+        // asking for 20.0 — so only the bounds are tested here.
+        const requested = Number(newValue);
+        const limit: 'min' | 'max' | null = !isFinite(requested) ? null
+            : requested < param.min ? 'min'
+                : requested > param.max ? 'max'
+                    : null;
+
         param.update(newValue);
+        const attempted = param.value;
 
         // if param has changed, check to make sure the change is valid
         if (oldValue != param.value) {
@@ -513,9 +600,13 @@ export class Model implements IModel {
             model.evalCalcs();
 
             let valid = true;
+            const refused: RestrictionCheck[] = [], refusedBy: Restriction[] = [];
             model.restrictions.forEach(function (r) {
-                if (!r.valid(model)) {
+                const check = r.check(model);
+                if (!check.ok) {
                     valid = false;
+                    refused.push(check);
+                    refusedBy.push(r);
                 }
             });
 
@@ -539,13 +630,89 @@ export class Model implements IModel {
                 if (model.onParamChange) {
                     model.onParamChange({ name: name, value: param.value, previousValue: oldValue });
                 }
+
+                // A move that landed where it was asked to ends whatever refusal
+                // this param was standing against, so the next one speaks again.
+                // A *clamped* move does not: it moved and was refused in the same
+                // breath, and the refusal is reported below.
+                if (!limit) delete model.blocked[name];
             } else {
                 // Otherwise rollback safely
                 param.update(oldValue);
                 model.currentParamValues = model.evalParams();
                 model.evalCalcs();
+
+                // The rule that said no wins the report even when the request was
+                // also out of bounds: the clamped value is what the restrictions
+                // were actually asked about, and `attemptedValue` beside
+                // `requestedValue` says the clamp happened. The author's own rule
+                // is the more specific answer, and the only one with a sentence.
+                model.reportBlocked(param, 'restriction', requested, attempted, refused, refusedBy);
+                return;
             }
         }
+
+        // Reached both by a clamped change (the curve moved as far as it could)
+        // and by a push that changed nothing at all (it was already at the end) —
+        // which is the case that reported nothing whatsoever before this.
+        if (limit) {
+            model.reportBlocked(param, 'bounds', requested, attempted, [], [], limit);
+        }
+    }
+
+    /**
+     * Announce a refusal, once per cause.
+     *
+     * The signature is the cause and nothing else — which end of the range, or
+     * which rules objected — so a drag held against a boundary announces itself
+     * when it arrives there and then goes quiet, and a drag that moves from one
+     * refusal to a different one announces the second.
+     */
+    private reportBlocked(
+        param: Param,
+        reason: 'bounds' | 'restriction',
+        requested: number,
+        attempted: number,
+        checks: RestrictionCheck[],
+        restrictions: Restriction[],
+        limit?: 'min' | 'max'
+    ) {
+        const model = this;
+        const signature = reason === 'bounds'
+            ? 'bounds:' + limit
+            : 'restriction:' + restrictions.map(r => r.id).join('|');
+
+        if (model.blocked[param.name] === signature) return;
+        model.blocked[param.name] = signature;
+
+        if (!model.onParamBlocked) return;
+
+        const refusal: ParamBlockedEvent = {
+            name: param.name,
+            label: param.label || param.name,
+            reason: reason,
+            requestedValue: requested,
+            attemptedValue: attempted,
+            value: param.value,
+            min: param.min,
+            max: param.max,
+            restrictions: checks.map(function (check, i): BlockedRestriction {
+                const r = restrictions[i];
+                const entry: BlockedRestriction = {
+                    expression: r.expression,
+                    value: check.value
+                };
+                if (r.name !== undefined) entry.name = r.name;
+                if (r.message !== undefined) entry.message = r.message;
+                if (check.min !== undefined) entry.min = check.min;
+                if (check.max !== undefined) entry.max = check.max;
+                if (check.unresolved) entry.unresolved = check.unresolved;
+                return entry;
+            })
+        };
+        if (limit) refusal.limit = limit;
+
+        model.onParamBlocked(refusal);
     }
 
 

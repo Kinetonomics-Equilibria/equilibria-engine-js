@@ -399,6 +399,13 @@ export class View implements IView {
             if (view.refreshAutoDensity()) view.model.update(false);
             view.reportParamChange(change);
         };
+        view.model.onParamBlocked = function (refusal) {
+            // Nothing to measure and nothing to recompute: a refusal leaves the
+            // diagram exactly as it was, which is the whole of what makes it a
+            // refusal. It is passed straight out.
+            if (!view.emitter || view.emitter.listenerCount(KG_EVENTS.PARAM_BLOCKED) === 0) return;
+            view.emitter.emit(KG_EVENTS.PARAM_BLOCKED, refusal);
+        };
     }
 
     /** The scale of that name, or null. Duplicated names keep the last, which `render` warns about. */

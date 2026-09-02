@@ -31,6 +31,8 @@ export { STEP_PARAM } from "./KGAuthor/parsers/steps";
  * screen as `undefined`.
  */
 export type { ParamChangedEvent, AffectedObject } from "./view/view";
+export type { ParamBlockedEvent, BlockedRestriction } from "./model/model";
+export type { RestrictionDefinition } from "./model/restriction";
 export type { Movement } from "./view/movement";
 export type { ParamInfo } from "./model/param";
 export type { StepDefinition } from "./KGAuthor/parsers/steps";
