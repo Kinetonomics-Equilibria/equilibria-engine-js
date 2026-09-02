@@ -23,6 +23,9 @@ const STEPS: LessonStep[] = [
     { set: { a: 24, c: 6 } }
 ];
 
+/** The narrowest question P11 will grade: a param and a direction. */
+const ASK = { param: 'a', direction: 'up' } as const;
+
 const at = (position: number, resolved: number[] = []): TrackState => ({ position, resolved });
 
 describe('where the position may go', () => {
@@ -99,7 +102,7 @@ describe('a question stops the track', () => {
 
     const QUIZ: LessonStep[] = [
         { reveal: ['demand'] },
-        { ask: { prompt: 'What happens to the price?' } },
+        { ask: ASK, say: 'What happens to the price?' },
         { reveal: ['supply'] }
     ];
 
@@ -173,7 +176,7 @@ describe('what a step is', () => {
         expect(stepKinds(STEPS[0])).toEqual(['reveal', 'say']);
         expect(stepKinds(STEPS[1])).toEqual(['reveal']);
         expect(stepKinds(STEPS[4])).toEqual(['set']);
-        expect(stepKinds({ ask: { prompt: '?' } })).toEqual(['ask']);
+        expect(stepKinds({ ask: ASK })).toEqual(['ask']);
         expect(stepKinds({})).toEqual([]);
     });
 

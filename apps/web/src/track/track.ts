@@ -1,4 +1,5 @@
 import type { StepDefinition } from 'equilibria-engine-js';
+import type { Question } from '../quiz/grade';
 
 /**
  * One ordered track: build-up, staged reveal and lesson, as the same thing.
@@ -21,10 +22,16 @@ import type { StepDefinition } from 'equilibria-engine-js';
  * already holds, recomputed worse, somewhere else.
  */
 
-/** A question. P11 owns what is inside; the track only knows that it stops. */
-export interface LessonQuestion {
-    prompt: string;
-}
+/**
+ * A question. P11 owns what is inside; the track only knows that it stops.
+ *
+ * Its prompt is the step's own `say`, not a field of its own: one sentence per
+ * step, written one way. Where that sentence is *rendered* differs — a plain
+ * step's goes to the narration strip and a question's goes to the question row,
+ * because P10's arbitration would otherwise wipe the question off the screen
+ * the moment the student moved something to answer it.
+ */
+export type LessonQuestion = Question;
 
 /**
  * A step, as the author writes it.

@@ -20,11 +20,14 @@ import { theme } from '../theme';
 const view = (ui: ReactElement) =>
     render(<MantineProvider theme={theme} env="test">{ui}</MantineProvider>);
 
+/** The narrowest question P11 will grade: a param and a direction. */
+const ASK = { param: 'a', direction: 'up' } as const;
+
 const STEPS: LessonStep[] = [
     { reveal: ['demand'], say: 'Demand slopes down.' },
     { reveal: ['supply'] },
     { set: { a: 26 }, say: 'Incomes rise.' },
-    { ask: { prompt: 'What happened to the price?' } }
+    { ask: ASK, say: 'What happened to the price?' }
 ];
 
 const at = (position: number, resolved: number[] = []): TrackState => ({ position, resolved });
@@ -58,7 +61,8 @@ describe('the track renders the lesson', () => {
     it('types each marker by what its step does', () => {
         mount();
         const kinds = markers().map(m => m.getAttribute('data-kinds'));
-        expect(kinds).toEqual(['', 'reveal say', 'reveal', 'set say', 'ask']);
+        // A question's prompt is its step's `say`, so an `ask` step says something too.
+        expect(kinds).toEqual(['', 'reveal say', 'reveal', 'set say', 'say ask']);
     });
 
     it('says where the student is', () => {
@@ -142,7 +146,7 @@ describe('a question stops it', () => {
 
     const QUIZ: LessonStep[] = [
         { reveal: ['demand'] },
-        { ask: { prompt: 'What happened to the price?' } },
+        { ask: ASK, say: 'What happened to the price?' },
         { reveal: ['supply'] }
     ];
 
