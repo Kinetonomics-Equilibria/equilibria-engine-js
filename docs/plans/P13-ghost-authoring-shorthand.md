@@ -3,10 +3,10 @@
 **Lane:** bindings (KGAuthor) ·
 **Depends on:** P5 (supplies the `prev` primitive), P6 (names, titles and `partOf`) ·
 **Unblocks:** nothing — this is the last of the thirteen ·
-**Status:** outlined in
+**Status:** ✅ **Done** (2026-09-02). Outlined in
 [P5](P5-interaction-snapshot-and-prev-scope.md#out-of-scope) and split out here. Read against the
 code before building — see [Read against the code](#read-against-the-code-2026-09-02) for what the
-outline had wrong.
+outline had wrong, and [Findings](#findings) for what building it turned up.
 
 ## Goal
 
@@ -299,3 +299,82 @@ of ghosts renders byte for byte as before.
   solve.
 - **Restriction authoring ergonomics.** P12 handed this neighbourhood to P13 and
   it is being handed back: nothing about a refusal is a ghost.
+
+---
+
+## Findings
+
+Six, of which one is an engine defect now recorded in [NOTES.md](../../NOTES.md) (17), and two are
+about where the design work actually turned out to be.
+
+1. **The best thing about the feature was inherited rather than designed.** A ghost is revealed by
+   whatever lesson step reveals the object it shadows, and no line of P13 makes that happen: P6's
+   `anonymizeCopy` records `partOf` on a def whose identity it strips, and `compileSteps` matches on
+   `partOf`. Building the ghost out of the existing "a copy that is not a second address" mechanism,
+   rather than a new one, meant it arrived carrying everything else built on that mechanism.
+
+   General form, and it is the constructive twin of most findings in this file: **reuse buys you the
+   features you did not know were attached.** The corollary is the warning — a parallel mechanism
+   would have had to re-earn every one of them, and would have been discovered not to have, one at a
+   time, on screen.
+
+2. **A diagnostic addressed to an author was reading the engine's own writing.** `Model` warns when
+   a calc reads `prev.calcs`, because that resolves to a stored value rather than a fixpoint and
+   `prev.params` is usually what was meant. It walked *every* calc in the map — and every object
+   publishes its own def into that map as it parses, so a point at `x: prev.calcs.Qe` put the
+   spelling there itself. The advice was therefore fired at authors who had written the exact thing
+   the `prev` documentation demonstrates, and the ghost shorthand would have made the engine the
+   author of it.
+
+   It now reads only the calcs the author declared, which needed a new field
+   (`ViewDefinition.authoredCalcs`) because nothing downstream could otherwise tell the two apart.
+   **Before a diagnostic fires, ask who wrote the thing it is complaining about.**
+
+3. **A third position for the fallback, and the only one that is loud.** mathjs has no string `+`:
+   `"D" + idioms.newValueLabel` throws, `Model.evaluate` catches, and the expression comes back as
+   its own source text — which a label then *draws on the diagram*. So the same failure is truthy in
+   a `show` (permanently visible), falsy in a restriction (permanently refusing) and legible in a
+   label. Three positions, three meanings, one fallback.
+
+   Worth noting which one is survivable: the label case is the only one that announces itself, and
+   only because it happens to be rendered. The other two are silent because nothing draws them.
+
+4. **An unread declaration is a hypothesis, and this one was right.** `oldValueLabel` and
+   `newValueLabel` have been in `EconSchema` since the fork with no consumer anywhere — README
+   finding 6's shape exactly. Every previous instance of that shape turned out to be a declaration
+   describing behaviour that did not exist. This one turned out to be a *correct* design that had
+   simply never been wired up: both idiom sets render, `custom: '..1'` gives `D_1` / `D_2` as
+   advertised, and KaTeX accepts both. **"Read by nothing" is a reason to check it, not a reason to
+   assume it is wrong.**
+
+5. **Most of the design was deciding what a ghost does *not* copy, and neither of the two hard cases
+   is visible in the code.** Droplines: a dropline's axis label names a *place on the axis*, so two
+   of them reading `P^*` at two different heights is a contradiction drawn on the diagram, where a
+   second dashed curve is only a memory. Opacity: an `Area` already draws at 0.2 fill, so fading a
+   ghost to 0.35 makes it **louder** than the object it shadows. Both are points where "copy this
+   object" and "shadow this object" come apart, and both were settled by picturing the result rather
+   than by reading a type.
+
+6. **The proof that a shorthand is correct is the absence of a difference.** 199 app tests passed
+   untouched, and that is the whole app-level check — a shorthand has to produce what the longhand
+   produced, not something near it. It is also why P13 added no app tests: a new assertion about the
+   study screen would have been an assertion about the shorthand's *output*, which the engine's own
+   suite already pins, dressed up as an assertion about the app.
+
+   The screenshot, for once, only confirmed: `D` and `D′`, the arrow, the faint prior equilibrium,
+   and no second pair of droplines. First time in this sequence that looking at the running app
+   found nothing — worth recording precisely because the previous four times it found something the
+   suite could not.
+
+### Departed from the plan, deliberately
+
+- **Droplines are not inherited.** Not in the plan, and it is a behaviour choice rather than a
+  copy — see finding 5.
+- **The fill fades only for a solid object.** The plan said `opacity: 0.35` flat. That is right for a
+  point and backwards for an area.
+- **An engine fix came with it.** The `prev.calcs` diagnostic (finding 2) is not ghost machinery,
+  but the shorthand made it misfire on every ghosted point, and shipping a feature that trips a
+  warning nobody can act on was not an option.
+- **`ghost` reached the app on a `Point` as well as a `Line`.** The plan's "done when" said the flag
+  twice, which it is — but one of the two replaces three declarations rather than one, because a
+  point's ghost brings the arrow with it.

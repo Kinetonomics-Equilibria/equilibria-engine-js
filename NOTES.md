@@ -7,12 +7,17 @@ code paths involved are untouched by those changes. Everything under **Fixed**
 is closed and named by the test that holds it in place; four items remain
 **Open** at the end.
 
-Issues 9 to 16 were found later, while implementing the plans in `docs/plans`,
+Issues 9 to 17 were found later, while implementing the plans in `docs/plans`,
 and mostly by the same move: building something that asks the engine for a
 *number* rather than for a picture. Issue 13 is the only regression in the list
 — introduced by the density work and caught the next day by the screen that
 consumed it. Issue D was found the opposite way, by looking at a screenshot,
 which is the one thing a numbers-first habit will never do for you.
+
+Issue 17 was found by a third route again, and one worth naming: a new feature
+made the *engine* start writing the spelling that an existing diagnostic warned
+authors about. A warning nobody can act on is as good as no warning, and the way
+to notice one is to ask who wrote the thing being complained about.
 
 Issues 15 and 16 are a matched pair, thirteen lines apart in the same method,
 failing in opposite directions: one restriction spelling refused everything and
@@ -401,6 +406,32 @@ restriction" in `src/__tests__/refusals.test.ts`.
 **Note:** this is a behaviour change, not only a diagnostic. A config carrying a bound-less boolean
 restriction was previously unguarded and is now guarded, which is what it asked for — but it will
 start refusing moves it used to permit.
+
+## 17. A diagnostic aimed at authors was reading the engine's own writing — FIXED
+
+**Symptom:** a diagram containing a point drawn at the previous state — `x: prev.calcs.Qe`, which is
+the spelling `docs/schema/02` demonstrates — warned on every mount that "a calc references
+`prev.calcs` … `prev.params` is usually what is meant." Nothing in the config's `calcs` block said
+any such thing, so there was nothing for the author to change.
+
+**Cause:** `Model.definitionsMentionPrev` walks `model.calcs` and warns on any string matching
+`prev.calcs`. But `model.calcs` is not the author's calcs block: every object publishes its own def
+into the same map as it parses — a line's intercepts, a point's coordinates — so an object bound to
+the previous state transcribes the spelling there itself. One scan was answering two questions over
+two different sets: *does anything mention `prev`* (which decides whether the model pays for a second
+evaluation pass, and must see every calc there is) and *did a person write `prev.calcs`* (which is
+advice, and must see only what a person wrote).
+
+**Fix:** `ViewDefinition.authoredCalcs` records the keys of the config's own `calcs` block before
+objects start merging into it, and only those are checked for the advisory. A `Model` constructed
+directly — as several tests do — has no parsed authorship to consult and treats every calc as
+authored, which is what it was doing before. Covered by "does not warn about the `prev.calcs` it
+wrote itself" and "still warns about a calc the author really did write that way" in
+`src/__tests__/ghosts.test.ts`.
+
+**Note:** found by building the `ghost` shorthand (P13), which made the engine itself the author of
+the offending spelling on every ghosted point. The general lesson is smaller than the fix: **before
+a diagnostic fires, ask who wrote the thing it is complaining about.**
 
 # Open
 

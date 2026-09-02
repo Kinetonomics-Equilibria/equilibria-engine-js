@@ -2,7 +2,7 @@
 
 **Lane:** engine
 **Depends on:** nothing
-**Unblocks:** ghosts (product idea 1); [P12 — Refusals that speak](P12-refusals-that-speak.md) (outlined below, split out of this plan, and since landed); P13 — `ghost:` authoring shorthand (out of scope, named below)
+**Unblocks:** ghosts (product idea 1); [P12 — Refusals that speak](P12-refusals-that-speak.md) and [P13 — `ghost:` authoring shorthand](P13-ghost-authoring-shorthand.md) (both outlined here, split out of this plan, and both since landed)
 **Status:** ✅ **Complete** (2026-08-27). Tests: `packages/engine/src/__tests__/interaction_snapshot.test.ts` (27 cases). Docs: `docs/schema/02-parameters-and-interactions.md`, `docs/interactivity.md`.
 **Note:** the sub-plans this document splits out were renumbered P12 and P13 to avoid colliding with P6 (object identity) and P7 (stage composition).
 
@@ -650,6 +650,14 @@ first — the current config has no `draggable` on either line
   dashed twin, the arrow and the `oldValueLabel`/`newValueLabel` pairing
   (`econSchema.ts:30-31`) is a KGAuthor ergonomics plan and should not be
   entangled with model semantics.
+
+  > **Landed 2026-09-02, as [P13 — `ghost:` authoring shorthand](P13-ghost-authoring-shorthand.md).**
+  > The note above is left as written. Reading it against the code before building corrected eight
+  > things, the first of which moved the feature: the flag belongs on *every* graph object, because
+  > the only diagram in this repo that draws ghosts uses no econ composite at all. The arrow turned
+  > out to belong only to objects that have a position, and the label pairing needed `concat` rather
+  > than `+` — mathjs has no string addition, and the throw comes back as text a label then draws.
+  > See the plan's [Read against the code](P13-ghost-authoring-shorthand.md#read-against-the-code-2026-09-02).
 - **History deeper than one step.** `prev` is depth 1 by design. Undo/redo or a
   scrubbable timeline has different memory characteristics and a different API.
 - **Persisting snapshots** across mounts, reloads or config changes.

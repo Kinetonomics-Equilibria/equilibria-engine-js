@@ -1,13 +1,13 @@
 # Plans
 
-Thirteen independent implementation plans, drawn from the layout audit and the study-screen design
+Fourteen independent implementation plans, drawn from the layout audit and the study-screen design
 discussion. Each is self-contained: goal, reasoning, verified current state with `path:line`
 citations, numbered approach, tests, risks, and an explicit out-of-scope section naming which other
 plan owns what it excludes.
 
 They began as drafts to argue with, several deliberately conditional on decisions that had not been
-made. **All thirteen have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9, P10, P11
-and P12 — and each carries a Findings section recording where the plan was wrong.
+made. **All fourteen have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9, P10, P11,
+P12 and P13 — and each carries a Findings section recording where the plan was wrong.
 
 ## Settle these first
 
@@ -37,9 +37,10 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P10](P10-one-timeline.md) | One timeline: build, reveal, lesson ✅ **done** | app | P6, P7, P9 |
 | [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop ✅ **done** | app | P0, P10, P5 |
 | [P12](P12-refusals-that-speak.md) | Refusals that speak ✅ **done** | engine | P5, P6 |
+| [P13](P13-ghost-authoring-shorthand.md) | `ghost:` authoring shorthand ✅ **done** | bindings | P5, P6 |
 
-One further plan is still only an outline inside P5: **P13 — `ghost:` authoring shorthand**. P12 was
-the other, and has been [written out and landed](P12-refusals-that-speak.md).
+Both of the plans that were only outlines inside P5 have now been written out and landed: P12, and
+P13, which was the last of them.
 
 ## What blocks what
 
@@ -57,8 +58,9 @@ promoting a panel is a param change with no remount. **Every plan in every lane 
 strip under the stage says what the student just did and what followed, the dock beside it holds the
 controls, the scenarios and the maths, the track under both runs an authored lesson that draws the
 market up curve by curve and brings its other panels in as events, the lesson ends by asking the
-student to move demand themselves and marking where they put it, and a curve that will not go where
-it is pulled now says why rather than simply stopping.
+student to move demand themselves and marking where they put it, a curve that will not go where it
+is pulled now says why rather than simply stopping, and where a curve *was* is one word on the curve
+itself rather than a second copy of it.
 
 ## Reading order
 
@@ -79,13 +81,15 @@ it is pulled now says why rather than simply stopping.
   in the strip, because P10's arbitration would wipe a prompt off the screen the moment a student
   moved something to answer it. ~~**P12**~~ (done) went back to the strip for the one thing it could
   not say: why a curve stopped. It entered P10's arbitration at the top without the rule needing a
-  clause — a refusal is the student's own action, in which nothing moved.
+  clause — a refusal is the student's own action, in which nothing moved. ~~**P13**~~ (done) is the
+  last, and the only one that adds no behaviour at all: it collapses the hand-written ghost into a
+  flag on the object it is a ghost of.
 
 ## Findings that cut across the set
 
-1. **An expression that parses is not an expression that means what it says.** Three costumes so
-   far, all of them silent, all of them found by asking the engine for a *number* rather than
-   looking at a picture.
+1. **An expression that parses is not an expression that means what it says.** Five costumes so
+   far, four of them silent, and the silent ones all found by asking the engine for a *number*
+   rather than looking at a picture.
 
    *It fails to parse and reads as true.* `model.evaluate` returns the expression *as a string* when
    mathjs cannot parse it (`packages/engine/src/ts/model/model.ts`) — deliberately, since colors and
@@ -116,7 +120,13 @@ it is pulled now says why rather than simply stopping.
    nothing. Truthy in a `show`, falsy in a restriction, from one fallback. **The meaning of a failed
    parse depends on where the value lands, and the author cannot see where it lands.**
 
-   The habit that catches all four: **assert the value, not the shape.**
+   *It fails to parse and is **drawn**.* P13 found the third position. mathjs has no string `+`, so
+   `"D" + idioms.newValueLabel` throws, and the returned source text lands in a `label` — where it
+   is rendered, as LaTeX, on the diagram. Truthy in a `show`, falsy in a restriction, legible in a
+   label: one fallback, three meanings, and the only one that announces itself does so purely
+   because something happened to draw it.
+
+   The habit that catches all five: **assert the value, not the shape.**
 
 2. **Author-supplied names already survive** — and were also being *copied*. `GraphObject` fills a
    random name only as a *default* via `setDefaults`, so an author's name reaches the parsed data.
@@ -193,27 +203,19 @@ it is pulled now says why rather than simply stopping.
     *order*, since snapshotting after the change marks the wrong state. **P10 and P11 inherit this
     directly:** a lesson step and a quiz reveal are the other two examples in that same comment.
 
-11. **Reading the plan against the code before building it paid, and is worth repeating.** Six
-    corrections before a line was written, five of them the plan describing a world a later plan had
-    already changed. One — that a dock slider would strobe the narration strip — was an integration
-    defect caught in advance rather than found afterwards, which is the first time that has happened
-    here. The habit generalises: **a plan written before its dependencies landed is a description of
-    a tree that no longer exists**, and P10 and P11 were both written before P7, P8 and P9.
+11. **Reading the plan against the code before building it paid every time, and is now the habit.**
+    P9's read caught six things and predicted an integration defect — a dock slider that would have
+    strobed the narration strip, found in advance rather than afterwards. P10's caught ten, two of
+    which needed *running* rather than reading and were both engine defects: the step param was not
+    marked presentation, so advancing a build-up drew ghosts over an untouched diagram, and a step
+    could not reveal a panel at all — a graph's axes and axis titles are never named, so the plan's
+    own `reveal: [firmPanel]`, and the same example in the schema doc, were both fiction. Neither
+    would have survived a minute of the running app, and neither was visible in the source. P12's
+    caught eight and moved the payload; P13's caught eight and moved the feature onto a different
+    set of objects entirely.
 
-## Conventions
-
-Every plan follows the same headings: Goal, Why this shape, Current state, Approach,
-API / schema surface, Tests, Risks and unknowns, Done when, Out of scope. Claims about current
-behaviour cite `path:line`. Where a plan could not verify something, it says so rather than
-assuming.
-
-11. **Reading the plan against the code before building it paid three times, and is now the habit.**
-    P9's read caught six things and predicted an integration defect. P10's caught ten, two of which
-    needed *running* rather than reading and were both engine defects: the step param was not marked
-    presentation, so advancing a build-up drew ghosts over an untouched diagram, and a step could
-    not reveal a panel at all — a graph's axes and axis titles are never named, so the plan's own
-    `reveal: [firmPanel]`, and the same example in the schema doc, were both fiction. Neither would
-    have survived a minute of the running app, and neither was visible in the source.
+    The habit generalises: **a plan written before its dependencies landed is a description of a
+    tree that no longer exists**, and P10 and P11 were both written before P7, P8 and P9.
 
 12. **A layout in fractions and furniture in pixels have to meet somewhere.** `arrange` reports
     fractions so it can be scale-free; the engine places an axis title 40px past the axis. Every
@@ -272,3 +274,32 @@ assuming.
     is asked for the value it already holds. The proof has to be a browser test, and reaching for a
     unit test there means asserting the wiring rather than the behaviour. Worth knowing *before*
     writing the feature, because it decides where the evidence will come from.
+
+19. **Reuse buys you the features you did not know were attached.** P13's ghosts are revealed by
+    whatever lesson step reveals the object they shadow, and nothing in P13 makes that happen: the
+    ghost is built with P6's `anonymizeCopy`, which records `partOf`, and P6's `compileSteps`
+    matches on `partOf`. Two plans that never referred to each other composed correctly because the
+    second used the first's mechanism rather than a parallel one.
+
+    Every other finding here is a warning; this is the constructive form of the same observation.
+    The warning it implies is real too — a parallel mechanism has to *re-earn* every feature built
+    on the original, and will be found not to have, one at a time, on screen.
+
+20. **Before a diagnostic fires, ask who wrote the thing it is complaining about.** The engine warns
+    an author whose calc reads `prev.calcs`, because that is a stored value rather than a fixpoint.
+    It walked every calc in the map — and objects publish their own defs into that same map as they
+    parse, so any object bound to the previous state put the spelling there itself. The advice was
+    being given to authors who had written the exact thing the documentation demonstrates, and
+    P13 would have made the *engine* the author of it on every ghosted point.
+
+    One scan was answering two questions over two different sets: whether anything mentions `prev`
+    (which decides whether a second evaluation pass is paid for, and must see everything) and
+    whether a person wrote `prev.calcs` (which is advice, and must see only what a person wrote).
+    Recorded as [NOTES.md](../../NOTES.md) issue 17.
+
+## Conventions
+
+Every plan follows the same headings: Goal, Why this shape, Current state, Approach,
+API / schema surface, Tests, Risks and unknowns, Done when, Out of scope. Claims about current
+behaviour cite `path:line`. Where a plan could not verify something, it says so rather than
+assuming.
