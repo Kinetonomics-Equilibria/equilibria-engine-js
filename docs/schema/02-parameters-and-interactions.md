@@ -115,6 +115,12 @@ Params marked [`presentation`](#paramdefinition-interface) are not part of the c
 
 ### Example: a ghost of the old curve
 
+Longhand first, because it is what the shorthand compiles to and the only way to
+see what `prev` is actually doing. In a real config, write
+[`ghost: true`](05-graph-objects.md#ghosts-ghost) on the live curve and let the
+engine generate all of this — a second copy of an object's geometry is a fact
+stated twice, and two statements of one fact do not stay in agreement.
+
 ```yaml
 params:
   - name: a
@@ -154,6 +160,10 @@ The same two expressions draw the move itself, which is usually the sentence the
       end: [calcs.Qe, calcs.Pe]
       show: prev.changed
 ```
+
+All three objects above — the live curve, its dashed twin and the arrow — are
+what `ghost: true` on a single declaration produces, along with the `D` / `D′`
+relabelling that the longhand leaves you to write yourself.
 
 ### When a snapshot is taken
 

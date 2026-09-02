@@ -12,6 +12,7 @@ All graph objects share certain common definitions (from `GraphObjectDefinition`
 - `name`: Used to reference this object inside the math evaluations (`calcs.name.x`, etc.), and the object's address from outside the engine — see [Names and titles](#names-and-titles).
 - `title`: The object's human name, for prose about it. Not drawn.
 - `strokeWidth`, `lineStyle`: For objects with strokes (e.g. `dashed`, `dotted`).
+- `ghost`: Draw a second copy of this object bound to the previous state — see [Ghosts](#ghosts-ghost).
 
 ## Names and titles
 
@@ -62,6 +63,78 @@ Composites that publish calcs but draw nothing themselves hand the title to the
 object that *is* drawn. `EconLinearEquilibrium` publishes `calcs.equilibrium.Q`
 and `.P` and draws a point named `equilibrium_point` titled `equilibrium`: the
 point is the thing that moves, so the point is the thing narration talks about.
+
+## Ghosts (`ghost`)
+
+Any graph object can carry `ghost`, which draws a second copy of it bound to
+[the previous state](02-parameters-and-interactions.md#remembering-the-previous-state-prev):
+where this thing was when the student took hold of it.
+
+```yaml
+- type: Line
+  def:
+    name: demand
+    yIntercept: params.a
+    slope: -1
+    color: colors.demand
+    label: { text: D, x: 4 }
+    drag: [{ vertical: a }]
+    ghost: true
+```
+
+That is the whole of it. The ghost is an ordinary object of the same type built
+from the same def, so it cannot disagree with the object it shadows about slope,
+colour or anything else — which is exactly what a hand-written second copy does,
+eventually.
+
+**What the shorthand generates**
+
+| | |
+|---|---|
+| The twin | The same def with every `params.x` read as `prev.params.x` and every `calcs.y` as `prev.calcs.y`, drawn dashed at 35% stroke opacity, *underneath* the live object. |
+| Its visibility | Whatever `show` you wrote, **and** `prev.changed` — so the ghost is off until the student has actually moved something. |
+| A shift arrow | Only for an object that has a single position (a point). Two parallel lines have no one displacement between them; the arrow belongs on the equilibrium, not on the curves that cross there. |
+| Paired labels | The ghost keeps the label; the live object is relabelled with the schema's `newValueLabel` idiom for as long as the ghost is up — `D` and `D′` by default, `D_1` and `D_2` under `custom: '..1'`. |
+
+**What it does not inherit**
+
+`drag`, `click`, `draggable`, `handles` — a ghost is a memory, not a control.
+`srTitle` and `srDesc`, because a screen reader should meet one object once.
+And `droplines`, because a dropline's axis label names a *place on the axis*,
+and two of them reading `P^*` at two different heights is a contradiction drawn
+on the diagram.
+
+It does keep `name` in one indirect sense: the ghost records `partOf`, so a
+[lesson step](02-parameters-and-interactions.md) that reveals an object reveals
+its ghost with it.
+
+**Options**
+
+```yaml
+ghost:
+  show: not(params.asking)   # an extra condition, read as *now* rather than as *then*
+  arrow: false               # or true, to demand one where there is a position for it
+  label: false               # leave both labels alone
+  opacity: 0.1               # anything else is merged onto the generated def
+```
+
+`show` is the one field that is deliberately **not** rewritten to `prev`:
+whether something is on screen is a claim about the present. A curve revealed at
+step 3 has a ghost revealed at step 3, not one revealed at whatever step the
+lesson had reached a snapshot ago.
+
+A filled shape — an `Area`, a `Rectangle` — keeps its own fill, which is already
+translucent; fading it to the ghost default would make the ghost *louder* than
+the live object. Give it `ghost: { opacity: 0.1 }` if it should recede.
+
+**Write `params.a`, not `a`**
+
+The rewrite is textual and sees only the qualified spellings. A bare `a` cannot
+be rewritten, so a ghost written that way would be bound to the same value as
+the object it shadows and sit silently on top of it forever. The engine warns,
+naming the object and the reference. (The bare form is worth avoiding anyway: it
+resolves fine in a point's `x` and throws `Undefined symbol` out of a curve's
+`fn`, taking the whole diagram with it.)
 
 ## `Point`
 
