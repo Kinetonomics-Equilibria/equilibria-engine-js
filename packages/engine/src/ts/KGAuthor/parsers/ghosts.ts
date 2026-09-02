@@ -52,9 +52,19 @@ export interface GhostDefinition {
 /** How a ghost looks unless the author says otherwise. */
 const GHOST_STYLE = {
     lineStyle: 'dashed',
-    strokeOpacity: 0.35,
-    opacity: 0.35
+    strokeOpacity: 0.35
 };
+
+/**
+ * The fill fades too, but only for something that was solid to begin with.
+ *
+ * A point draws at full fill opacity, so a ghost of one has to be faded or it
+ * is just a second dot. An area or a rectangle already draws at 0.2, and fading
+ * it to 0.35 would make the ghost *louder* than the thing it shadows. So a
+ * translucent shape keeps its own fill and an author who wants it fainter says
+ * `ghost: { opacity: 0.1 }`.
+ */
+const GHOST_SOLID_FILL = { opacity: 0.35 };
 
 /**
  * Keys a ghost must not inherit.
@@ -66,7 +76,15 @@ const GHOST_STYLE = {
  * meet it once. `name` and `title` are removed separately, by `anonymizeCopy`,
  * which leaves the `partOf` back-reference behind — see `ghostDef`.
  */
-const NOT_INHERITED = ['ghost', 'drag', 'click', 'draggable', 'handles', 'srTitle', 'srDesc'];
+const NOT_INHERITED = [
+    'ghost', 'drag', 'click', 'draggable', 'handles', 'srTitle', 'srDesc',
+    // Droplines, because a dropline's axis label names a *place on the axis*.
+    // Two of them reading `P^*` at two different heights is a contradiction
+    // drawn on the diagram, where a second dashed curve is only a memory. An
+    // author who wants them says `ghost: { droplines: {...} }` and chooses what
+    // the second pair are called.
+    'droplines'
+];
 
 /**
  * The one key that is emphatically *not* rewritten to `prev`.
@@ -276,7 +294,7 @@ function ghostDef(def: any, options: GhostDefinition, type: string): any {
     // The style wins over what was inherited — a ghost drawn exactly like the
     // object it shadows is not a ghost — and loses to what the author asked for
     // on the `ghost` key itself.
-    Object.assign(ghost, GHOST_STYLE, overrides);
+    Object.assign(ghost, GHOST_STYLE, isPointLike(type) ? GHOST_SOLID_FILL : {}, overrides);
 
     return ghost;
 }

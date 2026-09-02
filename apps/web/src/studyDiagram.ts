@@ -34,7 +34,7 @@ const DRAG_DEMAND = [{ vertical: 'a', draggable: 'not(params.submitted)' }];
  * what is true — three drawings, one thing — and narration says "demand" once
  * because the title is what it groups by.
  */
-const demand = (panel: string, draggable = false) => ({
+const demand = (panel: string, draggable = false, ghost = false) => ({
     type: 'Line',
     def: {
         name: 'demand_' + panel, title: 'demand',
@@ -43,7 +43,18 @@ const demand = (panel: string, draggable = false) => ({
         // Positioned by x along the line: a `Line` builds a univariate function
         // before it reaches `Curve`, so a label with an x lands on the curve.
         label: { text: 'D', x: 4 },
-        ...(draggable ? { drag: DRAG_DEMAND } : {})
+        ...(draggable ? { drag: DRAG_DEMAND } : {}),
+        // Where this curve was when the student took hold of it (P13). The
+        // engine builds the dashed twin from this same def, so the two cannot
+        // disagree about slope, colour or anything else — and it relabels this
+        // one D' for as long as the ghost is up.
+        //
+        // Off while a question is on screen, where `startA` below draws the
+        // "before" instead. `prev` is per *gesture*, so a student on their
+        // second attempt would see it slide up to the start of that attempt
+        // while the answer is still being marked from the question's own
+        // starting line — two dashed curves claiming to be the same thing.
+        ...(ghost ? { ghost: { show: 'not(params.asking)' } } : {})
     }
 });
 
@@ -54,28 +65,6 @@ const supply = (panel: string) => ({
         yIntercept: 'params.c', slope: 1,
         color: 'colors.supply',
         label: { text: 'S', x: 16 }
-    }
-});
-
-/**
- * Where demand was when the student took hold of it.
- *
- * `prev.params.a` is the value the live curve is bound to, one snapshot ago —
- * no shadow param and no bookkeeping in the app — and `prev.changed` keeps it
- * off screen until something actually moves.
- */
-const demandGhost = () => ({
-    type: 'Line',
-    def: {
-        yIntercept: 'prev.params.a', slope: -1,
-        color: 'colors.demand', lineStyle: 'dashed',
-        strokeOpacity: 0.35,
-        // Off while a question is on screen, where `startA` below draws the
-        // "before" instead. `prev` is per *gesture*, so a student on their
-        // second attempt would see it slide up to the start of that attempt
-        // while the answer is still being marked from the question's own
-        // starting line — two dashed curves claiming to be the same thing.
-        show: 'prev.changed and not(params.asking)'
     }
 });
 
@@ -115,14 +104,20 @@ const questionAnswer = () => ({
     }
 });
 
-const equilibrium = (panel: string) => ({
+const equilibrium = (panel: string, ghost = false) => ({
     type: 'Point',
     def: {
         name: 'equilibrium_' + panel, title: 'equilibrium',
         x: 'calcs.Qe', y: 'calcs.Pe',
         color: 'colors.equilibriumPrice',
         droplines: { vertical: 'Q^*', horizontal: 'P^*' },
-        srTitle: 'Equilibrium'
+        srTitle: 'Equilibrium',
+        // Where the market cleared before, and the move between the two — the
+        // sentence the diagram is trying to say. A point has one position, so
+        // the engine draws the arrow as well as the faint twin. The droplines
+        // are deliberately not inherited: two axis labels reading `P^*` at two
+        // heights would be a contradiction rather than a memory.
+        ...(ghost ? { ghost: true } : {})
     }
 });
 
@@ -256,27 +251,9 @@ export const studyDiagram = {
                     key: 'market',
                     ...axes(),
                     objects: [
-                        demand('market', true), demandGhost(),
+                        demand('market', true, true),
                         questionStart(), questionAnswer(), supply('market'),
-                        equilibrium('market'),
-                        // Where the market cleared before, and the move between
-                        // the two — the sentence the diagram is trying to say.
-                        {
-                            type: 'Point',
-                            def: {
-                                x: 'prev.calcs.Qe', y: 'prev.calcs.Pe',
-                                color: 'colors.equilibriumPrice',
-                                strokeOpacity: 0.35, opacity: 0.35, show: 'prev.changed'
-                            }
-                        },
-                        {
-                            type: 'Arrow',
-                            def: {
-                                begin: ['prev.calcs.Qe', 'prev.calcs.Pe'],
-                                end: ['calcs.Qe', 'calcs.Pe'],
-                                color: 'colors.equilibriumPrice', show: 'prev.changed'
-                            }
-                        }
+                        equilibrium('market', true)
                     ]
                 },
                 {
