@@ -2,7 +2,7 @@
 
 **Lane:** engine
 **Depends on:** nothing
-**Unblocks:** ghosts (product idea 1); P12 — Refusals that speak (outlined below, split out of this plan); P13 — `ghost:` authoring shorthand (out of scope, named below)
+**Unblocks:** ghosts (product idea 1); [P12 — Refusals that speak](P12-refusals-that-speak.md) (outlined below, split out of this plan, and since landed); P13 — `ghost:` authoring shorthand (out of scope, named below)
 **Status:** ✅ **Complete** (2026-08-27). Tests: `packages/engine/src/__tests__/interaction_snapshot.test.ts` (27 cases). Docs: `docs/schema/02-parameters-and-interactions.md`, `docs/interactivity.md`.
 **Note:** the sub-plans this document splits out were renumbered P12 and P13 to avoid colliding with P6 (object identity) and P7 (stage composition).
 
@@ -510,7 +510,7 @@ kg.getSnapshot(): { params: Record<string, number>; calcs: Record<string, any>; 
 inside `prev`.
 
 **Unchanged:** every existing config key, every existing expression spelling, the
-three `KG_EVENTS` (still dormant — P12), `Restriction`, `Param`, the drag
+three `KG_EVENTS` (dormant at the time; P6 emitted all three and P12 added a fourth), `Restriction`, `Param`, the drag
 expression form `params.X + drag.dx`.
 
 ## Tests
@@ -664,6 +664,12 @@ first — the current config has no `draggable` on either line
 ---
 
 ## Outline: P12 — Refusals that speak
+
+> **Landed 2026-09-02, as [P12 — Refusals that speak](P12-refusals-that-speak.md).** The outline
+> below is left as written. Reading it against the code before building corrected eight things —
+> two of its four steps were already done by P6, and the payload grew to cover a param's own bounds,
+> without which the event had no consumer in this repo. See the plan's
+> [Read against the code](P12-refusals-that-speak.md#read-against-the-code-2026-09-02).
 
 **Lane:** engine · **Depends on:** P5 (shares the `Model.updateParam` edit) ·
 **Unblocks:** learner-facing coaching on blocked drags; makes the three documented

@@ -3,9 +3,11 @@
 **Lane:** engine
 **Depends on:** P5 (shares the `Model.updateParam` edit), P6 (the model→host seam it extends)
 **Unblocks:** learner-facing coaching on a move the diagram would not make
-**Status:** 📝 Outlined in [P5](P5-interaction-snapshot-and-prev-scope.md#outline-p12--refusals-that-speak)
-and split out here. Read against the code before building — see
-[Read against the code](#read-against-the-code-2026-09-02).
+**Status:** ✅ **Done** (2026-09-02). Outlined in
+[P5](P5-interaction-snapshot-and-prev-scope.md#outline-p12--refusals-that-speak) and split out
+here. Read against the code before building — see
+[Read against the code](#read-against-the-code-2026-09-02) for what the outline had wrong, and
+[Findings](#findings) for what building it turned up.
 
 ## Goal
 
@@ -233,3 +235,84 @@ listening.
   restrictions; that is P13's neighbourhood.
 - **Undo, or offering the student a legal alternative.** Saying why is the whole
   of this plan.
+
+---
+
+## Findings
+
+Eight, of which two are engine defects now recorded in [NOTES.md](../../NOTES.md) (15 and 16) and
+one is a confirmation of an open one.
+
+1. **The feature nearly shipped with no consumer, and the app had already said so in a comment.**
+   `StudyScreen.applyStep` carried "The study diagram declares no restrictions, so nothing here can
+   trip today; that is luck, not design." Reading that line while checking correction 6 is the whole
+   reason `kg:param_blocked` covers a param's bounds and not only restrictions — and therefore the
+   only reason anything in this repo can reach it. The comment was written about a different risk
+   (a non-atomic multi-param update) and answered this question in passing.
+
+   General form, and it is the sharper half of finding 7 in the README: **before adding a channel,
+   find the message that will go down it in the app you actually have.** An event that only a test
+   can trigger has been designed against an imagined consumer.
+
+2. **A jsdom test could not have reached this, and the reason generalises.** The dock's sliders take
+   their ends from `ParamInfo.min`/`max`, so no *control* in the app can ask for an out-of-range
+   value — only a drag can. And a drag cannot be synthesised in jsdom: `d3.pointer` falls back to
+   `getBoundingClientRect` when there is no `createSVGPoint`, jsdom returns zeros for it, so `drag.dy`
+   is 0 and the param is asked for the value it already has. So the app-level proof is three
+   Playwright tests, and there is no unit-level equivalent to write.
+
+   Worth carrying: **a behaviour reachable only by dragging has no jsdom test, and the tempting
+   substitute — asserting the wiring against a mock — is the thing finding 7 forbids.**
+
+3. **Thirteen lines held two silent failures pointing in opposite directions.** `Restriction.valid`
+   refused *everything* when its expression did not resolve, and permitted *everything* when it
+   declared no bounds. Neither said a word, and they are not variations of one bug: one is a guard
+   welded shut, the other a guard that was never a guard.
+
+   This sharpens the README's finding 1. It is not only that an expression which parses may not mean
+   what it says — it is that an expression which **fails** to parse means *different things in
+   different positions*. The same fallback string is truthy in a `show` (permanently visible) and
+   falsy in a comparison (permanently refusing). The author cannot see which position their
+   expression landed in, and the failure has opposite symptoms in each.
+
+4. **The documented example was the broken spelling.** `docs/configuration.md` illustrated
+   restrictions with `{ "type": "domain", "expression": "price > marginalCost" }` — a bound-less
+   boolean, which permitted everything, carrying a `type`, which is read by nothing. A worked
+   example that has never been run is a claim, not a demonstration; this one had been wrong in two
+   ways for the life of the fork. `schema/02` described the same behaviour in prose.
+
+5. **Coalescing belongs where the cause is computed, and it was nearly put in the app.** The first
+   instinct was to debounce in `StudyScreen`, which is where the sentence is written. Wrong place:
+   only the model knows whether *this* refusal is the same refusal, and a host debouncing on elapsed
+   time either eats a genuinely new one or holds a stale one on screen. **Coalesce on the cause; the
+   cause is only knowable where the cause is decided.**
+
+6. **P10's arbitration rule already covered a case it was not written for.** "The student's own
+   action wins the strip" was written about moves that move something. A refusal is the student's
+   own action in which nothing moved at all — and the rule gives the right answer anyway, including
+   over a lesson's sentence. Nothing had to be added to the arbitration; the refusal just enters at
+   the top of the same order.
+
+7. **The order of the two seams is load-bearing, and a clamp is what makes it so.** A clamped drag
+   is both events: the curve moved as far as it could, *and* was refused the rest. `onParamChange`
+   fires first and `onParamBlocked` second, because the app clears a standing refusal when a move
+   lands — reverse them and the app wipes the refusal it has just been told about. Nothing enforces
+   the order but the code, so it is stated in the seam's own doc comment.
+
+8. **NOTES issue D confirmed at a second value.** The screenshot taken to check this feature shows
+   the stray horizontal line at exactly P = 8 with `a` at 28 — the `P = a − 20` that issue D records
+   from a single observation. Two points do not find the culprit, but they do promote the formula
+   from a guess to a fit.
+
+### Departed from the plan, deliberately
+
+- **Bounds are in the payload.** The outline covered restrictions only. See correction 6: without
+  bounds the event has no consumer in this repo, and bounds are the commoner refusal anyway.
+- **A bound-less restriction now means something.** Making it a predicate is a behaviour change
+  rather than a report, which is more than "refusals that speak" promised. Done because the
+  alternative was to warn about a spelling the docs recommend, and because leaving it would have
+  made the new warning fire on configs that were following the documentation.
+- **`Model` did not become an `EventEmitter`.** Correction 1: P6's seam is better and already there.
+- **The frozen-answer refusal is still silent.** P11 filters a committed param out in `updateParams`
+  before the engine sees it, so it cannot come down this channel; making it speak is app copy and
+  was named out of scope. It remains the one refusal on the study screen that says nothing.

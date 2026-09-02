@@ -7,12 +7,19 @@ code paths involved are untouched by those changes. Everything under **Fixed**
 is closed and named by the test that holds it in place; four items remain
 **Open** at the end.
 
-Issues 9 to 14 were found later, while implementing the plans in `docs/plans`,
+Issues 9 to 16 were found later, while implementing the plans in `docs/plans`,
 and mostly by the same move: building something that asks the engine for a
 *number* rather than for a picture. Issue 13 is the only regression in the list
 — introduced by the density work and caught the next day by the screen that
 consumed it. Issue D was found the opposite way, by looking at a screenshot,
 which is the one thing a numbers-first habit will never do for you.
+
+Issues 15 and 16 are a matched pair, thirteen lines apart in the same method,
+failing in opposite directions: one restriction spelling refused everything and
+another permitted everything, and neither said anything. They are the clearest
+statement of this file's theme so far — **the same unparseable expression means
+different things in different positions**, truthy in a `show` and falsy in a
+comparison, and an author cannot see which position theirs landed in.
 
 Issue 14 is the sharpest instance of the habit this file recommends, and the one
 that got closest to shipping behind a green test: a property that reported
@@ -349,6 +356,52 @@ off the drag path without missing the change. Covered by "refuses the drag itsel
 property" and "takes the hit area out of the pointer path while frozen" in
 `src/__tests__/authoring_contracts.test.ts` — both asserting the param, not the field.
 
+## 15. A restriction naming something that is not there refused everything — FIXED
+
+**Symptom:** a diagram seizes solid. Every drag is reverted, every slider snaps back, every
+`kg.update({ params })` is discarded. Nothing appears in the console, nothing looks wrong in the
+config, and the diagram renders perfectly.
+
+**Cause:** one keystroke in a restriction. `Model.evaluate` returns an expression it cannot parse as
+its own **source string** (`model.ts:415-423`), and a property missing off an object it *can* parse
+comes back as `undefined`. `Restriction.valid` then compared that against its bounds — and
+`"params.aa - params.c" >= 0` and `undefined >= 0` are both `false`, so the restriction refused every
+change to every param, forever.
+
+This is issue 7's fallback and P0's `show` finding wearing the opposite costume. In a `show` an
+unparseable expression is a non-empty string, which is **truthy**, so the object is permanently
+visible. In a comparison it is **falsy**, so the guard is permanently closed. One silent fallback,
+two opposite symptoms, and the author cannot see which position their expression is being read in.
+
+**Fix:** `Restriction.check()` reports what did not resolve, in the payload and — once, not per drag
+tick — in a console warning naming the restriction. It still refuses: a broken guard that quietly
+stops guarding is the worse of the two failures, and a diagram that will not move is at least
+visible. Covered by "a restriction that is not a rule" in `src/__tests__/refusals.test.ts`.
+
+## 16. A restriction with no bounds permitted everything — FIXED
+
+**Symptom:** a restriction that never fires. Written as a condition — `expression: 'params.Px > 0'` —
+it is accepted, evaluated, and ignored.
+
+**Cause:** `Restriction.valid` opened with `isValid = true` and only ever narrowed on a declared
+`min` or `max`. With neither, the expression was evaluated and its answer thrown away.
+
+The spelling is not one an author would have to invent: `docs/configuration.md` illustrated
+restrictions with exactly it — `{ "type": "domain", "expression": "price > marginalCost" }` — and
+`docs/schema/02` described the engine as honouring "mathematical properties defined in the
+`expression` operators". The documented example had never worked, and neither had the sentence
+describing it. (The same example's `type` is read by nothing either; it is now optional and
+documented as inert.)
+
+**Fix:** a bound-less restriction reads its expression as the condition, which is what the docs
+always said. A bound-less restriction whose expression is *not* a boolean still permits everything —
+there is nothing else it could mean — but now warns that it guards nothing. Covered by "a bound-less
+restriction" in `src/__tests__/refusals.test.ts`.
+
+**Note:** this is a behaviour change, not only a diagnostic. A config carrying a bound-less boolean
+restriction was previously unguarded and is now guarded, which is what it asked for — but it will
+start refusing moves it used to permit.
+
 # Open
 
 ## A. `multiplyDefs()` treats `0 * Infinity` as `0`
@@ -400,6 +453,10 @@ it survives a forced repaint, so it is not a browser paint artifact. But no `pat
 in the tree has geometry matching it: recolouring every element in turn does not turn it red, and no
 path's `d` contains a horizontal run at that height. That points at something drawn indirectly — a
 `marker`, or a fill whose own coordinates do not describe the mark it leaves.
+
+**Confirmed at a second value.** A screenshot taken while checking P12 has `a` at 28 and the line at
+exactly P = 8, which fits `P = a − 20` — the formula was previously a single observation and is now
+a fit through two points. Still nothing about *what* draws it.
 
 Recorded rather than chased further because it is nobody's plan and the hunt was already long.
 Whoever picks it up should start where it was left: the culprit is reached through `<defs>`, not

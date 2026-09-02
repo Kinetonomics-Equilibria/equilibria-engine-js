@@ -1,13 +1,13 @@
 # Plans
 
-Twelve independent implementation plans, drawn from the layout audit and the study-screen design
+Thirteen independent implementation plans, drawn from the layout audit and the study-screen design
 discussion. Each is self-contained: goal, reasoning, verified current state with `path:line`
 citations, numbered approach, tests, risks, and an explicit out-of-scope section naming which other
 plan owns what it excludes.
 
 They began as drafts to argue with, several deliberately conditional on decisions that had not been
-made. **All twelve have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9, P10 and P11 —
-and each carries a Findings section recording where the plan was wrong.
+made. **All thirteen have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9, P10, P11
+and P12 — and each carries a Findings section recording where the plan was wrong.
 
 ## Settle these first
 
@@ -36,10 +36,10 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P9](P9-instrument-dock.md) | The instrument dock ✅ **done** | app | P7, P1, P8 |
 | [P10](P10-one-timeline.md) | One timeline: build, reveal, lesson ✅ **done** | app | P6, P7, P9 |
 | [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop ✅ **done** | app | P0, P10, P5 |
+| [P12](P12-refusals-that-speak.md) | Refusals that speak ✅ **done** | engine | P5, P6 |
 
-Two further plans are outlined inside P5 rather than written separately: **P12 — Refusals that
-speak** (restriction rollbacks currently revert silently, which is wrong for a learner) and
-**P13 — `ghost:` authoring shorthand**.
+One further plan is still only an outline inside P5: **P13 — `ghost:` authoring shorthand**. P12 was
+the other, and has been [written out and landed](P12-refusals-that-speak.md).
 
 ## What blocks what
 
@@ -56,8 +56,9 @@ The first chain is complete: the focus + rail screen exists in `apps/web`, built
 promoting a panel is a param change with no remount. **Every plan in every lane has landed** — the
 strip under the stage says what the student just did and what followed, the dock beside it holds the
 controls, the scenarios and the maths, the track under both runs an authored lesson that draws the
-market up curve by curve and brings its other panels in as events, and the lesson ends by asking the
-student to move demand themselves and marking where they put it.
+market up curve by curve and brings its other panels in as events, the lesson ends by asking the
+student to move demand themselves and marking where they put it, and a curve that will not go where
+it is pulled now says why rather than simply stopping.
 
 ## Reading order
 
@@ -76,7 +77,9 @@ student to move demand themselves and marking where they put it.
   the track is a row of its own under the stage. ~~**P11**~~ (done) filled P10's `ask` slot: the app
   grades, the schema declares only the target, and the verdict lives in a row of its own rather than
   in the strip, because P10's arbitration would wipe a prompt off the screen the moment a student
-  moved something to answer it.
+  moved something to answer it. ~~**P12**~~ (done) went back to the strip for the one thing it could
+  not say: why a curve stopped. It entered P10's arbitration at the top without the rule needing a
+  clause — a refusal is the student's own action, in which nothing moved.
 
 ## Findings that cut across the set
 
@@ -107,7 +110,13 @@ student to move demand themselves and marking where they put it.
    'S' }` resolved to siemens and `'E'` to Euler's number; KaTeX threw on them and the label drew
    nothing at all. Two econ objects shipped with an invisible `E`.
 
-   The habit that catches all three: **assert the value, not the shape.**
+   *It fails to parse and reads as **false**.* P12 found the first costume's mirror image. The same
+   returned string, put in a comparison instead of a predicate, is falsy — so a restriction naming
+   something that is not there refuses **every** change to **every** param, permanently, and says
+   nothing. Truthy in a `show`, falsy in a restriction, from one fallback. **The meaning of a failed
+   parse depends on where the value lands, and the author cannot see where it lands.**
+
+   The habit that catches all four: **assert the value, not the shape.**
 
 2. **Author-supplied names already survive** — and were also being *copied*. `GraphObject` fills a
    random name only as a *default* via `setDefaults`, so an author's name reaches the parsed data.
@@ -246,3 +255,20 @@ assuming.
     dock had shipped that way since P9: arrow keys drew no ghost, narrated nothing, and left a
     gesture open. The mouse path was fine, which is why nothing caught it until a plan needed the
     keyboard to be a first-class input.
+
+17. **Before adding a channel, find the message that will go down it in the app you actually have.**
+    P12's outline was a restriction-rollback event, and this repo's app declares no restrictions and
+    cannot honestly declare one — its params' own bounds are its real constraint. The event would
+    have shipped with a payload nobody had ever looked at, which is finding 7 arriving one step
+    earlier: not "an integration point exercised only through a mock", but an integration point with
+    no counterpart at all. What saved it was a comment the app had already written about a different
+    risk — "the study diagram declares no restrictions, so nothing here can trip today; that is luck,
+    not design."
+
+18. **A behaviour reachable only by dragging has no jsdom test, and the substitute is a mock.** The
+    dock's sliders take their ends from the param, so no control in the app can *ask* for a value
+    out of range; only a drag can. And a drag cannot be synthesised in jsdom — `d3.pointer` falls
+    back to `getBoundingClientRect`, jsdom returns zeros, so the pointer never moves and the param
+    is asked for the value it already holds. The proof has to be a browser test, and reaching for a
+    unit test there means asserting the wiring rather than the behaviour. Worth knowing *before*
+    writing the feature, because it decides where the evidence will come from.
