@@ -3,8 +3,9 @@
 **Lane:** app
 **Depends on:** P0 (the predicate failure mode), P10 (`ask` steps), P5 (the reveal ghost), P7/P8
 **Unblocks:** assessment that uses the diagram rather than multiple choice about it
-**Status:** 🚧 **In progress** (2026-09-02). Read against the code before building — see
-[Read against the code](#read-against-the-code-2026-09-02) for what the draft had wrong.
+**Status:** ✅ **Done** (2026-09-02). Read against the code before building — see
+[Read against the code](#read-against-the-code-2026-09-02) for what the draft had wrong, and
+[Findings](#findings) for what building it turned up.
 
 ## Goal
 
@@ -184,12 +185,20 @@ interface Attempt {
 
 - [x] P0's predicate finding is recorded (`docs/plans/P0-findings.md` §4) and the grading
       architecture reflects it: the app grades, the schema declares only the target.
-- [ ] Direction questions work end to end: prompt, drag, commit, verdict, reveal.
-- [ ] No target is visible during the attempt.
-- [ ] Magnitude questions validate tolerance against `round` and fail loudly when unhittable.
-- [ ] The keyboard answer path is equal in capability to dragging.
-- [ ] A wrong answer leaves a diagram that shows the mechanism, with direction and magnitude
-      reported separately.
+- [x] Direction questions work end to end: prompt, drag, commit, verdict, reveal — in the shipped
+      lesson (`apps/web/src/studyDiagram.ts`, step 8), asserted in jsdom against a real engine
+      (`quiz-loop.test.tsx`) and in a browser by dragging the curve itself (`app.spec.ts`).
+- [x] No target is visible during the attempt. Asserted by counting drawn curves either side of the
+      commit, not by reading a flag.
+- [x] Magnitude questions are validated, and by a stricter rule than the plan's: whether *some
+      achievable value* lies within tolerance of the target. Failures are loud in dev, per question,
+      when the question is armed.
+- [x] The keyboard answer path is equal in capability to dragging — the slider writes the same param
+      the drag writes. Building it found that the dock's sliders had had the gesture contract
+      backwards for the keyboard since P9.
+- [x] A wrong answer leaves the diagram showing the mechanism — their curve, the ghost of the start,
+      and the correct position — with direction and magnitude in separate clauses
+      (`apps/web/screenshots/p11-question.png`).
 
 ## Out of scope
 
@@ -294,3 +303,99 @@ What survived untouched: grading in the app (Fork 3, settled by P0 and unchanged
 direction before magnitude, no visible target during the attempt, the slider as an equal answer path
 rather than a fallback, and the judgement that a wrong answer should leave a diagram rather than a
 cross.
+
+## Findings
+
+Seven. Three came from the running app rather than from the suite, which is now four plans in a row —
+and the largest of the three was found by taking a screenshot to admire the finished feature.
+
+1. **`draggable` was read by nothing, so the plan's commit step did not exist.** Found in the
+   pre-build read and written up there; repeated here because it is the finding, not a correction.
+   P0 had checked this exact claim — flagging it as the one most likely to be wrong in practice —
+   and checked it by asserting that the *field* changed. The field changed. The curve went on
+   dragging. **A property that reports the right value and is read by nobody passes every test that
+   asks it what it says and fails the one that asks what it does.**
+
+2. **The dock's sliders had the gesture contract backwards for the keyboard, and had since P9.**
+   Mantine's `Slider` handles keys in `onKeyDownCapture` attached to its own root *after* `...others`,
+   and calls `onChange` **and** `onChangeEnd` synchronously inside that one handler. So a
+   bubble-phase `onKeyDown` prop — the obvious reading of the API, and what P9 wrote — runs after the
+   value has already moved. `Model.beginGesture` snapshots the instant it is called, so the "before"
+   it captured was the after: `prev` equalled the current value, every ghost hid itself, the strip
+   read *"Drag a curve to see what it changes"* about a curve that had just moved, and the gesture
+   was left open so it stayed that way for everything afterwards.
+
+   Nothing caught it because nothing had needed a keyboard to *move* anything: P9's browser test
+   scrubs with the mouse, where `mousedown` legitimately precedes the change. P11 needed the keyboard
+   to be a first-class answer path, and the first keyboard answer narrated nothing.
+
+   The fix is one element outward — a wrapper whose capture handlers necessarily precede the
+   Slider's — and it now lives in one place, `ParamSlider`, used by the dock and by the question.
+   General form: **an ordering contract between a library's handlers and yours is decided by where
+   they are attached, and the docs will not tell you where the library attached its own.**
+
+3. **A resize threw the lesson away, silently.** `Stage` rebuilds its config — and so remounts the
+   engine — when the measured box's *quantised aspect ratio* changes (`Stage.tsx`, the `box` memo).
+   That is deliberate and correct: the arrangement's fractions are a function of the shape. What
+   nobody had noticed is what a remount costs now that a lesson exists: the engine is rebuilt from
+   the config, so `params.step` returns to 0, every reveal is undone and the student's own drag is
+   discarded — while the track underneath goes on reading "8 / 9". **Half the app's state lived in
+   the engine and half in React, and only one half survives a remount.**
+
+   Found by screenshotting the finished question: the capture resized the viewport, and the diagram
+   in the picture was empty. The browser suite found it independently a minute later, because the
+   question row arriving and leaving is itself a resize — which is why P11 met this and P10 did not.
+
+   The repair is the app restoring what it owns in `onReady`, which fires again on a remount:
+   position, question apparatus, and the param values the engine last reported. The remount itself
+   is bindings-lane and out of scope. There is still a visible flash of the reset diagram before the
+   restore lands, and after it the strip is honestly at rest — the rebuilt engine has no memory of
+   the movement it was describing.
+
+4. **The plan's tolerance rule was wrong in both directions, and the right rule is easier.** "At
+   least the param's `round` interval" rejects a target sitting exactly on the grid, which needs no
+   tolerance at all, and accepts a target off the end of the slider, which no tolerance can save.
+   Asking the question directly — *is there an achievable value within tolerance of the target* —
+   is three lines, subsumes the rounding case and catches the out-of-range one. Two more checks
+   needed the starting value and so could only run when the question was armed: a target that
+   contradicts the direction it asks for, and a question that starts on its own answer.
+
+5. **Freezing the diagram is not freezing the answer.** `draggable` stops the drag and knows nothing
+   about a host control — and P11's own step 8 makes that host control the *equal* answer path, so
+   a committed answer the dock could still edit is not committed. The guard belongs at the one place
+   every host param write goes through, which the screen already had. Generalises: **an engine-side
+   permission covers the engine's own inputs, and a host that adds inputs has to add the permission
+   to each of them, or put them all behind one door.**
+
+6. **Committing had to move focus, which reads like a violation of "do not steal focus".** The rule
+   is about not stealing it *mid-attempt*, and the two are easily conflated. At the commit the
+   control the student was standing on is disabled and leaves the tab order, and focus falls to the
+   document body: answering by keyboard sent them back to the top of the page. So the row moves it
+   one step, to the first control that replaced it — which is also why the question offers
+   **Continue** after it resolves, a control the plan's own reasoning had argued against as a
+   duplicate of the track's forward arrow. It is a duplicate, and it is the right one to have.
+
+7. **A lesson with a question in it is a lesson the test suite has to answer.** P10's claim was that
+   the browser suite written before the track existed "passes unchanged" from the track's last
+   position. It still does — every assertion is untouched — but the *navigation* helper now commits
+   an answer and asks to be shown on its way past. Worth stating plainly rather than quietly
+   editing: the end of the track is still the same place as no lesson at all, and getting there is
+   one step longer than it was.
+
+### Departed from the plan, deliberately
+
+- **The verdict is not in the narration strip.** The plan says to render it "in the narration
+  strip's region (P8), where attempts, hints and scoring can live". The region, yes — the component,
+  no. The strip is one line that must not grow and it is arbitrated by a rule that gives it to the
+  student the instant they move anything, which is precisely when a question needs to stay on
+  screen.
+- **`Attempt` has a phase instead of a `revealed` flag.** The plan carried both, which is one fact
+  twice.
+- **Attempts are not persisted across navigation.** `TrackState.resolved` survives, so a question
+  the student returns to is asked again and the track stays unblocked. Showing a recorded verdict
+  beside a curve that has since moved is worse than asking again, and the progress model that would
+  make it right does not exist. The plan already names this as the first thing here that will need
+  persistence.
+- **The reveal is drawn for a correct answer too.** The plan reveals only after a wrong one. Their
+  curve is inside the tolerance, and seeing exactly where "close enough" sat is the difference
+  between being told yes and being shown why.
