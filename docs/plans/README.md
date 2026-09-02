@@ -6,8 +6,8 @@ citations, numbered approach, tests, risks, and an explicit out-of-scope section
 plan owns what it excludes.
 
 They began as drafts to argue with, several deliberately conditional on decisions that had not been
-made. **Ten have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8 and P9 — and each carries a
-Findings section recording where the plan was wrong. The rest are still drafts.
+made. **Eleven have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9 and P10 — and each
+carries a Findings section recording where the plan was wrong. P11 is still a draft.
 
 ## Settle these first
 
@@ -34,7 +34,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P7](P7-stage-composition.md) | Stage composition: focus, rail and promotion ✅ **done** | bindings | P1, P3, P4 |
 | [P8](P8-narration-strip.md) | The narration strip ✅ **done** | app | P6, P5, P7 |
 | [P9](P9-instrument-dock.md) | The instrument dock ✅ **done** | app | P7, P1, P8 |
-| [P10](P10-one-timeline.md) | One timeline: build, reveal, lesson | app | P6, P7, P9 |
+| [P10](P10-one-timeline.md) | One timeline: build, reveal, lesson ✅ **done** | app | P6, P7, P9 |
 | [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop | app | P0, P10, P5 |
 
 Two further plans are outlined inside P5 rather than written separately: **P12 — Refusals that
@@ -54,11 +54,11 @@ Fork 1  →  P3 pass-through layout  →  P7 stage components ✅ →  focus + r
 
 The first chain is complete: the focus + rail screen exists in `apps/web`, built on one engine, and
 promoting a panel is a param change with no remount. **Every engine-lane plan has landed, so has the
-binding-lane one that consumed them, and so have the first two app-lane ones** — the strip under the
-stage says what the student just did and what followed, and the dock beside it holds the controls,
-the scenarios and the maths. That leaves P10 and P11, both app-lane, both rendering inside the same
-stage, and both plugging into the instrument contract P9 defined rather than needing a place made
-for them.
+binding-lane one that consumed them, and so have three of the four app-lane ones** — the strip under
+the stage says what the student just did and what followed, the dock beside it holds the controls,
+the scenarios and the maths, and the track under both runs an authored lesson that draws the market
+up curve by curve and brings its other panels in as events. That leaves **P11**, which fills the
+`ask` slot P10 built for it.
 
 ## Reading order
 
@@ -72,9 +72,10 @@ for them.
   Fork 1 = A cheap.
 - Chasing the product: ~~**P8**~~ is done — `affected` and object titles from P6, somewhere to render
   from P7, and a "before" from P5's snapshot. ~~**P9**~~ (done) took the `getParams()` metadata for
-  its sliders and gave the "why?" affordance somewhere to go. **P10** is next, and registers through
-  P9's instrument contract — but read finding 10 first: it is about to move more than one param at a
-  time, which is the case the engine still handles badly.
+  its sliders and gave the "why?" affordance somewhere to go. ~~**P10**~~ (done) turned P6's declared
+  steps into a scrubbable track and an authored lesson, and did *not* register as a dock instrument —
+  the track is a row of its own under the stage. **P11** is next, and the slot is waiting for it: a
+  step carrying `ask` can be reached and not passed, and nothing else about a question is decided.
 
 ## Findings that cut across the set
 
@@ -121,7 +122,9 @@ for them.
    an ordinary calc over `prev`. General form: **a value the engine computes and does not publish
    will be recomputed, worse, somewhere else.**
 
-4. **Multi-param updates are not atomic, and fail silently.** Found by P0 (§7), owned by no plan.
+4. **Multi-param updates are not atomic, and fail silently.** Found by P0 (§7), owned by no plan,
+   and now shipped around twice — Scenarios (P9) and lesson steps (P10) both send one `update` call
+   and state the exposure rather than resolving it.
    `kg.update({ params: [...] })` applies params one at a time and validates each alone, so a legal
    destination reached through an illegal interim is rejected halfway and rolled back with no
    diagnostic — leaving a state that is neither the start nor the target. Every scenario, lesson step
@@ -193,3 +196,26 @@ Every plan follows the same headings: Goal, Why this shape, Current state, Appro
 API / schema surface, Tests, Risks and unknowns, Done when, Out of scope. Claims about current
 behaviour cite `path:line`. Where a plan could not verify something, it says so rather than
 assuming.
+
+11. **Reading the plan against the code before building it paid twice, and is now the habit.** P9's
+    read caught six things and predicted an integration defect. P10's caught ten, two of which
+    needed *running* rather than reading and were both engine defects: the step param was not marked
+    presentation, so advancing a build-up drew ghosts over an untouched diagram, and a step could
+    not reveal a panel at all — a graph's axes and axis titles are never named, so the plan's own
+    `reveal: [firmPanel]`, and the same example in the schema doc, were both fiction. Neither would
+    have survived a minute of the running app, and neither was visible in the source.
+
+12. **A layout in fractions and furniture in pixels have to meet somewhere.** `arrange` reports
+    fractions so it can be scale-free; the engine places an axis title 40px past the axis. Every
+    arrangement so far kept a rail between the focal panel and the bottom edge, which hid the
+    mismatch. Give one panel the whole stage — which is what a lesson's first step does — and the
+    axis title lands on whatever is underneath. The reserve belongs in neither: it is fixed pixels
+    in the host's CSS, because a fraction that reserves 44px on one screen reserves 90 on another
+    and the label does not grow.
+
+13. **A test can pin a coincidence.** "The focal panel is drawn in full" had been passing since P7
+    by four pixels — 424px against P4's 420px `compact` threshold at the suite's viewport — and a
+    single new row under the stage ended it. The behaviour was not wrong; the margin was. Where a
+    test asserts a *level* that the engine picks from a measured size, it is asserting something
+    about the viewport, and the viewport should be chosen deliberately rather than inherited from a
+    device preset.

@@ -3,9 +3,9 @@
 **Lane:** app
 **Depends on:** P6 (declared step order — **landed**), P7 (the region), P9 (the instrument contract)
 **Unblocks:** authored lessons; the pacing answer to cognitive overload
-**Status:** Draft, read against the code 2026-09-02 before building — see
-[Read against the code](#read-against-the-code-2026-09-02) for what the draft had wrong. The
-sections above it are corrected; the record of what changed is at the bottom.
+**Status:** ✅ **Done** (2026-09-02). Read against the code before building — see
+[Read against the code](#read-against-the-code-2026-09-02) for what the draft had wrong, and
+[Findings](#findings) for what building it turned up.
 
 ## Goal
 
@@ -207,12 +207,20 @@ Everything else is derived: `revealedAt(steps, position)`, `paramsAt(steps, posi
 
 ## Done when
 
-- [ ] Four step kinds are implemented, with the reducer tested including reverse behaviour.
-- [ ] The track renders with typed markers and is keyboard operable.
-- [ ] A revealed panel arrives without a remount, and the arrangement reflows as it does.
-- [ ] Narration arbitration works and lives in one place.
-- [ ] Free exploration is demonstrably "the track at its end", not a separate mode.
-- [ ] One real authored lesson exists end to end, as the proof.
+- [x] Four step kinds are implemented, with the reducer tested including reverse behaviour
+      (`apps/web/src/track/track.ts`, `apps/web/src/__tests__/track.test.ts`).
+- [x] The track renders with typed markers and is keyboard operable — every control is a real
+      `<button>`, so Enter, Space and focus order come free (`apps/web/src/Track.tsx`).
+- [x] A revealed panel arrives without a remount, and the arrangement reflows as it does. Asserted
+      twice: on the mock's construct/destroy counts in `stage.test.tsx`, and on a marked SVG
+      surviving a reveal in `app.spec.ts`.
+- [x] Narration arbitration works and lives in one place — the rule is in `StudyScreen`, the strip
+      renders what it is handed, and the test mounts the whole screen because the edge only exists
+      with a real engine underneath.
+- [x] Free exploration is demonstrably "the track at its end", not a separate mode. The browser
+      suite written before the track existed now runs from the track's last position and passes
+      unchanged.
+- [x] One real authored lesson exists end to end, in `apps/web/src/studyDiagram.ts`.
 
 ## Out of scope
 
@@ -287,3 +295,72 @@ rather than reading, and both were in the engine.
 What survived untouched: the reveal/param asymmetry on scrub-back (step 7), free exploration as the
 track's last position, `ask` as a slot P11 fills, and the judgement that inline steps are a
 deliberate stopgap rather than a design.
+
+## Findings
+
+Six. Three came from the running app rather than from the suite, which is now three plans in a row.
+
+1. **The stage gave the axis title no room, and nobody had noticed because the focal panel had
+   never been alone on it.** A graph's axis title is placed by a fixed pixel offset — 40px past the
+   axis — while the arrangement's own padding is a *fraction* of the canvas, about 14px at this
+   size. Every arrangement so far put a rail or a filmstrip between the focal panel and the bottom
+   edge, which absorbed the difference. A lesson that starts with one panel gives that panel the
+   whole stage, and "Q" landed on the narration line underneath it.
+
+   The reserve is fixed pixels in the app's CSS, because the thing being made room for is fixed
+   pixels: a fraction that reserves 44px on this stage reserves 90 on a large one, and the label
+   does not grow. General form: **a layout in fractions and furniture in pixels have to meet
+   somewhere, and the meeting place is not inside either of them.**
+
+2. **The focal panel was four pixels from a threshold, and a new row crossed it.** At the browser
+   suite's 1280×720 the focal panel came out 424px across, against P4's 420px `compact` cut-off. So
+   `LABELS_PER_PANEL = 6` — "the focal panel is drawn in full and the rail panels as indicators" —
+   had been passing by four pixels since P7, and P10's track row was enough to end it. The suite now
+   runs at 1440×900 and says why in the config. The compact behaviour at a smaller viewport is the
+   design working; what was wrong was a test pinning a coincidence.
+
+3. **A lesson that ends mid-demonstration is not a place free exploration can live.** The claim
+   "free exploration is the track at its last position" is structural, and the tests are numerical:
+   every one of them knows the market clears at Q\*=9, P\*=11 because the config says `a = 20`.
+   Ending the lesson on a demand shock left the track's last position at `a = 26`, so the tests were
+   right about the config and wrong about the screen. A closing step hands the market back — which
+   is a better lesson ending anyway ("now move demand yourself") and makes the claim exact rather
+   than nearly true. **A structural claim with a numerical suite behind it is only as true as the
+   numbers.**
+
+4. **Advancing a step lit every ghost in the diagram, and a probe found it in a minute.** The step
+   param was not marked `presentation`, and `prev.changed` — which gates every ghost an author draws
+   — counts every non-presentation param that differs from the snapshot. So a step that revealed a
+   curve also drew the dashed ghost of a curve nobody had touched. The density param carries the
+   flag for exactly this reason; steps did not, because nothing had yet advanced a step on a diagram
+   with ghosts in it. This is the plans README's finding 6 again — **the declaration is not the
+   behaviour; run it** — and it took one mounted diagram and one `update` call.
+
+5. **Scrubbing back needs its own snapshot, and the plan did not say so.** The forward case was
+   written down and is the bug P9 shipped. The backward case is the mirror and nobody had thought
+   about it: going back deliberately leaves the params alone, so without re-basing `prev` the ghost
+   and the delta chip go on describing a shift the lesson has scrubbed away from — a panel reading
+   "+3.0" three steps after anything moved. A forward *reveal* must not re-base, because the ghost
+   of the step before it is usually what the new step is talking about. Three cases, three answers,
+   and only one of them was in the plan.
+
+6. **`track/track.ts` beside `track/Track.tsx` does not build on a Mac.** The component's
+   `import … from './track'` resolved to the component itself on a case-insensitive filesystem, and
+   the symptom is React's "element type is invalid: got undefined" with nothing pointing at the
+   cause. The component now sits at `src/Track.tsx` beside `NarrationStrip.tsx`, with its pure
+   module under `src/track/`, which is the layout `narration/` already used. Worth knowing because
+   it costs ten minutes and reads like a broken export.
+
+### Departed from the plan, deliberately
+
+- **The arrangement reflows.** P7 step 7 recommended pre-declaring every panel and revealing them
+  with `show`, and the pre-build read found that necessary and insufficient: alone it reserves the
+  absent panels' slots from the first frame and floats a promote button over each empty square. So
+  `toCustomLayout` compiles a rect for every prefix count as well as every focus and mode. That is
+  bindings-lane work this app-lane plan did not budget for, and it is what makes a reveal read as an
+  arrival rather than as a square filling in.
+- **No `ask` step in the shipped lesson.** The mechanism is built and unit-tested — a step with
+  `ask` can be reached and not passed — but P11 owns what a question *is*, and an unanswerable one
+  in the authored lesson would be a lesson nobody can finish.
+- **No Build instrument.** The plan's own step 8 said to decide after the track exists and not to
+  build two. The track is the control.
