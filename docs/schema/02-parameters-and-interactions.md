@@ -65,15 +65,33 @@ A schema can define an array of `restrictions` that prevent user interaction fro
 ```typescript
 interface RestrictionDefinition {
     expression: string;
-    type: string;
     min?: string;
     max?: string;
+    name?: string;      // a stable id for this rule
+    message?: string;   // what a student should read when it refuses their move
+    type?: string;      // accepted, and read by nothing
 }
 ```
 
-For example, if you have a budget line where `Px * X + Py * Y = M`, you might want to enforce that `Px > 0` and `Py > 0`. You would define an expression for `Px` with a min of `0.001`. 
+For example, if you have a budget line where `Px * X + Py * Y = M`, you might want to enforce that `Px > 0` and `Py > 0`. You would define an expression for `Px` with a min of `0.001`.
 
-When a user interacts with a parameter (like dragging a point bound to `Px`), the Equilibria engine predictively evaluates the new mathematical state. If the new `Px` value drops below `0.001`—or if the interaction violates any other mathematical properties defined in the `expression` operators—the engine will silently cancel the update and roll back the parameter to the last known valid state.
+When a user interacts with a parameter (like dragging a point bound to `Px`), the Equilibria engine predictively evaluates the new mathematical state. If the new `Px` value drops below `0.001`, the engine cancels the update and rolls the parameter back to the last known valid state.
+
+**The rollback is not silent.** It emits [`kg:param_blocked`](../interactivity.md#a-move-the-diagram-will-not-make), carrying every rule that objected, what its expression came to, and the bounds it had to clear. Write a `message` and that is the sentence a host can put in front of the student; without one the most an app can honestly say is "that isn't allowed", which is barely better than the silence.
+
+```yaml
+restrictions:
+  - name: positive-price
+    expression: params.Px
+    min: 0.001
+    message: A price cannot fall to zero — nothing would be given up for the good.
+```
+
+**Two ways to write one, and one way to break it.**
+
+A restriction with `min` and/or `max` tests its expression as a *value*. A restriction with neither reads its expression as a *condition* — `expression: params.Px > 0` — which must hold. (Before this was implemented, a bound-less restriction narrowed nothing and permitted everything; if you have one that never seemed to fire, that is why, and it will now start firing.)
+
+An expression that does not resolve — a name that is not there — is the failure mode to watch. The model returns an unparseable expression as its own source text and a missing property as `undefined`, and both compare `false` against every bound, so **a typo in a restriction refuses every change to every param, permanently.** It is the mirror image of the same fallback in a `show` predicate, where an unparseable expression is a non-empty string and therefore reads as *true*. The engine warns once, naming the restriction, and reports it as `unresolved` in the event.
 
 ## Remembering the Previous State (`prev`)
 

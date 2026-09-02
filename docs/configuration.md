@@ -80,18 +80,33 @@ Restrictions are conditional guards that prevent invalid operations or state com
 
 | Property | Type | Description |
 |-----------|------|-------------|
-| `expression`| string | A math string evaluating to a boolean (`>`, `<`, `==`, `!=`) or a raw value tested against explicit bounds. |
+| `expression`| string | A math string. With `min`/`max` it is a value tested against them; with neither, it is read as a condition (`>`, `<`, `==`, `!=`) that must hold. |
 | `min`| string/number | Optional. Explicit lower limit that the evaluated `expression` must be greater than or equal to. |
 | `max`| string/number | Optional. Explicit upper limit that the evaluated `expression` must be less than or equal to. |
+| `name`| string | Optional. A stable id, so a host can key coaching or analytics off *which* rule was broken. |
+| `message`| string | Optional. The sentence a student should read when this rule refuses their move. |
+| `type`| string | Accepted and unread. It has never been consulted; keep it if you have it, do not add it. |
 
-The engine implements predictive state-rollback for restrictions. When a user begins dragging a parameter, the engine evaluates the hypothetical new state against all specified minimums, maximums, and boolean operators. If the new state resolves as invalid, the engine silently cancels the view update and restores the original mathematical values.
+The engine implements predictive state-rollback for restrictions. When a user begins dragging a parameter, the engine evaluates the hypothetical new state against all specified minimums, maximums, and boolean operators. If the new state resolves as invalid, the engine cancels the view update, restores the original mathematical values, and emits [`kg:param_blocked`](./interactivity.md#a-move-the-diagram-will-not-make) naming the rules that objected — the rollback is not silent.
 
 **Example**:
 ```json
 "restrictions": [
-  { "type": "domain", "expression": "price > marginalCost" }
+  {
+    "name": "price-covers-cost",
+    "expression": "price > marginalCost",
+    "message": "Below marginal cost, a seller would rather not produce at all."
+  }
 ]
 ```
+
+> [!WARNING]
+> **A restriction whose expression does not resolve refuses everything.** An
+> unparseable expression comes back from the model as its own source text, and a
+> missing name comes back as `undefined`; both compare `false` against any bound,
+> so one typo welds the diagram shut rather than loosening it. The engine warns
+> once, naming the restriction, and says so in the `kg:param_blocked` payload —
+> but a restriction is only as good as the names in it.
 
 ## 6. Layout (`layout`)
 

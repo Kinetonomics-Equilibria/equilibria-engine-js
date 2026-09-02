@@ -8,14 +8,15 @@ The `KineticGraph` class extends `EventEmitter3`. This gives the host applicatio
 
 > [!TIP]
 > **In this repo:** the internal React bindings ([`packages/react`](../packages/react))
-> re-export `KG_EVENTS` and provide callback props (`onParamChanged`, `onCurveDragged`,
-> `onNodeHover`), so app code does not subscribe manually.
+> re-export `KG_EVENTS` and provide callback props (`onParamChanged`, `onParamBlocked`,
+> `onCurveDragged`, `onNodeHover`), so app code does not subscribe manually.
 
 The engine exposes a `KG_EVENTS` object with the following event keys:
 
 | Event Key | Event Name | Fired when |
 |-----------|------------|------------|
 | `KG_EVENTS.PARAM_CHANGED` | `'kg:param_changed'` | A param change is **accepted** — from a drag, a click, or `update()`. A change a restriction rejects does not fire. |
+| `KG_EVENTS.PARAM_BLOCKED` | `'kg:param_blocked'` | A change the diagram **would not make** — the value was outside the param's own range, or a restriction refused the state it implied. Once per cause, not per drag tick. |
 | `KG_EVENTS.CURVE_DRAGGED` | `'kg:curve_dragged'` | A drag on an object starts moving and when it ends. `dragging` says which. |
 | `KG_EVENTS.NODE_HOVER` | `'kg:node_hover'` | The pointer enters or leaves an interactive object. `hovering` says which. Only draggable and clickable objects receive pointer events at all. |
 
@@ -89,6 +90,55 @@ and a sentence written from `affected` always describe the same event. See
 
 Nothing is measured when nothing is listening: with no `kg:param_changed`
 subscriber the engine skips the comparison entirely.
+
+### A move the diagram will not make
+
+Two mechanisms stop a param moving and, from the student's side, they are the
+same thing: the curve stops. Neither said anything before this event existed,
+and the quieter of the two is the commoner one — a drag past the end of a param's
+range clamps and reports an ordinary `kg:param_changed`, so the host is told the
+curve *moved*, and every further push reports nothing at all.
+
+```js
+kg.on(KG_EVENTS.PARAM_BLOCKED, (e) => {
+    if (e.reason === 'bounds') {
+        say(`${e.label} will not go above ${e.max}.`);
+    } else {
+        say(e.restrictions.map(r => r.message).filter(Boolean).join(' '));
+    }
+});
+```
+
+| Field | Meaning |
+|---|---|
+| `name`, `label` | The param, and what the author called it. |
+| `reason` | `'bounds'` — outside the param's `min`/`max`. `'restriction'` — a rule the author declared. |
+| `requestedValue` | What was asked for, before clamping or rounding. |
+| `attemptedValue` | The value actually tried, after the clamp and the round. |
+| `value` | Where the param stands now: the clamped end, or the value it reverted to. |
+| `min`, `max` | The param's own range. |
+| `limit` | `'min'` or `'max'` — on a `'bounds'` refusal, which end was hit. |
+| `restrictions` | On a `'restriction'` refusal, every rule that objected; `[]` otherwise. |
+
+Each entry in `restrictions` carries the author's `name` and `message`, the
+`expression` verbatim, the `value` it evaluated to, the `min`/`max` it had to
+clear, and — if it did not resolve to a number at all — `unresolved`.
+
+**`unresolved` is not the student's fault, and copy should not treat it as one.**
+An expression naming something that is not there comes back as its own source
+text, or as `undefined`, and both compare `false` against any bound — so one typo
+in a restriction refuses every change to every param, permanently. The engine
+also warns about it once, in the console, where the author will see it.
+
+**Once per cause, not per tick.** A pointer dragged along a boundary asks for a
+new out-of-range value on every move, all with the same cause; the engine
+announces the first and then stays quiet until that param moves somewhere it
+will go, or until the cause changes. Nothing has to be debounced downstream.
+
+**Rounding is not a refusal.** Asking for `20.04` of a param that moves in tenths
+is asking for `20.0`, and no event is emitted.
+
+**Nothing is emitted when nothing is listening**, matching `kg:param_changed`.
 
 ### Error Handling
 

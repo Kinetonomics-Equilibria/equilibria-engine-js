@@ -22,6 +22,7 @@ Whenever an interaction changes a Param's value, the Model performs a fast updat
 2. It validates the new mathematical properties against all active Restrictions. 
 3. If strictly valid, it completes the broadcast update to the View; if invalid, it rolls the underlying param back to its previous legal state.
 4. For valid updates, View objects redraw their coordinates, math text, and SVGs smoothly.
+5. Either way, a refusal is reported: a rollback, or a request clamped to the end of a param's own range, reaches the host as [`kg:param_blocked`](./interactivity.md#a-move-the-diagram-will-not-make) naming what said no. A curve that stops dead with no reason given is indistinguishable from a broken diagram.
 
 ## 2. View: The Rendering Layer
 

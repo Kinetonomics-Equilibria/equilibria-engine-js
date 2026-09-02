@@ -162,7 +162,7 @@ npm install equilibria-react equilibria-engine-js
 - `<EquilibriaCard />` — Styled card with title, description, loading skeleton, error handling
 - `useEquilibria(config, options?, eventCallbacks?)` — Full-control hook returning `containerRef`, `instance`, `isReady`, `error`, `retry`, and `updateParams`
 - `KG_EVENTS` — Re-exported from the engine for convenience
-- Event callback props: `onParamChanged`, `onCurveDragged`, `onNodeHover`
+- Event callback props: `onParamChanged`, `onParamBlocked`, `onCurveDragged`, `onNodeHover`
 - `updateParams([{ name, value }])` — Programmatically set parameter values from external UI
 
 **Critical:** Config objects must be wrapped in `React.useMemo()` to avoid unnecessary engine remounting on every parent render.
