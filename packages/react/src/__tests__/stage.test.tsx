@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 // looks like a tidy-up and is not.
 import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { Stage } from '../Stage';
-import { FOCUS_PARAM, MODE_PARAM, MODE_VALUE } from '../arrangement';
+import { FOCUS_PARAM, MODE_PARAM, MODE_VALUE, REVEALED_PARAM } from '../arrangement';
 import { engineControl, resetEngineMock, latestInstance } from './engineMock';
 
 vi.mock('equilibria-engine-js', async () => {
@@ -124,7 +124,7 @@ describe('what the stage hands the engine', () => {
     it('declares the params the expressions read, alongside the author\'s', () => {
         render(<Stage config={config()} focused="market" />);
         const names = (latestInstance().config as any).params.map((p: any) => p.name);
-        expect(names).toEqual(['price', FOCUS_PARAM, MODE_PARAM]);
+        expect(names).toEqual(['price', FOCUS_PARAM, MODE_PARAM, REVEALED_PARAM]);
     });
 
     it('does not mutate the config it was given', () => {
@@ -300,6 +300,88 @@ describe('promotion does not rebuild the diagram', () => {
 
         expect(engineControl.instances).toHaveLength(2);
         expect(paramUpdates()).toContainEqual({ name: FOCUS_PARAM, value: 2 });
+    });
+});
+
+/**
+ * A panel arriving mid-lesson (P10).
+ *
+ * Two claims, and the second is the one that took work: the panels that have
+ * not arrived neither hold space nor offer a control, and getting them out of
+ * the way costs a param rather than a rebuild.
+ */
+describe('a staged reveal', () => {
+
+    it('arranges only the panels that have arrived', () => {
+        const { container } = render(
+            <Stage config={config()} focused="market" revealed={['market']}
+                renderChrome={p => <span>{p.key}</span>} />
+        );
+
+        // One panel, so it gets the whole stage rather than a focal square with
+        // a rail of empty slots beside it.
+        const focal = boxOf(chromeFor(container, 'market'));
+        expect(focal.width).toBeGreaterThan(600);
+    });
+
+    // A promote button over a blank square is worse than no button: it is
+    // focusable, it is named after a panel the student has not met, and
+    // pressing it promotes nothing.
+    it('renders no chrome and no control for a panel that has not arrived', () => {
+        const { container } = render(
+            <Stage config={config()} focused="market" revealed={['market', 'firm']}
+                renderChrome={p => <span>{p.key}</span>} />
+        );
+
+        expect(chromeFor(container, 'firm')).toBeTruthy();
+        expect(chromeFor(container, 'cost')).toBeNull();
+        expect(container.querySelectorAll('button')).toHaveLength(1);
+    });
+
+    it('reveals by changing a param, not by rebuilding', () => {
+        const cfg = config();
+        const { rerender } = render(<Stage config={cfg} focused="market" revealed={['market']} />);
+        const engine = latestInstance();
+        engine.updates.length = 0;
+
+        rerender(<Stage config={cfg} focused="market" revealed={['market', 'firm']} />);
+
+        expect(engineControl.instances).toHaveLength(1);
+        expect(engine.destroyed).toBe(false);
+        expect(paramUpdates()).toEqual([{ name: REVEALED_PARAM, value: 2 }]);
+    });
+
+    it('says every panel has arrived when the app does not mention it', () => {
+        render(<Stage config={config()} focused="market" />);
+        expect(paramUpdates()).toContainEqual({ name: REVEALED_PARAM, value: KEYS.length });
+    });
+
+    // The focal key may be a panel the lesson has not reached — an app that
+    // leaves `focused` alone while stepping back through a build-up. `arrange`
+    // resolves that to the first panel that has arrived, and the chrome has to
+    // read the same answer or two panels claim the same square.
+    it('falls back to an arrived panel when the focal one has not arrived', () => {
+        const focal = new Set<string>();
+        render(
+            <Stage config={config()} focused="cost" revealed={['market']}
+                renderChrome={p => { if (p.focused) focal.add(p.key); return null }} />
+        );
+        expect([...focal]).toEqual(['market']);
+    });
+
+    // Panels arrive in declared order, because one count is the whole state.
+    // A set with a gap has to resolve to something, and resolving it silently
+    // is how the chrome and the diagram come to disagree.
+    it('warns and fills the gap when panels are revealed out of order', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => { });
+        const { container } = render(
+            <Stage config={config()} focused="market" revealed={['market', 'cost']}
+                renderChrome={p => <span>{p.key}</span>} />
+        );
+
+        expect(warn.mock.calls.some(c => String(c[0]).includes('arrive in the order'))).toBe(true);
+        expect(chromeFor(container, 'firm')).toBeTruthy();
+        warn.mockRestore();
     });
 });
 

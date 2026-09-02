@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-    arrange, toCustomLayout, pixelBox,
-    FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE
+    arrange, toCustomLayout, pixelBox, revealedCount,
+    FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
 } from '../arrangement';
 
 /**
@@ -206,9 +206,17 @@ describe('every arrangement compiles into one layout', () => {
 
     const layout = toCustomLayout({ ...STAGE, panels: KEYS });
 
-    it('declares the two params the expressions read', () => {
-        expect(layout.params.map(p => p.name)).toEqual([FOCUS_PARAM, MODE_PARAM]);
+    it('declares the three params the expressions read', () => {
+        expect(layout.params.map(p => p.name)).toEqual([FOCUS_PARAM, MODE_PARAM, REVEALED_PARAM]);
         expect(layout.params[0].max).toBe(KEYS.length - 1);
+    });
+
+    // So a host that never mentions reveal gets the arrangement it always got.
+    it('starts with every panel arrived', () => {
+        const arrived = layout.params.filter(p => p.name === REVEALED_PARAM)[0];
+        expect(arrived.value).toBe(KEYS.length);
+        expect(arrived.min).toBe(1);
+        expect(arrived.max).toBe(KEYS.length);
     });
 
     it('declares them as presentation, so a promotion is not a student action', () => {
@@ -240,30 +248,88 @@ describe('every arrangement compiles into one layout', () => {
      * with a scope rather than by string comparison.
      */
     const evaluate = (expr: string, scope: { [k: string]: number }) => {
-        const body = expr.replace(new RegExp(`params\\.(${FOCUS_PARAM}|${MODE_PARAM})`, 'g'), 's.$1');
+        const body = expr.replace(
+            new RegExp(`params\\.(${FOCUS_PARAM}|${MODE_PARAM}|${REVEALED_PARAM})`, 'g'), 's.$1');
         // eslint-disable-next-line no-new-func
         return Function('s', `return ${body}`)(scope) as number;
     };
 
     it('resolves to exactly what arrange() computed, in every state', () => {
-        (['focus', 'grid'] as const).forEach(function (mode) {
-            KEYS.forEach(function (focused, focusIndex) {
-                const expected = arrange({ ...STAGE, panels: KEYS, focused: focused, mode: mode });
-                const scope = { [FOCUS_PARAM]: focusIndex, [MODE_PARAM]: MODE_VALUE[mode] };
+        KEYS.forEach(function (_, i) {
+            const arrived = i + 1;
+            (['focus', 'grid'] as const).forEach(function (mode) {
+                KEYS.forEach(function (focused, focusIndex) {
+                    const expected = arrange({
+                        ...STAGE, panels: KEYS.slice(0, arrived), focused: focused, mode: mode
+                    });
+                    const scope = {
+                        [FOCUS_PARAM]: focusIndex,
+                        [MODE_PARAM]: MODE_VALUE[mode],
+                        [REVEALED_PARAM]: arrived
+                    };
 
-                layout.panels.forEach(function (p) {
-                    const want = expected.panels.filter(e => e.key === p.key)[0];
-                    (['x', 'y', 'width', 'height'] as const).forEach(function (prop) {
-                        expect(evaluate(p[prop], scope)).toBeCloseTo(want[prop], 5);
+                    expected.panels.forEach(function (want) {
+                        const p = layout.panels.filter(e => e.key === want.key)[0];
+                        (['x', 'y', 'width', 'height'] as const).forEach(function (prop) {
+                            expect(evaluate(p[prop], scope)).toBeCloseTo(want[prop], 5);
+                        });
                     });
                 });
             });
         });
     });
 
-    it('does not test the mode when there is only one panel to place', () => {
+    /**
+     * A panel the lesson has not reached is parked on the focal panel's box.
+     *
+     * Where it sits is arbitrary — everything in it is hidden by the step that
+     * will reveal it — but *which* arbitrary answer matters. A zero-extent rect
+     * collapses the panel's scales, and a box outside the canvas is drawn
+     * outside the canvas, since the engine's svg is `overflow: visible`.
+     */
+    it('parks a panel that has not arrived on the focal box', () => {
+        const scope = { [FOCUS_PARAM]: 0, [MODE_PARAM]: MODE_VALUE.focus, [REVEALED_PARAM]: 2 };
+        const boxAt = (key: string) => (['x', 'y', 'width', 'height'] as const)
+            .map(prop => evaluate(layout.panels.filter(p => p.key === key)[0][prop], scope));
+
+        expect(boxAt('cost')).toEqual(boxAt('market'));
+        expect(boxAt('welfare')).toEqual(boxAt('market'));
+        expect(boxAt('firm')).not.toEqual(boxAt('market'));
+    });
+
+    // Three params index these expressions and most rects do not vary with all
+    // three. Emitting the ternary anyway triples the length of something mathjs
+    // re-evaluates on every param change, which is the drag path.
+    it('does not test a param the answer does not depend on', () => {
         const one = toCustomLayout({ ...STAGE, panels: ['only'] });
         expect(one.panels[0].x).not.toContain('?');
+    });
+
+});
+
+/**
+ * How many panels have arrived, from the set a host says are revealed.
+ *
+ * A count rather than a set because the compiled expressions index prefixes.
+ * A set with a gap has to resolve to something; this is where that is decided,
+ * so the chrome and the diagram cannot decide it differently.
+ */
+describe('revealedCount', () => {
+
+    it('is every panel when the host says nothing', () => {
+        expect(revealedCount(KEYS)).toBe(KEYS.length);
+    });
+
+    it('counts a prefix', () => {
+        expect(revealedCount(KEYS, ['market', 'firm'])).toBe(2);
+    });
+
+    it('counts to the last revealed panel, gaps included', () => {
+        expect(revealedCount(KEYS, ['market', 'cost'])).toBe(3);
+    });
+
+    it('never falls below one, so a stage always has something to place', () => {
+        expect(revealedCount(KEYS, [])).toBe(1);
     });
 });
 

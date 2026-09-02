@@ -34,9 +34,11 @@ describe('public API', () => {
             'KG_EVENTS',
             'MODE_PARAM',
             'MODE_VALUE',
+            'REVEALED_PARAM',
             'Stage',
             'arrange',
             'pixelBox',
+            'revealedCount',
             'toCustomLayout',
             'useEquilibria'
         ]);

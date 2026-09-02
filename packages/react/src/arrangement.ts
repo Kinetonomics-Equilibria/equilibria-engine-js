@@ -230,6 +230,22 @@ export const FOCUS_PARAM = 'stageFocus';
 /** The param that says which mode the stage is in: 0 focus, 1 grid. */
 export const MODE_PARAM = 'stageMode';
 
+/**
+ * The param that says how many panels have arrived, counted from the front of
+ * the declared order.
+ *
+ * A lesson brings panels in one at a time (P10), and the arrangement has to
+ * answer differently for two panels than for four — a rail of blank squares
+ * reserving space for panels the student has not met is exactly the "four charts
+ * at once" problem in a politer costume. So the count joins focus and mode as a
+ * thing every rect is an expression of, for the same reason and at the same
+ * cost: a reveal moves panels without rebuilding the diagram.
+ *
+ * Panels arrive in declared order. That is what lets one number carry the state:
+ * the alternative is a set, and a set means compiling every subset.
+ */
+export const REVEALED_PARAM = 'stageRevealed';
+
 export const MODE_VALUE: { [m in StageMode]: number } = { focus: 0, grid: 1 };
 
 /** A panel def for `CustomLayout`, whose rect is an expression rather than a number. */
@@ -254,6 +270,25 @@ export interface StageLayout {
 
 /** `a == b ? t : f`, with both branches already parenthesised by their caller. */
 const ternary = (test: string, t: string, f: string) => `(${test} ? ${t} : ${f})`;
+
+/**
+ * A chain of tests over one fallthrough, collapsed when it decides nothing.
+ *
+ * Three params now index the rect expressions, and most rects do not depend on
+ * all three: a single-panel stage has no mode to test, and a panel's box under
+ * `grid` is the same whichever panel is focal. Emitting the ternary anyway would
+ * triple the length of an expression that mathjs re-evaluates on every param
+ * change, which is the drag path. So a level that gives one answer emits one
+ * answer.
+ */
+function chain(cases: { test: string; value: string }[], fallback: string): string {
+    if (cases.every(c => c.value === fallback)) return fallback;
+    let expr = fallback;
+    for (let i = cases.length - 1; i >= 0; i--) {
+        expr = ternary(cases[i].test, cases[i].value, expr);
+    }
+    return expr;
+}
 
 const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6);
 
@@ -283,36 +318,75 @@ const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6);
  */
 export function toCustomLayout(input: ArrangeInput): StageLayout {
     const keys = input.panels || [],
-        modes: StageMode[] = ['focus', 'grid'];
+        modes: StageMode[] = ['focus', 'grid'],
+        counts = keys.map((_, i) => i + 1);
 
-    // Every arrangement, indexed [mode][focusIndex]. The focus index is
+    // Every arrangement, indexed [count][mode][focusIndex]. The focus index is
     // irrelevant in grid mode, so that row is computed once.
-    const byMode: { [m: string]: Arrangement[] } = {};
-    modes.forEach(function (mode) {
-        byMode[mode] = (mode === 'grid' ? [keys[0]] : keys).map(focused =>
-            arrange({ ...input, mode: mode, focused: focused }));
+    const byCount: { [count: number]: { [m: string]: Arrangement[] } } = {};
+    counts.forEach(function (count) {
+        const arrived = keys.slice(0, count);
+        const byMode: { [m: string]: Arrangement[] } = {};
+        modes.forEach(function (mode) {
+            byMode[mode] = (mode === 'grid' ? [arrived[0]] : keys).map(focused =>
+                arrange({ ...input, panels: arrived, mode: mode, focused: focused }));
+        });
+        byCount[count] = byMode;
     });
 
     const component = function (key: string, prop: 'x' | 'y' | 'width' | 'height'): string {
-        const at = (mode: StageMode, focusIndex: number) => {
-            const a = byMode[mode][mode === 'grid' ? 0 : focusIndex];
-            const panel = a.panels.filter(p => p.key === key)[0];
+
+        /**
+         * One number, for one state of the three params.
+         *
+         * A panel that has not arrived yet is given the focal panel's box rather
+         * than a rect of its own. It draws nothing — everything in it is hidden
+         * by the step that will reveal it — so where it sits is arbitrary, and
+         * every arbitrary choice except this one is worse: a zero-extent rect
+         * collapses its scales, and a box outside the canvas is drawn outside
+         * the canvas, because the engine's svg is deliberately `overflow:
+         * visible`. Parking it under the focal panel keeps every scale sane and
+         * every fraction inside 0–1.
+         */
+        const at = (count: number, mode: StageMode, focusIndex: number) => {
+            const a = byCount[count][mode][mode === 'grid' ? 0 : focusIndex];
+            const panel = a.panels.filter(p => p.key === key)[0]
+                || a.panels.filter(p => p.key === a.focused)[0];
             return round6(panel ? panel[prop] : 0);
         };
 
-        // Innermost first: the focus chain, read right to left so the last key
-        // is the fallthrough rather than a redundant test.
-        let focusExpr = at('focus', keys.length - 1);
-        for (let i = keys.length - 2; i >= 0; i--) {
-            focusExpr = ternary(`params.${FOCUS_PARAM} == ${i}`, at('focus', i), focusExpr);
-        }
+        // Innermost first: the focus chain, with the last key as the
+        // fallthrough rather than a redundant test. Then the mode, then how many
+        // panels have arrived.
+        const forCount = function (count: number): string {
+            const focusExpr = chain(
+                keys.slice(0, -1).map((_, i) => ({
+                    test: `params.${FOCUS_PARAM} == ${i}`,
+                    value: at(count, 'focus', i)
+                })),
+                at(count, 'focus', Math.max(0, keys.length - 1))
+            );
+            return chain(
+                [{ test: `params.${MODE_PARAM} == ${MODE_VALUE.grid}`, value: at(count, 'grid', 0) }],
+                focusExpr
+            );
+        };
 
-        if (keys.length < 2) return focusExpr;
-        return ternary(`params.${MODE_PARAM} == ${MODE_VALUE.grid}`, at('grid', 0), focusExpr);
+        if (keys.length === 0) return '0';
+
+        return chain(
+            counts.slice(0, -1).map(count => ({
+                test: `params.${REVEALED_PARAM} == ${count}`,
+                value: forCount(count)
+            })),
+            forCount(keys.length)
+        );
     };
 
+    const full = byCount[keys.length];
+
     return {
-        aspectRatio: byMode.focus[0] ? byMode.focus[0].aspectRatio : 1,
+        aspectRatio: full && full.focus[0] ? full.focus[0].aspectRatio : 1,
         panels: keys.map(key => ({
             key: key,
             x: component(key, 'x'),
@@ -322,14 +396,38 @@ export function toCustomLayout(input: ArrangeInput): StageLayout {
             density: 'auto'
         })),
         // Declared as presentation params, and it matters: `prev.changed` gates
-        // every ghost an author draws, and promoting a panel is not the student
-        // moving anything. Without the flag, clicking a rail panel would put a
-        // ghost and a shift arrow over a diagram nobody had touched.
+        // every ghost an author draws, and promoting a panel — or revealing
+        // one — is not the student moving anything. Without the flag, clicking a
+        // rail panel would put a ghost and a shift arrow over a diagram nobody
+        // had touched.
+        //
+        // `REVEALED_PARAM` starts at every panel, so a host that never mentions
+        // reveal gets exactly the arrangement it got before this existed.
         params: [
             { name: FOCUS_PARAM, value: 0, min: 0, max: Math.max(0, keys.length - 1), round: 1, presentation: true },
-            { name: MODE_PARAM, value: MODE_VALUE.focus, min: 0, max: 1, round: 1, presentation: true }
+            { name: MODE_PARAM, value: MODE_VALUE.focus, min: 0, max: 1, round: 1, presentation: true },
+            {
+                name: REVEALED_PARAM, value: Math.max(1, keys.length),
+                min: 1, max: Math.max(1, keys.length), round: 1, presentation: true
+            }
         ]
     };
+}
+
+/**
+ * How many panels have arrived, from the keys a host says are revealed.
+ *
+ * The count is one past the *last* revealed panel in declared order, not the
+ * size of the set: the compiled expressions index prefixes, so a set that skips
+ * one has to resolve to something, and treating the gap as arrived keeps the
+ * chrome and the diagram agreeing. `Stage` warns when it happens; this function
+ * is what makes the two halves agree while it does.
+ */
+export function revealedCount(keys: string[], revealed?: string[]): number {
+    if (!revealed) return Math.max(1, keys.length);
+    let count = 0;
+    keys.forEach(function (key, i) { if (revealed.indexOf(key) > -1) count = i + 1 });
+    return Math.max(1, count);
 }
 
 /**

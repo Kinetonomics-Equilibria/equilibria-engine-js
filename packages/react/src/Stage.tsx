@@ -5,8 +5,8 @@ import type { KineticGraph, KineticGraphOptions } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { UseEquilibriaEventCallbacks } from './useEquilibria';
 import {
-    arrange, pixelBox, toCustomLayout,
-    FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE
+    arrange, pixelBox, revealedCount, toCustomLayout,
+    FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
 } from './arrangement';
 import type { Arrangement, StageMode } from './arrangement';
 
@@ -50,6 +50,25 @@ export interface StageProps extends UseEquilibriaEventCallbacks {
 
     /** Which panel is focal. Defaults to the first the config declares. */
     focused?: string;
+
+    /**
+     * Which panels have arrived. Every panel the config declares, by default.
+     *
+     * A staged reveal (P10) is a claim about *arrangement*, not only about what
+     * is drawn: a rail holding blank squares for panels the student has not met
+     * reserves the space it was supposed to save. So the panels named here are
+     * the ones the stage arranges and the only ones it puts chrome over, and the
+     * rest are parked under the focal panel where the diagram's own `show`
+     * predicates keep them invisible.
+     *
+     * Hiding their *contents* is the config's business, not the stage's — a
+     * step's `reveal` does it. This is the half the stage owns.
+     *
+     * **Panels arrive in declared order.** The compiled layout indexes prefixes,
+     * so a set with a gap in it is resolved by treating the gap as arrived, and
+     * warned about.
+     */
+    revealed?: string[];
 
     /** `focus` (default) or `grid`. A toggle, and never the landing state. */
     mode?: StageMode;
@@ -119,6 +138,7 @@ function quantiseRatio(width: number, height: number): number {
 export function Stage({
     config,
     focused,
+    revealed,
     mode = 'focus',
     onPromote,
     renderChrome,
@@ -234,6 +254,26 @@ export function Stage({
     const focusIndex = Math.max(0, keys.indexOf(focused as string));
     const modeValue = MODE_VALUE[mode];
 
+    // Joined rather than passed by identity: a host that recomputes the array
+    // every render would otherwise re-apply the param on every render.
+    const revealedKey = revealed ? revealed.join(' ') : '';
+    const arrived = useMemo(
+        () => revealedCount(keys, revealed),
+        [keys.join(' '), revealedKey]
+    );
+
+    useEffect(() => {
+        if (!revealed) return;
+        const skipped = keys.slice(0, arrived).filter(k => revealed.indexOf(k) < 0);
+        if (skipped.length > 0) {
+            console.warn(`Stage: "${skipped.join('", "')}" ${skipped.length === 1 ? 'is' : 'are'} not ` +
+                `revealed, but a panel declared after ${skipped.length === 1 ? 'it' : 'them'} is. ` +
+                `Panels arrive in the order the config declares them, because the arrangement is ` +
+                `indexed by how many have arrived — so ${skipped.length === 1 ? 'it was' : 'they were'} ` +
+                `shown anyway. Reorder the panels in the config, or reveal them in declared order.`);
+        }
+    }, [keys.join(' '), revealedKey, arrived]);
+
     /**
      * Promotion, and the mode toggle, as param updates.
      *
@@ -245,22 +285,30 @@ export function Stage({
      * produces a new engine at the config's declared values and whatever was
      * applied to the previous one no longer holds.
      */
-    const applied = useRef<{ instance: unknown; focus: number; mode: number } | null>(null);
+    const applied = useRef<{ instance: unknown; focus: number; mode: number; arrived: number } | null>(null);
     useEffect(() => {
         if (!isReady || !instance) return;
         const last = applied.current && applied.current.instance === instance ? applied.current : null;
         const pending: { name: string; value: number }[] = [];
         if (!last || last.focus !== focusIndex) pending.push({ name: FOCUS_PARAM, value: focusIndex });
         if (!last || last.mode !== modeValue) pending.push({ name: MODE_PARAM, value: modeValue });
-        applied.current = { instance: instance, focus: focusIndex, mode: modeValue };
+        if (!last || last.arrived !== arrived) pending.push({ name: REVEALED_PARAM, value: arrived });
+        applied.current = { instance: instance, focus: focusIndex, mode: modeValue, arrived: arrived };
         if (pending.length > 0) updateParams(pending);
-    }, [isReady, instance, focusIndex, modeValue, updateParams]);
+    }, [isReady, instance, focusIndex, modeValue, arrived, updateParams]);
 
+    // Over the panels that have arrived, so the chrome is placed against the
+    // same arrangement the compiled expressions resolve to — and so a panel the
+    // lesson has not reached has no name floating over it and no promote button
+    // to tab into.
     const arrangement: Arrangement | null = useMemo(
         () => (box && keys.length > 0
-            ? arrange({ width: box.width, height: box.height, panels: keys, focused: keys[focusIndex], mode })
+            ? arrange({
+                width: box.width, height: box.height,
+                panels: keys.slice(0, arrived), focused: keys[focusIndex], mode
+            })
             : null),
-        [box, keys.join(' '), focusIndex, mode]
+        [box, keys.join(' '), focusIndex, mode, arrived]
     );
 
     const promote = useCallback((key: string) => { onPromote?.(key) }, [onPromote]);
@@ -275,7 +323,13 @@ export function Stage({
                         // arrangement is scale-free, so its fractions apply at
                         // whatever size the canvas actually came out.
                         const pxBox = pixelBox(arrangement, panel.key, size.width)!;
-                        const isFocused = panel.key === keys[focusIndex] && mode === 'focus';
+                        // `arrangement.focused`, not `keys[focusIndex]`: with a
+                        // staged reveal the focused key may not have arrived
+                        // yet, and `arrange` resolves that to the first panel
+                        // that has. Reading the resolved answer is what keeps
+                        // the chrome and the diagram agreeing about which square
+                        // is the big one.
+                        const isFocused = panel.key === arrangement.focused && mode === 'focus';
                         const content = renderChrome
                             ? renderChrome({ key: panel.key, focused: isFocused, box: pxBox })
                             : null;

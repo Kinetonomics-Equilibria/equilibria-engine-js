@@ -12,7 +12,10 @@ export { KG_EVENTS, KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 
 // Arrangement — the pure layout arithmetic the Stage is built on, exported so
 // an app can compute a panel's box without rendering one.
-export { arrange, toCustomLayout, pixelBox, FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE } from './arrangement';
+export {
+    arrange, toCustomLayout, pixelBox, revealedCount,
+    FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
+} from './arrangement';
 
 // Types
 export type { StageProps, StagePanel } from './Stage';
