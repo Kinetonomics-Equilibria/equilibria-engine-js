@@ -4,6 +4,8 @@ import { TypeAndDef } from "../../view/view";
 import { Curve } from "../graphObjects/curve";
 import { KGAuthorClasses } from "../classRegistry";
 import { resetNameRegistry, claimNameOnce, reuseName } from "./nameRegistry";
+import { resetGhostScope, GHOST_LABEL_IDIOMS } from "./ghosts";
+import { setDefaults } from "../../util";
 
 export function extractTypeAndDef(def) {
     if (def.hasOwnProperty('type')) {
@@ -19,6 +21,12 @@ export function parse(data: TypeAndDef[], parsedData) {
     // Names are handed out as objects are constructed, and they double as calc
     // keys, so the registry is scoped to a single parse of a single diagram.
     resetNameRegistry();
+
+    // What a ghost's bare-name diagnostic compares against. Known here and
+    // needed several constructors down, which is the same reason the name
+    // registry is module state rather than a parameter.
+    resetGhostScope(parsedData.params as any[], parsedData.calcs);
+
     data.forEach(function (obj) {
         if (Object.prototype.hasOwnProperty.call(KGAuthorClasses, obj.type)) {
             parsedData = new KGAuthorClasses[obj.type](obj.def).parse(parsedData);
@@ -26,6 +34,13 @@ export function parse(data: TypeAndDef[], parsedData) {
             console.warn(`Unknown object type "${obj.type}" in KGAuthor. Check for typos in your config.`);
         }
     });
+
+    // After the objects, so a schema still wins: the ghost shorthand's label
+    // pairing emits `idioms.oldValueLabel` / `idioms.newValueLabel`, and a
+    // diagram that declares no schema would otherwise draw those expressions as
+    // their own source text.
+    parsedData.idioms = setDefaults(parsedData.idioms || {}, GHOST_LABEL_IDIOMS);
+
     return parsedData;
 
 }

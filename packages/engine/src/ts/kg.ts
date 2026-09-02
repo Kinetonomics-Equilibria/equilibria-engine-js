@@ -36,6 +36,7 @@ export type { RestrictionDefinition } from "./model/restriction";
 export type { Movement } from "./view/movement";
 export type { ParamInfo } from "./model/param";
 export type { StepDefinition } from "./KGAuthor/parsers/steps";
+export type { GhostDefinition } from "./KGAuthor/parsers/ghosts";
 
 /**
  * The class the engine applies to its container, which the theme stylesheet

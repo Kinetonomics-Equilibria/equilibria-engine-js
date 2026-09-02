@@ -5,6 +5,7 @@ import { TypeAndDef } from "../../view/view";
 import { Rectangle } from "../graphObjects/rectangle";
 import { ClipPath } from "../defObjects/clipPath";
 import { PositionedObjectDefinition, PositionedObject } from "./positionedObject";
+import { expandGhosts } from "../parsers/ghosts";
 
 
 
@@ -48,6 +49,12 @@ export class Graph extends PositionedObject {
             type: 'Axis',
             def: g.def.yAxis
         });
+        // A `ghost` is expanded here rather than inside any class, because this
+        // is the last point at which an author's `{type, def}` pair is still
+        // whole: one declaration becomes the twin, the original and the shift
+        // arrow, and each is then built by the ordinary constructor for its type.
+        g.def.objects = expandGhosts(g.def.objects);
+
         g.def.objects.forEach(function (obj) {
             if (Object.prototype.hasOwnProperty.call(KGAuthorClasses, obj.type)) {
                 g.subObjects.push(new KGAuthorClasses[obj.type](obj.def, g));

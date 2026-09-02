@@ -104,6 +104,8 @@ export class Model implements IModel {
     /** Names of params that describe presentation, not state; see `ParamDefinition.presentation`. */
     private presentationParams: Set<string> = new Set();
     private calcs: {};
+    /** Which of `calcs` the author declared; see `definitionsMentionPrev`. */
+    private authoredCalcs: string[] | undefined;
     public colors: {};
     public idioms: {};
     public clearColor: string;
@@ -182,6 +184,7 @@ export class Model implements IModel {
         model.initialParams = parsedData.params;
         model.presentationParams = new Set(model.params.filter(p => p.presentation).map(p => p.name));
         model.calcs = parsedData.calcs;
+        model.authoredCalcs = parsedData.authoredCalcs;
         model.colors = parsedData.colors;
         model.idioms = parsedData.idioms;
         model.clearColor = parsedData.clearColor;
@@ -236,23 +239,41 @@ export class Model implements IModel {
     /**
      * A cheap static scan, run once. For every config authored before `prev`
      * existed this finds nothing and construction behaves exactly as it did.
+     *
+     * Two questions, over two different sets, and conflating them was a defect.
+     * Whether *anything* mentions `prev` decides whether the model pays for a
+     * second evaluation pass, so it has to see every calc there is — including
+     * the ones objects publish about themselves. Whether a **calc the author
+     * wrote** reads `prev.calcs` is advice addressed to a person, and every
+     * object bound to the previous state transcribes that spelling into
+     * `calcs.<object>` on its way through the parser. A ghost point is the
+     * ordinary case: `x: prev.calcs.Qe` is exactly what was meant, it is the
+     * spelling this repo's own documentation demonstrates, and the author was
+     * being told it was probably a mistake.
      */
     private definitionsMentionPrev(): boolean {
         const model = this;
         let found = false, referencesPrevCalcs = false;
 
-        const walk = (obj: any) => {
+        const walk = (obj: any, authored: boolean) => {
             for (const key in obj) {
                 const def = obj[key];
                 if (typeof def === 'string') {
                     if (/\bprev\b/.test(def)) found = true;
-                    if (/\bprev\s*\.\s*calcs\b/.test(def)) referencesPrevCalcs = true;
+                    if (authored && /\bprev\s*\.\s*calcs\b/.test(def)) referencesPrevCalcs = true;
                 } else if (def && typeof def === 'object') {
-                    walk(def);
+                    walk(def, authored);
                 }
             }
         };
-        walk(model.calcs || {});
+
+        // A Model built directly — several tests do — has no parsed authorship
+        // to consult, and there every calc in the map is one someone wrote.
+        const calcs = model.calcs || {};
+        const authoredNames = model.authoredCalcs || Object.keys(calcs);
+        for (const key in calcs) {
+            walk({ [key]: calcs[key] }, authoredNames.indexOf(key) > -1);
+        }
 
         if (referencesPrevCalcs) {
             console.warn(

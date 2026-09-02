@@ -59,6 +59,12 @@ export interface ViewDefinition {
     steps?: StepDefinition[];
 
     // The rest of these are usually generated
+    /**
+     * The names of the calcs the author declared, as opposed to the ones objects
+     * publish about themselves while parsing. Only a diagnostic addressed to the
+     * author should read it; see `Model.definitionsMentionPrev`.
+     */
+    authoredCalcs?: string[];
     /** Every graph that was drawn, in construction order; see `PositionedObject.parseSelf`. */
     panels?: PanelDefinition[];
     /** The subset whose density was compiled; see `KGAuthor/parsers/density.ts`. */
@@ -249,6 +255,12 @@ export class View implements IView {
             clearColor: data.clearColor || "#FFFFFF",
             params: data.params || [],
             calcs: data.calcs || {},
+            // Which of those calcs the *author* wrote. Objects publish their own
+            // into the same map as they parse — a line's intercepts, a point's
+            // coordinates — and a diagnostic addressed to an author must not be
+            // triggered by the engine's own transcription of a def. See
+            // `Model.definitionsMentionPrev`.
+            authoredCalcs: Object.keys(data.calcs || {}),
             colors: data.colors || {},
             custom: data.custom || "",
             idioms: data.idioms || {},
