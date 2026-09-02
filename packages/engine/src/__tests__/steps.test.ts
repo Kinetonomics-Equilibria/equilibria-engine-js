@@ -196,6 +196,122 @@ describe('steps report what they cannot do', () => {
 
 });
 
+/**
+ * A panel is a thing a step can reveal, and the reason is its frame.
+ *
+ * A graph's axes and their titles are built from `xAxis`/`yAxis` and are never
+ * named, so no `reveal` of object names can hide them. A pre-declared panel that
+ * has not yet arrived in a lesson would sit there showing an empty labelled box,
+ * which is the opposite of an arrival.
+ */
+describe('revealing a panel', () => {
+
+    function twoPanels(steps: any[]) {
+        return mountConfig({
+            schema: 'EconSchema',
+            steps,
+            layout: {
+                CustomLayout: {
+                    aspectRatio: 2,
+                    panels: [
+                        {
+                            key: 'left', x: 0.02, y: 0.02, width: 0.45, height: 0.9,
+                            xAxis: { title: 'Q', min: 0, max: 20 },
+                            yAxis: { title: 'P', min: 0, max: 20 },
+                            objects: [{ type: 'Point', def: { name: 'first', coordinates: [5, 5] } }]
+                        },
+                        {
+                            key: 'right', x: 0.53, y: 0.02, width: 0.45, height: 0.9,
+                            xAxis: { title: 'Q', min: 0, max: 20 },
+                            yAxis: { title: 'P', min: 0, max: 20 },
+                            objects: [{ type: 'Point', def: { name: 'second', coordinates: [10, 10] } }]
+                        }
+                    ]
+                }
+            }
+        });
+    }
+
+    /** Every view object drawn in the panel whose x scale is `scale`. */
+    const inPanel = (r: any, scale: string) =>
+        r.kg.view.viewObjects.filter((o: any) => o.def && o.def.xScaleName === scale);
+
+    it('hides everything in the panel, its axes and titles included', () => {
+        const r = twoPanels([{ reveal: ['right'] }]);
+
+        const right = inPanel(r, 'right_x');
+        // The point, two axes and two axis titles at least.
+        expect(right.length).toBeGreaterThan(4);
+        expect(right.some((o: any) => o.constructor.name === 'Axis')).toBe(true);
+        expect(right.some((o: any) => o.def.furniture === 'axisTitle')).toBe(true);
+        expect(right.every((o: any) => !o.show)).toBe(true);
+
+        // And the panel that no step names is untouched.
+        expect(inPanel(r, 'left_x').every((o: any) => !!o.show)).toBe(true);
+
+        step(r, 1);
+        expect(right.every((o: any) => !!o.show)).toBe(true);
+        r.destroy();
+    });
+
+    it('names the panel key in the warning when nothing answers to a reveal', () => {
+        const { result, warnings } = captureWarnings(() => twoPanels([{ reveal: ['middle'] }]));
+        expect(warnings.some(w => w.includes('object or panel'))).toBe(true);
+        result.destroy();
+    });
+
+    // Both predicates are conjoined, so the object appears at the later of the
+    // two. Defensible; not something to discover from a diagram that will not
+    // draw when you think it should.
+    it('warns when a panel key and an object name reveal the same object at different steps', () => {
+        const { result, warnings } = captureWarnings(() =>
+            twoPanels([{ reveal: ['second'] }, { reveal: ['right'] }]));
+
+        expect(warnings.some(w => w.includes('"second" is revealed at step 1'))).toBe(true);
+
+        step(result, 1);
+        expect(shown(result, 'second')).toBe(false);   // the later claim also has to hold
+        step(result, 2);
+        expect(shown(result, 'second')).toBe(true);
+        result.destroy();
+    });
+
+});
+
+describe('advancing a step is not a student action', () => {
+
+    /**
+     * `prev.changed` gates every ghost an author draws. It counts any
+     * non-presentation param that differs from the snapshot, so a step param
+     * without the flag makes a build-up draw the dashed ghost of a curve nobody
+     * has touched, plus the arrow to go with it.
+     */
+    it('declares the step param as presentation, so a reveal draws no ghosts', () => {
+        const r = build(TWO_POINTS, [{ reveal: ['first'] }, { reveal: ['second'] }]);
+        const model: any = (r.kg.view as any).model;
+
+        expect(model.prevScope().changed).toBe(0);
+        step(r, 1);
+        expect(model.prevScope().changed).toBe(0);
+
+        expect(r.kg.getParams().filter(p => p.name === 'step')[0].presentation).toBe(true);
+        r.destroy();
+    });
+
+    // The corollary, and the reason the flag is safe: a step's `set` moves real
+    // params, and those still register as a change.
+    it('still reports a change when something other than the step moves', () => {
+        const r = build(TWO_POINTS, [{ reveal: ['first'] }],
+            [{ name: 'a', value: 20, min: 5, max: 28, round: 0.1 }]);
+        const model: any = (r.kg.view as any).model;
+
+        r.kg.update({ params: [{ name: 'a', value: 24 }] });
+        expect(model.prevScope().changed).toBe(1);
+        r.destroy();
+    });
+
+});
+
 describe('what a reveal takes with it', () => {
 
     // A point's droplines and axis labels are separate objects with names of

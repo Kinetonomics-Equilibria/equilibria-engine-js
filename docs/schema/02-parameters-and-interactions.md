@@ -178,11 +178,11 @@ an edit to all of them when a step is renumbered.
 
 ```yaml
 steps:
-  - reveal: [axes]
   - reveal: [demand]
   - reveal: [supply]
   - reveal: [equilibrium]
     set: { a: 24 }
+  - reveal: [firmPanel]     # a panel key: everything drawn in that panel
 ```
 
 This compiles to exactly the mechanism above, so there is one code path for
@@ -190,13 +190,16 @@ visibility and hand-written `show` expressions keep working beside it.
 
 | Key | Meaning |
 |---|---|
-| `reveal` | Object names to bring on screen at this step. They stay on at later steps. |
+| `reveal` | What to bring on screen at this step — object names, or panel keys. Whatever a step reveals stays on at later steps. |
 | `set` | Params this step establishes. **Read by the host, not applied by the engine** — see below. |
 
 Steps are numbered from 1. The engine declares a `step` param for you
-(`value: 0`, `max:` the number of steps) unless you declare your own — do that
-if you want a different starting step or range. Advancing the build-up is an
-ordinary param change:
+(`value: 0`, `max:` the number of steps, `presentation: true`) unless you declare
+your own — do that if you want a different starting step or range. It is a
+presentation param because advancing a build-up is not the student moving
+anything: without the flag, `prev.changed` would be true the moment a step fired
+and every ghost in the diagram would appear over an untouched curve. Advancing
+the build-up is an ordinary param change:
 
 ```js
 kg.update({ params: [{ name: 'step', value: 2 }] });
@@ -213,6 +216,20 @@ nothing. See [Names and titles](./05-graph-objects.md#names-and-titles).
 labels are separate objects with names of their own, and revealing the point
 brings them along. Naming an econ composite reveals what it draws:
 `reveal: [equilibrium]` brings up the equilibrium point.
+
+**A panel key reveals the whole panel, frame included.** A graph's axes and their
+titles are built from `xAxis` and `yAxis` and are never named, so no list of
+object names can hide them — which matters when a diagram declares a panel up
+front that the lesson does not reach until later, because otherwise it sits there
+showing an empty labelled box. `reveal: [surplus]` hides everything drawn against
+that panel's scales until its step. Panel keys come from `CustomLayout`'s `key`,
+or a graph's `name`.
+
+**Revealing one object twice composes rather than replaces.** If a panel key and
+an object's own name both name it at different steps, both predicates hold, so it
+appears at the later of the two. The engine warns, because that is a reasonable
+resolution and an unpleasant thing to work out from a diagram that will not draw
+when you expect.
 
 **A `show` you wrote yourself is combined, not replaced.** An object revealed at
 step 2 *and* written `show: params.showMR` is making two claims, and both have

@@ -20,7 +20,10 @@ import { ViewDefinition } from "../../view/view";
  */
 
 export interface StepDefinition {
-    /** Object names to reveal at this step. They stay revealed at later ones. */
+    /**
+     * What to reveal at this step: an object's name, or a panel's key. Whatever
+     * a step reveals stays revealed at later ones.
+     */
     reveal?: string[];
     /**
      * Params this step establishes. **Read, not applied** — see `steps()` on
@@ -79,14 +82,40 @@ export function compileSteps(steps: StepDefinition[], parsedData: ViewDefinition
 
     const objects = allObjects(parsedData);
 
-    // An object is revealed by its own name, or by the name of the thing it is
-    // part of: a point's droplines and axis labels are separate objects with
-    // their own names, and revealing "the equilibrium" plainly means revealing
-    // what hangs off it.
-    const matching = (name: string) => objects.filter(o =>
-        o.def && (o.def.name === name || o.def.partOf === name));
+    // Panels by key, so a reveal can name one. The scale name rather than the
+    // key is what an object actually carries, which is why this is a lookup
+    // rather than a string comparison — the same tie `compileDensity` uses.
+    const panelScales: { [key: string]: string } = {};
+    ((parsedData.panels || []) as any[]).forEach(function (panel) {
+        if (panel && panel.name) panelScales[panel.name] = panel.xScaleName;
+    });
+
+    // An object is revealed by its own name, by the name of the thing it is
+    // part of, or by the key of the panel it is drawn in.
+    //
+    // The first two are the same claim at two scales: a point's droplines and
+    // axis labels are separate objects with their own names, and revealing "the
+    // equilibrium" plainly means revealing what hangs off it. The third is a
+    // scale up again, and it is the only way to reveal a panel's *frame* — a
+    // graph's axes and their titles are built from `xAxis`/`yAxis` and never
+    // named, so a pre-declared panel that is not yet in the lesson would
+    // otherwise sit there showing an empty labelled box.
+    const matching = function (name: string): any[] {
+        const scale = panelScales[name];
+        return objects.filter(o => o.def && (
+            o.def.name === name ||
+            o.def.partOf === name ||
+            (scale !== undefined && o.def.xScaleName === scale)
+        ));
+    };
 
     const revealedAt: { [name: string]: number } = {};
+
+    // Which reveal already claimed an object, by def identity. Two names can
+    // reach one object — a panel key and an object's own name — and the
+    // predicates conjoin, so the later step silently wins. That is a defensible
+    // resolution and an indefensible way to learn about it.
+    const claimedBy = new WeakMap<object, { name: string; step: number }>();
 
     steps.forEach(function (step, i) {
         const stepNumber = i + 1;
@@ -102,13 +131,20 @@ export function compileSteps(steps: StepDefinition[], parsedData: ViewDefinition
 
             if (found.length === 0) {
                 console.warn(`steps: step ${stepNumber} reveals "${name}", which is not the name of any ` +
-                    `object in this diagram. Nothing was hidden, so the step will appear to do nothing. ` +
-                    `Only objects the author named are addressable.`);
+                    `object or panel in this diagram. Nothing was hidden, so the step will appear to do ` +
+                    `nothing. Only objects the author named, and panels with a key, are addressable.`);
                 return;
             }
 
             revealedAt[name] = stepNumber;
             found.forEach(function (o) {
+                const claim = claimedBy.get(o.def);
+                if (claim && claim.step !== stepNumber) {
+                    console.warn(`steps: "${o.def.name}" is revealed at step ${claim.step} as ` +
+                        `"${claim.name}" and again at step ${stepNumber} as "${name}". Both predicates ` +
+                        `hold, so it appears at step ${Math.max(claim.step, stepNumber)}.`);
+                }
+                claimedBy.set(o.def, { name: name, step: stepNumber });
                 o.def.show = combineShow(o.def.show, `params.${STEP_PARAM} >= ${stepNumber}`);
             });
         });
@@ -123,7 +159,14 @@ export function compileSteps(steps: StepDefinition[], parsedData: ViewDefinition
             value: 0,
             min: 0,
             max: steps.length,
-            round: 1
+            round: 1,
+            // Where the build-up has got to, not anything the student moved.
+            // `prev.changed` gates every ghost an author draws and counts any
+            // non-presentation param that differs from the snapshot, so without
+            // this flag advancing a step draws a dashed ghost of a curve nobody
+            // touched, and a shift arrow to go with it. The density param
+            // carries it for the same reason.
+            presentation: true
         });
         parsedData.params = params;
     }

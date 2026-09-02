@@ -191,9 +191,15 @@ export class KineticGraph extends EventEmitter {
      * rolled back with no diagnostic. Which order to move them in is a decision
      * that has to be made with the diagram in view, so it is the host's, and it
      * is made visibly rather than quietly here.
+     *
+     * Generic in what a step *is*, because the engine reads two keys and carries
+     * the rest untouched. A host that writes a lesson beside its reveals — a
+     * sentence, a question — gets its own steps back with those keys on them,
+     * which is what keeps a timeline one ordered list rather than an app-side
+     * list shadowing an engine one.
      */
-    public steps(): StepDefinition[] {
-        return (this.view?.parsedData?.steps as StepDefinition[]) || [];
+    public steps<T extends StepDefinition = StepDefinition>(): T[] {
+        return (this.view?.parsedData?.steps as T[]) || [];
     }
 
     /**
