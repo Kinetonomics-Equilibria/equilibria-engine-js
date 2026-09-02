@@ -12,8 +12,16 @@
  * viewport and lets a promotion be a param change rather than a rebuild.
  */
 
-/** Demand's intercept is the one thing a student moves directly. */
-const DRAG_DEMAND = [{ vertical: 'a' }];
+/**
+ * Demand's intercept is the one thing a student moves directly.
+ *
+ * Locked to one axis, which is what keeps "shift the curve" from becoming
+ * "rotate the curve" and therefore what makes a direction question answerable
+ * at all. `draggable` is what a committed answer freezes: while `submitted` is
+ * set the curve refuses the drag and stops showing a resize cursor, so a taken
+ * answer reads as taken rather than as a diagram that has broken.
+ */
+const DRAG_DEMAND = [{ vertical: 'a', draggable: 'not(params.submitted)' }];
 
 /**
  * A `name` is an address; a `title` is what the thing is called.
@@ -61,7 +69,49 @@ const demandGhost = () => ({
     def: {
         yIntercept: 'prev.params.a', slope: -1,
         color: 'colors.demand', lineStyle: 'dashed',
-        strokeOpacity: 0.35, show: 'prev.changed'
+        strokeOpacity: 0.35,
+        // Off while a question is on screen, where `startA` below draws the
+        // "before" instead. `prev` is per *gesture*, so a student on their
+        // second attempt would see it slide up to the start of that attempt
+        // while the answer is still being marked from the question's own
+        // starting line — two dashed curves claiming to be the same thing.
+        show: 'prev.changed and not(params.asking)'
+    }
+});
+
+/**
+ * The question apparatus: where demand was when it was asked, and where it goes.
+ *
+ * Both are params rather than expressions over `prev`, and that is the whole
+ * point. The graded start and the drawn start are then one number, written once
+ * when the question is armed — the alternative disagrees with itself the moment
+ * the student takes a second run at it.
+ *
+ * `answerA` is drawn only after a verdict. There is deliberately nothing on
+ * screen to aim at during the attempt: with a target visible the task stops
+ * being economics and becomes aiming.
+ */
+const questionStart = () => ({
+    type: 'Line',
+    def: {
+        name: 'questionStart',
+        yIntercept: 'params.startA', slope: -1,
+        color: 'colors.demand', lineStyle: 'dashed',
+        strokeOpacity: 0.35, show: 'params.asking'
+    }
+});
+
+const questionAnswer = () => ({
+    type: 'Line',
+    def: {
+        name: 'questionAnswer',
+        yIntercept: 'params.answerA', slope: -1,
+        // Demand's own colour, because it *is* demand — dotted and at full
+        // weight, which separates it from the start ghost (dashed and faint)
+        // without borrowing the equilibrium's green and reading as a dropline.
+        color: 'colors.demand', lineStyle: 'dotted',
+        label: { text: 'D_1', x: 4 },
+        show: 'params.revealed'
     }
 });
 
@@ -128,13 +178,31 @@ export const LESSON = [
         reveal: ['revenue'],
         say: 'And the money that changes hands: the price times the quantity sold.'
     },
+    {
+        set: { a: 20 },
+        say: 'Back where we started, with every panel on screen.'
+    },
+    // The question the build-up was for (P11). It sets its own starting value
+    // rather than inheriting whatever the student last left — the answer is
+    // marked from where the question began, so where it begins should not
+    // depend on what they did while exploring. One param, so the non-atomic
+    // multi-param update cannot bite here; two would be order-dependent.
+    //
+    // Direction is the question. The target makes the magnitude half real as
+    // well, and gives the reveal something to draw — a direction-only question
+    // has no "correct position", only a correct way.
+    {
+        set: { a: 20 },
+        say: 'Now you. Incomes rise again — move demand to where it belongs, then check.',
+        ask: { param: 'a', direction: 'up', target: 26, tolerance: 1 }
+    },
     // The lesson hands the market back where it found it, which is what makes
     // "free exploration is the track at its last position" true rather than
     // nearly true: the end of the build-up is the diagram as the config
     // declares it, with everything drawn and nothing left mid-demonstration.
     {
         set: { a: 20 },
-        say: 'Back where we started. Now move demand yourself, and watch all three.'
+        say: 'That is the mechanism: one shift, and price, quantity, surplus and revenue all move together. The market is yours now.'
     }
 ];
 
@@ -145,7 +213,23 @@ export const studyDiagram = {
 
     params: [
         { name: 'a', value: 20, min: 12, max: 28, round: 0.1 },
-        { name: 'c', value: 2, min: 0, max: 8, round: 0.1 }
+        { name: 'c', value: 2, min: 0, max: 8, round: 0.1 },
+
+        // The question apparatus (P11). Every one of them is `presentation`,
+        // and that is load-bearing rather than tidy: `prev.changed` counts
+        // non-presentation params that differ from the snapshot, so arming a
+        // question without this would draw the dashed ghost of a curve nobody
+        // had touched — P10's finding 4, in the plan that inherited it.
+        //
+        // It also keeps them out of the narration strip and the Explore
+        // instrument, neither of which should offer a student a slider for
+        // "has this been submitted".
+        { name: 'asking', value: 0, min: 0, max: 1, round: 1, presentation: true },
+        { name: 'submitted', value: 0, min: 0, max: 1, round: 1, presentation: true },
+        { name: 'revealed', value: 0, min: 0, max: 1, round: 1, presentation: true },
+        // Bounded like `a`, because they are drawn as the same curve.
+        { name: 'startA', value: 20, min: 12, max: 28, round: 0.1, presentation: true },
+        { name: 'answerA', value: 20, min: 12, max: 28, round: 0.1, presentation: true }
     ],
 
     // Solved from the params rather than drawn in by hand, and read back by the
@@ -172,7 +256,8 @@ export const studyDiagram = {
                     key: 'market',
                     ...axes(),
                     objects: [
-                        demand('market', true), demandGhost(), supply('market'),
+                        demand('market', true), demandGhost(),
+                        questionStart(), questionAnswer(), supply('market'),
                         equilibrium('market'),
                         // Where the market cleared before, and the move between
                         // the two — the sentence the diagram is trying to say.
@@ -296,6 +381,23 @@ export const EXPLAINED_CALCS: Record<string, string> = Object.keys(studyDiagram.
         out[name] = (studyDiagram.calcs as Record<string, string>)[name];
         return out;
     }, {} as Record<string, string>);
+
+/**
+ * Which params draw the question, for each param a question may be about.
+ *
+ * The plan called the reveal "a third curve shown on a `revealed` param", which
+ * is right for a diagram with one askable param and quietly wrong for two: the
+ * curve is bound to a *particular* param's geometry, so a question about `c`
+ * drawn through demand's apparatus would show the student a confident wrong
+ * answer. Naming the mapping makes the limit visible instead — a question about
+ * a param with no entry here draws nothing and says so in dev.
+ *
+ * `asking`, `submitted` and `revealed` are shared, because they are about the
+ * question rather than about the curve.
+ */
+export const QUESTION_APPARATUS: Record<string, { start: string; answer: string }> = {
+    a: { start: 'startA', answer: 'answerA' }
+};
 
 /**
  * Named param sets a student can jump to.

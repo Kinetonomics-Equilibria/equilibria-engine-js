@@ -31,6 +31,15 @@ const LABEL = '.kg-container div[class^="rootElement-"]';
 const LABELS_PER_PANEL = 6;
 
 /**
+ * The one label that belongs to no panel's own furniture: the reveal curve's.
+ *
+ * P11's question apparatus draws the correct position in the market panel, and
+ * it is in the DOM from the first frame like every other hidden thing — which
+ * is the point, since showing it must not cost a rebuild.
+ */
+const QUESTION_LABELS = 1;
+
+/**
  * Pull the focal panel's demand curve down by its transparent hit area.
  *
  * The focal panel's overlay is pointer-transparent, so the drag has to reach the
@@ -65,6 +74,23 @@ async function toTheEnd(page: Page) {
     const last = (await markers.count()) - 1;
     if (last < 1) return;
     await markers.nth(last).click();
+
+    // The lesson now ends with a question (P11), and the track deliberately
+    // stops one past an unanswered one — so getting to the end means getting
+    // past it. Committed without moving and then shown, which is the shortest
+    // deterministic way through and needs no drag: what these tests are about
+    // is the far side of it.
+    //
+    // The assertions below this helper are unchanged, which is the claim P10
+    // made and this keeps making: the end of the track is the same place as
+    // "no lesson at all".
+    const question = page.getByRole('group', { name: 'Question' });
+    if (await question.isVisible()) {
+        await question.getByRole('button', { name: 'Check' }).click();
+        await question.getByRole('button', { name: 'Show me' }).click();
+        await markers.nth(last).click();
+    }
+
     await expect(markers.nth(last)).toHaveAttribute('aria-current', 'step');
 }
 
@@ -105,7 +131,7 @@ test('draws the focal panel in full and the rail panels as indicators', async ({
     // rebuild — so the count that says anything is the *visible* one.
     const labels = page.locator(`${LABEL}:visible`);
     await expect(labels).toHaveCount(LABELS_PER_PANEL);
-    await expect(page.locator(LABEL)).toHaveCount(LABELS_PER_PANEL * 3);
+    await expect(page.locator(LABEL)).toHaveCount(LABELS_PER_PANEL * 3 + QUESTION_LABELS);
 
     // Ticks tell the same story from the other side: only the focal panel has
     // any, while the curves — two per panel — are all still drawn.
@@ -274,7 +300,7 @@ test('the strip is at rest until something moves', async ({ page }) => {
     await expect(page.locator(STRIP)).toHaveAttribute('data-authored', 'true');
     // Twice over, and on purpose: once in the chain area for the eye, and once
     // in the live region for a screen reader.
-    await expect(page.getByText('Back where we started.', { exact: false })).toHaveCount(2);
+    await expect(page.getByText('The market is yours now.', { exact: false })).toHaveCount(2);
     await expect(page.getByRole('button', { name: 'undo' })).toHaveCount(0);
 });
 
@@ -459,4 +485,113 @@ test('a scenario applies every param it names', async ({ page }) => {
     const chain = (await chainText(page))!;
     expect(chain).toContain('a20.0→26.0');
     expect(chain).toContain('c2.0→6.0');
+});
+
+/**
+ * The quiz loop, answered the way it is meant to be answered (P11).
+ *
+ * The unit tests answer with the slider, because jsdom performs no layout and a
+ * curve cannot be dragged in it. These are the claims that needs a browser: that
+ * the answer can be given by moving the curve itself, that committing really
+ * does stop the curve moving, and that the reveal draws a line where the answer
+ * belongs. None of the three is visible to a test that mounts a mock.
+ *
+ * These run from a fresh load rather than from `beforeEach`'s end position,
+ * since that helper's whole job is to get *past* the question.
+ */
+
+/** The question step in `src/studyDiagram.ts`. */
+const ASK_MARKER = 8;
+
+async function toTheQuestion(page: Page) {
+    await page.goto('/');
+    await page.locator('.kg-container svg').waitFor();
+    await page.locator('button[data-kinds]').nth(ASK_MARKER).click();
+    const question = page.getByRole('group', { name: 'Question' });
+    await expect(question).toBeVisible();
+    return question;
+}
+
+/** Drag the focal panel's demand curve, in graph units (positive is up). */
+async function dragDemand(page: Page, units: number) {
+    const dragPath = page.locator('.kg-container path[class^="dragPath"]')
+        .nth(await focalDragPathIndex(page));
+    const box = (await dragPath.boundingBox())!;
+    const startX = box.x + box.width * 0.45, startY = box.y + box.height * 0.45;
+
+    // The market's y axis runs 0..20 over the panel's height. Read from the
+    // ticks rather than assumed, so this stays true if the panel is resized.
+    const perUnit = await page.evaluate(() => {
+        const ticks = [...document.querySelectorAll('g.axis')]
+            .map(a => [...a.querySelectorAll('g.tick')].map(t => ({
+                value: Number(t.textContent),
+                y: (t.querySelector('line') ?? t).getBoundingClientRect().y
+            })))
+            .filter(t => t.length >= 2 && t.every(x => Number.isFinite(x.value)))
+            .find(t => Math.abs(t[0].y - t[t.length - 1].y) > 20);
+        if (!ticks) throw new Error('No vertical axis to measure against');
+        const sorted = [...ticks].sort((a, b) => a.value - b.value);
+        return (sorted[0].y - sorted[sorted.length - 1].y) / (sorted[sorted.length - 1].value - sorted[0].value);
+    });
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY - units * perUnit, { steps: 12 });
+    await page.mouse.up();
+}
+
+test('the question is answered by moving the curve, and marked on where it lands', async ({ page }) => {
+    const question = await toTheQuestion(page);
+
+    // Nothing on screen to aim at: two curves per panel and the dashed ghost of
+    // where demand started, and no third line saying where it should go.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
+
+    await dragDemand(page, 6);
+    await question.getByRole('button', { name: 'Check' }).click();
+
+    // Dragging is imprecise, and the tolerance is what makes that fair: the
+    // question asks for 26 from 20 and accepts a unit either side.
+    await expect(question.getByText(/Right direction/)).toBeVisible();
+});
+
+test('committing stops the curve moving, and retrying lets it go again', async ({ page }) => {
+    const question = await toTheQuestion(page);
+
+    await dragDemand(page, 2);
+    const answered = await focalPointCoordinates(page);
+    await question.getByRole('button', { name: 'Check' }).click();
+
+    // The freeze is the engine's `draggable`, and this is the assertion that
+    // says it does something: before P11 the property reported false and the
+    // curve went on dragging, because nothing read it.
+    await dragDemand(page, 4);
+    const frozen = await focalPointCoordinates(page);
+    expect(frozen.y).toBeCloseTo(answered.y, 1);
+
+    await question.getByRole('button', { name: 'Try again' }).click();
+    await dragDemand(page, 4);
+    const thawed = await focalPointCoordinates(page);
+    expect(thawed.y).toBeGreaterThan(answered.y + 0.5);
+});
+
+test('the reveal draws the answer beside the student\'s, and takes it away again', async ({ page }) => {
+    const question = await toTheQuestion(page);
+
+    await dragDemand(page, -4);
+    await question.getByRole('button', { name: 'Check' }).click();
+    await expect(question.getByText(/Wrong direction/)).toBeVisible();
+
+    // Still nothing drawn where the answer is: a wrong answer is not a reason
+    // to give it away, only a reason to offer it.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
+
+    await question.getByRole('button', { name: 'Show me' }).click();
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(8);
+
+    // And it goes with the question, rather than being left on the diagram for
+    // the rest of the lesson.
+    await question.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('group', { name: 'Question' })).toHaveCount(0);
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
 });

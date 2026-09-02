@@ -1,5 +1,6 @@
-import { Slider, Stack, Switch, Text } from '@mantine/core';
+import { Stack, Switch, Text } from '@mantine/core';
 import type { ParamInfo } from 'equilibria-engine-js';
+import { ParamSlider } from '../ParamSlider';
 import type { InstrumentProps } from './types';
 import classes from './Explore.module.css';
 
@@ -49,31 +50,18 @@ function Control({ param, onChange, onCommitStart, onCommitEnd }: {
                     {param.value.toFixed(param.precision)}
                 </Text>
             </div>
-            <Slider
-                value={param.value}
-                min={param.min}
-                max={param.max}
-                step={param.round}
-                precision={param.precision}
-                label={value => value.toFixed(param.precision)}
+            {/* The two halves of a scrub, and their *ordering*, live in
+              * `ParamSlider`: `beginGesture` has to run before the value moves
+              * or the engine snapshots the state it was supposed to remember.
+              * This instrument shipped with them the wrong way round for the
+              * keyboard, which is exactly the kind of thing one place can be
+              * right about and two cannot. */}
+            <ParamSlider
+                param={param}
+                label={label(param)}
                 onChange={onChange}
-                // The two halves of a scrub. `onChangeEnd` fires once when the
-                // student lets go; there is no matching "start", so the first
-                // move opens the gesture and the screen closes it. Without this
-                // pair the engine snapshots every frame — leaving each ghost
-                // drawn against the previous frame rather than against where the
-                // drag began — and the narration strip, which learns about
-                // dragging only from `kg:curve_dragged`, rewrites its chain and
-                // announces it sixty times a second.
-                onMouseDown={onCommitStart}
-                onTouchStart={onCommitStart}
-                onKeyDown={onCommitStart}
-                onChangeEnd={onCommitEnd}
-                // `thumbLabel`, not `aria-label`: the element carrying
-                // `role="slider"` is the thumb, and a label on the root leaves
-                // the control itself nameless to a screen reader.
-                thumbLabel={label(param)}
-                thumbValueText={value => value.toFixed(param.precision)}
+                beginGesture={onCommitStart}
+                endGesture={onCommitEnd}
             />
         </div>
     );

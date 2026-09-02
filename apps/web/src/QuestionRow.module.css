@@ -1,0 +1,62 @@
+/* The question row: between the narration strip and the track.
+ *
+ * Unlike the strip and the track it is not always there — it arrives with an
+ * `ask` step and leaves with it, and the stage above re-measures both times.
+ * That is one reflow per question rather than one per interaction, which is the
+ * distinction those two rows' fixed heights exist to protect.
+ *
+ * Within a question the height is held still: the verdict area is rendered
+ * empty from the first frame and reserves its space, so a student reading the
+ * prompt does not have the diagram jump when they press Check. */
+
+.row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--mantine-spacing-xs);
+    border-top: 1px solid var(--mantine-color-default-border);
+    /* A question is the one thing on this screen the student must respond to,
+     * so it is the one row that is not the page's own background. */
+    background: var(--mantine-color-yellow-light);
+}
+
+.prompt {
+    margin: 0;
+    font-weight: 500;
+}
+
+.answer {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-sm);
+}
+
+.control {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--mantine-spacing-sm);
+    min-width: 0;
+}
+
+.slider {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Digits that do not move sideways as the value changes: this one is read
+ * while it is being changed. */
+.value {
+    flex: none;
+    min-width: 3rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Two clauses and up to two controls. Reserved rather than grown into, so the
+ * row is the same height before and after Check. Two lines is enough at the
+ * widths this screen is used at; a narrow one may take a third, which grows the
+ * row once and then stops. */
+.verdict {
+    min-height: 1.75rem;
+}

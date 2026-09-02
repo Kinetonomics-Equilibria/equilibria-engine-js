@@ -1,0 +1,7 @@
+/* The wrapper exists to carry capture-phase handlers one element outside the
+ * Slider, so it must not change the layout of whatever contains it. */
+.wrap {
+    display: block;
+    flex: 1;
+    min-width: 0;
+}

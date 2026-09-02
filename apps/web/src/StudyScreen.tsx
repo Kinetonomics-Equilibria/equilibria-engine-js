@@ -5,13 +5,19 @@ import { Stage } from 'equilibria-react';
 import type { StageMode, StagePanel } from 'equilibria-react';
 import { STEP_PARAM } from 'equilibria-engine-js';
 import type { KineticGraph, ParamChangedEvent, ParamInfo } from 'equilibria-engine-js';
-import { studyDiagram, EXPLAINED_CALCS, LESSON, NARRATED_CALCS, PANELS, SCENARIOS } from './studyDiagram';
+import {
+    studyDiagram, EXPLAINED_CALCS, LESSON, NARRATED_CALCS, PANELS, QUESTION_APPARATUS, SCENARIOS
+} from './studyDiagram';
 import { NarrationStrip } from './NarrationStrip';
+import { QuestionRow } from './QuestionRow';
 import { Track } from './Track';
 import {
-    AT_START, paramsAt, paramsBetween, revealedPanels, sayAt, trackReducer
+    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, sayAt, trackReducer
 } from './track/track';
-import type { LessonStep, TrackState } from './track/track';
+import type { LessonQuestion, LessonStep, TrackState } from './track/track';
+import { attemptReducer, isFrozen, isResolved } from './quiz/attempt';
+import type { Attempt } from './quiz/attempt';
+import { grade, validateQuestion } from './quiz/grade';
 import { Dock } from './dock/Dock';
 import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
@@ -59,6 +65,24 @@ const REST: NarrationLine = { kind: 'rest', causes: [], mechanism: null, effects
 const STEPS = LESSON as LessonStep[];
 const PANEL_KEYS = PANELS.map(p => p.key) as string[];
 
+/**
+ * The question apparatus, stood down.
+ *
+ * All three are presentation params, so writing them moves nothing a student
+ * did and narrates nothing — which is what lets a question arm and disarm
+ * without the diagram drawing the ghost of a curve nobody touched.
+ */
+const QUESTION_OFF = [
+    { name: 'asking', value: 0 },
+    { name: 'submitted', value: 0 },
+    { name: 'revealed', value: 0 }
+];
+
+/** Whether this question has a correct *position* the diagram can draw. */
+function drawableAnswer(question: LessonQuestion): boolean {
+    return question.target !== undefined && !!QUESTION_APPARATUS[question.param];
+}
+
 export function StudyScreen() {
     const [focused, setFocused] = useState<string>(PANELS[0].key);
     const [mode, setMode] = useState<StageMode>('focus');
@@ -91,6 +115,50 @@ export function StudyScreen() {
      */
     const [track, setTrack] = useState<TrackState>(AT_START);
     const [saying, setSaying] = useState<string | null>(null);
+
+    /**
+     * The question on screen, if any (P11).
+     *
+     * Not persisted across navigation, deliberately: `track.resolved` is what
+     * survives, so a question the student comes back to is asked again and the
+     * track stays unblocked. Keeping the attempt would mean showing a recorded
+     * verdict beside a curve that has since moved, and attempt data is the first
+     * thing in this app that genuinely needs a progress model — which does not
+     * exist yet, and is not this plan's to build.
+     */
+    const [attempt, setAttempt] = useState<Attempt | null>(null);
+
+    /**
+     * The param the current question is about, for the change handler.
+     *
+     * A ref rather than a read of `attempt`, so that `onParamChanged` — which a
+     * drag calls sixty times a second — keeps one identity for the life of the
+     * screen instead of being rebuilt every time the question's phase moves.
+     */
+    const asked = useRef<string | null>(null);
+
+    /**
+     * What the engine held, so a remount can be undone.
+     *
+     * `Stage` rebuilds its config — and so remounts the engine — when the box's
+     * quantised aspect ratio changes, which is any resize big enough to matter
+     * and includes the question row arriving and leaving. A rebuilt engine
+     * starts from the config: `params.step` back to 0, every reveal undone, the
+     * student's own drag discarded, and the track underneath still reading
+     * "8 / 9". Nothing announces it, so what a student sees is the lesson
+     * evaporating when they resize their window.
+     *
+     * The position and the question are the app's and are restored from state.
+     * The param *values* are not — they live in the engine, which has just been
+     * thrown away — so the last ones it reported are kept here. Refs rather than
+     * state throughout, so `onReady` keeps one identity: it is called from an
+     * effect keyed on its own identity, and a changing one would re-run it.
+     */
+    const lastParams = useRef<Record<string, number>>({});
+    const trackAt = useRef<TrackState>(AT_START);
+    const asking = useRef<Attempt | null>(null);
+    trackAt.current = track;
+    asking.current = attempt;
 
     /**
      * True only while a step's own param update is in flight.
@@ -165,6 +233,7 @@ export function StudyScreen() {
         const event = data as ParamChangedEvent;
         setReadout(event.calcs as Readout);
         refreshParams();
+        lastParams.current = { ...event.params };
 
         // A promotion, a mode toggle and a panel resolving its own density all
         // arrive here as param changes. None of them is something the student
@@ -178,6 +247,13 @@ export function StudyScreen() {
         // sides: the student moved something themselves, so the lesson's
         // sentence gives way to what they just did.
         if (!applyingStep.current) setSaying(null);
+
+        // Moving the asked param is what turns a prompt into an attempt. The
+        // reducer returns the same object once it has, so a drag's sixty
+        // changes a second cost one state update between them.
+        if (asked.current === event.name) {
+            setAttempt(current => attemptReducer(current, { type: 'move' }));
+        }
 
         latest.current = event;
         retell(dragging.current);
@@ -199,8 +275,26 @@ export function StudyScreen() {
         retell(isDragging);
     }, [retell]);
 
-    // The event only fires once something has changed, so the chips would sit
-    // blank until the student moved something. This is the reading at rest.
+    /**
+     * A fresh engine, which may be a *re*fresh one.
+     *
+     * The event only fires once something has changed, so the chips would sit
+     * blank until the student moved something; this is the reading at rest.
+     *
+     * And it is also where a remount is repaired. `Stage` rebuilds the engine
+     * whenever the box's quantised shape changes, so this runs again with an
+     * engine that has never heard of the lesson — at step 0, with the market
+     * back at its authored values and any question stood down. Restoring is not
+     * optional politeness: without it, a resize is indistinguishable from the
+     * whole lesson being thrown away, and the track underneath goes on claiming
+     * a position the diagram is not at.
+     *
+     * Order matters, and it is the order every other boundary in this file
+     * uses: put the state back, *then* snapshot. A restore that snapshotted
+     * first would draw a ghost for every param it restored — the diagram
+     * showing a movement nobody made, which is the failure P9 shipped and P10
+     * inherited.
+     */
     const onReady = useCallback((engine: KineticGraph) => {
         engineRef.current = engine;
         setReadout(engine.getCalcs() as Readout);
@@ -208,6 +302,58 @@ export function StudyScreen() {
             .filter(p => !p.presentation)
             .map(p => ({ name: p.name, label: p.label, precision: p.precision })));
         setDockParams(engine.getParams());
+
+        const previous = lastParams.current,
+            position = trackAt.current.position,
+            question = asking.current,
+            apparatus = question ? QUESTION_APPARATUS[question.question.param] : undefined;
+
+        // Presentation params are not restored: `stageFocus`, `stageMode` and
+        // the revealed count are the stage's own and it re-applies them itself.
+        // Writing a stale copy back would be a second answer to a question the
+        // stage has already answered.
+        const restoring = engine.getParams()
+            .filter(p => !p.presentation && previous[p.name] !== undefined
+                && previous[p.name] !== p.value)
+            .map(p => ({ name: p.name, value: previous[p.name] }));
+
+        if (position > 0) restoring.unshift({ name: STEP_PARAM, value: position });
+        if (question) {
+            restoring.push(
+                { name: 'asking', value: 1 },
+                { name: 'submitted', value: isFrozen(question) ? 1 : 0 },
+                { name: 'revealed', value: question.phase === 'reveal'
+                    || (question.phase === 'verdict' && !!question.grade?.correct
+                        && drawableAnswer(question.question)) ? 1 : 0 }
+            );
+            if (apparatus) {
+                restoring.push(
+                    { name: apparatus.start, value: question.startValue },
+                    { name: apparatus.answer, value: question.question.target ?? question.startValue }
+                );
+            }
+        }
+
+        if (restoring.length === 0) return;
+
+        applyingStep.current = true;
+        try {
+            engine.update({ params: restoring });
+            engine.snapshot();
+        } finally {
+            applyingStep.current = false;
+        }
+
+        // Read the calcs *after* the snapshot, not from the events the restore
+        // raised. Those were computed against a `prev` still holding the
+        // authored baseline, so every delta chip came back reading the whole
+        // distance from the config — a panel announcing "+11.0" for a resize.
+        setReadout(engine.getCalcs() as Readout);
+
+        // The chain described a movement against a snapshot this engine never
+        // took. It comes back the moment the student touches anything.
+        latest.current = null;
+        setLine(REST);
     }, []);
 
     /**
@@ -266,9 +412,24 @@ export function StudyScreen() {
         };
     }, [endGesture]);
 
+    /**
+     * Which param, if any, is refusing to move because it has been answered.
+     *
+     * `draggable` freezes the *diagram's* drag and says nothing about a host
+     * control — and P11's slider is not a fallback but the equal answer path,
+     * so a committed answer that a dock slider could still edit is not frozen
+     * at all. This is the one place every host param write goes through, which
+     * makes it the one place the freeze has to hold.
+     *
+     * Lesson navigation writes through `engine.update` directly and is
+     * deliberately not guarded: moving the track is not a student's answer.
+     */
+    const frozenParam = attempt && isFrozen(attempt) ? attempt.question.param : null;
+
     const updateParams = useCallback((next: { name: string; value: number }[]) => {
-        if (next.length > 0) engineRef.current?.update({ params: next });
-    }, []);
+        const allowed = frozenParam ? next.filter(p => p.name !== frozenParam) : next;
+        if (allowed.length > 0) engineRef.current?.update({ params: allowed });
+    }, [frozenParam]);
 
     /**
      * Move the lesson, and tell the engine in the right order.
@@ -316,9 +477,79 @@ export function StudyScreen() {
         }
     }, []);
 
+    /**
+     * Put a question on screen, or take the last one off (P11).
+     *
+     * The order is the whole of it, and it is the reverse of what reads
+     * naturally. `snapshot()` comes *after* the step's own `set`, not before,
+     * because the "before" a question needs is where the question starts — not
+     * where the lesson was a step ago. Without that the strip narrates the
+     * student's first drag against the wrong baseline and the delta chips
+     * describe a move the question itself made.
+     *
+     * The start is then written into a param rather than left to `prev`. `prev`
+     * is per *gesture*, so a second attempt would slide the drawn "before"
+     * forward while the grade went on being measured from the question's own
+     * starting line — one number drawn, a different one marked.
+     */
+    const armQuestion = useCallback((question: LessonQuestion | null, index: number) => {
+        const engine = engineRef.current;
+        if (!engine) return;
+
+        if (!question) {
+            if (attempt) {
+                engine.update({ params: QUESTION_OFF });
+                setAttempt(null);
+            }
+            return;
+        }
+
+        const info = engine.getParams().filter(p => p.name === question.param)[0],
+            start = info ? info.value : 0,
+            apparatus = QUESTION_APPARATUS[question.param];
+
+        // A question nobody can answer is indistinguishable, from the student's
+        // side, from not being able to do economics — so it fails loudly here
+        // rather than quietly on screen. Dev only: in a build this would be
+        // shouting at a student about their teacher's typo.
+        const problems = validateQuestion(question, info, start);
+        if (problems.length > 0 && import.meta.env.DEV) {
+            problems.forEach(p => console.error(`Question at step ${index + 1} ${p}`));
+        }
+
+        engine.snapshot();
+        engine.update({
+            params: [
+                { name: 'asking', value: 1 },
+                { name: 'submitted', value: 0 },
+                { name: 'revealed', value: 0 },
+                ...(apparatus ? [
+                    { name: apparatus.start, value: start },
+                    // Parked on the start when there is no target: nothing draws
+                    // it, and a stale answer from a previous question would.
+                    { name: apparatus.answer, value: question.target ?? start }
+                ] : [])
+            ]
+        });
+
+        asked.current = question.param;
+        setAttempt(attemptReducer(null, {
+            type: 'ask', questionId: String(index), question: question, startValue: start
+        }));
+        // The snapshot above re-based `prev`, so the chain is describing a move
+        // the diagram no longer remembers. Recomputed rather than blanked, for
+        // the same reason scrubbing back recomputes: it reads the engine, which
+        // now agrees with itself, and comes back as rest.
+        retell(false);
+    }, [attempt, retell]);
+
     const goTo = useCallback((position: number) => {
         const next = trackReducer(track, { type: 'goTo', position }, STEPS);
         if (next === track) return;
+
+        // Before the step's own `set`, which would otherwise read as the student
+        // answering the question they are about to be asked.
+        asked.current = null;
 
         const backwards = next.position < track.position;
         applyStep(paramsBetween(STEPS, track.position, next.position), next.position, backwards);
@@ -330,8 +561,82 @@ export function StudyScreen() {
         if (backwards) retell(false);
 
         setTrack(next);
-        setSaying(sayAt(STEPS, next.position));
-    }, [track, applyStep, retell]);
+
+        // A question's prompt goes to the question row, not to the strip. P10's
+        // rule is that the student's own action wins the strip, so a prompt left
+        // there would vanish the instant they moved something to answer it.
+        const question = askAt(STEPS, next.position);
+        setSaying(question ? null : sayAt(STEPS, next.position));
+        armQuestion(question, next.position - 1);
+    }, [track, applyStep, retell, armQuestion]);
+
+    /**
+     * Take the answer.
+     *
+     * The committed value is read back from the engine rather than from
+     * anything this screen has been keeping, because the engine is what applied
+     * the rounding and the bounds — a value the app thinks it set and the value
+     * the param holds are not always the same number.
+     */
+    const onCommit = useCallback(() => {
+        const engine = engineRef.current;
+        if (!engine || !attempt) return;
+
+        const info = engine.getParams().filter(p => p.name === attempt.question.param)[0];
+        if (!info) return;
+
+        const marked = grade(attempt.question, attempt.startValue, info.value, info),
+            next = attemptReducer(attempt, { type: 'commit', value: info.value, grade: marked });
+        if (next === attempt) return;
+        setAttempt(next);
+
+        engine.update({
+            params: [
+                { name: 'submitted', value: 1 },
+                // A right answer gets the exact position too: their curve is
+                // within tolerance of it, and seeing where "close enough" sat is
+                // the difference between being told yes and being shown why.
+                ...(marked.correct && drawableAnswer(attempt.question)
+                    ? [{ name: 'revealed', value: 1 }] : [])
+            ]
+        });
+
+        if (isResolved(next)) {
+            setTrack(current => trackReducer(
+                current, { type: 'resolve', index: Number(attempt.questionId) }, STEPS
+            ));
+        }
+    }, [attempt]);
+
+    const onRetry = useCallback(() => {
+        setAttempt(current => attemptReducer(current, { type: 'retry' }));
+        engineRef.current?.update({
+            params: [{ name: 'submitted', value: 0 }, { name: 'revealed', value: 0 }]
+        });
+    }, []);
+
+    /**
+     * Show the answer, which is also a way past the question.
+     *
+     * Not a concession. Unlimited retries with the answer withheld measure
+     * persistence rather than recall, which is the better thing to measure —
+     * but only if nobody can be stuck, so asking to be shown has to finish the
+     * question. What it costs is the record: `first` says what they answered
+     * before they asked.
+     */
+    const onReveal = useCallback(() => {
+        if (!attempt) return;
+        const next = attemptReducer(attempt, { type: 'reveal' });
+        if (next === attempt) return;
+
+        setAttempt(next);
+        if (drawableAnswer(attempt.question)) {
+            engineRef.current?.update({ params: [{ name: 'revealed', value: 1 }] });
+        }
+        setTrack(current => trackReducer(
+            current, { type: 'resolve', index: Number(attempt.questionId) }, STEPS
+        ));
+    }, [attempt]);
 
     /**
      * Put the params back where this step established them.
@@ -551,10 +856,40 @@ export function StudyScreen() {
                 onWhy={onWhy}
             />
 
+            {/* Between the strip and the track, and only while a step is asking.
+              * It is the one row on this screen that is not always there, which
+              * is the price of not making the strip grow: a verdict is two
+              * clauses and up to three controls, and the strip is one line that
+              * sits directly under a stage measuring its own box. */}
+            {attempt ? (
+                <QuestionRow
+                    prompt={sayAt(STEPS, track.position)}
+                    attempt={attempt}
+                    param={dockParams.filter(p => p.name === attempt.question.param)[0]}
+                    onChange={value => updateParams([{ name: attempt.question.param, value }])}
+                    onGestureStart={beginGesture}
+                    onGestureEnd={endGesture}
+                    onCommit={onCommit}
+                    onRetry={onRetry}
+                    onReveal={onReveal}
+                    onContinue={() => goTo(track.position + 1)}
+                />
+            ) : null}
+
             {/* Under the strip, spanning the same width. Free exploration is
               * this track at its last position — everything revealed, the
-              * scrubber still there — rather than a mode beside it. */}
-            <Track steps={STEPS} state={track} onGoTo={goTo} onReset={resetToStep} />
+              * scrubber still there — rather than a mode beside it.
+              *
+              * "Reset to this step" is withheld while an answer is frozen: it
+              * writes through `engine.update` directly, so offering it there
+              * would be a control that moves a curve the diagram is refusing to
+              * let the student move. */}
+            <Track
+                steps={STEPS}
+                state={track}
+                onGoTo={goTo}
+                onReset={frozenParam ? undefined : resetToStep}
+            />
 
             {narrow ? (
                 <Dock
