@@ -13,6 +13,12 @@ export interface ParamDefinition {
     precision?: any;  // number of decimal places to display value to; automatically sets itself based on "round" - i.e., if round = 0.01 then precision will automatically choose 2 decimal places
 
     /**
+     * Set by `View.parse`, not by an author: this param's value was declared as
+     * a boolean and has since been coerced to 0/1. See `ParamInfo.isBoolean`.
+     */
+    isBoolean?: boolean;
+
+    /**
      * True when this param says how the diagram is *shown* rather than what it
      * shows: a panel's density level, which panel a host has focused.
      *
@@ -53,6 +59,18 @@ export interface ParamInfo {
     precision: number;
     /** True when the param says how the diagram is shown, not what it shows. */
     presentation: boolean;
+
+    /**
+     * True when the author declared this param's value as `true`/`false`.
+     *
+     * The engine coerces booleans to 0/1 in `View.parse` before a `Param` is
+     * ever built, so by the time a host sees one it is a number and nothing in
+     * its bounds says otherwise — which is how a control panel ends up offering
+     * a continuous slider for a toggle. A host cannot recover this by
+     * inspection, so the engine records it where it is still known and reports
+     * it here.
+     */
+    isBoolean: boolean;
 }
 
 export interface IParam {
@@ -73,6 +91,7 @@ export class Param implements IParam {
     public round: number;
     public precision: number;
     public presentation: boolean;
+    public isBoolean: boolean;
 
     constructor(def: ParamDefinition) {
 
@@ -95,11 +114,25 @@ export class Param implements IParam {
         this.label = def.label;
         this.presentation = !!def.presentation;
 
+        // Two roads reach here. A config that came through `View.parse` has
+        // already had its booleans coerced to 0/1 and carries `isBoolean` to say
+        // so; a `Param` constructed directly still holds the real thing. Neither
+        // is the odd one out, so both are asked.
+        this.isBoolean = typeof def.value == 'boolean' || !!def.isBoolean;
+
         if (typeof def.value == 'boolean') {
             this.value = +def.value;
             this.min = 0;
             this.max = 100;
             this.round = 1;
+            // Assigned here for the same reason it is assigned below, and it was
+            // not: `precision` is declared non-optional on `ParamInfo`, so a
+            // param that skipped it handed every reader a number-typed
+            // `undefined`. `formatted()` was the loudest victim — d3 threw
+            // `invalid format: .undefinedf` — and a host formatting the value
+            // itself printed the raw float at a student. A 0/1 value rounded to
+            // 1 shows no decimals.
+            this.precision = 0;
         } else {
             this.value = parseFloat(def.value);
             this.min = parseFloat(def.min);
@@ -145,7 +178,8 @@ export class Param implements IParam {
             max: param.max,
             round: param.round,
             precision: param.precision,
-            presentation: param.presentation
+            presentation: param.presentation,
+            isBoolean: param.isBoolean
         };
     }
 

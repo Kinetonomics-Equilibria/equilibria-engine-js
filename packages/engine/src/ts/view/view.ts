@@ -209,6 +209,18 @@ export class View implements IView {
                 }
             }
 
+            // Recorded before any of the coercions below, because each of them
+            // destroys the evidence: a param declared `true` leaves here as the
+            // number 1 with numeric bounds, and nothing downstream can tell it
+            // from a small integer. A host building a control panel needs to —
+            // offering a continuous slider for a toggle is the visible failure —
+            // and `Param` cannot work it out either, since `+true` has already
+            // happened by the time it is constructed.
+            if (typeof paramData.value == 'boolean'
+                || paramData.value == 'true' || paramData.value == 'false') {
+                paramData.isBoolean = true;
+            }
+
             // convert boolean params from strings to numbers
             if (paramData.value == 'true') {
                 paramData.value = 1;
@@ -217,7 +229,9 @@ export class View implements IView {
                 paramData.value = 0;
             }
 
-            // convert numerical params from strings to numbers
+            // convert numerical params from strings to numbers. `+true` is 1, so
+            // this is also what erases a real boolean — the string forms above
+            // only ever arrive from a div attribute or a URL override.
             paramData.value = isNaN(+paramData.value) ? paramData.value : +paramData.value;
 
             return paramData;

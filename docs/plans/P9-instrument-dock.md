@@ -41,13 +41,19 @@ stale by 40–270 lines, which is what happens to `path:line` in a plan written 
   (`packages/engine/src/ts/model/param.ts:133-149`, `packages/engine/src/ts/kg.ts:246`). The app
   already calls it: `StudyScreen` filters out presentation params to decide what narration may
   mention.
-- **`precision` is never assigned for a boolean param**, and `ParamInfo` declares it required.
-  The constructor sets it only in the numeric branch
-  (`packages/engine/src/ts/model/param.ts:98-113`), so `info()` copies a field that was never
-  assigned and the key is absent from the object entirely. `formatted()` on such a param throws
-  `invalid format: .undefinedf` out of d3. Explore reads `precision` for every param it renders, so
-  this is a precondition, not a footnote. Booleans are also given `min: 0, max: 100, round: 1` —
-  not 0–1 — so a slider offered for one spans a hundred steps of a true/false.
+- **A boolean param is coerced to a number before anything can see it was one.** `View.parse` maps
+  every param through `+value` (`packages/engine/src/ts/view/view.ts:220`), and `+true` is `1`, so
+  `Param` is constructed from `value: 1` with the ordinary numeric defaults. Two consequences, and
+  the second is the one that matters:
+  - `Param`'s boolean branch (`packages/engine/src/ts/model/param.ts:98-113`) never runs on the
+    mount path. It assigns no `precision`, which `ParamInfo` declares required — `info()` copies a
+    field never set, and `formatted()` throws `invalid format: .undefinedf` out of d3 — but only a
+    directly-constructed `Param` can reach it. A latent trap rather than a live defect, and cheap
+    to close.
+  - **Nothing downstream can tell a toggle from a small integer**, which is the real problem and is
+    not fixable in the app: by `getParams()` the param is a number with numeric bounds. The
+    information exists only at the moment it is destroyed, so the engine records `isBoolean` there
+    and reports it.
 - `updateParams([{name, value}])` reaches the engine through the hook
   (`packages/react/src/useEquilibria.ts:182-186`), which calls `instance.update({ params })`; the
   engine walks the array and calls `model.updateParam` per entry

@@ -457,6 +457,60 @@ describe('the host surface', () => {
         r.destroy();
     });
 
+    // A boolean param skipped the branch that assigns `precision`, so `info()`
+    // copied a field that had never been set and the key was absent from an
+    // object whose type declares it required. Every reader was handed a
+    // number-typed `undefined`: `formatted()` threw `invalid format:
+    // .undefinedf` out of d3, and a host formatting the value itself printed a
+    // raw float. Found by constructing one and printing `info()` — the
+    // declaration said `precision: number` throughout.
+    it('getParams reports a precision for a boolean param, not undefined', () => {
+        const r = mountObjects([], { params: [{ name: 'showGhost', value: true }] });
+
+        const p = (r.kg as any).getParams()[0];
+        expect(p).toHaveProperty('precision');
+        expect(p.precision).toBe(0);
+        expect(typeof p.precision).toBe('number');
+
+        r.destroy();
+    });
+
+    it('formats a boolean param instead of throwing', () => {
+        const r = mountObjects([], { params: [{ name: 'showGhost', value: true }] });
+        const param = (r.kg as any).view.model.getParam('showGhost');
+
+        expect(() => param.formatted()).not.toThrow();
+        expect(param.formatted()).toBe('1');
+
+        r.destroy();
+    });
+
+    // The coercion to 0/1 happens before a host ever sees the param, and it
+    // leaves nothing behind: `min: 0, max: 100, round: 1` describes a small
+    // integer just as well as a toggle. Without this flag an Explore panel
+    // offers a hundred-step slider for a true/false, and the only alternative
+    // is sniffing the bounds — which is a guess that a legitimate 0-100 param
+    // would fail.
+    it('getParams says which params the author declared as booleans', () => {
+        const r = mountObjects([], {
+            params: [
+                { name: 'showGhost', value: true },
+                { name: 'a', value: 20, min: 5, max: 28, round: 0.1 },
+                { name: 'steps', value: 1, min: 0, max: 100, round: 1 }
+            ]
+        });
+
+        const byName: any = {};
+        (r.kg as any).getParams().forEach((p: any) => { byName[p.name] = p });
+
+        expect(byName.showGhost.isBoolean).toBe(true);
+        expect(byName.a.isBoolean).toBe(false);
+        // Identical bounds to the coerced boolean, and not a boolean.
+        expect(byName.steps.isBoolean).toBe(false);
+
+        r.destroy();
+    });
+
     it('honours snapshotOn from the config root', () => {
         const r = mountConfig({
             schema: 'EconSchema',
