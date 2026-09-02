@@ -304,8 +304,8 @@ of ghosts renders byte for byte as before.
 
 ## Findings
 
-Six, of which one is an engine defect now recorded in [NOTES.md](../../NOTES.md) (17), and two are
-about where the design work actually turned out to be.
+Eight, of which two are defects now closed in [NOTES.md](../../NOTES.md) — issue 17, and issue D,
+which had been open since P8 — and two are about where the design work actually turned out to be.
 
 1. **The best thing about the feature was inherited rather than designed.** A ghost is revealed by
    whatever lesson step reveals the object it shadows, and no line of P13 makes that happen: P6's
@@ -355,16 +355,44 @@ about where the design work actually turned out to be.
    object" and "shadow this object" come apart, and both were settled by picturing the result rather
    than by reading a type.
 
-6. **The proof that a shorthand is correct is the absence of a difference.** 199 app tests passed
-   untouched, and that is the whole app-level check — a shorthand has to produce what the longhand
-   produced, not something near it. It is also why P13 added no app tests: a new assertion about the
-   study screen would have been an assertion about the shorthand's *output*, which the engine's own
-   suite already pins, dressed up as an assertion about the app.
+6. **199 jsdom tests passed untouched and three browser tests did not, and the difference between
+   them is a pointer.** The unit suite was the wrong place to look for a difference: it drives the
+   diagram through `update()`, and a ghost is a thing you get by *dragging*. In the browser, three
+   tests broke — and every one of them broke on picking the wrong element out of the DOM, because
+   the ghost is a copy of the object it shadows and is drawn immediately *before* it.
 
-   The screenshot, for once, only confirmed: `D` and `D′`, the arrow, the faint prior equilibrium,
-   and no second pair of droplines. First time in this sequence that looking at the running app
-   found nothing — worth recording precisely because the previous four times it found something the
-   suite could not.
+   `focalDragPathIndex` took the first hit-area inside the focal panel, which after one drag is the
+   ghost's; `focalPointCoordinates` took the first circle, which is the ghost equilibrium, so a test
+   read the market as it stood one gesture ago — a whole unit out, and a plausible number rather
+   than an error. Both helpers were already picking by position among things that are not
+   distinguished by position; the ghost is only what made them wrong. They now pick by what actually
+   separates the two: a hit-area that takes pointer events, and a point drawn at full strength
+   rather than faintly.
+
+   **A copy of an object is a trap for every selector that identifies objects by their order.**
+
+7. **Looking at the picture closed a defect that had been open since P8.** The screenshot showed
+   `D` and `D′`, the arrow, the faint prior equilibrium and no second pair of droplines — and a flat
+   line straight across the panel that no object in the diagram could account for. That is
+   [NOTES issue D](../../NOTES.md), recorded twice at two heights, hunted at length and abandoned
+   with the note that the culprit was probably reached through `<defs>`.
+
+   It is the browser's default focus ring. A dragged curve takes focus, and the ring outlines the
+   element's *unclipped* bounding box — a curve's `d` spans the whole domain and is cropped by a
+   clip path, not by geometry — so the ring is a panel-sized rectangle whose top edge is at `P = a`
+   and whose bottom is at `P = a − 20`. One rectangle, two edges, which is why the same artefact had
+   been recorded at two incompatible heights. Nothing in the object tree ever matched it because an
+   outline is not an element, and the earlier hunt had been searching the one place it could not be.
+
+   The generalisation is about the record rather than the ring: **two observations that fit a formula
+   are two observations, and a formula fitted through both can still be describing the wrong
+   object.** The third observation is what broke it, and only because it was taken from a state
+   nobody had happened to screenshot before.
+
+8. **The proof that a shorthand is correct is mostly the absence of a difference.** No new app-level
+   assertion about the study screen was needed for the shorthand's *output* — the engine suite pins
+   that — so the two browser tests added say only what jsdom cannot: that a real drag brings the
+   ghost out, and that dragging no longer draws a line through the diagram.
 
 ### Departed from the plan, deliberately
 
@@ -378,3 +406,7 @@ about where the design work actually turned out to be.
 - **`ghost` reached the app on a `Point` as well as a `Line`.** The plan's "done when" said the flag
   twice, which it is — but one of the two replaces three declarations rather than one, because a
   point's ghost brings the arrow with it.
+- **A second engine fix, and this one is not P13's at all.** NOTES issue D (finding 7) was open,
+  unowned and explicitly left alone. It was closed here because the cause turned out to be certain
+  and the fix one CSS rule, and because a plan that publishes a screenshot of a defect it has just
+  diagnosed and then leaves it there is not a plan anyone should copy. It is in its own commit.

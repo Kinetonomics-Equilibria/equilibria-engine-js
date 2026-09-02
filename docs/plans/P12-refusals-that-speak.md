@@ -304,6 +304,12 @@ one is a confirmation of an open one.
    from a single observation. Two points do not find the culprit, but they do promote the formula
    from a guess to a fit.
 
+   > **Superseded by P13.** The fit was real and the formula was half the truth: the line is the
+   > browser's focus ring around the curve's unclipped bounding box, and `P = a − 20` is its *bottom*
+   > edge. A third observation, at `P = a`, is the top edge of the same rectangle. Two points that
+   > fit can still be describing the wrong object — see
+   > [P13 finding 7](P13-ghost-authoring-shorthand.md#findings).
+
 ### Departed from the plan, deliberately
 
 - **Bounds are in the payload.** The outline covered restrictions only. See correction 6: without

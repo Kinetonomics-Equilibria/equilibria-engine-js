@@ -4,7 +4,7 @@ Findings from building the first real consumer of the engine (`apps/web`) and
 from auditing the econ object library. These are pre-existing defects inherited
 from the KGJS fork, not regressions from the monorepo or packaging work — the
 code paths involved are untouched by those changes. Everything under **Fixed**
-is closed and named by the test that holds it in place; four items remain
+is closed and named by the test that holds it in place; three items remain
 **Open** at the end.
 
 Issues 9 to 17 were found later, while implementing the plans in `docs/plans`,
@@ -12,7 +12,8 @@ and mostly by the same move: building something that asks the engine for a
 *number* rather than for a picture. Issue 13 is the only regression in the list
 — introduced by the density work and caught the next day by the screen that
 consumed it. Issue D was found the opposite way, by looking at a screenshot,
-which is the one thing a numbers-first habit will never do for you.
+which is the one thing a numbers-first habit will never do for you — and closed
+the same way two plans later, by looking at another one.
 
 Issue 17 was found by a third route again, and one worth naming: a new feature
 made the *engine* start writing the spelling that an existing diagnostic warned
@@ -433,6 +434,39 @@ wrote itself" and "still warns about a calc the author really did write that way
 the offending spelling on every ghosted point. The general lesson is smaller than the fix: **before
 a diagnostic fires, ask who wrote the thing it is complaining about.**
 
+## D. A stray horizontal line is drawn across a panel once a curve is dragged — FIXED
+
+**Symptom:** drag the demand curve on the study screen and a 2px line appears across the full width
+of the focal panel, at a height that tracks the drag. Recorded twice at **P = a − 20** — with `a` at
+20 (under the x-axis, invisible) and at 28 (at P = 8) — and once, later, at **P = a**, which the old
+formula did not fit.
+
+**Cause:** the dragged `path` takes focus on pointer-down, and the browser paints its default focus
+ring around the element's **unclipped** bounding box. A curve's `d` covers the whole x domain — the
+part outside the panel is hidden by a clip path, not by geometry — so the ring is a rectangle the
+size of the entire panel. Its top edge sits at the curve's value on the left (`P = a`) and its
+bottom edge at its value on the right (`P = a − 20`), and the panel shows whichever of the two falls
+inside. That is why one artefact fitted two different formulas: they are two edges of one rectangle.
+
+It also accounts for everything the earlier hunt established and could not explain. Nothing in the
+object tree matched it, because an outline is not an element; recolouring every element in turn did
+nothing, for the same reason; it vanished with the `<svg>` and survived a forced repaint, because it
+is painted by the browser around a node inside it. The guess that the culprit was reached through
+`<defs>` was wrong: it is reached through `:focus`.
+
+**Fix:** `.kg-container svg :focus:not(:focus-visible) { outline: none }` in `kgjs-theme.css`.
+Keyboard focus keeps its ring — the one case where a ring is the point — and pointer focus, which
+nobody asked for, no longer draws a line through the diagram. Covered by "a dragged curve does not
+draw a line across the panel" in `apps/web/tests/app.spec.ts`.
+
+**Note:** `ViewObject.addScreenReaderDescriptions` still withholds `tabindex`, with the comment
+"Let's not add tabIndex until we know how to style it..." — the same problem, anticipated and
+side-stepped. This is half the answer. The other half, needed before anything becomes
+keyboard-focusable, is a ring that traces the curve rather than the box it happens to occupy.
+
+**Found by** screenshotting P13's work and asking what a full-width line was doing in a picture with
+no full-width object in it.
+
 # Open
 
 ## A. `multiplyDefs()` treats `0 * Infinity` as `0`
@@ -466,29 +500,3 @@ generated expressions and surfaces as a mathjs type error naming neither the
 object nor the missing key — for example `EconContractCurve` without `a`/`b`.
 The calc sweep from issue 7 reports these once they reach the model, but there is
 no up-front validation of required keys.
-
-## D. A stray horizontal line is drawn across a panel once a curve is dragged
-
-**Symptom:** drag the demand curve up on the study screen and a 2px near-black line
-(`rgb(16,16,16)`, distinct from the axis's `rgb(69,70,70)`) appears across the full width of the
-focal panel. It sits at exactly **P = a − 20** — the demand curve's value where it leaves the right
-edge — and tracks the drag. At rest `a = 20`, so it lies under the x-axis and is invisible; it only
-emerges once the curve is pulled above the panel's top.
-
-**Not narration's.** Reproduced on the P7 baseline with P8 stashed, so it predates the strip. Found
-by screenshotting the app rather than by any test: every browser assertion in `app.spec.ts` passes
-with it on screen, because none of them looks at a region no object claims.
-
-**What is established:** it is painted inside the engine's SVG — hiding the `<svg>` removes it — and
-it survives a forced repaint, so it is not a browser paint artifact. But no `path`, `line` or `rect`
-in the tree has geometry matching it: recolouring every element in turn does not turn it red, and no
-path's `d` contains a horizontal run at that height. That points at something drawn indirectly — a
-`marker`, or a fill whose own coordinates do not describe the mark it leaves.
-
-**Confirmed at a second value.** A screenshot taken while checking P12 has `a` at 28 and the line at
-exactly P = 8, which fits `P = a − 20` — the formula was previously a single observation and is now
-a fit through two points. Still nothing about *what* draws it.
-
-Recorded rather than chased further because it is nobody's plan and the hunt was already long.
-Whoever picks it up should start where it was left: the culprit is reached through `<defs>`, not
-through the object tree.

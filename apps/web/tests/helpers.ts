@@ -54,6 +54,13 @@ interface TickPosition {
  * happens to be first in the DOM — not the one being read. Only the focal panel
  * carries tick labels (the rail draws at `indicator`), so the ticked axes both
  * give the scale *and* say which box to look in.
+ *
+ * Inside the focal panel there are now two: the equilibrium, and the ghost of
+ * where it was before the student moved anything. The ghost is drawn first,
+ * because it belongs *under* what it shadows, so "the first one inside the
+ * panel" started reading the market as it was one gesture ago — a whole unit
+ * out, and a plausible-looking number rather than an error. A ghost is drawn
+ * faint by definition, so the live object is the one at full strength.
  */
 export async function focalPointCoordinates(page: Page): Promise<{ x: number; y: number }> {
     return page.evaluate(() => {
@@ -93,6 +100,7 @@ export async function focalPointCoordinates(page: Page): Promise<{ x: number; y:
             p.y >= yBox.y - 4 && p.y <= yBox.y + yBox.height + 4;
 
         const point = [...document.querySelectorAll('svg circle[class^="circle-"]')]
+            .filter((c) => Number(getComputedStyle(c).fillOpacity) > 0.9)
             .map(centre)
             .find(inside);
         if (!point) throw new Error('No point drawn inside the focal panel');
@@ -102,12 +110,28 @@ export async function focalPointCoordinates(page: Page): Promise<{ x: number; y:
 }
 
 /**
- * Which drag hit-area belongs to the focal panel.
+ * Which drag hit-area belongs to the focal panel *and can be dragged*.
  *
  * Every panel draws its own, and the first in DOM order belongs to whichever
  * panel the author declared first — not to the one on the stage. Dragging the
  * wrong one lands on a rail panel's promote button and silently promotes it
  * instead, which looks exactly like a drag that did nothing.
+ *
+ * "Inside the focal panel" was not enough on its own. *Every* curve draws a
+ * hit-area, draggable or not — supply, the question's two lines, and now the
+ * ghost of demand — and the ones that cannot be dragged carry
+ * `pointer-events: none`. The ghost is drawn *under* the curve it shadows, so
+ * once it is on screen it is also the first one inside the panel, and a second
+ * drag in one test started aiming at its box instead: the same failure this
+ * helper was written to prevent, arriving from the other side. So ask for the
+ * hit-area that actually takes a pointer.
+ *
+ * When *nothing* in the panel takes one, fall back to the old rule. That is the
+ * committed-answer case — `draggable: not(params.submitted)` has gone false, so
+ * the engine has taken pointer events off the very curve a test is about to try
+ * to drag — and there the drag is expected to do nothing whatever it aims at.
+ * The assertion that carries weight is the one after "Try again", where the
+ * curve takes pointers again and is dragged for real.
  */
 export async function focalDragPathIndex(page: Page): Promise<number> {
     return page.evaluate(() => {
@@ -122,11 +146,16 @@ export async function focalDragPathIndex(page: Page): Promise<number> {
             bottom = Math.max(...ticked.map((b) => b.y + b.height));
 
         const paths = [...document.querySelectorAll('.kg-container path[class^="dragPath"]')];
-        const index = paths.findIndex((p) => {
+        const inFocalPanel = (p: Element) => {
             const b = p.getBoundingClientRect();
             const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
             return cx >= left && cx <= right && cy >= top && cy <= bottom;
-        });
+        };
+
+        const draggable = paths.findIndex(
+            (p) => getComputedStyle(p).pointerEvents === 'all' && inFocalPanel(p));
+        const index = draggable > -1 ? draggable : paths.findIndex(inFocalPanel);
+
         if (index === -1) throw new Error('No drag target inside the focal panel');
         return index;
     });

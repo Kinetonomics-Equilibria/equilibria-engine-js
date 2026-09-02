@@ -34,3 +34,24 @@
 .kg-axis path {
     stroke: var(--kg-axis-color);
 }
+/*
+ * A dragged curve takes focus, and the browser's default ring outlines the
+ * element's *unclipped* bounding box.
+ *
+ * A curve's `d` covers the whole x domain — the part outside the panel is
+ * hidden by a clip path, not by geometry — so the ring is a rectangle the size
+ * of the entire panel, and whichever of its edges falls inside is drawn as a
+ * flat line right across the diagram. For a demand curve `P = a - Q` that is
+ * `P = a` along the top and `P = a - 20` along the bottom, which is why the
+ * same artefact was recorded at two unrelated heights (NOTES issue D) and why
+ * nothing in the object tree ever matched it: it is an outline, not a shape.
+ *
+ * Only the pointer's ring is suppressed. Keyboard focus keeps its ring — the
+ * one case where a ring is the whole point — and `addScreenReaderDescriptions`
+ * still withholds `tabindex` for now, with a comment saying the reason is not
+ * knowing how to style it. This is half of that answer; the other half is a
+ * ring that traces the curve rather than the box it happens to occupy.
+ */
+.kg-container svg :focus:not(:focus-visible) {
+    outline: none;
+}

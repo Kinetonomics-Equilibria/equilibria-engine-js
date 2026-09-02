@@ -40,6 +40,16 @@ const LABELS_PER_PANEL = 6;
 const QUESTION_LABELS = 1;
 
 /**
+ * The ghost of the market panel's demand curve carries a label of its own.
+ *
+ * `ghost: true` copies the label along with everything else and pairs the two
+ * through the schema's idioms, so the dashed twin is `D` and the live curve
+ * becomes `D'` while it is up. The hand-written ghost this replaced had no
+ * label at all, which is why the count moved.
+ */
+const GHOST_LABELS = 1;
+
+/**
  * Pull the focal panel's demand curve down by its transparent hit area.
  *
  * The focal panel's overlay is pointer-transparent, so the drag has to reach the
@@ -154,7 +164,7 @@ test('draws the focal panel in full and the rail panels as indicators', async ({
     // rebuild — so the count that says anything is the *visible* one.
     const labels = page.locator(`${LABEL}:visible`);
     await expect(labels).toHaveCount(LABELS_PER_PANEL);
-    await expect(page.locator(LABEL)).toHaveCount(LABELS_PER_PANEL * 3 + QUESTION_LABELS);
+    await expect(page.locator(LABEL)).toHaveCount(LABELS_PER_PANEL * 3 + QUESTION_LABELS + GHOST_LABELS);
 
     // Ticks tell the same story from the other side: only the focal panel has
     // any, while the curves — two per panel — are all still drawn.
@@ -232,6 +242,55 @@ test('shows a delta once something has moved, and not before', async ({ page }) 
 
     // A delta on every panel: they are one market, so all three moved.
     await expect(page.getByText(/^[+−]\d/)).toHaveCount(3);
+});
+
+/**
+ * The `ghost` shorthand (P13), from outside.
+ *
+ * There is no unit-level version of this: a drag cannot be synthesised in
+ * jsdom — `d3.pointer` falls back to `getBoundingClientRect`, which returns
+ * zeros there, so the param is asked for the value it already has — and a
+ * shorthand that only ever moves a param through `update()` is not being asked
+ * the question a student asks.
+ */
+
+test('a drag leaves a ghost of where the curve was', async ({ page }) => {
+    // Six curves — demand and supply in each of the three panels — and the
+    // focal panel's own six labels. The ghost and its label are in the DOM
+    // already, hidden, because `prev.changed` is 0.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
+    await expect(page.locator(`${LABEL}:visible`)).toHaveCount(LABELS_PER_PANEL);
+
+    await dragDemandDown(page);
+
+    // One more of each: the dashed twin, and the `D` it takes with it while the
+    // live curve becomes `D′`. The pairing itself is pinned in the engine's
+    // ghosts.test.ts; what only a browser can say is that a real drag is what
+    // brings them out.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
+    await expect(page.locator(`${LABEL}:visible`)).toHaveCount(LABELS_PER_PANEL + GHOST_LABELS);
+});
+
+/**
+ * NOTES issue D, closed by looking at a screenshot of P13's work.
+ *
+ * A dragged curve takes focus, and the browser's default ring outlines the
+ * element's *unclipped* bounding box — the curve's `d` spans the whole domain
+ * and is cropped by a clip path, not by geometry — so the ring is a rectangle
+ * the size of the panel and whichever edge falls inside is drawn as a flat line
+ * right across the diagram. It was recorded at two unrelated heights and never
+ * matched to any element, because it is an outline rather than a shape.
+ */
+test('a dragged curve does not draw a line across the panel', async ({ page }) => {
+    await dragDemandDown(page);
+
+    const ring = await page.evaluate(() => {
+        const focused = document.activeElement;
+        if (!focused || !focused.closest('.kg-container')) return 'nothing in the diagram has focus';
+        return getComputedStyle(focused).outlineStyle;
+    });
+
+    expect(ring).toBe('none');
 });
 
 test('the grid toggle rearranges the same panels, and is not the landing state', async ({ page }) => {
