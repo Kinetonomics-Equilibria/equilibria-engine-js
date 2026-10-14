@@ -7,7 +7,7 @@ code paths involved are untouched by those changes. Everything under **Fixed**
 is closed and named by the test that holds it in place; three items remain
 **Open** at the end.
 
-Issues 9 to 17 were found later, while implementing the plans in `docs/plans`,
+Issues 9 to 18 were found later, while implementing the plans in `docs/plans`,
 and mostly by the same move: building something that asks the engine for a
 *number* rather than for a picture. Issue 13 is the only regression in the list
 — introduced by the density work and caught the next day by the screen that
@@ -433,6 +433,32 @@ wrote itself" and "still warns about a calc the author really did write that way
 **Note:** found by building the `ghost` shorthand (P13), which made the engine itself the author of
 the offending spelling on every ghosted point. The general lesson is smaller than the fix: **before
 a diagnostic fires, ask who wrote the thing it is complaining about.**
+
+## 18. A ghost appeared when anything moved, and labelled the curve that had not — FIXED
+
+**Symptom:** on the study screen, apply "Input costs rise" and then "Back to baseline". Supply moves
+twice; demand never moves. Yet demand grows a dashed twin lying exactly on top of it and is
+relabelled `D′`, while supply — the curve that actually shifted — keeps a plain `S`.
+
+**Cause:** introduced with the `ghost` shorthand (P13). Every generated ghost was gated on
+`prev.changed`, which is `paramsDifferFromSnapshot()`: *has the student moved any param at all*. The
+paired label on the live object reads the same predicate. On a diagram with one curve that question
+and "has this curve moved" have the same answer, which is every diagram P13's tests built. The study
+screen has two curves and only demand carries a ghost, so moving supply raised demand's memory of a
+place demand had never left, and primed demand for a shift that belonged to the other curve.
+
+**Fix:** a ghost is shown when the object's **own** bindings differ from the snapshot. The rewrite to
+`prev` already knows exactly which references separate the twin from the original — it is what
+separates them — so `ghostDef` emits `prev.changed and (params.a != prev.params.a or …)` over that
+set, and the paired label and the shift arrow follow it because they were already conditioned on
+the ghost's predicate rather than on `prev.changed` directly. `prev.changed` stays conjoined so a
+binding to a presentation param still cannot raise a ghost on its own (issue 13); an object with no
+bindings keeps the old predicate. Covered by "a ghost is where *this* object was, not a record that
+something moved" in `src/__tests__/ghosts.test.ts`, which asserts `show` and the drawn label text
+rather than the generated expression.
+
+**Note:** every P13 test passed through it because each built a diagram with one param. Found by the
+study-screen UX audit, by reading the labels on a screenshot and asking which curve had moved.
 
 ## D. A stray horizontal line is drawn across a panel once a curve is dragged — FIXED
 

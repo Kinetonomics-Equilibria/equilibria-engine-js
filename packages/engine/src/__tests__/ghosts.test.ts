@@ -153,6 +153,127 @@ describe('ghost: the same object, one snapshot ago', () => {
     });
 });
 
+describe('a ghost is where *this* object was, not a record that something moved', () => {
+
+    // Two curves on one diagram, which is the first case where "the student
+    // moved something" and "this curve moved" come apart.
+    const C = { name: 'c', value: 2, min: 0, max: 8, round: 0.1 };
+
+    const SUPPLY = {
+        type: 'Line',
+        def: {
+            name: 'supply', yIntercept: 'params.c', slope: 1,
+            color: 'colors.supply', label: { text: 'S', x: 16 }
+        }
+    };
+
+    const EQUILIBRIUM = {
+        type: 'Point',
+        def: { name: 'equilibrium', x: 'calcs.Qe', y: 'calcs.Pe', ghost: true }
+    };
+
+    const MARKET = {
+        params: [A, C],
+        calcs: { Qe: '(params.a - params.c)/2', Pe: '(params.a + params.c)/2' }
+    };
+
+    function moveParam(r: any, name: string, value: number) {
+        r.kg.snapshot();
+        r.kg.update({ params: [{ name, value }] });
+    }
+
+    /** Demand's ghost and demand, in draw order; supply has none and comes third. */
+    function demandCurves(r: any): any[] {
+        return objectsIn(r).filter((o: any) => o.constructor.name === 'Curve').slice(0, 2);
+    }
+
+    it('keeps the demand ghost off, and demand plain D, when only supply moved', () => {
+        const r = build([DEMAND, SUPPLY], MARKET);
+        expect(r.error).toBe(null);
+
+        moveParam(r, 'c', 6);
+
+        // Demand is drawn exactly where it was. A ghost of it would be a dashed
+        // copy lying on top of the solid one, and a prime would be claiming a
+        // shift that did not happen.
+        const [ghost, live] = demandCurves(r);
+        expect(ghost.show).toBeFalsy();
+        expect(live.show).toBeTruthy();
+        expect(labels(r)).toEqual(['D\\ ', 'D', 'S']);
+        r.destroy();
+    });
+
+    it('raises the ghost and primes the label when demand itself moved', () => {
+        const r = build([DEMAND, SUPPLY], MARKET);
+
+        moveParam(r, 'a', 26);
+
+        const [ghost] = demandCurves(r);
+        expect(ghost.show).toBeTruthy();
+        expect(labels(r)).toEqual(['D\\ ', 'D^\\prime', 'S']);
+        r.destroy();
+    });
+
+    it('drops the ghost again once demand is back where it was snapshotted', () => {
+        // The repro from the study screen: one scenario moves supply, the next
+        // puts it back. Each is its own snapshot, and in neither did demand move.
+        const r = build([DEMAND, SUPPLY], MARKET);
+
+        moveParam(r, 'c', 6);
+        moveParam(r, 'c', 2);
+
+        expect(demandCurves(r)[0].show).toBeFalsy();
+        expect(labels(r)).toEqual(['D\\ ', 'D', 'S']);
+        r.destroy();
+    });
+
+    it('follows a calc, so a point moved by either curve keeps its ghost', () => {
+        // The equilibrium is bound to calcs rather than to a param, and both
+        // params move the calcs. That is the right answer for it: it *did* move.
+        const r = build([DEMAND, SUPPLY, EQUILIBRIUM], MARKET);
+        const arrow = () => objectsIn(r).filter((o: any) => o.constructor.name === 'Segment')[0];
+
+        moveParam(r, 'c', 6);
+        expect(arrow().show).toBeTruthy();
+        expect([arrow().x1, arrow().y1]).toEqual([9, 11]);
+        expect([arrow().x2, arrow().y2]).toEqual([7, 13]);
+        r.destroy();
+    });
+
+    it('stays off for a presentation param, even one the object is bound to', () => {
+        // `prev.changed` is conjoined, not replaced: a binding that differs only
+        // because a presentation param moved is the host rearranging the
+        // screen, not the student moving the curve (NOTES.md issue 13).
+        const r = build([{
+            type: 'Line',
+            def: { name: 'start', yIntercept: 'params.startA', slope: -1, ghost: true }
+        }], { params: [A, { name: 'startA', value: 20, min: 12, max: 28, round: 0.1, presentation: true }] });
+
+        moveParam(r, 'startA', 26);
+        const ghost = objectsIn(r).filter((o: any) => o.constructor.name === 'Curve')[0];
+        expect(ghost.show).toBeFalsy();
+        r.destroy();
+    });
+
+    it('does not count the drag it was not given', () => {
+        // `draggable` reads `params.submitted` — a reference the ghost never
+        // inherits, so it must not decide when the ghost appears either.
+        const r = build([{
+            type: 'Line',
+            def: {
+                name: 'demand', yIntercept: 'params.a', slope: -1,
+                drag: [{ vertical: 'a', draggable: 'not(params.locked)' }],
+                ghost: true
+            }
+        }], { params: [A, { name: 'locked', value: 0, min: 0, max: 1, round: 1 }] });
+
+        moveParam(r, 'locked', 1);
+        const ghost = objectsIn(r).filter((o: any) => o.constructor.name === 'Curve')[0];
+        expect(ghost.show).toBeFalsy();
+        r.destroy();
+    });
+});
+
 describe('a ghost is not a second address', () => {
 
     it('claims no name, no calc key and no duplicate warning', () => {
@@ -299,6 +420,28 @@ describe('the label pairing', () => {
         // The live label reads the live value and the ghost reads the old one;
         // neither has been quoted into a string literal.
         expect(labels(r)).toEqual(['20', '14']);
+        r.destroy();
+    });
+
+    it('qualifies the ghost alone when given a qualifier, and never primes the live curve', () => {
+        const r = build([{
+            type: 'Line',
+            def: {
+                name: 'demand', yIntercept: 'params.a', slope: -1,
+                label: { text: 'D', x: 4 }, ghost: { label: '_0' }
+            }
+        }]);
+
+        expect(labels(r)).toEqual(['D_0', 'D']);
+
+        move(r, 26);
+        expect(labels(r)).toEqual(['D_0', 'D']);
+
+        // The move back, which is what a lesson's "back where we started" does.
+        // Pairing would now prime the curve at the original place; a qualifier
+        // still names the ghost, which is the one at the place just left.
+        move(r, 20);
+        expect(labels(r)).toEqual(['D_0', 'D']);
         r.destroy();
     });
 

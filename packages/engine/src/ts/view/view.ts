@@ -8,6 +8,7 @@ import { ScaleDefinition, Scale } from "./scale";
 import { MarkerDefinition, Marker } from "./viewObjects/marker";
 import { ViewObjectDefinition, ViewObject } from "./viewObjects/viewObject";
 import { Sample, Movement, describeMovement, noiseFor } from "./movement";
+import { AxisMarks } from "./axisMarks";
 import { KG_EVENTS } from "../constants";
 import { parse } from "../KGAuthor/parsers/parsingFunctions";
 import { StepDefinition, compileSteps } from "../KGAuthor/parsers/steps";
@@ -561,6 +562,12 @@ export class View implements IView {
                 }
             });
         }
+
+        // Last, so that on every update it runs after every axis and label has
+        // redrawn: it decides which tick labels a dropline's label has covered,
+        // and that needs both of their boxes as they are now.
+        const axisMarks = AxisMarks.over(view.viewObjects);
+        if (axisMarks) view.model.addUpdateListener(axisMarks as any);
 
         view.updateDimensions();
     }

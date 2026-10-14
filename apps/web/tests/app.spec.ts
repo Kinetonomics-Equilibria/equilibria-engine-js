@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { RENDERED, chromeCollisions, focalDragPathIndex, focalPointCoordinates, test } from './helpers';
+import { RENDERED, focalDragPathIndex, focalPointCoordinates, test, textCollisions } from './helpers';
 
 /**
  * The study screen, in a real browser.
@@ -42,10 +42,10 @@ const QUESTION_LABELS = 1;
 /**
  * The ghost of the market panel's demand curve carries a label of its own.
  *
- * `ghost: true` copies the label along with everything else and pairs the two
- * through the schema's idioms, so the dashed twin is `D` and the live curve
- * becomes `D'` while it is up. The hand-written ghost this replaced had no
- * label at all, which is why the count moved.
+ * `ghost` copies the label along with everything else, and the study diagram
+ * gives the ghost a qualifier, so the dashed twin reads `D₀` and the live curve
+ * stays `D` in every panel. The hand-written ghost this replaced had no label
+ * at all, which is why the count moved.
  */
 const GHOST_LABELS = 1;
 
@@ -263,8 +263,8 @@ test('a drag leaves a ghost of where the curve was', async ({ page }) => {
 
     await dragDemandDown(page);
 
-    // One more of each: the dashed twin, and the `D` it takes with it while the
-    // live curve becomes `D′`. The pairing itself is pinned in the engine's
+    // One more of each: the dashed twin, and the `D₀` it carries — the live
+    // curve stays `D`. The labelling itself is pinned in the engine's
     // ghosts.test.ts; what only a browser can say is that a real drag is what
     // brings them out.
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
@@ -319,32 +319,53 @@ test('the grid toggle rearranges the same panels, and is not the landing state',
 });
 
 /**
- * Captions and the diagram's own text, kept apart.
+ * No text on the stage lands on other text, in any arrangement.
  *
  * In the grid every caption used to be printed in the band where its panel's
  * tick labels go — "Market" across the `0`, the price across `Q*`, the delta
  * chip across `10` — and the rows sat so close that the next row's top tick
- * shared the line. Checked in all three arrangements, since each puts the
- * captions somewhere different.
+ * shared the line. And inside every panel the equilibrium's `Q*` could sit on
+ * the tick label at the same value. Checked in all four arrangements, since each
+ * puts the captions somewhere different and draws the axes at a different size,
+ * and at three markets: the one the config declares, one where supply has
+ * shifted (and its label has had to slide back onto the plot), and one where
+ * the market clears at exactly Q* = 10, on top of a tick.
  */
-test('no caption lands on the diagram\'s text, in any arrangement', async ({ page }) => {
+const MARKETS = ['Back to baseline', 'Input costs rise', 'Boom and cost squeeze'];
+
+async function noTextCollides(page: Page, arrangement: string) {
+    for (const market of MARKETS) {
+        await page.getByRole('button', { name: market }).click();
+        await expect.poll(() => textCollisions(page), { message: `${arrangement}, ${market}` }).toEqual([]);
+    }
+}
+
+test('no text on the stage lands on other text, in any arrangement', async ({ page }) => {
+    await page.getByRole('tab', { name: 'Scenarios' }).click();
+
     // At the suite's own size the stage is under the filmstrip breakpoint.
-    expect(await chromeCollisions(page), 'focus, with a strip').toEqual([]);
     await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+    await noTextCollides(page, 'focus, with a strip');
+
+    // The boom leaves the market clearing at Q* = 10, so the check above passed
+    // because the 10 gave way rather than because nothing was near it.
+    const withheld = await page.locator('.kg-container g.tick text').evaluateAll(texts =>
+        texts.filter(t => t.textContent === '10' && getComputedStyle(t).visibility === 'hidden').length);
+    expect(withheld, 'the 10 under Q*').toBeGreaterThan(0);
 
     await page.getByText('Grid', { exact: true }).click();
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
-    expect(await chromeCollisions(page), 'grid').toEqual([]);
+    await noTextCollides(page, 'grid');
 
     // Wide enough for the rail to stand beside the focal panel.
     await page.getByText('Focus', { exact: true }).click();
     await page.setViewportSize({ width: 1800, height: 950 });
     await expect(page.locator('[data-role="rail"]')).toHaveCount(2);
-    expect(await chromeCollisions(page), 'focus, with a rail').toEqual([]);
+    await noTextCollides(page, 'focus, with a rail');
 
     await page.getByText('Grid', { exact: true }).click();
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
-    expect(await chromeCollisions(page), 'grid, wide').toEqual([]);
+    await noTextCollides(page, 'grid, wide');
 });
 
 test('a curve can be dragged in the grid', async ({ page }) => {

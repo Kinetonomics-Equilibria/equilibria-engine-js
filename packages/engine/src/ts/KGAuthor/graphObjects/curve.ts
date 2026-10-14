@@ -21,6 +21,27 @@ export interface CurveDefinition extends GraphObjectDefinition {
     areaAbove?: string | AreaDefinition;
 }
 
+/**
+ * The curve a label sits on, as a function of the coordinate the label was placed by.
+ *
+ * Handed to the label so that it can slide along the curve when the place it was
+ * put is off the plot (see `Label.slide` in the view). The same two strings
+ * `yOfX` and `xOfY` substitute into, so the label and its coordinates cannot
+ * describe different curves. The range is passed only when it is a range of the
+ * label's own coordinate: a line drawn over `x` in [2, 10] says nothing about
+ * where along `y` a label placed by `y` may go.
+ */
+function along(fn: UnivariateFunctionDefinition, by: 'x' | 'y'): UnivariateFunctionDefinition {
+    const sameAxis = (by === 'y') === (fn.ind === 'y');
+    const out: UnivariateFunctionDefinition = {
+        fn: (by === 'y' && fn.yFn) ? fn.yFn : fn.fn,
+        ind: by
+    };
+    if (sameAxis && fn.min !== undefined) out.min = fn.min;
+    if (sameAxis && fn.max !== undefined) out.max = fn.max;
+    return out;
+}
+
 export class Curve extends GraphObject {
 
     public pts: string[];
@@ -73,9 +94,11 @@ export class Curve extends GraphObject {
             if (def.hasOwnProperty('univariateFunction')) {
                 if (labelDef.hasOwnProperty('x') && def.univariateFunction.ind != 'y') {
                     labelDef.coordinates = [labelDef.x, c.yOfX(labelDef.x)];
+                    labelDef.along = along(def.univariateFunction, 'x');
                     c.subObjects.push(new Label(labelDef, graph));
                 } else if (labelDef.hasOwnProperty('y') && def.univariateFunction.ind != 'x') {
                     labelDef.coordinates = [c.xOfY(labelDef.y), labelDef.y];
+                    labelDef.along = along(def.univariateFunction, 'y');
                     c.subObjects.push(new Label(labelDef, graph));
                 }
             }

@@ -1,5 +1,6 @@
 import { setDefaults, setProperties } from "../../util";
 import { ViewObjectDefinition, ViewObject } from "./viewObject";
+import { UnivariateFunction, UnivariateFunctionDefinition } from "../../math/univariateFunction";
 import * as katex from "katex";
 import * as d3 from "d3";
 
@@ -19,7 +20,16 @@ export interface LabelDefinition extends ViewObjectDefinition {
     valign?: string;
     rotate?: number;
     bgcolor?: string;
+    /**
+     * The curve this label names, as a function of the coordinate it was placed
+     * by — set by `Curve` in the authoring layer, never by hand. See `slide`.
+     */
+    along?: UnivariateFunctionDefinition;
 }
+
+/** How finely `slide` looks along a curve before narrowing down on the edge. */
+const SLIDE_SAMPLES = 64;
+const SLIDE_REFINEMENTS = 16;
 
 /**
  * A label whose text is a bare name draws that name.
@@ -54,6 +64,10 @@ export class Label extends ViewObject {
     private rotate: number;
     private color: string;
     private bgcolor: string;
+    private along: UnivariateFunction;
+    private size = { width: 0, height: 0 };
+    /** Placed on an axis rather than in the plot; read by `AxisMarks`. */
+    public axisMark: boolean;
 
     constructor(def: LabelDefinition) {
 
@@ -62,6 +76,10 @@ export class Label extends ViewObject {
 
         let xOffset = xAxisReversed ? 1 : -1,
             yOffset = yAxisReversed ? 12 : -12;
+
+        // A label placed *on* an axis names a value there — a dropline's `P^*`
+        // — and outranks the tick labels it lands on. See `view/axisMarks.ts`.
+        const axisMark = [def.x, def.y].some(c => c == 'AXIS' || c == 'OPPAXIS');
 
         if (def.x == 'AXIS') {
             def.x = def.yScale.intercept;
@@ -109,12 +127,156 @@ export class Label extends ViewObject {
         setProperties(def, 'constants', ['xPixelOffset', 'yPixelOffset', 'plainText']);
         setProperties(def, 'updatables', ['x', 'y', 'text', 'align', 'valign', 'rotate', 'color', 'bgcolor', 'fontSize']);
 
+        // Built before `super`, as `Curve` builds its own, so it registers with
+        // the model first and has already been updated by the time this label
+        // asks it anything.
+        let along: UnivariateFunction;
+        if (def.along) {
+            def.along.model = def.model;
+            along = new UnivariateFunction(def.along);
+        }
+
         super(def);
+
+        this.along = along;
+        this.axisMark = axisMark;
 
         // Default to the view's clearColor so labels visually blend with the chart background.
         // Schema authors can override this via the schema's clearColor property.
         this.bgcolor = def.bgcolor ?? def.model.clearColor;
 
+    }
+
+    /**
+     * A curve's label stays on the plot by moving along the curve.
+     *
+     * A curve label is placed by an author at a coordinate — `x: 16` — and its
+     * other coordinate is the curve's value there. That is a good place for the
+     * curve the author was looking at and no place at all for the same curve
+     * shifted: supply at `x: 16` with an intercept above 4 is above the top of a
+     * 0–20 plot, so every input-cost scenario on the study screen drew a supply
+     * curve with no `S`. `onGraph` hid it, correctly — a label off the plot is
+     * either clipped or printed over the axes — and nothing put it anywhere else.
+     *
+     * The fix is to keep the author's coordinate as a preference and, when the
+     * label would not fit there, walk back along the same curve to the nearest
+     * place it does. It stays *on its curve*, which is the one thing a curve label
+     * has to do, and it moves the least distance along it that will keep it on
+     * screen. "Fits" means the whole typeset box, not just its anchor: a label
+     * centred on the top edge is half off the plot and over whatever is above it.
+     *
+     * Done here rather than as an expression in the authoring layer because only
+     * here are the label's size and the panel's pixels known, and because a curve
+     * in general has no inverse to write the edge crossing as. Sampling and then
+     * bisecting asks only that the curve can be evaluated, which it must be to be
+     * drawn at all.
+     */
+    private slide(): { x: number, y: number } | null {
+        const label = this,
+            fn = label.along,
+            byX = fn.ind !== 'y',
+            scale = byX ? label.xScale : label.yScale;
+
+        let lo = Math.min(scale.domainMin, scale.domainMax),
+            hi = Math.max(scale.domainMin, scale.domainMax);
+        // A curve drawn over part of the axis can only be labelled where it is drawn.
+        if (fn.min !== undefined && isFinite(+fn.min)) lo = Math.max(lo, +fn.min);
+        if (fn.max !== undefined && isFinite(+fn.max)) hi = Math.min(hi, +fn.max);
+        if (!(hi >= lo)) return null;
+
+        const at = (t: number) => {
+            let v: number;
+            try { v = +fn.evaluate(t); } catch (e) { v = NaN; }
+            return byX ? { x: t, y: v } : { x: v, y: t };
+        };
+        const fits = (p: { x: number, y: number }) => isFinite(p.x) && isFinite(p.y) && label.fits(p);
+
+        const wanted = byX ? +label.x : +label.y;
+        if (isFinite(wanted)) {
+            const there = at(wanted);
+            if (fits(there)) return there;
+        }
+        const from = isFinite(wanted) ? Math.min(hi, Math.max(lo, wanted)) : lo;
+
+        // The fitting sample nearest the author's coordinate. Every sample
+        // strictly between it and that coordinate is nearer, so none of them fit,
+        // and the edge the label should sit on is between it and its neighbour.
+        const step = (hi - lo) / SLIDE_SAMPLES;
+        let inside: number = null;
+        for (let i = 0; i <= SLIDE_SAMPLES; i++) {
+            const t = lo + i * step;
+            if (fits(at(t)) && (inside === null || Math.abs(t - from) < Math.abs(inside - from))) {
+                inside = t;
+            }
+        }
+        if (inside === null) return null;
+
+        let outside = inside + Math.sign(from - inside) * step;
+        if (Math.abs(outside - inside) > Math.abs(from - inside)) outside = from;
+        for (let i = 0; i < SLIDE_REFINEMENTS && outside !== inside; i++) {
+            const mid = (inside + outside) / 2;
+            if (fits(at(mid))) inside = mid; else outside = mid;
+        }
+        return at(inside);
+    }
+
+    /**
+     * Would this label's box, anchored at a point, lie inside its panel?
+     *
+     * Against the box from the last draw, and with a margin of half the box's
+     * shorter side. Without one, a label slid to the edge sat flush against it,
+     * the curve ran out of the box's corner for the two or three pixels left
+     * before the edge, and that stub read as a prime — `S′` on a curve with no
+     * `S` for it to be prime to. With the margin the curve visibly carries on
+     * past the label, the way it does at the author's own coordinate.
+     *
+     * A box that cannot fit anywhere, margin included, is held to its anchor
+     * instead, so a label in a panel too small for it behaves as every label did
+     * before.
+     */
+    private fits(p: { x: number, y: number }): boolean {
+        const label = this,
+            [x0, x1] = label.xScale.scale.range(),
+            [y0, y1] = label.yScale.scale.range();
+
+        let { width, height } = label.size,
+            margin = Math.min(width, height) / 2;
+        if (width + 2 * margin >= Math.abs(x1 - x0) || height + 2 * margin >= Math.abs(y1 - y0)) {
+            width = height = margin = 0;
+        }
+
+        const left = Math.min(x0, x1) + margin, right = Math.max(x0, x1) - margin,
+            top = Math.min(y0, y1) + margin, bottom = Math.max(y0, y1) - margin;
+
+        const ax = label.xScale.scale(p.x) + (+label.xPixelOffset),
+            ay = label.yScale.scale(p.y) - (+label.yPixelOffset),
+            boxLeft = ax - (label.align == 'left' ? 0 : label.align == 'right' ? width : width / 2),
+            boxTop = ay - (label.valign == 'top' ? 0 : label.valign == 'bottom' ? height : height / 2);
+
+        return boxLeft >= left && boxLeft + width <= right && boxTop >= top && boxTop + height <= bottom;
+    }
+
+    /** Where the label is drawn: where the author put it, or the nearest place on its curve that fits. */
+    private placement(): { x: number, y: number } {
+        const label = this;
+        return (label.along && label.slide()) || { x: label.x, y: label.y };
+    }
+
+    /**
+     * A sliding label is on the graph whenever any of its curve is.
+     *
+     * Its own coordinates no longer decide it: they are where the author would
+     * like it, and `slide` finds where it can go. A curve that has left the plot
+     * entirely still takes its label with it. The curve moving is a reason to
+     * redraw even when the label's own coordinates did not change — a label
+     * already slid to an edge follows the curve along that edge.
+     */
+    onGraph() {
+        const label = this;
+        if (!label.along) return super.onGraph();
+        if (!label.checkOnGraph) return true;
+        if (label.along.hasChanged) label.hasChanged = true;
+        return label.slide() !== null;
     }
 
     // create div for text
@@ -148,8 +310,9 @@ export class Label extends ViewObject {
             // after the text has been re-sized, not before.
             .style('font-size', label.fontSize + 'pt');
 
-        const x = label.xScale.scale(label.x) + (+label.xPixelOffset),
-            y = label.yScale.scale(label.y) - (+label.yPixelOffset);
+        const at = label.placement(),
+            x = label.xScale.scale(at.x) + (+label.xPixelOffset),
+            y = label.yScale.scale(at.y) - (+label.yPixelOffset);
 
         const source = (label.def as LabelDefinition).text;
         let displayText: any = label.text;
@@ -190,6 +353,26 @@ export class Label extends ViewObject {
         label.rootElement.style('top', y + 'px');
         const width = label.rootElement.node().clientWidth,
             height = label.rootElement.node().clientHeight;
+
+        // The size is only known now, after the text has been typeset, and
+        // whether a label fits depends on it — so a label that slides is placed
+        // a second time, against its own measured box. `onGraph` used the box
+        // from the last draw, which on the first draw is no box at all.
+        if (label.along && (width !== label.size.width || height !== label.size.height)) {
+            label.size = { width, height };
+            const settled = label.placement();
+            return label.position(
+                label.xScale.scale(settled.x) + (+label.xPixelOffset),
+                label.yScale.scale(settled.y) - (+label.yPixelOffset),
+                width, height
+            );
+        }
+        return label.position(x, y, width, height);
+    }
+
+    /** Put the box at an anchor, honouring the alignment. */
+    private position(x: number, y: number, width: number, height: number) {
+        const label = this;
         // Set left pixel margin; default to centered on x coordinate
         let alignDelta = width * 0.5;
         if (label.align == 'left') {

@@ -92,9 +92,9 @@ eventually.
 | | |
 |---|---|
 | The twin | The same def with every `params.x` read as `prev.params.x` and every `calcs.y` as `prev.calcs.y`, drawn dashed at 35% stroke opacity, *underneath* the live object. |
-| Its visibility | Whatever `show` you wrote, **and** `prev.changed` — so the ghost is off until the student has actually moved something. |
+| Its visibility | Whatever `show` you wrote, **and** `prev.changed`, **and** one of the object's own `params.x` / `calcs.y` bindings differing from its snapshot — so the ghost is off until the student has moved *this* object. Moving supply does not raise demand's ghost. |
 | A shift arrow | Only for an object that has a single position (a point). Two parallel lines have no one displacement between them; the arrow belongs on the equilibrium, not on the curves that cross there. |
-| Paired labels | The ghost keeps the label; the live object is relabelled with the schema's `newValueLabel` idiom for as long as the ghost is up — `D` and `D′` by default, `D_1` and `D_2` under `custom: '..1'`. |
+| Paired labels | The ghost keeps the label; the live object is relabelled with the schema's `newValueLabel` idiom for as long as the ghost is up — `D` and `D′` by default, `D_1` and `D_2` under `custom: '..1'`. Or, with `label: '_0'`, the ghost alone is qualified (`D_0`) and the live label never changes. |
 
 **What it does not inherit**
 
@@ -115,8 +115,16 @@ ghost:
   show: not(params.asking)   # an extra condition, read as *now* rather than as *then*
   arrow: false               # or true, to demand one where there is a position for it
   label: false               # leave both labels alone
+  label: _0                  # or qualify the ghost alone (D_0) and never relabel the live object
   opacity: 0.1               # anything else is merged onto the generated def
 ```
+
+Pairing primes whichever copy has a ghost, which is right for one drawing of
+one curve and wrong for two. If demand is drawn in three panels and only one
+shows its ghost, pairing makes the same curve `D′` in one panel and `D` beside
+it; and when a lesson moves the curve *back*, it primes the curve at the
+original place. A qualifier (`label: _0`) names the ghost instead, so the live
+curve is `D` everywhere and always.
 
 `show` is the one field that is deliberately **not** rewritten to `prev`:
 whether something is on screen is a claim about the present. A curve revealed at
@@ -156,6 +164,9 @@ def:
 ```
 
 - **Droplines**: A `Point` can automatically generate droplines down to the X or Y axis with optional text.
+  The text is printed on the axis at the point's value, and it outranks the tick labels there: a
+  tick label whose box it covers is hidden (the tick mark stays) and comes back once the point
+  moves off it. Without that, an equilibrium at Q* = 10 printed `Q^*` on top of the `10`.
 - **Draggability**: Setting `draggable: true` allows the user to click and pull the point, changing the underlying `params` indirectly.
 
 ## `Line` and `Segment`
@@ -180,6 +191,13 @@ first pair below wins, so pass only the pair you mean:
 `yIntercept`, then `slope`/`invSlope` with an intercept, then `slope`/`invSlope`
 with a `point`. A single `slope`, `yIntercept` or `xIntercept` on its own gives a
 line through the origin, a horizontal line, or a vertical line respectively.
+
+**A curve's label stays on the plot.** A label placed with `x` (or `y`) sits on
+the curve at that coordinate, as long as it fits there. When the curve has
+moved so that the place is off the plot — supply at `x: 16` with an intercept
+above 4, on a 0–20 axis — the label slides back along the curve to the nearest
+place its whole box fits, rather than disappearing. It returns to `x` as soon
+as there is room. A curve with no part on the plot takes its label with it.
 
 A `Segment` requires starting and ending definitions:
 ```yaml

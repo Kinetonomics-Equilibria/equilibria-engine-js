@@ -46,15 +46,22 @@ const demand = (panel: string, draggable = false, ghost = false) => ({
         ...(draggable ? { drag: DRAG_DEMAND } : {}),
         // Where this curve was when the student took hold of it (P13). The
         // engine builds the dashed twin from this same def, so the two cannot
-        // disagree about slope, colour or anything else — and it relabels this
-        // one D' for as long as the ghost is up.
+        // disagree about slope, colour or anything else.
+        //
+        // The ghost is the one that carries a qualifier, D₀; the live curve is
+        // D, always, in every panel. Only the market panel draws the ghost, and
+        // the engine's default pairing primes the curve that has one — so the
+        // same curve read D′ in the market and D in the two panels beside it.
+        // It also primed the wrong one on the way back: when the lesson returns
+        // demand to where it started, the curve at the original place was D′
+        // and the place it had just left was D.
         //
         // Off while a question is on screen, where `startA` below draws the
         // "before" instead. `prev` is per *gesture*, so a student on their
         // second attempt would see it slide up to the start of that attempt
         // while the answer is still being marked from the question's own
         // starting line — two dashed curves claiming to be the same thing.
-        ...(ghost ? { ghost: { show: 'not(params.asking)' } } : {})
+        ...(ghost ? { ghost: { show: 'not(params.asking)', label: '_0' } } : {})
     }
 });
 

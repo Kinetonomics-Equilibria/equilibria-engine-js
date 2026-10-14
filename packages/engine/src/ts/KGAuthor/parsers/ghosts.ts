@@ -28,7 +28,8 @@ import { combineShow } from "./steps";
 
 export interface GhostDefinition {
     /**
-     * An extra condition on the ghost only, conjoined with `prev.changed`.
+     * An extra condition on the ghost only, conjoined with the generated one
+     * (the object's own bindings differ from the snapshot — see `moved`).
      *
      * Read as written, not rewritten to `prev`: it is a claim about now. The
      * study screen uses it to hide the drag ghost while a question is on screen,
@@ -43,8 +44,22 @@ export interface GhostDefinition {
      * *points* rather than the demand curves.
      */
     arrow?: boolean;
-    /** Pair the labels through the schema's idioms. Default true. */
-    label?: boolean;
+    /**
+     * How the two labels tell the copies apart.
+     *
+     * `true` (the default) pairs them through the schema's idioms: the ghost
+     * keeps the label and the live object is relabelled `D′` while the ghost is
+     * up. `false` leaves both alone.
+     *
+     * A string is a qualifier for the **ghost alone** — `'_0'` reads `D_0` — and
+     * the live label is never touched. That is the convention for an object
+     * drawn in several panels when only one of them shows its ghost: priming the
+     * one with a ghost makes the same curve `D′` in one panel and `D` beside it.
+     * It is also the one that survives a move *back*: when a lesson returns the
+     * curve to where it started, pairing primes the curve at the original place
+     * and leaves the unprimed name on the place it has just left.
+     */
+    label?: boolean | string;
     /** Anything else is merged onto the generated def. */
     [property: string]: any;
 }
@@ -197,6 +212,67 @@ function rewrite(value: any, key?: string): any {
     return value;
 }
 
+/**
+ * Every `params.x` and `calcs.y` the rewrite will turn into `prev.…`.
+ *
+ * The same pattern as `toPrev` and the same walk as `rewrite`, so the set is
+ * exactly the bindings on which the ghost and the live object can differ: a
+ * reference the author already wrote as `prev.params.a` is skipped, because
+ * both copies read it, and `show` is skipped because it is not rewritten. A
+ * dotted path is kept whole — `calcs.equilibrium.Q` compares the number, not
+ * the bag of geometry it sits in.
+ */
+function bindings(value: any, key?: string, found: string[] = []): string[] {
+    if (key !== undefined && NOT_REWRITTEN.indexOf(key) > -1) return found;
+    if (typeof value === 'string') {
+        const pattern = /(^|[^.\w])((?:params|calcs)\.[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)/g;
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(value)) !== null) {
+            if (found.indexOf(match[2]) === -1) found.push(match[2]);
+        }
+    } else if (Array.isArray(value)) {
+        value.forEach(v => bindings(v, key, found));
+    } else if (value && typeof value === 'object') {
+        for (const k in value) bindings(value[k], k, found);
+    }
+    return found;
+}
+
+/**
+ * When the ghost is up: when *this* object is somewhere other than it was.
+ *
+ * It used to be `prev.changed` alone, which is "the student moved something" —
+ * anything. On a diagram with two curves that is the wrong question asked of
+ * both: move supply and demand's ghost appears exactly on top of demand, demand
+ * is relabelled `D′` for having been left where it was, and supply, which is the
+ * curve that actually moved, keeps a plain `S` because it has no ghost of its
+ * own. The ghost and its label were describing the gesture rather than the
+ * object they belong to.
+ *
+ * The rewrite already knows which bindings separate the twin from the original,
+ * because it is the thing that separates them; so each of them is compared with
+ * its own snapshot, and any one differing is a move. Compared by value, not
+ * within a tolerance, for `paramsDifferFromSnapshot`'s reason: a param is
+ * snapped onto its `round` grid, and a calc recomputed from unchanged params is
+ * the same float.
+ *
+ * `prev.changed` is still conjoined rather than replaced. A binding to a
+ * presentation param — a panel's density, a question's starting line — can
+ * differ from its snapshot without the student having done anything, and that
+ * is exactly the case `prev.changed` was written to exclude (NOTES.md issue 13).
+ * An object with no bindings at all — which `ghostDef` has already warned about —
+ * keeps the old predicate and behaves exactly as it did.
+ */
+function moved(def: any): string {
+    const own = { ...def };
+    NOT_INHERITED.forEach(function (key) { delete own[key]; });
+
+    const refs = bindings(own);
+    if (refs.length === 0) return 'prev.changed';
+
+    return `prev.changed and (${refs.map(r => `${r} != prev.${r}`).join(' or ')})`;
+}
+
 /** Does this def name a single place, such that a shift arrow has two ends? */
 function position(def: any): any[] | null {
     if (Array.isArray(def.coordinates) && def.coordinates.length === 2) return def.coordinates;
@@ -281,10 +357,11 @@ function ghostDef(def: any, options: GhostDefinition, type: string): any {
     }
 
     // `prev.changed` last, so it reads as the outermost condition: the ghost is
-    // off until the student has moved something, whatever else is also true.
+    // off until the student has moved something, whatever else is also true —
+    // and then off again unless the something was *this*. See `moved`.
     let show = def.show;
     if (options.show) show = combineShow(show, options.show);
-    ghost.show = combineShow(show, 'prev.changed');
+    ghost.show = combineShow(show, moved(def));
 
     pairLabels(def, ghost, options);
 
@@ -300,7 +377,8 @@ function ghostDef(def: any, options: GhostDefinition, type: string): any {
 }
 
 /**
- * `D` and `D′`, or `D_1` and `D_2` — whichever pair the schema's idioms name.
+ * `D` and `D′`, or `D_1` and `D_2` — whichever pair the schema's idioms name;
+ * or `D` and `D_0`, when the author names the ghost's qualifier themselves.
  *
  * Emitted as expressions rather than resolved here, because this runs while the
  * graph is being built and the schema has not been parsed yet. mathjs has no
@@ -316,6 +394,14 @@ function pairLabels(def: any, ghost: any, options: GhostDefinition) {
     if (!def.label || !isLiteralLabel(def.label.text)) return;
 
     const text = quote(def.label.text);
+
+    // A qualifier names the ghost and nothing else. Concatenated as two
+    // literals rather than joined here, so the result is a string whatever it
+    // spells — `S_0` is not siemens, but nothing should have to know that.
+    if (typeof options.label === 'string') {
+        ghost.label = { ...ghost.label, text: `concat(${text}, ${quote(options.label)})` };
+        return;
+    }
 
     ghost.label = { ...ghost.label, text: `concat(${text}, idioms.oldValueLabel)` };
     def.label.text = `(${ghost.show}) ? concat(${text}, idioms.newValueLabel) : ${text}`;

@@ -148,7 +148,10 @@ objects:
       color: colors.demand
       lineStyle: dashed
       strokeOpacity: 0.35
-      show: prev.changed
+      # Something moved, and the something was this curve. `prev.changed` alone
+      # would raise this ghost when any other param moved too — supply, say —
+      # drawing a dashed copy exactly on top of a demand curve that never left.
+      show: prev.changed and (params.a != prev.params.a)
 ```
 
 The same two expressions draw the move itself, which is usually the sentence the diagram is trying to say out loud:
@@ -158,12 +161,13 @@ The same two expressions draw the move itself, which is usually the sentence the
     def:
       begin: [prev.calcs.Qe, prev.calcs.Pe]
       end: [calcs.Qe, calcs.Pe]
-      show: prev.changed
+      show: prev.changed and (calcs.Qe != prev.calcs.Qe or calcs.Pe != prev.calcs.Pe)
 ```
 
 All three objects above — the live curve, its dashed twin and the arrow — are
 what `ghost: true` on a single declaration produces, along with the `D` / `D′`
-relabelling that the longhand leaves you to write yourself.
+relabelling that the longhand leaves you to write yourself. The shorthand writes
+each `show` from the bindings it rewrote, so it cannot forget one.
 
 ### When a snapshot is taken
 

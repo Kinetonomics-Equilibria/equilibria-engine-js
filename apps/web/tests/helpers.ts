@@ -215,20 +215,22 @@ export async function dataCoordinates(target: Locator): Promise<{ x: number; y: 
 }
 
 /**
- * Every place a panel's chrome overlaps text the diagram drew, as readable pairs.
+ * Every place two pieces of text on the stage overlap, as readable pairs.
  *
- * The chrome is placed by the app in room the stage keeps for it, and the text
- * — tick labels, axis titles, curve and dropline labels — by the engine at fixed
- * pixel offsets outside each panel. Nothing renders an error when the two
- * disagree, and a screenshot is the only other way to find out, so this reads
- * every box back and reports the pairs that intersect.
+ * Text arrives on the stage from three places that know nothing of each other:
+ * the app's chrome (captions and their chips), the engine's SVG (tick labels),
+ * and the engine's KaTeX labels (axis titles, curve names, dropline labels). Each
+ * is placed by its own rule, nothing renders an error when two rules disagree,
+ * and a screenshot is the only other way to find out — so this reads every box
+ * back and reports each pair that intersects.
  *
- * Only pairs with a caption in them. The engine does not yet keep a dropline's
- * `P*` off a nearby tick label, which is the engine's to fix and not the
- * arrangement's; a check over all text would fail on that and say nothing about
- * where the captions went.
+ * This used to check only pairs with a caption in them, because the engine let a
+ * dropline's `Q^*` land on the tick label at the same value and a check over all
+ * text would have failed on that and said nothing about where the captions went.
+ * The engine now hides a tick label that an axis label covers, so the check can
+ * ask the question it was always meant to ask.
  */
-export async function chromeCollisions(page: Page): Promise<string[]> {
+export async function textCollisions(page: Page): Promise<string[]> {
     return page.evaluate(() => {
         const visible = (el: Element) => {
             for (let node: Element | null = el; node && node !== document.body; node = node.parentElement) {
@@ -241,23 +243,26 @@ export async function chromeCollisions(page: Page): Promise<string[]> {
             return box.width > 0 && box.height > 0;
         };
 
-        const text = [...document.querySelectorAll('.kg-container svg text, .kg-container .katex')]
+        const diagram = [...document.querySelectorAll('.kg-container svg text, .kg-container .katex')]
             .filter(el => visible(el) && (el.textContent || '').trim() !== '')
             .map(el => ({ text: (el.textContent || '').trim().slice(0, 12), box: el.getBoundingClientRect() }));
 
         const chrome = [...document.querySelectorAll('[data-testid="stage-chrome"] span')]
-            .filter(el => el.children.length === 0 && visible(el))
-            .map(el => ({ text: (el.textContent || '').trim(), box: el.getBoundingClientRect() }));
+            .filter(el => el.children.length === 0 && visible(el) && (el.textContent || '').trim() !== '')
+            .map(el => ({ text: `caption "${(el.textContent || '').trim()}"`, box: el.getBoundingClientRect() }));
 
         // A pixel of anti-aliasing either way is not a collision.
         const overlap = (a: DOMRect, b: DOMRect) =>
             Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
             Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
 
+        const all = [...chrome, ...diagram.map(t => ({ ...t, text: `"${t.text}"` }))];
         const found: string[] = [];
-        chrome.forEach(c => text.forEach(t => {
-            if (overlap(c.box, t.box)) found.push(`caption "${c.text}" over "${t.text}"`);
-        }));
+        for (let i = 0; i < all.length; i++) {
+            for (let j = i + 1; j < all.length; j++) {
+                if (overlap(all[i].box, all[j].box)) found.push(`${all[i].text} over ${all[j].text}`);
+            }
+        }
         return found;
     });
 }
