@@ -30,6 +30,7 @@ describe('public API', () => {
             'EquilibriaChart',
             'FILMSTRIP_BELOW_PX',
             'FOCUS_PARAM',
+            'FURNITURE',
             'KG_CONTAINER_CLASS',
             'KG_EVENTS',
             'MODE_PARAM',

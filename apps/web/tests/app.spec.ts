@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { RENDERED, focalDragPathIndex, focalPointCoordinates, test } from './helpers';
+import { RENDERED, chromeCollisions, focalDragPathIndex, focalPointCoordinates, test } from './helpers';
 
 /**
  * The study screen, in a real browser.
@@ -301,12 +301,13 @@ test('the grid toggle rearranges the same panels, and is not the landing state',
     // the label is the thing a student clicks.
     await page.getByText('Grid', { exact: true }).click();
 
-    // In the grid nothing is a rail panel any more, so every panel carries the
-    // promote affordance and none is the focal one.
+    // In the grid nothing is a rail panel any more, so every panel can be
+    // promoted and none is the focal one — from its caption, since nothing is
+    // laid across the panel itself.
     await expect(page.locator('[aria-label^="Show "]')).toHaveCount(3);
 
-    // Every panel is now drawn at `compact` — ticks everywhere, axis titles
-    // nowhere — which is the level the arrangement's cell size asks for.
+    // Every panel is read in the grid, so none is drawn as a glyph: ticks
+    // everywhere, and at this size no axis titles, which is `compact`.
     expect(await page.locator('.kg-container g.axis g.tick').count()).toBeGreaterThan(12);
 
     // And the cells are all the same size, which the focus arrangement never is.
@@ -315,6 +316,89 @@ test('the grid toggle rearranges the same panels, and is not the landing state',
     const distinct = new Set(widths.filter(w => w > 40));
     expect(distinct.size, `axis widths: ${widths}`).toBe(1);
     expect(focal.width).toBeGreaterThan(0);
+});
+
+/**
+ * Captions and the diagram's own text, kept apart.
+ *
+ * In the grid every caption used to be printed in the band where its panel's
+ * tick labels go — "Market" across the `0`, the price across `Q*`, the delta
+ * chip across `10` — and the rows sat so close that the next row's top tick
+ * shared the line. Checked in all three arrangements, since each puts the
+ * captions somewhere different.
+ */
+test('no caption lands on the diagram\'s text, in any arrangement', async ({ page }) => {
+    // At the suite's own size the stage is under the filmstrip breakpoint.
+    expect(await chromeCollisions(page), 'focus, with a strip').toEqual([]);
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+
+    await page.getByText('Grid', { exact: true }).click();
+    await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
+    expect(await chromeCollisions(page), 'grid').toEqual([]);
+
+    // Wide enough for the rail to stand beside the focal panel.
+    await page.getByText('Focus', { exact: true }).click();
+    await page.setViewportSize({ width: 1800, height: 950 });
+    await expect(page.locator('[data-role="rail"]')).toHaveCount(2);
+    expect(await chromeCollisions(page), 'focus, with a rail').toEqual([]);
+
+    await page.getByText('Grid', { exact: true }).click();
+    await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
+    expect(await chromeCollisions(page), 'grid, wide').toEqual([]);
+});
+
+test('a curve can be dragged in the grid', async ({ page }) => {
+    await page.getByText('Grid', { exact: true }).click();
+    await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
+
+    // The market panel's demand curve: the hit-area inside that panel's box
+    // that takes a pointer. A promote button laid across the panel used to
+    // take it first, so the drag promoted a panel the grid then ignored.
+    const market = (await page.locator('[data-panel="market"]').boundingBox())!;
+    const index = await page.evaluate(box => {
+        const paths = [...document.querySelectorAll('.kg-container path[class^="dragPath"]')];
+        return paths.findIndex(p => {
+            const b = p.getBoundingClientRect(), cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+            return getComputedStyle(p).pointerEvents === 'all' &&
+                cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height;
+        });
+    }, market);
+    expect(index).toBeGreaterThan(-1);
+
+    const target = (await page.locator('.kg-container path[class^="dragPath"]').nth(index).boundingBox())!;
+    const startX = target.x + target.width * 0.45, startY = target.y + target.height * 0.45;
+    const hit = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)!.tagName, [startX, startY]);
+    expect(hit, 'what is under the pointer').not.toBe('BUTTON');
+
+    const before = await page.locator('[data-panel="market"]').textContent();
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 40, { steps: 10 });
+    await page.mouse.up();
+
+    await expect(page.locator('[data-panel="market"]')).not.toHaveText(before!);
+    // Still the grid: a drag is not a promotion.
+    await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
+});
+
+// The grid ignores which panel is focal, so a promotion that stayed in the
+// grid changed nothing a student could see.
+test('a grid caption brings its panel to the front, and leaves the grid', async ({ page }) => {
+    await page.getByText('Grid', { exact: true }).click();
+    await page.locator(panel('Revenue')).click();
+
+    await expect(page.locator('[data-panel="revenue"]')).toHaveAttribute('data-role', 'focal');
+    await expect(page.locator('[data-role="grid"]')).toHaveCount(0);
+});
+
+// Early in the lesson, with the grid on: one panel is the whole stage, and it
+// is where the student works.
+test('a lone panel stays workable in the grid', async ({ page }) => {
+    await page.getByText('Grid', { exact: true }).click();
+    await page.locator('button[data-kinds]').nth(2).click();
+
+    await expect(page.locator('[data-panel="market"]')).toHaveAttribute('data-role', 'focal');
+    await expect(page.locator('[data-testid="stage-chrome"] button')).toHaveCount(0);
 });
 
 test('a panel arrives without rebuilding the diagram', async ({ page }) => {

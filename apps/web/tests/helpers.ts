@@ -213,3 +213,51 @@ export async function dataCoordinates(target: Locator): Promise<{ x: number; y: 
         return { x: scale(xAxis, 'x')(point.x), y: scale(yAxis, 'y')(point.y) };
     });
 }
+
+/**
+ * Every place a panel's chrome overlaps text the diagram drew, as readable pairs.
+ *
+ * The chrome is placed by the app in room the stage keeps for it, and the text
+ * — tick labels, axis titles, curve and dropline labels — by the engine at fixed
+ * pixel offsets outside each panel. Nothing renders an error when the two
+ * disagree, and a screenshot is the only other way to find out, so this reads
+ * every box back and reports the pairs that intersect.
+ *
+ * Only pairs with a caption in them. The engine does not yet keep a dropline's
+ * `P*` off a nearby tick label, which is the engine's to fix and not the
+ * arrangement's; a check over all text would fail on that and say nothing about
+ * where the captions went.
+ */
+export async function chromeCollisions(page: Page): Promise<string[]> {
+    return page.evaluate(() => {
+        const visible = (el: Element) => {
+            for (let node: Element | null = el; node && node !== document.body; node = node.parentElement) {
+                const style = getComputedStyle(node);
+                if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+                    return false;
+                }
+            }
+            const box = el.getBoundingClientRect();
+            return box.width > 0 && box.height > 0;
+        };
+
+        const text = [...document.querySelectorAll('.kg-container svg text, .kg-container .katex')]
+            .filter(el => visible(el) && (el.textContent || '').trim() !== '')
+            .map(el => ({ text: (el.textContent || '').trim().slice(0, 12), box: el.getBoundingClientRect() }));
+
+        const chrome = [...document.querySelectorAll('[data-testid="stage-chrome"] span')]
+            .filter(el => el.children.length === 0 && visible(el))
+            .map(el => ({ text: (el.textContent || '').trim(), box: el.getBoundingClientRect() }));
+
+        // A pixel of anti-aliasing either way is not a collision.
+        const overlap = (a: DOMRect, b: DOMRect) =>
+            Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+
+        const found: string[] = [];
+        chrome.forEach(c => text.forEach(t => {
+            if (overlap(c.box, t.box)) found.push(`caption "${c.text}" over "${t.text}"`);
+        }));
+        return found;
+    });
+}

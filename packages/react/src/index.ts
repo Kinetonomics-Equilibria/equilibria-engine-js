@@ -14,11 +14,13 @@ export { KG_EVENTS, KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 // an app can compute a panel's box without rendering one.
 export {
     arrange, toCustomLayout, pixelBox, revealedCount,
-    FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
+    FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
 } from './arrangement';
 
 // Types
 export type { StageProps, StagePanel } from './Stage';
-export type { Arrangement, ArrangeInput, PanelRect, LayoutPanel, StageLayout, StageMode } from './arrangement';
+export type {
+    Arrangement, ArrangeInput, PanelRect, PanelRole, Room, RoomByRole, LayoutPanel, StageLayout, StageMode
+} from './arrangement';
 export type { EquilibriaChartProps, ParamChangeEvent } from './types';
 export type { UseEquilibriaReturn, UseEquilibriaOptions, UseEquilibriaEventCallbacks } from './useEquilibria';

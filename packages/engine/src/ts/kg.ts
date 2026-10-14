@@ -22,6 +22,17 @@ export type { DensityLevel };
 export { STEP_PARAM } from "./KGAuthor/parsers/steps";
 
 /**
+ * What `auto` would choose for a panel of a given size, and the param a level
+ * lives in — for a host that chooses levels itself.
+ *
+ * A host that sets a panel's level also has to leave room for what that level
+ * draws, so it has to know where the thresholds are. Exported rather than
+ * restated, because two copies of a working value are two values the first
+ * time someone tunes one of them.
+ */
+export { levelForSize, densityParamName, densityIndex } from "./KGAuthor/parsers/density";
+
+/**
  * The shape of what the engine tells a host about itself.
  *
  * Declared in the modules that compute them and re-exported here because

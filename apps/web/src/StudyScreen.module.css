@@ -10,69 +10,98 @@
 .stageBox {
     flex: 1;
     min-height: 0;
-
-    /* Room under the panels for the furniture the engine draws outside them.
-     *
-     * An axis title is placed by a fixed pixel offset — 40px past the axis —
-     * while the arrangement's own padding is a fraction of the canvas, about
-     * 14px here. That was invisible while the focal panel always had a rail or a
-     * filmstrip between it and the bottom edge; a lesson that starts with one
-     * panel gives that panel the whole stage, and "Q" landed on the narration
-     * line underneath.
-     *
-     * Bottom only. The focal square is centred horizontally with slack either
-     * side, so the y-axis title has room already, and the panel chrome above it
-     * borrows from the heading's margin as it always has.
-     *
-     * Fixed pixels, because the thing being made room for is fixed pixels — a
-     * fraction that reserved 44px here would reserve 90 on a large screen, and
-     * the label does not grow. */
-    padding-bottom: 2.75rem;
+    /* No padding for the furniture the engine draws outside the panels: the
+     * stage keeps that room inside the canvas now, measured in pixels for the
+     * level each panel draws at, so "Q" under a lone panel has its room without
+     * this box guessing at it. */
 }
 
 /* A panel's chrome never sits over the panel itself, where the curves are: it
- * is placed *outside* the box the stage gave it, relative to that box rather
- * than by a guessed offset. Both variants are laid out the same way and differ
- * only in weight, so a panel reads as the same panel before and after a
- * promotion.
+ * is placed *outside* the box the stage gave it, in the room the stage kept
+ * clear for it — on the side `CHROME_ROOM` names for the panel's role, and
+ * sized from the same number, so the caption and the room cannot disagree.
  *
  * The stage positions each panel's wrapper absolutely at the panel's box, which
- * makes that box the containing block these two measure themselves against. */
-.focalChrome,
-.railChrome {
+ * makes that box the containing block these measure themselves against. */
+.focal,
+.grid,
+.rail,
+.strip {
     position: absolute;
-    left: 0;
-    right: 0;
     display: flex;
-    align-items: baseline;
     gap: var(--mantine-spacing-xs);
+    min-width: 0;
 }
 
-.focalChrome {
-    /* Above the panel, in the band the page heading has already made room for. */
+/* Above the panels that are read. Under them is where their tick labels and
+ * axis titles go, and a caption there was printed across `0`, `Q*` and `10`. */
+.focal,
+.grid {
+    left: 0;
+    right: 0;
+    /* Anchored at the panel's top edge and as tall as its one line, so it sits
+     * at the bottom of its room. One line on purpose: a second one would grow
+     * upward, out of the room and into the row above. */
     bottom: 100%;
+    align-items: baseline;
+    flex-wrap: nowrap;
     padding-bottom: 4px;
 }
 
-.railChrome {
-    /* Below the panel, in the gap the arrangement leaves between rail slots.
-     * Above would collide with the curve, which on these diagrams starts at the
-     * top-left corner. */
-    top: 100%;
-    padding-top: 3px;
+.focal .panelName {
+    font-size: var(--mantine-font-size-md);
+}
+
+/* A grid caption is a control as well as a label — it is how a grid panel is
+ * promoted, now that nothing is laid across the panel to swallow its drags.
+ * The stage's overlay is transparent to the pointer, so it opts back in. */
+.grid {
+    pointer-events: auto;
+    cursor: pointer;
     border-radius: var(--mantine-radius-sm);
+    /* Only as wide as what it says, so the click target is the caption and not
+     * a strip of empty band across the top of the panel. */
+    right: auto;
+    max-width: 100%;
+}
+
+.grid:hover .panelName {
+    text-decoration: underline;
+}
+
+/* Under a rail panel, which draws no text, so nothing is there to collide
+ * with. Two lines rather than one: a rail panel is narrower than a name, a
+ * number and a chip side by side, and on one line the name gave way until it
+ * was a single letter. */
+.rail {
+    left: 0;
+    right: 0;
+    top: 100%;
+    flex-direction: column;
+    gap: 0;
+    padding-top: 3px;
+}
+
+/* Beside a strip panel. A strip is short and wide — a caption under it would
+ * take most of its height — and the slot either side of each square is the
+ * space it has spare. */
+.strip {
+    left: 100%;
+    bottom: 0;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0;
+    padding-left: var(--mantine-spacing-xs);
 }
 
 .panelName {
     font-size: var(--mantine-font-size-sm);
     font-weight: 600;
-    /* Allowed to shrink, because it is the half that can afford to — but not to
-     * wrap. A rail slot in filmstrip mode is a couple of hundred pixels wide,
-     * and a second line of name has nowhere to go: the arrangement leaves one
-     * line's worth of padding below the strip, so the wrap lands on top of the
-     * narration line underneath. Clipped with an ellipsis instead, which is what
-     * a name gets to be when the number beside it is the point. */
+    /* Allowed to shrink, never to wrap: a second line of name has no room kept
+     * for it and would land on whatever is under the caption. Clipped with an
+     * ellipsis instead, which on a rail is now the last resort it should be. */
     min-width: 0;
+    max-width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -87,11 +116,11 @@
     flex: none;
 }
 
-.focalChrome .panelName {
-    font-size: var(--mantine-font-size-md);
-}
-
-.railChrome .panelName {
+/* The glyphs are not being read, so their names step back. The grid's are
+ * being read, so they do not — every grid caption used to be dimmed, because
+ * in a grid no panel is focal. */
+.rail .panelName,
+.strip .panelName {
     color: var(--mantine-color-dimmed);
 }
 

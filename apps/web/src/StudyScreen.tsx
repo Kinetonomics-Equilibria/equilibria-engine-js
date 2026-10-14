@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActionIcon, Badge, Group, SegmentedControl, Stack, Text, Title } from '@mantine/core';
+import type { CSSProperties } from 'react';
+import { ActionIcon, Badge, Group, SegmentedControl, Stack, Text, Title, UnstyledButton } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { Stage } from 'equilibria-react';
-import type { StageMode, StagePanel } from 'equilibria-react';
+import type { PanelRole, StageMode, StagePanel } from 'equilibria-react';
 import { STEP_PARAM } from 'equilibria-engine-js';
 import type {
     KineticGraph, ParamBlockedEvent, ParamChangedEvent, ParamInfo
@@ -80,6 +81,41 @@ const QUESTION_OFF = [
     { name: 'submitted', value: 0 },
     { name: 'revealed', value: 0 }
 ];
+
+/**
+ * Where each panel's caption goes, and how much room it takes there.
+ *
+ * Above the panels that are read — the focal one and the grid's — because
+ * the band under them is where their tick labels and axis titles are drawn,
+ * and a caption there was printed across `0`, `Q*` and `10`. Under a rail
+ * panel, which draws no text, in two lines so a long name is not clipped to
+ * its first letter by the number beside it. Beside a strip panel, because a
+ * strip is short and wide and a caption under it would take most of its
+ * height.
+ *
+ * The stage keeps exactly this much clear, on top of the room the engine's own
+ * axes need — so this is the one place a caption's size is decided.
+ */
+const CHROME_ROOM: Record<PanelRole, Partial<Record<'top' | 'right' | 'bottom' | 'left', number>>> = {
+    focal: { top: 30 },
+    grid: { top: 28 },
+    rail: { bottom: 48 },
+    strip: { right: 140 }
+};
+
+/**
+ * Each role's caption box, sized from its room where the room is what bounds it.
+ *
+ * A caption above a panel is one line anchored at the panel's edge, so its
+ * height is its own; the rail's two lines and the strip's column are given
+ * exactly the room the stage kept, so the caption and the room are one number.
+ */
+const CHROME_BOX: Record<PanelRole, CSSProperties> = {
+    focal: {},
+    grid: {},
+    rail: { height: CHROME_ROOM.rail.bottom },
+    strip: { width: CHROME_ROOM.strip.right }
+};
 
 /** Whether this question has a correct *position* the diagram can draw. */
 function drawableAnswer(question: LessonQuestion): boolean {
@@ -727,6 +763,19 @@ export function StudyScreen() {
         engineRef.current?.snapshot();
     }, []);
 
+    /**
+     * Bring a panel to the front, from the rail or from the grid.
+     *
+     * From the grid it also leaves the grid. The grid ignores which panel is
+     * focal, so a promotion that stayed in it changed nothing a student could
+     * see — a caption that looked clickable and did nothing. Asking for one
+     * panel is asking to look at that panel.
+     */
+    const promote = useCallback((key: string) => {
+        setFocused(key);
+        setMode('focus');
+    }, []);
+
     const chrome = useCallback((panel: StagePanel) => {
         const declared = PANELS.filter(p => p.key === panel.key)[0];
         if (!declared) return null;
@@ -734,8 +783,8 @@ export function StudyScreen() {
         const level = readout[declared.headline],
             delta = readout[declared.delta];
 
-        return (
-            <div className={panel.focused ? classes.focalChrome : classes.railChrome}>
+        const body = (
+            <>
                 <Text component="span" className={classes.panelName}>{declared.name}</Text>
                 {typeof level === 'number' ? (
                     <Group gap={6} wrap="nowrap" className={classes.values}>
@@ -755,8 +804,30 @@ export function StudyScreen() {
                         ) : null}
                     </Group>
                 ) : null}
-            </div>
+            </>
         );
+
+        // Sized to exactly the room the stage kept for it, so the two numbers
+        // are one number: chrome that outgrew its room would land on the very
+        // tick labels the room is there to keep it off.
+        const style = CHROME_BOX[panel.role];
+
+        // In the grid the stage lays nothing across the panel, so a drag
+        // reaches the diagram — and the caption is how the panel is promoted.
+        if (panel.promote) {
+            return (
+                <UnstyledButton
+                    className={classes[panel.role]}
+                    style={style}
+                    onClick={panel.promote}
+                    aria-label={`Show ${declared.name}`}
+                >
+                    {body}
+                </UnstyledButton>
+            );
+        }
+
+        return <div className={classes[panel.role]} style={style}>{body}</div>;
     }, [readout]);
 
     /**
@@ -859,8 +930,9 @@ export function StudyScreen() {
                     focused={focused}
                     revealed={revealed}
                     mode={mode}
-                    onPromote={setFocused}
+                    onPromote={promote}
                     renderChrome={chrome}
+                    chromeRoom={CHROME_ROOM}
                     promoteLabel={key => {
                         const declared = PANELS.filter(p => p.key === key)[0];
                         return `Show ${declared ? declared.name : key}`;

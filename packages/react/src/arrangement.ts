@@ -19,18 +19,71 @@
  * Nothing here knows what a panel *contains*. No economics vocabulary belongs
  * in this file or in the component that consumes it; which panel is focal and
  * what its chip says are the application's decisions.
+ *
+ * **One exception to scale-free, on purpose: room.** A panel's tick labels and
+ * axis titles are drawn *outside* its box, at fixed pixel offsets, and so is the
+ * app's chrome. A gutter that was a fraction of the canvas reserved 18px for
+ * furniture that needs 50, and the grid's rows ran into each other. So room is
+ * asked for in pixels, because the thing it is for is pixels, and a stage that
+ * reserves it gets fractions that depend on its size. Without room the result
+ * is scale-free exactly as before.
  */
+
+import { levelForSize } from 'equilibria-engine-js';
+import type { DensityLevel } from 'equilibria-engine-js';
 
 /** How the stage is arranged. `grid` is a toggle, never the landing state. */
 export type StageMode = 'focus' | 'grid';
 
-/** One panel's rect, as fractions of the canvas, plus the detail it draws at. */
+/**
+ * What a panel is in the arrangement.
+ *
+ * Reported rather than left for a host to infer from a size, because two things
+ * hang on it that have to agree: how much detail the panel draws, and where its
+ * chrome can go without landing on that detail. A `rail` panel stacks beside
+ * the focal one and a `strip` panel lies under it; they are the same glyph in
+ * two places, and the chrome that fits under one does not fit under the other.
+ */
+export type PanelRole = 'focal' | 'rail' | 'strip' | 'grid';
+
+/** Pixels on each side of a panel's box. */
+export interface Room {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+}
+
+/** Room asked for by role: whatever the host's chrome takes outside a panel of each. */
+export type RoomByRole = Partial<Record<PanelRole, Partial<Room>>>;
+
+/**
+ * How far the engine's own furniture reaches outside a panel's box, per level.
+ *
+ * Measured on the default theme rather than derived, and rounded up a couple of
+ * pixels. `full` is dominated by the axis titles, which the engine places 40px
+ * past each axis (`KGAuthor/graphObjects/axis.ts`); `compact` by the tick labels
+ * and a dropline's `P*`/`Q*`, which are wider than a tick; `indicator` draws no
+ * text at all, only the axis line's end caps.
+ */
+export const FURNITURE: Record<DensityLevel, Room> = {
+    full: { top: 8, right: 8, bottom: 52, left: 52 },
+    compact: { top: 8, right: 8, bottom: 24, left: 26 },
+    indicator: { top: 0, right: 0, bottom: 6, left: 6 }
+};
+
+/**
+ * One panel's rect, as fractions of the canvas, plus what it is and the detail
+ * it draws at.
+ */
 export interface PanelRect {
     key: string;
     x: number;
     y: number;
     width: number;
     height: number;
+    role: PanelRole;
+    level: DensityLevel;
 }
 
 export interface Arrangement {
@@ -50,6 +103,19 @@ export interface ArrangeInput {
     /** Which key is focal. Defaults to the first. Ignored in `grid`. */
     focused?: string;
     mode?: StageMode;
+
+    /**
+     * Pixels the host's chrome takes outside a panel, by role — a caption above
+     * the focal panel, say, and one under each rail panel.
+     */
+    chrome?: RoomByRole;
+
+    /**
+     * Pixels the engine's furniture takes outside a panel, by level. Pass
+     * `FURNITURE` when the panels will draw at the levels reported here; omit it
+     * and no room is kept for axes at all.
+     */
+    furniture?: Record<DensityLevel, Room>;
 }
 
 /**
@@ -98,8 +164,18 @@ function fitSquare(box: Box): Box {
     return square(box, Math.max(0, Math.min(box.width, box.height)));
 }
 
+/** The largest square that fits in `box` with `room` kept clear around it. */
+function fitInRoom(box: Box, room: Room): Box {
+    return fitSquare({
+        x: box.x + room.left,
+        y: box.y + room.top,
+        width: box.width - room.left - room.right,
+        height: box.height - room.top - room.bottom
+    });
+}
+
 /**
- * Lay `n` boxes out along one axis of `box`, each holding a centred square.
+ * Split `box` into `n` equal slots along one axis.
  *
  * The rail and the filmstrip are the same arrangement rotated, so they are the
  * same code: a stack of equal slots, each with a square in it. Squares because
@@ -110,46 +186,63 @@ function fitSquare(box: Box): Box {
 function slots(box: Box, n: number, vertical: boolean): Box[] {
     if (n <= 0) return [];
     const along = vertical ? box.height : box.width,
-        across = vertical ? box.width : box.height,
-        slot = (along - (n - 1) * GAP) / n,
-        side = Math.max(0, Math.min(slot, across));
+        slot = (along - (n - 1) * GAP) / n;
 
     const out: Box[] = [];
     for (let i = 0; i < n; i++) {
         const offset = i * (slot + GAP);
-        out.push(square(
-            vertical
-                ? { x: box.x, y: box.y + offset, width: box.width, height: slot }
-                : { x: box.x + offset, y: box.y, width: slot, height: box.height },
-            side
-        ));
+        out.push(vertical
+            ? { x: box.x, y: box.y + offset, width: box.width, height: slot }
+            : { x: box.x + offset, y: box.y, width: slot, height: box.height });
     }
     return out;
 }
 
-/** Rows and columns for a grid of `n` cells, as square as the count allows. */
-function gridShape(n: number): { cols: number; rows: number } {
-    const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
-    return { cols: cols, rows: Math.max(1, Math.ceil(n / cols)) };
-}
-
-function gridBoxes(box: Box, n: number): Box[] {
-    const { cols, rows } = gridShape(n),
-        cellW = (box.width - (cols - 1) * GAP) / cols,
+/** The cells of a `cols` by `rows` grid over `box`, in reading order. */
+function cells(box: Box, cols: number, rows: number): Box[] {
+    const cellW = (box.width - (cols - 1) * GAP) / cols,
         cellH = (box.height - (rows - 1) * GAP) / rows;
 
     const out: Box[] = [];
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < cols * rows; i++) {
         const col = i % cols, row = Math.floor(i / cols);
-        out.push(fitSquare({
+        out.push({
             x: box.x + col * (cellW + GAP),
             y: box.y + row * (cellH + GAP),
             width: cellW,
             height: cellH
-        }));
+        });
     }
     return out;
 }
+
+/** A panel's square, and the level it will draw at there. */
+interface Placed { box: Box; level: DensityLevel }
+
+/**
+ * The grid whose cells hold the largest panels.
+ *
+ * `ceil(sqrt(n))` columns is the answer for a square stage and the wrong one
+ * for a wide one: three panels came out two by two, with an empty cell, slack
+ * either side of every square, and rows too short for the tick labels between
+ * them. Trying every column count is n arrangements of n boxes, for n in single
+ * figures. A tie goes to the squarer grid, which was the old answer.
+ */
+function bestGrid(box: Box, n: number, place: (cell: Box) => Placed): Placed[] {
+    let best: { placed: Placed[]; side: number; skew: number } | null = null;
+    for (let cols = 1; cols <= n; cols++) {
+        const rows = Math.ceil(n / cols),
+            placed = cells(box, cols, rows).slice(0, n).map(place),
+            side = Math.min.apply(null, placed.map(p => p.box.width)),
+            skew = Math.abs(cols - rows);
+        if (!best || side > best.side + 1e-9 || (Math.abs(side - best.side) <= 1e-9 && skew < best.skew)) {
+            best = { placed: placed, side: side, skew: skew };
+        }
+    }
+    return best ? best.placed : [];
+}
+
+const NO_ROOM: Room = { top: 0, right: 0, bottom: 0, left: 0 };
 
 /**
  * The arrangement for one focus and one mode.
@@ -173,34 +266,75 @@ export function arrange(input: ArrangeInput): Arrangement {
 
     const inner: Box = { x: PAD, y: PAD, width: 1 - 2 * PAD, height: height - 2 * PAD };
 
-    const boxes: { [key: string]: Box } = {};
+    // Room arrives in pixels and everything here is in units of the canvas
+    // width, so one division puts the two in the same space.
+    const roomFor = function (role: PanelRole, level: DensityLevel): Room {
+        const chrome = (input.chrome && input.chrome[role]) || {},
+            furniture = input.furniture ? input.furniture[level] : NO_ROOM;
+        return {
+            top: ((chrome.top || 0) + furniture.top) / width,
+            right: ((chrome.right || 0) + furniture.right) / width,
+            bottom: ((chrome.bottom || 0) + furniture.bottom) / width,
+            left: ((chrome.left || 0) + furniture.left) / width
+        };
+    };
+
+    /**
+     * A panel's square in `box`, and the level it draws at.
+     *
+     * The level follows the role, not the size. Choosing by size alone was
+     * right while size and role were the same thing — the focal panel was large
+     * *because* it was focal — and the grid is where they came apart: a grid
+     * cell is a panel being read, at a size `auto` treated as barely worth
+     * labelling. So the focal panel is drawn in full, a rail or strip panel as
+     * a glyph, and a grid cell in full if it is still big enough once the room
+     * for its axis titles is taken out, and compact otherwise — never as a
+     * glyph, since the grid exists to read all of them at once.
+     */
+    const place = function (box: Box, role: PanelRole): Placed {
+        if (role !== 'grid') {
+            const level: DensityLevel = role === 'focal' ? 'full' : 'indicator';
+            return { box: fitInRoom(box, roomFor(role, level)), level: level };
+        }
+        const full = fitInRoom(box, roomFor(role, 'full'));
+        if (levelForSize(full.width * width) === 'full') return { box: full, level: 'full' };
+        return { box: fitInRoom(box, roomFor(role, 'compact')), level: 'compact' };
+    };
+
+    const placed: { [key: string]: Placed & { role: PanelRole } } = {};
+    const put = function (key: string, box: Box, role: PanelRole) {
+        placed[key] = { ...place(box, role), role: role };
+    };
 
     if (keys.length === 0) {
         // Nothing to place. Reported rather than thrown: an app rendering a
         // stage before its data arrives is ordinary, not an error.
     } else if (keys.length === 1) {
-        boxes[keys[0]] = fitSquare(inner);
+        // One panel is the whole stage in either mode, and the whole stage is
+        // where the student works — so it is focal, and nothing covers it.
+        put(keys[0], inner, 'focal');
     } else if (mode === 'grid') {
-        gridBoxes(inner, keys.length).forEach((b, i) => { boxes[keys[i]] = b });
+        bestGrid(inner, keys.length, cell => place(cell, 'grid'))
+            .forEach((p, i) => { placed[keys[i]] = { ...p, role: 'grid' } });
     } else if (width < FILMSTRIP_BELOW_PX) {
         // Filmstrip: the rail lies down under the focal panel. Same slots
         // function, rotated — one code path across the breakpoint, so a rule
         // that holds above it holds below it.
         const stripH = STRIP_FRACTION * height;
-        boxes[focused] = fitSquare({ ...inner, height: inner.height - GAP - stripH });
+        put(focused, { ...inner, height: inner.height - GAP - stripH }, 'focal');
         const strip = slots(
             { x: inner.x, y: inner.y + inner.height - stripH, width: inner.width, height: stripH },
             keys.length - 1, false
         );
-        keys.filter(k => k !== focused).forEach((k, i) => { boxes[k] = strip[i] });
+        keys.filter(k => k !== focused).forEach((k, i) => put(k, strip[i], 'strip'));
     } else {
         const railW = RAIL_FRACTION;
-        boxes[focused] = fitSquare({ ...inner, width: inner.width - GAP - railW });
+        put(focused, { ...inner, width: inner.width - GAP - railW }, 'focal');
         const rail = slots(
             { x: inner.x + inner.width - railW, y: inner.y, width: railW, height: inner.height },
             keys.length - 1, true
         );
-        keys.filter(k => k !== focused).forEach((k, i) => { boxes[k] = rail[i] });
+        keys.filter(k => k !== focused).forEach((k, i) => put(k, rail[i], 'rail'));
     }
 
     return {
@@ -210,13 +344,15 @@ export function arrange(input: ArrangeInput): Arrangement {
         // Reported in the author's declared order, not in visual order, so a
         // caller can zip this against its own panel list without a lookup.
         panels: keys.map(function (key) {
-            const b = boxes[key];
+            const p = placed[key];
             return {
                 key: key,
-                x: b.x,
-                y: b.y / height,
-                width: b.width,
-                height: b.height / height
+                x: p.box.x,
+                y: p.box.y / height,
+                width: p.box.width,
+                height: p.box.height / height,
+                role: p.role,
+                level: p.level
             };
         })
     };
@@ -255,7 +391,7 @@ export interface LayoutPanel {
     y: string;
     width: string;
     height: string;
-    density: string;
+    density: DensityLevel;
 }
 
 export interface StageLayout {
@@ -308,13 +444,14 @@ const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6);
  * aspect ratio is free — the engine scales the canvas and the fractions still
  * hold — so this is only paid when the container's proportions actually change.
  *
- * Density is `auto` on purpose, against P4's general recommendation that the
- * host should choose. P4's reason for that recommendation is that the engine
- * can see a panel is small but not *why*. Here the arrangement has made size
- * and role the same thing: the focal panel is large because it is focal. `auto`
- * is also the only setting that follows a promotion continuously, because the
- * engine re-picks a level from the panel's measured box in the same tick that
- * the box changes.
+ * Density is a level, not `auto`, and each panel starts at the level its role
+ * gives it with every panel arrived and the first one focal — the state the
+ * params below start in. It was `auto` for as long as the arrangement made size
+ * and role the same thing, which the grid undid: a cell being read came out
+ * the size `auto` reserves for glyphs. Levels cannot be expressions the way
+ * rects are, so `Stage` moves them as params whenever the arrangement changes,
+ * in the same update that moves the rects — which keeps the one property `auto`
+ * had, a panel gaining its labels in the same tick it grows.
  */
 export function toCustomLayout(input: ArrangeInput): StageLayout {
     const keys = input.panels || [],
@@ -383,17 +520,18 @@ export function toCustomLayout(input: ArrangeInput): StageLayout {
         );
     };
 
-    const full = byCount[keys.length];
+    const full = byCount[keys.length],
+        initial = full && full.focus[0] ? full.focus[0] : null;
 
     return {
-        aspectRatio: full && full.focus[0] ? full.focus[0].aspectRatio : 1,
+        aspectRatio: initial ? initial.aspectRatio : 1,
         panels: keys.map(key => ({
             key: key,
             x: component(key, 'x'),
             y: component(key, 'y'),
             width: component(key, 'width'),
             height: component(key, 'height'),
-            density: 'auto'
+            density: initial ? initial.panels.filter(p => p.key === key)[0].level : 'full'
         })),
         // Declared as presentation params, and it matters: `prev.changed` gates
         // every ghost an author draws, and promoting a panel — or revealing

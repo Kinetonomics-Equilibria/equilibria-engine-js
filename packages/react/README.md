@@ -14,7 +14,12 @@ What it is:
   chrome, no theme, no sizing. Panel chrome belongs to whatever renders it.
 - **`<Stage />`** — several panels, one engine. Measures its own box, compiles every
   arrangement it can be in into one `CustomLayout`, mounts one engine, and floats an overlay
-  over each panel. Promotion is a param update: no remount, no flash, no lost drag.
+  over each panel. Promotion is a param update: no remount, no flash, no lost drag. Each panel
+  has a **role** — `focal`, `rail`, `strip` or `grid` — which sets the level of detail it draws
+  at and tells the app's chrome which side of the panel it may use. `chromeRoom` says how many
+  pixels that chrome takes, and the stage keeps it clear along with the room the engine's own
+  axes need. Only the rail and the strip lay a promote button across a panel; a grid panel is
+  dragged like the focal one, and its chrome is handed `promote` instead.
 - **`arrange` / `toCustomLayout` / `pixelBox`** — the arrangement arithmetic, exported on its
   own because it is a pure function of a box and a list of keys and an app may want the
   numbers without rendering anything.
@@ -59,6 +64,13 @@ produce identical fractions. This is not tidiness: `useEquilibria` remounts when
 identity changes, and with pixel padding the fractions moved on every pixel of a window drag,
 rebuilding the diagram each time. `Stage` also quantises the ratio to a hundredth, so only a
 real change of proportions costs a rebuild.
+
+The one exception is **room**. Tick labels, axis titles and the app's captions sit outside a
+panel at fixed pixel offsets, and a gutter that was a fraction of the canvas came to 18px where
+50 were needed — the grid's rows printed over each other. So room is asked for in pixels, and
+`Stage` computes it at the width the stage had when its shape last changed. A proportional
+resize still costs nothing; the room just scales with everything else until the next change of
+shape measures it again.
 
 Still true, and still a limitation: **the hook re-mounts whenever `config` changes identity.**
 Callers must `useMemo` the config. `Stage` handles this for the things it owns — its config

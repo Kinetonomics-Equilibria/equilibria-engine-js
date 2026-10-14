@@ -134,14 +134,22 @@ describe('what the stage hands the engine', () => {
         expect(JSON.stringify(original)).toBe(before);
     });
 
-    it('leaves the levels to the engine, and an author\'s own density alone', () => {
+    it('builds each panel at its role\'s level, and leaves an author\'s own density alone', () => {
         const withDensity: any = config();
         withDensity.layout.CustomLayout.panels[1].density = 'compact';
         render(<Stage config={withDensity} focused="market" />);
 
         const panels = (latestInstance().config as any).layout.CustomLayout.panels;
-        expect(panels[0].density).toBe('auto');
-        expect(panels[1].density).toBe('compact');
+        expect(panels.map((p: any) => p.density)).toEqual(['full', 'compact', 'indicator']);
+    });
+
+    it('never moves the level of a panel whose author set one', () => {
+        const withDensity: any = config();
+        withDensity.layout.CustomLayout.panels[1].density = 'compact';
+        const { rerender } = render(<Stage config={withDensity} focused="market" />);
+        rerender(<Stage config={withDensity} focused="firm" />);
+
+        expect(paramUpdates().map(p => p.name)).not.toContain('density_firm');
     });
 });
 
@@ -194,6 +202,101 @@ describe('chrome', () => {
     it('renders nothing of its own when the app supplies no chrome', () => {
         const { container } = render(<Stage config={config()} focused="market" />);
         expect(chromeFor(container, 'firm').textContent).toBe('');
+    });
+
+    it('tells the app what each panel is, so it knows where its chrome can go', () => {
+        const roles: { [key: string]: string } = {};
+        render(<Stage config={config()} focused="market" renderChrome={p => {
+            roles[p.key] = p.role;
+            return null;
+        }} />);
+
+        expect(roles).toEqual({ market: 'focal', firm: 'rail', cost: 'rail' });
+    });
+});
+
+/**
+ * The grid, where every panel is read and worked on.
+ *
+ * It used to lay a promote button across every panel, which is the rail's
+ * affordance and the wrong one here: a student who switched to the grid to
+ * compare the panels could not drag a curve in any of them, and clicking one
+ * promoted it in a mode that ignores which panel is focal.
+ */
+describe('grid', () => {
+
+    it('lays no control across a panel, so a drag reaches the diagram', () => {
+        const { container } = render(<Stage config={config()} focused="market" mode="grid" />);
+
+        KEYS.forEach(key => {
+            expect(chromeFor(container, key).tagName).toBe('DIV');
+            expect(chromeFor(container, key).style.pointerEvents).toBe('');
+            expect(chromeFor(container, key).getAttribute('data-role')).toBe('grid');
+        });
+        expect(container.querySelectorAll('button')).toHaveLength(0);
+    });
+
+    it('hands each panel\'s chrome a way to promote it instead', () => {
+        const onPromote = vi.fn();
+        const { getByText } = render(
+            <Stage config={config()} focused="market" mode="grid" onPromote={onPromote}
+                renderChrome={p => (p.promote ? <button onClick={p.promote}>{p.key}</button> : null)} />
+        );
+
+        fireEvent.click(getByText('cost'));
+        expect(onPromote).toHaveBeenCalledWith('cost');
+    });
+
+    it('offers the focal panel no promotion, in either mode', () => {
+        const promotable = new Set<string>();
+        render(<Stage config={config()} focused="market" renderChrome={p => {
+            if (p.promote) promotable.add(p.key);
+            return null;
+        }} />);
+
+        expect([...promotable]).toEqual([]);
+    });
+
+    // The early steps of a lesson, with the grid toggled on: one panel, and a
+    // button across the whole of it would leave nothing on the stage to drag.
+    it('treats a lone panel as focal, so it stays workable', () => {
+        const { container } = render(
+            <Stage config={config()} focused="market" mode="grid" revealed={['market']} />
+        );
+
+        expect(chromeFor(container, 'market').tagName).toBe('DIV');
+        expect(chromeFor(container, 'market').getAttribute('data-focused')).toBe('true');
+    });
+});
+
+describe('room for chrome', () => {
+
+    it('keeps the room the app asks for clear above the focal panel', () => {
+        const plain = render(<Stage config={config()} focused="market" />);
+        const without = boxOf(chromeFor(plain.container, 'market'));
+        plain.unmount();
+
+        const roomy = render(<Stage config={config()} focused="market" chromeRoom={{ focal: { top: 60 } }} />);
+        const withRoom = boxOf(chromeFor(roomy.container, 'market'));
+
+        expect(withRoom.y).toBeGreaterThanOrEqual(60);
+        expect(withRoom.width).toBeLessThan(without.width);
+    });
+
+    it('does not rebuild for a room written as a new but equal object', () => {
+        const cfg = config();
+        const { rerender } = render(<Stage config={cfg} focused="market" chromeRoom={{ focal: { top: 28 } }} />);
+        rerender(<Stage config={cfg} focused="market" chromeRoom={{ focal: { top: 28 } }} />);
+
+        expect(engineControl.instances).toHaveLength(1);
+    });
+
+    it('rebuilds when the room actually changes, since every fraction moves with it', () => {
+        const cfg = config();
+        const { rerender } = render(<Stage config={cfg} focused="market" chromeRoom={{ focal: { top: 28 } }} />);
+        rerender(<Stage config={cfg} focused="market" chromeRoom={{ focal: { top: 40 } }} />);
+
+        expect(engineControl.instances).toHaveLength(2);
     });
 });
 
@@ -254,14 +357,22 @@ describe('promotion does not rebuild the diagram', () => {
         expect(paramUpdates()).toContainEqual({ name: FOCUS_PARAM, value: 2 });
     });
 
-    it('sends only the param that moved', () => {
+    // The focus, and the levels of the two panels that traded places — in one
+    // update, so the promoted panel never draws a frame at its new size with
+    // its old furniture. `cost` stayed a glyph and is not mentioned.
+    it('sends only what moved', () => {
         const cfg = config();
         const { rerender } = render(<Stage config={cfg} focused="market" />);
         latestInstance().updates.length = 0;
 
         rerender(<Stage config={cfg} focused="firm" />);
 
-        expect(paramUpdates()).toEqual([{ name: FOCUS_PARAM, value: 1 }]);
+        expect(latestInstance().updates).toHaveLength(1);
+        expect(paramUpdates()).toEqual([
+            { name: FOCUS_PARAM, value: 1 },
+            { name: 'density_market', value: 2 },
+            { name: 'density_firm', value: 0 }
+        ]);
     });
 
     it('toggles the mode the same way', () => {
@@ -272,7 +383,10 @@ describe('promotion does not rebuild the diagram', () => {
         rerender(<Stage config={cfg} focused="market" mode="grid" />);
 
         expect(engineControl.instances).toHaveLength(1);
-        expect(paramUpdates()).toEqual([{ name: MODE_PARAM, value: MODE_VALUE.grid }]);
+        const names = paramUpdates().map(p => p.name);
+        expect(names[0]).toBe(MODE_PARAM);
+        expect(names).not.toContain(FOCUS_PARAM);
+        expect(names.slice(1).every(n => n.indexOf('density_') === 0)).toBe(true);
     });
 
     it('moves the chrome with the panels', () => {

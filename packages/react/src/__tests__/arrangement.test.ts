@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
     arrange, toCustomLayout, pixelBox, revealedCount,
-    FILMSTRIP_BELOW_PX, FOCUS_PARAM, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
+    FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
 } from '../arrangement';
+import type { ArrangeInput } from '../arrangement';
 
 /**
  * The arrangement arithmetic, with no DOM in sight.
@@ -132,6 +133,147 @@ describe('grid', () => {
     });
 });
 
+/**
+ * The grid's shape is chosen, not assumed.
+ *
+ * Three panels used to come out two by two whatever the stage looked like: an
+ * empty cell, slack either side of every square, and rows too short for the tick
+ * labels between them — on a stage that would have held three larger panels in
+ * a row.
+ */
+describe('the grid takes the shape that holds the largest panels', () => {
+
+    const THREE = ['a', 'b', 'c'];
+
+    it('lays three panels out in one row on a wide stage', () => {
+        const a = arrange({ width: 1016, height: 607, panels: THREE, mode: 'grid' });
+        const [first, second, third] = THREE.map(k => pixelBox(a, k, 1016)!);
+
+        expect(second.y).toBeCloseTo(first.y, 6);
+        expect(third.y).toBeCloseTo(first.y, 6);
+        expect(second.x).toBeGreaterThan(first.x + first.width);
+
+        // And larger than the two-by-two they used to get.
+        const cell = (1016 * (1 - 2 * 0.018) - 0.018 * 1016) / 2,
+            row = ((607 - 2 * 0.018 * 1016) - 0.018 * 1016) / 2;
+        expect(first.width).toBeGreaterThan(Math.min(cell, row));
+    });
+
+    it('and two by two on a square one, where a row would be thinner', () => {
+        const a = arrange({ width: 800, height: 800, panels: THREE, mode: 'grid' });
+        const [first, second, third] = THREE.map(k => pixelBox(a, k, 800)!);
+
+        expect(second.y).toBeCloseTo(first.y, 6);
+        expect(third.y).toBeGreaterThan(first.y + first.height);
+    });
+});
+
+/**
+ * What each panel is, and the detail it draws at.
+ *
+ * The level follows the role. It used to follow the size, which was the same
+ * thing until the grid made a panel that is read the size of a panel that is
+ * only recognised.
+ */
+describe('roles and levels', () => {
+
+    it('draws the focal panel in full and the rail as glyphs', () => {
+        const a = arrange({ ...STAGE, panels: KEYS, focused: 'firm' });
+        expect(a.panels.map(p => [p.key, p.role, p.level])).toEqual([
+            ['market', 'rail', 'indicator'],
+            ['firm', 'focal', 'full'],
+            ['cost', 'rail', 'indicator'],
+            ['welfare', 'rail', 'indicator']
+        ]);
+    });
+
+    it('calls the panels under the focal one a strip, below the breakpoint', () => {
+        const a = arrange({ width: FILMSTRIP_BELOW_PX - 100, height: 900, panels: KEYS });
+        expect(a.panels.map(p => p.role)).toEqual(['focal', 'strip', 'strip', 'strip']);
+    });
+
+    // Small enough that `auto` would have drawn every cell as a glyph.
+    it('never draws a grid cell as a glyph, however small, since the grid is for reading', () => {
+        const a = arrange({ width: 500, height: 400, panels: KEYS, mode: 'grid' });
+        a.panels.forEach(p => {
+            expect(p.role).toBe('grid');
+            expect(p.level).toBe('compact');
+        });
+    });
+
+    it('draws a grid cell in full once it is big enough with its axis titles\' room taken out', () => {
+        const a = arrange({ width: 2000, height: 1000, panels: ['a', 'b'], mode: 'grid', furniture: FURNITURE });
+        a.panels.forEach(p => expect(p.level).toBe('full'));
+        expect(pixelBox(a, 'a', 2000)!.width).toBeGreaterThanOrEqual(420);
+    });
+
+    // A lone panel is the whole stage in either mode, and the stage is where
+    // the student works — so nothing may be laid across it.
+    it('makes a lone panel focal in the grid too', () => {
+        const a = arrange({ ...STAGE, panels: ['only'], mode: 'grid' });
+        expect(a.panels[0].role).toBe('focal');
+        expect(a.panels[0].level).toBe('full');
+    });
+});
+
+/**
+ * Room: pixels kept clear outside a panel, for what is drawn there.
+ *
+ * Tick labels and axis titles are drawn outside a panel's box at fixed pixel
+ * offsets, and so is the app's chrome. The gutters between panels were a
+ * fraction of the canvas, which came to 18px on a laptop, and the grid's rows
+ * overlapped: one row's tick labels, the next row's caption and its top tick
+ * label in the same band.
+ */
+describe('room', () => {
+
+    const CHROME = { focal: { top: 28 }, grid: { top: 28 }, rail: { bottom: 46 }, strip: { right: 150 } };
+
+    it('keeps one grid row\'s tick labels and the next row\'s caption apart', () => {
+        const a = arrange({ width: 900, height: 900, panels: KEYS, mode: 'grid', chrome: CHROME, furniture: FURNITURE });
+        const upper = pixelBox(a, 'market', 900)!, lower = pixelBox(a, 'cost', 900)!,
+            level = a.panels[0].level;
+
+        expect(lower.y - (upper.y + upper.height))
+            .toBeGreaterThanOrEqual(FURNITURE[level].bottom + CHROME.grid.top + FURNITURE[level].top);
+    });
+
+    it('keeps the focal panel\'s axis title off the strip under it', () => {
+        const a = arrange({ width: 736, height: 563, panels: KEYS.slice(0, 3), chrome: CHROME, furniture: FURNITURE });
+        const focal = pixelBox(a, 'market', 736)!, strip = pixelBox(a, 'firm', 736)!;
+
+        expect(strip.y - (focal.y + focal.height)).toBeGreaterThanOrEqual(FURNITURE.full.bottom);
+    });
+
+    it('keeps a rail panel\'s caption clear of the panel under it', () => {
+        const a = arrange({ ...STAGE, panels: KEYS, chrome: CHROME, furniture: FURNITURE });
+        const firm = pixelBox(a, 'firm', STAGE.width)!, cost = pixelBox(a, 'cost', STAGE.width)!;
+
+        expect(cost.y - (firm.y + firm.height)).toBeGreaterThanOrEqual(CHROME.rail.bottom);
+    });
+
+    it('keeps the strip\'s captions beside each panel, inside the stage', () => {
+        const width = 736;
+        const a = arrange({ width: width, height: 563, panels: KEYS.slice(0, 3), chrome: CHROME, furniture: FURNITURE });
+        const last = pixelBox(a, 'cost', width)!;
+
+        expect(last.x + last.width + CHROME.strip.right).toBeLessThanOrEqual(width);
+    });
+
+    // Room is pixels, so it is the one input that does not scale: the same
+    // forty pixels are a smaller share of a larger stage.
+    it('takes a smaller share of a larger stage', () => {
+        const small = arrange({ width: 900, height: 714, panels: KEYS, furniture: FURNITURE });
+        const large = arrange({ width: 1800, height: 1428, panels: KEYS, furniture: FURNITURE });
+
+        expect(large.panels[0].width).toBeGreaterThan(small.panels[0].width);
+    });
+
+    it('changes nothing when none is asked for', () => {
+        expect(arrange({ ...STAGE, panels: KEYS, chrome: {} })).toEqual(arrange({ ...STAGE, panels: KEYS }));
+    });
+});
+
 describe('below the filmstrip breakpoint', () => {
 
     const narrow = { width: FILMSTRIP_BELOW_PX - 100, height: 900 };
@@ -233,8 +375,9 @@ describe('every arrangement compiles into one layout', () => {
         });
     });
 
-    it('leaves the levels to the engine', () => {
-        expect(layout.panels.map(p => p.density)).toEqual(KEYS.map(() => 'auto'));
+    // The state the params start in: every panel arrived, the first one focal.
+    it('starts each panel at the level its role draws at', () => {
+        expect(layout.panels.map(p => p.density)).toEqual(['full', 'indicator', 'indicator', 'indicator']);
     });
 
     it('keeps the panels in declared order, so a key indexes the focus param', () => {
@@ -254,13 +397,14 @@ describe('every arrangement compiles into one layout', () => {
         return Function('s', `return ${body}`)(scope) as number;
     };
 
-    it('resolves to exactly what arrange() computed, in every state', () => {
+    const agrees = (input: ArrangeInput) => {
+        const compiled = toCustomLayout(input);
         KEYS.forEach(function (_, i) {
             const arrived = i + 1;
             (['focus', 'grid'] as const).forEach(function (mode) {
                 KEYS.forEach(function (focused, focusIndex) {
                     const expected = arrange({
-                        ...STAGE, panels: KEYS.slice(0, arrived), focused: focused, mode: mode
+                        ...input, panels: KEYS.slice(0, arrived), focused: focused, mode: mode
                     });
                     const scope = {
                         [FOCUS_PARAM]: focusIndex,
@@ -269,13 +413,26 @@ describe('every arrangement compiles into one layout', () => {
                     };
 
                     expected.panels.forEach(function (want) {
-                        const p = layout.panels.filter(e => e.key === want.key)[0];
+                        const p = compiled.panels.filter(e => e.key === want.key)[0];
                         (['x', 'y', 'width', 'height'] as const).forEach(function (prop) {
                             expect(evaluate(p[prop], scope)).toBeCloseTo(want[prop], 5);
                         });
                     });
                 });
             });
+        });
+    };
+
+    it('resolves to exactly what arrange() computed, in every state', () => {
+        agrees({ ...STAGE, panels: KEYS });
+    });
+
+    // Room is the one input that makes the fractions depend on more than the
+    // shape, so it is the one most likely to reach one side and not the other.
+    it('and still does with room kept for chrome and furniture', () => {
+        agrees({
+            ...STAGE, panels: KEYS, furniture: FURNITURE,
+            chrome: { focal: { top: 28 }, grid: { top: 28 }, rail: { bottom: 46 }, strip: { right: 150 } }
         });
     });
 
