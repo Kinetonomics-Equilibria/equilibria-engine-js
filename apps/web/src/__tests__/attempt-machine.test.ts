@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { ParamInfo } from 'equilibria-engine-js';
-import { attemptReducer, isFrozen, isResolved } from '../quiz/attempt';
+import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from '../quiz/attempt';
 import type { Attempt } from '../quiz/attempt';
-import { grade } from '../quiz/grade';
+import { grade, gradeChoice } from '../quiz/grade';
 import type { Question } from '../quiz/grade';
 
 /**
@@ -22,11 +22,11 @@ const A: ParamInfo = {
 const QUESTION: Question = { param: 'a', direction: 'up', target: 26, tolerance: 1 };
 
 const ask = () => attemptReducer(null, {
-    type: 'ask', questionId: '7', question: QUESTION, startValue: 20
+    type: 'ask', questionId: '7', question: QUESTION, starts: { a: 20 }
 })!;
 
 const commit = (state: Attempt | null, value: number) => attemptReducer(state, {
-    type: 'commit', value: value, grade: grade(QUESTION, state!.startValue, value, A)
+    type: 'commit', value: value, grade: grade(QUESTION, state!.starts.a, value, A)
 });
 
 describe('the four states', () => {
@@ -34,7 +34,7 @@ describe('the four states', () => {
     it('starts at the prompt with the start recorded and nothing answered', () => {
         const state = ask();
         expect(state.phase).toBe('prompt');
-        expect(state.startValue).toBe(20);
+        expect(state.starts).toEqual({ a: 20 });
         expect(state.attempts).toBe(0);
         expect(state.committedValue).toBeUndefined();
     });
@@ -73,7 +73,7 @@ describe('what the answer is measured from', () => {
         state = commit(state, 23)!;
         state = attemptReducer(state, { type: 'retry' })!;
         state = commit(state, 26)!;
-        expect(state.startValue).toBe(20);
+        expect(state.starts).toEqual({ a: 20 });
         expect(state.grade!.movedBy).toBeCloseTo(6);
     });
 });
@@ -181,16 +181,93 @@ describe('leaving the question', () => {
 
     it('starts clean when a new question arrives', () => {
         const second = attemptReducer(commit(ask(), 23), {
-            type: 'ask', questionId: '9', question: QUESTION, startValue: 22
+            type: 'ask', questionId: '9', question: QUESTION, starts: { a: 22 }
         })!;
         expect(second.phase).toBe('prompt');
         expect(second.attempts).toBe(0);
         expect(second.first).toBeUndefined();
-        expect(second.startValue).toBe(22);
+        expect(second.starts).toEqual({ a: 22 });
     });
 
     it('does nothing with an action when no question is on screen', () => {
         expect(attemptReducer(null, { type: 'move' })).toBeNull();
         expect(attemptReducer(null, { type: 'reveal' })).toBeNull();
+    });
+});
+
+/**
+ * A question that asks which curve moves (P14).
+ *
+ * The same four phases and one start per question; what changes is how many
+ * params the answer is made of. All of them are recorded when it is asked, all
+ * of them freeze when it is answered, and "Try again" puts back the ones that
+ * should not have moved — the decision this plan had to make, because leaving
+ * them out makes the retry a question about a different market.
+ */
+describe('a question that asks which curve moves', () => {
+
+    const DEMAND: ParamInfo = {
+        name: 'demand', label: 'Demand for A$', value: 50, min: 30, max: 70,
+        round: 2, precision: 0, presentation: false, isBoolean: false
+    };
+    const SUPPLY: ParamInfo = { ...DEMAND, name: 'supply', label: 'Supply of A$' };
+    const RBA: Question = { param: 'demand', direction: 'up', among: ['demand', 'supply'], illustrate: 10 };
+
+    const asked = () => attemptReducer(null, {
+        type: 'ask', questionId: '9', question: RBA, starts: { demand: 50, supply: 50 }
+    })!;
+
+    /** Commit with both curves where the student left them. */
+    const answered = (demand: number, supply: number) => {
+        const state = asked();
+        return attemptReducer(state, {
+            type: 'commit', value: demand,
+            grade: gradeChoice(RBA, state.starts, [{ ...DEMAND, value: demand }, { ...SUPPLY, value: supply }])
+        })!;
+    };
+
+    it('records where the question found every curve it offers', () => {
+        expect(asked().starts).toEqual({ demand: 50, supply: 50 });
+    });
+
+    it('freezes every curve it offers once the answer is taken, and none before', () => {
+        expect(frozenParams(asked())).toEqual([]);
+        expect(frozenParams(attemptReducer(asked(), { type: 'move' }))).toEqual([]);
+        expect(frozenParams(answered(50, 60))).toEqual(['demand', 'supply']);
+        expect(frozenParams(attemptReducer(answered(50, 60), { type: 'reveal' }))).toEqual(['demand', 'supply']);
+        expect(frozenParams(attemptReducer(answered(50, 60), { type: 'retry' }))).toEqual([]);
+    });
+
+    it('freezes only its own param for a question that offers no choice, as before', () => {
+        expect(frozenParams(commit(ask(), 23))).toEqual(['a']);
+    });
+
+    it('puts a wrongly-moved curve back on a retry, where the question found it', () => {
+        const wrong = answered(50, 60);
+        expect(wrong.grade!.othersMoved).toEqual(['supply']);
+        expect(resetsOnRetry(wrong)).toEqual([{ name: 'supply', value: 50 }]);
+    });
+
+    it('leaves the asked curve where the student put it, even when the other moved too', () => {
+        expect(resetsOnRetry(answered(56, 60))).toEqual([{ name: 'supply', value: 50 }]);
+    });
+
+    it('puts nothing back when only the asked curve moved, whichever way it went', () => {
+        expect(resetsOnRetry(answered(44, 50))).toEqual([]);
+        expect(resetsOnRetry(answered(50, 50))).toEqual([]);
+        // P11's retry, exactly: the first lesson's question offers no choice.
+        expect(resetsOnRetry(commit(ask(), 16))).toEqual([]);
+    });
+
+    it('puts nothing back outside a verdict', () => {
+        expect(resetsOnRetry(null)).toEqual([]);
+        expect(resetsOnRetry(asked())).toEqual([]);
+        // Shown the answer: retrying is refused there, so nothing is undone either.
+        expect(resetsOnRetry(attemptReducer(answered(50, 60), { type: 'reveal' }))).toEqual([]);
+    });
+
+    it('is not resolved by moving the wrong curve, even with the right one moved right', () => {
+        expect(isResolved(answered(56, 60))).toBe(false);
+        expect(isResolved(answered(56, 50))).toBe(true);
     });
 });

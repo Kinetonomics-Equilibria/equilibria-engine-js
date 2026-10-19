@@ -19,10 +19,10 @@ import {
     AT_START, askAt, paramsAt, paramsBetween, revealedPanels, sayAt, trackReducer
 } from './track/track';
 import type { LessonQuestion, TrackState } from './track/track';
-import { attemptReducer, isFrozen, isResolved } from './quiz/attempt';
+import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
 import type { Attempt } from './quiz/attempt';
-import { grade, validateQuestion } from './quiz/grade';
-import { parkApparatus } from './quiz/apparatus';
+import { candidatesOf, gradeChoice, validateChoice, validateQuestion } from './quiz/grade';
+import { answerPosition, drawsAnswer, drawsAnswerWhenRight, parkApparatus } from './quiz/apparatus';
 import { Dock } from './dock/Dock';
 import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
@@ -156,13 +156,6 @@ const CHROME_BOX: Record<PanelRole, CSSProperties> = {
     strip: { width: CHROME_ROOM.strip.right }
 };
 
-/** Whether this question has a correct *position* the diagram can draw. */
-function drawableAnswer(
-    question: LessonQuestion, apparatus: StudyContent['questionApparatus']
-): boolean {
-    return question.target !== undefined && !!apparatus[question.param];
-}
-
 export interface StudyScreenProps {
     /**
      * The lesson on screen. Fixed for the life of the screen: a different
@@ -234,13 +227,19 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const [attempt, setAttempt] = useState<Attempt | null>(null);
 
     /**
-     * The param the current question is about, for the change handler.
+     * The params the current question offers, for the change handler: the one
+     * it is about, and any others the student may choose instead (P14).
+     *
+     * All of them, because moving the wrong curve is an answer too — a wrong
+     * one. Listening only to the asked param left a student who reached for
+     * supply on a demand question at `prompt`, and then told them they had not
+     * moved anything.
      *
      * A ref rather than a read of `attempt`, so that `onParamChanged` — which a
      * drag calls sixty times a second — keeps one identity for the life of the
      * screen instead of being rebuilt every time the question's phase moves.
      */
-    const asked = useRef<string | null>(null);
+    const asked = useRef<string[]>([]);
 
     /**
      * What the engine held, so a remount can be undone.
@@ -368,10 +367,10 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // sentence gives way to what they just did.
         if (!applyingStep.current) setSaying(null);
 
-        // Moving the asked param is what turns a prompt into an attempt. The
-        // reducer returns the same object once it has, so a drag's sixty
-        // changes a second cost one state update between them.
-        if (asked.current === event.name) {
+        // Moving any param the question offers is what turns a prompt into an
+        // attempt. The reducer returns the same object once it has, so a drag's
+        // sixty changes a second cost one state update between them.
+        if (asked.current.indexOf(event.name) > -1) {
             setAttempt(current => attemptReducer(current, { type: 'move' }));
         }
 
@@ -462,17 +461,19 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
         if (position > 0) restoring.unshift({ name: STEP_PARAM, value: position });
         if (question) {
+            const start = question.starts[question.question.param],
+                info = engine.getParams().filter(p => p.name === question.question.param)[0];
             restoring.push(
                 { name: 'asking', value: 1 },
                 { name: 'submitted', value: isFrozen(question) ? 1 : 0 },
                 { name: 'revealed', value: question.phase === 'reveal'
                     || (question.phase === 'verdict' && !!question.grade?.correct
-                        && drawableAnswer(question.question, questionApparatus)) ? 1 : 0 }
+                        && drawsAnswerWhenRight(question.question, questionApparatus)) ? 1 : 0 }
             );
             if (apparatus) {
                 restoring.push(
-                    { name: apparatus.start, value: question.startValue },
-                    { name: apparatus.answer, value: question.question.target ?? question.startValue }
+                    { name: apparatus.start, value: start },
+                    { name: apparatus.answer, value: answerPosition(question.question, start, info) }
                 );
             }
             restoring.push(...parked.current);
@@ -561,7 +562,8 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     }, [endGesture]);
 
     /**
-     * Which param, if any, is refusing to move because it has been answered.
+     * Which params are refusing to move because they have been answered: every
+     * one the question offered, the wrong curves included (P14).
      *
      * `draggable` freezes the *diagram's* drag and says nothing about a host
      * control — and P11's slider is not a fallback but the equal answer path,
@@ -569,15 +571,20 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * at all. This is the one place every host param write goes through, which
      * makes it the one place the freeze has to hold.
      *
+     * Keyed on the names rather than on the attempt, so that `updateParams` —
+     * and with it the dock's whole context — keeps its identity through the
+     * phase changes that do not change what is frozen.
+     *
      * Lesson navigation writes through `engine.update` directly and is
      * deliberately not guarded: moving the track is not a student's answer.
      */
-    const frozenParam = attempt && isFrozen(attempt) ? attempt.question.param : null;
+    const frozenKey = frozenParams(attempt).join('\n');
+    const frozen = useMemo(() => (frozenKey ? frozenKey.split('\n') : []), [frozenKey]);
 
     const updateParams = useCallback((next: { name: string; value: number }[]) => {
-        const allowed = frozenParam ? next.filter(p => p.name !== frozenParam) : next;
+        const allowed = next.filter(p => frozen.indexOf(p.name) < 0);
         if (allowed.length > 0) engineRef.current?.update({ params: allowed });
-    }, [frozenParam]);
+    }, [frozen]);
 
     /**
      * Move the lesson, and tell the engine in the right order.
@@ -658,6 +665,16 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             start = info ? info.value : 0,
             apparatus = questionApparatus[question.param];
 
+        // Where the question found every curve it offers, not only the right
+        // one: the grade measures a wrong curve from here too, and "Try again"
+        // puts one back here (P14).
+        const starts: Record<string, number> = {};
+        candidatesOf(question).forEach(name => {
+            const candidate = values.filter(p => p.name === name)[0];
+            if (candidate) starts[name] = candidate.value;
+        });
+        starts[question.param] = start;
+
         // Every other askable param's apparatus, parked where its curve is now:
         // the market as the question found it. Left alone, it would sit wherever
         // the last question about that param put it. See `parkApparatus`.
@@ -667,7 +684,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // side, from not being able to do economics — so it fails loudly here
         // rather than quietly on screen. Dev only: in a build this would be
         // shouting at a student about their teacher's typo.
-        const problems = validateQuestion(question, info, start);
+        const problems = validateQuestion(question, info, start).concat(validateChoice(question, values));
         if (problems.length > 0 && import.meta.env.DEV) {
             problems.forEach(p => console.error(`Question at step ${index + 1} ${p}`));
         }
@@ -680,17 +697,19 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 { name: 'revealed', value: 0 },
                 ...(apparatus ? [
                     { name: apparatus.start, value: start },
-                    // Parked on the start when there is no target: nothing draws
-                    // it, and a stale answer from a previous question would.
-                    { name: apparatus.answer, value: question.target ?? start }
+                    // The target, the illustration, or parked on the start when
+                    // there is neither: nothing draws it then, and a stale
+                    // answer from a previous question would. `revealed` is what
+                    // keeps any of them off the screen until there is an answer.
+                    { name: apparatus.answer, value: answerPosition(question, start, info) }
                 ] : []),
                 ...parked.current
             ]
         });
 
-        asked.current = question.param;
+        asked.current = candidatesOf(question);
         setAttempt(attemptReducer(null, {
-            type: 'ask', questionId: String(index), question: question, startValue: start
+            type: 'ask', questionId: String(index), question: question, starts: starts
         }));
         // The snapshot above re-based `prev`, so the chain is describing a move
         // the diagram no longer remembers. Recomputed rather than blanked, for
@@ -705,7 +724,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
         // Before the step's own `set`, which would otherwise read as the student
         // answering the question they are about to be asked.
-        asked.current = null;
+        asked.current = [];
 
         const backwards = next.position < track.position;
         applyStep(paramsBetween(steps, track.position, next.position), next.position, backwards);
@@ -729,19 +748,21 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     /**
      * Take the answer.
      *
-     * The committed value is read back from the engine rather than from
+     * The committed values are read back from the engine rather than from
      * anything this screen has been keeping, because the engine is what applied
      * the rounding and the bounds — a value the app thinks it set and the value
-     * the param holds are not always the same number.
+     * the param holds are not always the same number. Every param the question
+     * offered is read, because the answer is where all of them are (P14).
      */
     const onCommit = useCallback(() => {
         const engine = engineRef.current;
         if (!engine || !attempt) return;
 
-        const info = engine.getParams().filter(p => p.name === attempt.question.param)[0];
+        const values = engine.getParams(),
+            info = values.filter(p => p.name === attempt.question.param)[0];
         if (!info) return;
 
-        const marked = grade(attempt.question, attempt.startValue, info.value, info),
+        const marked = gradeChoice(attempt.question, attempt.starts, values),
             next = attemptReducer(attempt, { type: 'commit', value: info.value, grade: marked });
         if (next === attempt) return;
         setAttempt(next);
@@ -751,8 +772,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 { name: 'submitted', value: 1 },
                 // A right answer gets the exact position too: their curve is
                 // within tolerance of it, and seeing where "close enough" sat is
-                // the difference between being told yes and being shown why.
-                ...(marked.correct && drawableAnswer(attempt.question, questionApparatus)
+                // the difference between being told yes and being shown why. A
+                // target only — see `drawsAnswerWhenRight`.
+                ...(marked.correct && drawsAnswerWhenRight(attempt.question, questionApparatus)
                     ? [{ name: 'revealed', value: 1 }] : [])
             ]
         });
@@ -764,12 +786,43 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         }
     }, [attempt, steps, questionApparatus]);
 
+    /**
+     * Back to answering, with any curve that should not have moved put back.
+     *
+     * The putting back is `resetsOnRetry`'s decision and the reasons are there
+     * (P14). What is here is that it is the app's move and not the student's,
+     * written the way a lesson step or a remount restore writes one: under the
+     * step flag, so the arbitration does not read it as theirs, and then
+     * snapshotted — put the state back, *then* snapshot — so no ghost marks a
+     * movement they did not make and the strip comes back at rest. The calcs
+     * are read again after the snapshot, as `onReady` reads them, because the
+     * events the write raised were computed against the `prev` before it.
+     *
+     * With nothing to put back — always, for a question that offers no choice —
+     * this is P11's retry exactly.
+     */
     const onRetry = useCallback(() => {
+        const engine = engineRef.current;
+        const back = resetsOnRetry(attempt);
         setAttempt(current => attemptReducer(current, { type: 'retry' }));
-        engineRef.current?.update({
-            params: [{ name: 'submitted', value: 0 }, { name: 'revealed', value: 0 }]
-        });
-    }, []);
+        if (!engine) return;
+
+        const thaw = [{ name: 'submitted', value: 0 }, { name: 'revealed', value: 0 }];
+        if (back.length === 0) {
+            engine.update({ params: thaw });
+            return;
+        }
+
+        applyingStep.current = true;
+        try {
+            engine.update({ params: thaw.concat(back) });
+            engine.snapshot();
+        } finally {
+            applyingStep.current = false;
+        }
+        setReadout(engine.getCalcs() as Readout);
+        retell(false);
+    }, [attempt, retell]);
 
     /**
      * Show the answer, which is also a way past the question.
@@ -779,6 +832,10 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * but only if nobody can be stuck, so asking to be shown has to finish the
      * question. What it costs is the record: `first` says what they answered
      * before they asked.
+     *
+     * For a question with no target, what is drawn is its illustration, where
+     * it has one (P14) — the right curve, shifted the right way, by an amount
+     * the grade never read.
      */
     const onReveal = useCallback(() => {
         if (!attempt) return;
@@ -786,7 +843,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         if (next === attempt) return;
 
         setAttempt(next);
-        if (drawableAnswer(attempt.question, questionApparatus)) {
+        if (drawsAnswer(attempt.question, questionApparatus)) {
             engineRef.current?.update({ params: [{ name: 'revealed', value: 1 }] });
         }
         setTrack(current => trackReducer(
@@ -1093,13 +1150,18 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
               * is the price of not making the strip grow: a verdict is two
               * clauses and up to three controls, and the strip is one line that
               * sits directly under a stage measuring its own box. */}
+            {/* The params the question offers, in the order it offers them —
+              * which is the author's `among`, the same whichever is asked, so
+              * the first slider is not the answer. */}
             {attempt ? (
                 <QuestionRow
                     prompt={sayAt(steps, track.position)}
                     attempt={attempt}
-                    param={dockParams.filter(p => p.name === attempt.question.param)[0]}
+                    params={candidatesOf(attempt.question)
+                        .map(name => dockParams.filter(p => p.name === name)[0])
+                        .filter((p): p is ParamInfo => !!p)}
                     directionWords={directionWords ? directionWords[attempt.question.param] : undefined}
-                    onChange={value => updateParams([{ name: attempt.question.param, value }])}
+                    onChange={(name, value) => updateParams([{ name, value }])}
                     onGestureStart={beginGesture}
                     onGestureEnd={endGesture}
                     onCommit={onCommit}
@@ -1121,7 +1183,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 steps={steps}
                 state={track}
                 onGoTo={goTo}
-                onReset={frozenParam ? undefined : resetToStep}
+                onReset={frozen.length > 0 ? undefined : resetToStep}
             />
 
             {narrow ? (

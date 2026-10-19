@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
@@ -285,5 +285,44 @@ describe('getting past the question', () => {
 
         expect(verdict()).toBe('');
         expect(screen.queryByText('Answer to continue.')).toBeNull();
+    });
+});
+
+/**
+ * A question that names its curve is what it was before P14.
+ *
+ * P14 lets a question offer a choice of curve. This lesson's does not, so it
+ * has one candidate: one slider, under the name it always had, and supply —
+ * which the dock lets a student move while answering — neither counts as an
+ * answer nor freezes when one is taken. The rest of this file is the proof it
+ * marks as before; this is the proof nothing new reached it.
+ */
+describe('a question that names its curve', () => {
+
+    it('offers one slider, under the name it always had', async () => {
+        mount();
+        await userEvent.setup().click(marker(ASK));
+
+        const sliders = within(row()!).getAllByRole('slider');
+        expect(sliders).toHaveLength(1);
+        expect(sliders[0].getAttribute('aria-label')).toBe('Your answer');
+    });
+
+    it('leaves supply alone: moving it is not an answer, and an answer does not freeze it', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(ASK));
+
+        const supply = screen.getByRole('slider', { name: 'c' });
+        fireEvent.keyDown(supply, { key: 'ArrowUp' });
+        expect(row()!.getAttribute('data-phase')).toBe('prompt');
+
+        await user.click(check());
+        expect(verdict()).toContain('did not move');
+        expect(verdict()).not.toContain('should stay where it was');
+
+        const before = shown(supply);
+        fireEvent.keyDown(supply, { key: 'ArrowUp' });
+        expect(shown(supply)).not.toBe(before);
     });
 });

@@ -1,3 +1,4 @@
+import { candidatesOf } from './grade';
 import type { Grade, Question } from './grade';
 
 /**
@@ -26,15 +27,22 @@ export interface Attempt {
     phase: Phase;
 
     /**
-     * Where the param was when the question was *asked*.
+     * Where every candidate was when the question was *asked*: the param it is
+     * about, and each of the others the student could move instead (P14).
      *
      * Snapshotted at prompt time and never again, which is the difference
      * between marking an answer and marking whatever the student last did. A
      * student who drags, goes exploring, comes back and commits still has their
-     * answer measured from the question's own starting line.
+     * answer measured from the question's own starting line — and a curve they
+     * should have left alone is measured from where *it* was then.
+     *
+     * One record for all of them, the asked one included, rather than a start
+     * for the asked param and another field for the rest: two homes for one
+     * fact is how the plan's own `revealed` flag came to shadow `phase`.
      */
-    startValue: number;
+    starts: Record<string, number>;
 
+    /** Where the asked param was when they committed. */
     committedValue?: number;
     grade?: Grade;
 
@@ -53,7 +61,7 @@ export interface Attempt {
 
 export type AttemptAction =
     /** A question has arrived. Everything about the previous one is gone. */
-    | { type: 'ask'; questionId: string; question: Question; startValue: number }
+    | { type: 'ask'; questionId: string; question: Question; starts: Record<string, number> }
     /** The student moved the param. */
     | { type: 'move' }
     | { type: 'commit'; value: number; grade: Grade }
@@ -69,7 +77,7 @@ export function attemptReducer(state: Attempt | null, action: AttemptAction): At
                 questionId: action.questionId,
                 question: action.question,
                 phase: 'prompt',
-                startValue: action.startValue,
+                starts: { ...action.starts },
                 attempts: 0
             };
 
@@ -136,7 +144,42 @@ export function isResolved(state: Attempt | null): boolean {
     return state.phase === 'verdict' && !!state.grade && state.grade.correct;
 }
 
-/** Whether the param the question is about should refuse to move. */
+/** Whether the answer has been taken, so the params it is made of should refuse to move. */
 export function isFrozen(state: Attempt | null): boolean {
     return !!state && (state.phase === 'verdict' || state.phase === 'reveal');
+}
+
+/**
+ * The params that refuse to move once the answer is taken: every candidate.
+ *
+ * Not only the right one. An answer is the position of everything the student
+ * could have moved, so a wrong curve left editable after the commit would let
+ * the answer be changed under its own verdict — the half-freeze P11 found for
+ * the dock, one param over.
+ */
+export function frozenParams(state: Attempt | null): string[] {
+    return state && isFrozen(state) ? candidatesOf(state.question) : [];
+}
+
+/**
+ * What "Try again" puts back: every curve the student moved that the question
+ * was not about, at the value the question found it at (P14).
+ *
+ * The verdict has just told them that curve should have stayed where it was.
+ * Left where they put it, the retry would be a question about a different
+ * market — and a student who did exactly as told, and moved the right curve the
+ * right way, would be marked wrong again unless they first put the other one
+ * back to within half a step, which with a mouse is a single grid point.
+ *
+ * The curve the question *is* about stays where they left it, which is P11's
+ * reason for retrying into `attempt` rather than `prompt`: they have already
+ * moved it, and that part of the work is theirs. Nothing here gives the answer
+ * away — the verdict has already named the curve, and which way it goes is
+ * still for them to find.
+ */
+export function resetsOnRetry(state: Attempt | null): { name: string; value: number }[] {
+    if (!state || state.phase !== 'verdict' || !state.grade) return [];
+    return (state.grade.othersMoved || [])
+        .filter(name => state.starts[name] !== undefined)
+        .map(name => ({ name: name, value: state.starts[name] }));
 }

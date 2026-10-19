@@ -3,7 +3,7 @@ import type { ParamInfo } from 'equilibria-engine-js';
 import { LESSONS, lessonById } from '../lessons';
 import type { StudyContent } from '../lessons';
 import { paramsAt } from '../track/track';
-import { nearestAchievable, validateQuestion } from '../quiz/grade';
+import { candidatesOf, nearestAchievable, validateChoice, validateQuestion } from '../quiz/grade';
 import { parkApparatus } from '../quiz/apparatus';
 import { verdictFor } from '../quiz/verdict';
 import { grade } from '../quiz/grade';
@@ -118,12 +118,44 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
             expect(validateQuestion(step.ask, def ? infoOf(def, start) : undefined, start),
                 `question at step ${i + 1}`).toEqual([]);
 
-            const apparatus = lesson.questionApparatus[step.ask.param];
-            expect(apparatus, `no apparatus draws "${step.ask.param}"`).toBeDefined();
-            [apparatus.start, apparatus.answer].forEach(name => {
-                const drawn = paramNamed(lesson, name);
-                expect(drawn, `apparatus param "${name}"`).toBeDefined();
-                expect(drawn.presentation, `"${name}" must be presentation`).toBe(true);
+            // Every curve it offers, not only the right one, needs a start line:
+            // a student who moves the wrong curve is told it should have stayed
+            // where it was, and the dashed line is where it was (P14).
+            const offered = candidatesOf(step.ask);
+            const infos = offered
+                .map(name => paramNamed(lesson, name))
+                .filter(Boolean)
+                .map(def => infoOf(def, paramsAt(lesson.lesson, i + 1)[def.name] ?? def.value));
+            expect(validateChoice(step.ask, infos), `question at step ${i + 1}`).toEqual([]);
+
+            offered.forEach(param => {
+                const apparatus = lesson.questionApparatus[param];
+                expect(apparatus, `no apparatus draws "${param}"`).toBeDefined();
+                [apparatus.start, apparatus.answer].forEach(name => {
+                    const drawn = paramNamed(lesson, name);
+                    expect(drawn, `apparatus param "${name}"`).toBeDefined();
+                    expect(drawn.presentation, `"${name}" must be presentation`).toBe(true);
+                });
+            });
+        });
+    });
+
+    /**
+     * A question that asks which curve moves cannot name it in its prompt.
+     *
+     * Nothing fails on screen when it does — the question is simply half as
+     * hard as it says, which is how the A$ lesson's first draft read ("Move
+     * demand for A$, then check"). The labels are the sliders' names, so a
+     * prompt that used one would be pointing at a control — and naming the
+     * curve that should stay put gives the answer away just as surely.
+     */
+    it('keeps the choice out of the prompt of a question that offers one', () => {
+        lesson.lesson.forEach((step, i) => {
+            if (!step.ask || candidatesOf(step.ask).length < 2) return;
+            candidatesOf(step.ask).forEach(name => {
+                const def = paramNamed(lesson, name);
+                const label = (def && def.label ? def.label : name).toLowerCase();
+                expect((step.say || '').toLowerCase(), `step ${i + 1} names "${label}"`).not.toContain(label);
             });
         });
     });

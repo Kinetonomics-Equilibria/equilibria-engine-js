@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
+import { FOREIGN_EXCHANGE, FX_LESSON } from '../lessons/foreignExchange';
 import { theme } from '../theme';
 
 /**
@@ -220,5 +221,97 @@ describe('focus is the student\'s', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Continue' }));
+    });
+});
+
+/**
+ * Choosing a curve without a mouse (P14).
+ *
+ * A question that asks which curve moves offers a slider per curve, and
+ * choosing a slider is choosing the curve — as grabbing one is with the mouse.
+ * So each needs a name that says which, on screen as well as to a reader; Enter
+ * on either has to take the whole answer; and the verdict, which can no longer
+ * lean on a prompt naming the curve, has to name it itself.
+ */
+describe('choosing a curve by keyboard', () => {
+
+    const FIRST = FX_LESSON.findIndex(step => !!step.ask) + 1;
+
+    const askFx = async () => {
+        const user = userEvent.setup();
+        render(<MantineProvider theme={theme} env="test"><StudyScreen content={FOREIGN_EXCHANGE} /></MantineProvider>);
+        await user.click(marker(FIRST));
+        return user;
+    };
+
+    /** In the row: the dock's Explore sliders carry the same names. */
+    const named = (name: string) => within(row()).getByRole('slider', { name });
+
+    it('names each slider by its curve, where it can be seen and where it is read', async () => {
+        await askFx();
+        expect(within(row()).getAllByRole('slider').map(s => s.getAttribute('aria-label')))
+            .toEqual(['Demand for A$', 'Supply of A$']);
+
+        // On screen, and hidden from the reader, who has it as the slider's
+        // own name: heard once, not twice.
+        const visible = within(row()).getByText('Supply of A$');
+        expect(visible.getAttribute('aria-hidden')).toBe('true');
+
+        expect(named('Demand for A$').getAttribute('tabindex')).toBe('0');
+        expect(named('Supply of A$').getAttribute('tabindex')).toBe('0');
+    });
+
+    it('commits from either slider, and names the curve in what it announces', async () => {
+        await askFx();
+        const supply = named('Supply of A$');
+        supply.focus();
+        fireEvent.keyDown(supply, { key: 'ArrowRight' });
+        fireEvent.keyDown(supply, { key: 'Enter' });
+
+        expect(announcement().textContent)
+            .toContain('This one works through demand for A$ — supply of A$ should stay where it was.');
+        expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
+        // Off the slider that stopped working, onto the first thing that replaced it.
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Try again' }));
+    });
+
+    it('freezes both sliders when the answer is taken', async () => {
+        await askFx();
+        const demand = named('Demand for A$');
+        demand.focus();
+        fireEvent.keyDown(demand, { key: 'ArrowRight' });
+        fireEvent.keyDown(demand, { key: 'Enter' });
+        expect(announcement().textContent).toContain('Right direction — you moved demand for A$ right.');
+
+        ['Demand for A$', 'Supply of A$'].forEach(name => {
+            const control = named(name), before = control.getAttribute('aria-valuetext');
+            fireEvent.keyDown(control, { key: 'Home' });
+            expect(control.getAttribute('aria-valuetext'), name).toBe(before);
+        });
+    });
+
+    it('lets the student move between the two without focus being taken', async () => {
+        await askFx();
+        const demand = named('Demand for A$'), supply = named('Supply of A$');
+        supply.focus();
+        fireEvent.keyDown(supply, { key: 'ArrowRight' });
+        demand.focus();
+        fireEvent.keyDown(demand, { key: 'ArrowRight' });
+        expect(document.activeElement).toBe(demand);
+    });
+
+    it('announces a wrong curve in the question row, and not again in the strip', async () => {
+        await askFx();
+        const supply = named('Supply of A$');
+        supply.focus();
+        fireEvent.keyDown(supply, { key: 'ArrowLeft' });
+        fireEvent.keyDown(supply, { key: 'Enter' });
+
+        const strip = document.querySelector('[data-kind]') as HTMLElement;
+        const stripSays = (strip.querySelector('[role="status"]') as HTMLElement).textContent || '';
+        expect(announcement().textContent).toContain('should stay where it was');
+        expect(stripSays).not.toContain('should stay where it was');
+        // It goes on doing its own job: saying what moved.
+        expect(stripSays).toContain('supply of A$');
     });
 });

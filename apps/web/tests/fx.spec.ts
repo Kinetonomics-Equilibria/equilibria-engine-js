@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { focalPointCoordinates, test, textCollisions } from './helpers';
+import { dataCoordinates, focalPointCoordinates, RENDERED, test, textCollisions } from './helpers';
 
 /**
  * The A$ lesson, in a real browser.
@@ -89,6 +89,45 @@ async function dragSideways(page: Page, way: 'down' | 'up', dx: number) {
 
 const caption = (page: Page, key: string) => page.locator(`[data-testid="stage-chrome"] [data-panel="${key}"]`);
 
+/** The first question — the RBA, which works through demand for A$ — from a fresh load. */
+async function toTheFirstQuestion(page: Page) {
+    const markers = page.locator('button[data-kinds]');
+    const kinds = await markers.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-kinds') || ''));
+    await markers.nth(kinds.findIndex((k) => k.includes('ask'))).click();
+    const question = page.getByRole('group', { name: 'Question' });
+    await expect(question).toContainText('RBA');
+    return question;
+}
+
+/**
+ * The dotted lines on the stage, read back through the axes.
+ *
+ * Dotted is the answer line's style and nothing else's in this lesson — a live
+ * curve is solid and a question's start is dashed — so these are what "Show me"
+ * drew. Each comes back as where its box is centred, in the axes' own units, and
+ * which way it slopes: the rate axis runs US$0.40 to US$0.90, so the centre of a
+ * straight line spanning it is where it crosses US$0.65, the rate every question
+ * starts from, and the slope says whether it is a demand curve or a supply one —
+ * which the centre alone cannot, since demand and supply shifted right by the
+ * same amount cross US$0.65 at the same quantity.
+ */
+async function dottedLines(page: Page) {
+    const drawn = page.locator(`.kg-container ${RENDERED.visibleCurve}`);
+    const dotted = await drawn.evaluateAll((nodes) => nodes
+        .map((node, i) => (node as SVGElement).style.strokeDasharray.replace(/\s|px/g, '') === '1,2' ? i : -1)
+        .filter((i) => i > -1));
+    return Promise.all(dotted.map(async (i) => {
+        const line = drawn.nth(i);
+        const slopesDown = await line.evaluate((node) => {
+            const path = node as SVGPathElement,
+                a = path.getPointAtLength(0), z = path.getPointAtLength(path.getTotalLength());
+            // SVG y grows downwards: a curve sloping down has its higher-x end lower.
+            return (z.x - a.x) * (z.y - a.y) > 0;
+        });
+        return { ...(await dataCoordinates(line)), slopesDown };
+    }));
+}
+
 test.beforeEach(async ({ page }) => {
     await page.goto('/?lesson=fx');
     await page.locator('.kg-container svg').waitFor();
@@ -159,17 +198,78 @@ test('supply of A$ is dragged right, and the A$ depreciates', async ({ page }) =
 });
 
 test('a question about demand is answered by dragging it, and marked in its own words', async ({ page }) => {
-    const markers = page.locator('button[data-kinds]');
-    const kinds = await markers.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-kinds') || ''));
-    await markers.nth(kinds.findIndex((k) => k.includes('ask'))).click();
-
-    const question = page.getByRole('group', { name: 'Question' });
-    await expect(question).toContainText('Move demand for A$');
+    const question = await toTheFirstQuestion(page);
+    // The prompt asks which curve, and does not say.
+    await expect(question).toContainText('Which curve moves, and which way?');
+    await expect(question).not.toContainText('demand for A$');
 
     await dragSideways(page, 'down', 50);
     await question.getByRole('button', { name: 'Check' }).click();
 
-    await expect(question.getByRole('status')).toContainText('Right direction — you moved it right.');
+    await expect(question.getByRole('status')).toContainText('Right direction — you moved demand for A$ right.');
+});
+
+/**
+ * Which curve moves (P14), chosen the two ways a student can choose it.
+ *
+ * With the mouse, a student who grabs supply on a demand question has moved
+ * supply, and is told so — where they used to be told they had moved nothing.
+ * With the keyboard, choosing a slider is choosing the curve. The two must be
+ * the same choice, so they get the same sentence.
+ */
+test('dragging supply on a demand question is told so, in words', async ({ page, pageErrors }) => {
+    const question = await toTheFirstQuestion(page);
+
+    await dragSideways(page, 'up', 50);
+    await question.getByRole('button', { name: 'Check' }).click();
+
+    await expect(question.getByRole('status'))
+        .toContainText('This one works through demand for A$ — supply of A$ should stay where it was.');
+    await expect(question.getByRole('status')).not.toContainText('did not move');
+    expect(pageErrors).toEqual([]);
+});
+
+test('the keyboard chooses a curve as the mouse does', async ({ page }) => {
+    const question = await toTheFirstQuestion(page);
+
+    const supply = question.getByRole('slider', { name: 'Supply of A$' });
+    await supply.focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Enter');
+
+    await expect(question.getByRole('status'))
+        .toContainText('This one works through demand for A$ — supply of A$ should stay where it was.');
+    // The supply curve really moved: two steps of two is two US cents off the rate.
+    await expect(caption(page, 'market')).toContainText('A$1 = US$0.63');
+});
+
+/**
+ * "Show me" on a question with no target (P14) used to draw nothing. It now
+ * draws the right curve shifted the right way by the question's `illustrate`,
+ * and this is the one place that can say *how far*: read back through the
+ * axes, demand for A$ shifted ten to the right crosses US$0.65 at 60.
+ */
+test('"Show me" draws demand for A$ shifted ten to the right', async ({ page, pageErrors }) => {
+    const question = await toTheFirstQuestion(page);
+    await question.getByRole('button', { name: 'Check' }).click();
+    await expect(question.getByRole('status')).toContainText('You moved neither');
+
+    // A wrong answer is a reason to offer the answer, not to show it.
+    expect(await dottedLines(page)).toEqual([]);
+
+    await question.getByRole('button', { name: 'Show me' }).click();
+    await expect.poll(async () => (await dottedLines(page)).length).toBe(1);
+
+    const [answer] = await dottedLines(page);
+    expect(answer.slopesDown, 'the answer should be a demand curve').toBe(true);
+    expect(Math.abs(answer.x - 60), `crosses US$0.65 at ${answer.x}`).toBeLessThan(TOLERANCE.Q);
+    expect(Math.abs(answer.y - EQUILIBRIUM.rate), `centred at ${answer.y}`).toBeLessThan(TOLERANCE.rate);
+
+    // And it goes with the question.
+    await question.getByRole('button', { name: 'Continue' }).click();
+    await expect.poll(async () => (await dottedLines(page)).length).toBe(0);
+    expect(pageErrors).toEqual([]);
 });
 
 test('no text on the stage lands on other text', async ({ page }) => {

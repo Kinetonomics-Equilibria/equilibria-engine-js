@@ -9,6 +9,10 @@ They began as drafts to argue with, several deliberately conditional on decision
 made. **All fourteen have since landed** — P0, P1 (code), P2, P3, P4, P5, P6, P7, P8, P9, P10, P11,
 P12 and P13 — and each carries a Findings section recording where the plan was wrong.
 
+P14 came later and from somewhere else: the [A$ lesson](FX-lesson-findings.md), built to test the study
+screen against a topic it was not written for, found the question loop could not ask which curve moves.
+It follows the same headings and has landed too.
+
 ## Settle these first
 
 Three forks decide which lane several items belong to. Answer them differently and parts of these
@@ -38,6 +42,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P11](P11-quiz-attempt-loop.md) | The quiz attempt loop ✅ **done** | app | P0, P10, P5 |
 | [P12](P12-refusals-that-speak.md) | Refusals that speak ✅ **done** | engine | P5, P6 |
 | [P13](P13-ghost-authoring-shorthand.md) | `ghost:` authoring shorthand ✅ **done** | bindings | P5, P6 |
+| [P14](P14-which-curve-moves.md) | Which curve moves, and showing a direction-only answer ✅ **done** | app | P11, the A$ lesson |
 
 Both of the plans that were only outlines inside P5 have now been written out and landed: P12, and
 P13, which was the last of them.

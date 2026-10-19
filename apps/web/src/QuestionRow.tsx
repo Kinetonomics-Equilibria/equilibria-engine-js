@@ -4,6 +4,7 @@ import type { ParamInfo } from 'equilibria-engine-js';
 import { ParamSlider } from './ParamSlider';
 import type { Attempt } from './quiz/attempt';
 import { isFrozen, isResolved } from './quiz/attempt';
+import { candidatesOf } from './quiz/grade';
 import { verdictFor } from './quiz/verdict';
 import type { DirectionWords } from './quiz/verdict';
 import classes from './QuestionRow.module.css';
@@ -30,17 +31,25 @@ export interface QuestionRowProps {
     prompt: string | null;
     attempt: Attempt;
 
-    /** The asked param as the engine declares it — bounds, step, precision. */
-    param: ParamInfo | undefined;
+    /**
+     * The params the question offers, as the engine declares them — bounds,
+     * step, precision, label — in the question's own order (P14).
+     *
+     * One, for a question that names its curve; several, for one that asks
+     * which curve moves. The asked param is among them, and nothing here says
+     * which: the order is the author's and the same for every question offering
+     * the same choice.
+     */
+    params: ParamInfo[];
 
     /**
-     * Which way a rise and a fall in that param read, when "up" and "down"
+     * Which way a rise and a fall in the asked param read, when "up" and "down"
      * would not describe what the student did — a curve dragged sideways.
      */
     directionWords?: DirectionWords;
 
-    /** Move the param. The same call the dock's sliders make. */
-    onChange(value: number): void;
+    /** Move a param. The same call the dock's sliders make. */
+    onChange(name: string, value: number): void;
     onGestureStart(): void;
     onGestureEnd(): void;
 
@@ -62,13 +71,15 @@ export interface QuestionRowProps {
 }
 
 export function QuestionRow({
-    prompt, attempt, param, directionWords, onChange, onGestureStart, onGestureEnd,
+    prompt, attempt, params, directionWords, onChange, onGestureStart, onGestureEnd,
     onCommit, onRetry, onReveal, onContinue
 }: QuestionRowProps) {
 
     const frozen = isFrozen(attempt);
-    const verdict = attempt.grade && param && attempt.committedValue !== undefined
-        ? verdictFor(attempt.question, attempt.grade, attempt.committedValue, param, directionWords)
+    const asked = params.filter(p => p.name === attempt.question.param)[0];
+    const choice = candidatesOf(attempt.question).length > 1;
+    const verdict = attempt.grade && asked && attempt.committedValue !== undefined
+        ? verdictFor(attempt.question, attempt.grade, attempt.committedValue, asked, directionWords, params)
         : null;
 
     /**
@@ -104,18 +115,35 @@ export function QuestionRow({
             </Text>
 
             <div className={classes.answer}>
-                {param ? (
-                    <div className={classes.control}>
+                {asked ? params.map(param => (
+                    <div
+                        key={param.name}
+                        className={choice ? `${classes.control} ${classes.choice}` : classes.control}
+                    >
+                        {/* A choice of curve needs each slider named where it
+                          * can be seen: a sighted keyboard user has nothing else
+                          * to tell two sliders apart by, where the mouse has the
+                          * curves' colours and letters. The visible name is the
+                          * accessible one too, so it is hidden from the reader
+                          * here rather than heard twice. One slider needs no
+                          * name on screen, and keeps the one it always had. */}
+                        {choice ? (
+                            <Text component="span" size="sm" className={classes.name} aria-hidden="true">
+                                {param.label}
+                            </Text>
+                        ) : null}
                         {/* Arrow keys adjust and Enter commits, so a whole
                           * answer can be given without leaving the control. It
                           * is not a lesser path: it writes the very param the
                           * drag writes, so the two answers are the same answer
-                          * by construction rather than by agreement. */}
+                          * by construction rather than by agreement — and with
+                          * a choice of curve, choosing a slider is choosing the
+                          * curve, as grabbing one is. */}
                         <ParamSlider
                             param={param}
-                            label="Your answer"
+                            label={choice ? param.label : 'Your answer'}
                             disabled={frozen}
-                            onChange={onChange}
+                            onChange={value => onChange(param.name, value)}
                             beginGesture={onGestureStart}
                             endGesture={onGestureEnd}
                             onEnter={onCommit}
@@ -124,7 +152,7 @@ export function QuestionRow({
                             {param.value.toFixed(param.precision)}
                         </Text>
                     </div>
-                ) : (
+                )) : (
                     <Text size="sm" c="dimmed" className={classes.control}>
                         This question is about a value the diagram does not offer.
                     </Text>
@@ -153,7 +181,14 @@ export function QuestionRow({
                         >
                             {verdict.headline}
                         </Badge>
-                        <Text component="span" size="sm">{verdict.direction}</Text>
+                        {/* Which curve, then which way, then how far: the order
+                          * the reasoning goes in. */}
+                        {verdict.curve ? (
+                            <Text component="span" size="sm">{verdict.curve}</Text>
+                        ) : null}
+                        {verdict.direction ? (
+                            <Text component="span" size="sm">{verdict.direction}</Text>
+                        ) : null}
                         {verdict.magnitude ? (
                             <Text component="span" size="sm">{verdict.magnitude}</Text>
                         ) : null}

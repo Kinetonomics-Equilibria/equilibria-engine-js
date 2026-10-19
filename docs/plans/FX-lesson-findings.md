@@ -54,8 +54,8 @@ faster, the Fed lifts rates, Australians buy fewer imports, and back to the base
 | 5 | A second lesson on the screen | **Needed a change — made** |
 | 6 | A verdict about a curve the student moved sideways | **Needed a change — made** |
 | 7 | Questions about two different curves | **Needed a change — made** |
-| 8 | Asking *which* curve moves | **Fails** — the question loop cannot ask it |
-| 9 | Showing the answer to a direction-only question | **Fails** — there is nothing to draw |
+| 8 | Asking *which* curve moves | **Failed — made in [P14](P14-which-curve-moves.md)** |
+| 9 | Showing the answer to a direction-only question | **Failed — made in [P14](P14-which-curve-moves.md)** |
 | 10 | A lesson sentence longer than one line | **Fails** — clipped at an ellipsis; now a test |
 | 11 | Saying "the A$ appreciates" when it does | **Not supported** — only the lesson's own sentences say it |
 | 12 | Narrating a move that shows up in both panels | **Partly** — long, and silent past two curves |
@@ -123,14 +123,14 @@ left, and a verdict that set `revealed` would draw a dotted "answer" to a questi
 curve's current position, and the remount restore puts them back. A diagram with one askable param —
 the first lesson — writes nothing more than before.
 
-## 8. Which curve moves — fails
+## 8. Which curve moves — failed, and made in P14
 
 The slides' practice asks three things of each scenario: which curve moves, which way, and whether the
-currency appreciates. The question loop can ask the second. It marks one named param, and it only counts
-a move of *that* param as an attempt (`apps/web/src/StudyScreen.tsx:374`), so a student who reaches for
-supply when the question is about demand is told *"You did not move it."* — which is false. So every
-prompt here names its curve ("Move demand for A$, then check"), and the hardest third of the skill is
-given away.
+currency appreciates. The question loop could ask the second. It marked one named param, and it only
+counted a move of *that* param as an attempt (`StudyScreen.tsx:374` as it stood), so a student who
+reached for supply when the question was about demand was told *"You did not move it."* — which is
+false. So every prompt here named its curve ("Move demand for A$, then check"), and the hardest third of
+the skill was given away.
 
 **Proposal.** A question names the right param among candidates — `ask: { param: 'demand', among:
 ['demand', 'supply'], direction: 'up' }`. Every candidate is listened to; every candidate freezes on
@@ -139,17 +139,46 @@ outcome with its own sentence ("This one works through demand for A$ — supply 
 was"); and the question row offers a slider per candidate, labelled, so the keyboard path makes the same
 choice the mouse does. P11-sized, and the single change that would most improve this lesson.
 
-## 9. Showing a direction-only answer — fails
+**Landed, as proposed** ([P14](P14-which-curve-moves.md)). The four prompts no longer name a curve; they
+ask the slides' question — *"Which curve moves, and which way?"* — and each offers `among: ['demand',
+'supply']`, in that order every time, so the first slider is never the answer. A student who moves supply
+on a demand question is told *"This one works through demand for A$ — supply of A$ should stay where it
+was."*, and `lessons.test.ts` now fails any choice question whose prompt names one of its curves.
+
+Two things the proposal did not say, both found by reading the code before building:
+
+- **The verdict's other sentences had to name the curve too.** They said "it", and leaned on the prompt
+  directly above to say what "it" was (`verdict.ts`, which said so in a comment). Take the curve out of
+  the prompt and "you moved it right" is a true sentence about nothing — and no test would have failed.
+  In a choice question the verdict now says "you moved demand for A$ right".
+- **"Try again" puts the wrongly-moved curve back.** P11's retry leaves everything where the student put
+  it. Here that is a trap: told that supply should stay where it was, a student who then moves demand the
+  right way is marked wrong again unless they first return supply to within half a step — with a step of
+  2, the single grid point it started on, which a mouse has to hit. The curve the question is about keeps
+  the student's move, as in P11.
+
+## 9. Showing a direction-only answer — failed, and made in P14
 
 Every question here is direction only, on purpose: the slides never ask *how far*, and a target would
 have the verdict tell a student that the RBA's decision "belongs at 60", a number the lesson made up.
-But a question without a target has no drawable answer
-(`apps/web/src/StudyScreen.tsx:163`), so **"Show me" draws nothing**: the verdict's sentence names the
-right direction, and the diagram goes on showing the student's wrong one.
+But a question without a target had no drawable answer (`StudyScreen.tsx:163` as it stood), so **"Show
+me" drew nothing**: the verdict's sentence named the right direction, and the diagram went on showing
+the student's wrong one.
 
 **Proposal.** An `illustrate` amount on a direction-only question — "draw it shifted 10 the right way,
 as an illustration" — that the reveal draws with the answer line it already has, and that the grade never
 reads.
+
+**Landed, as proposed** ([P14](P14-which-curve-moves.md)). Each question carries `illustrate: 10`, and
+"Show me" draws the asked curve's dotted answer line ten the right way — read back through the axes in
+`fx.spec.ts`, demand for A$ shifted right crosses US$0.65 at 60. Nothing in the diagram changed: the
+answer param is written when the question is armed, as a target is, and `revealed` keeps it off the
+screen until then. The grade never reads it, and is pinned to be the same with and without it.
+
+The one thing the proposal did not say: **a right answer is not shown the illustration.** P11 draws the
+target beside a correct answer, so the student sees where "close enough" sat. An illustration is not a
+position anyone is aiming for, and beside a student who correctly moved demand four it would be a D₁ ten
+along — "not far enough", drawn under the word "Correct".
 
 ## 10. One line of strip — fails, and is now a test
 
@@ -229,3 +258,8 @@ These are decisions a teacher should check, not facts the code settled:
    export side (demand for A$ falls) is equally right and would move the rate the same way.
 5. **Only the US$.** No trade-weighted index, and no third currency: "selling A$ for holiday money" means
    for foreign currency in general.
+6. **Each question's scenario pins one curve** (P14), because the student is now marked on which curve
+   they move. The relative-prices question says "Australians switch to imports" to rule out the export
+   side — demand for A$ falling, which item 4 calls equally right, and which would otherwise be marked
+   as the wrong curve. The RBA question says "investors overseas buy Australian bonds" for the same
+   reason: a rate rise that also kept Australians' money at home would move supply too (§12).

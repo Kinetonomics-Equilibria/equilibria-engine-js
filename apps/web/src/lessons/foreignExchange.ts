@@ -104,9 +104,10 @@ const curve = (
  * student reaches for the wrong one, and the answer line — gated on differing
  * from its start — has nothing to draw.
  *
- * Every question here asks direction only, so no answer line is ever drawn. They
- * are declared anyway: a question given a `target` should be able to show it
- * without anyone remembering to add the drawing.
+ * Every question here asks direction only, so the answer line has no correct
+ * position to show. What "Show me" draws on it is each question's
+ * `illustrate`: the right curve, shifted the right way by an amount chosen for
+ * the picture, which the grade never reads (P14).
  */
 const startLine = (name: string, fn: string, color: string) => ({
     type: 'Curve',
@@ -237,36 +238,45 @@ export const FX_LESSON: LessonStep[] = [
     // Direction only, deliberately. The slides' practice asks which way a curve
     // moves and what that does to the currency, never by how much; a target
     // would have the verdict tell a student that the RBA's decision "belongs at
-    // 60", which is a number this lesson made up.
+    // 60", which is a number this lesson made up. `illustrate` is the same
+    // number put where it belongs instead — on the picture "Show me" draws, and
+    // nowhere the grade looks.
     //
-    // Each prompt names the curve. The question loop marks one param and only
-    // notices the student moving *that* one, so a prompt that left the choice
-    // of curve to the student would answer "you did not move it" to a student
-    // who had moved the other one. A prompt is in the question row, which wraps,
-    // so these may run longer than a step's sentence.
+    // No prompt names its curve, because which curve moves is the first thing
+    // the slides ask (P14). Each question offers both, in the same order every
+    // time, so the order says nothing about the answer; the student is marked
+    // on the choice and then on the direction, and told in words if they moved
+    // the wrong one. That makes each scenario carry the reasoning, and each is
+    // written to pin one curve: the RBA's "investors overseas buy Australian
+    // bonds" is a demand for A$, and the relative-prices question says
+    // "Australians switch to imports" because the export side of the same
+    // change would be a fair answer otherwise — and moves the other curve.
+    //
+    // A prompt is in the question row, which wraps, so these may run longer
+    // than a step's sentence.
     {
         set: { ...BASELINE },
         say: 'Your turn. The RBA lifts the cash rate above US rates, and investors overseas ' +
-            'buy Australian bonds. Move demand for A$, then check.',
-        ask: { param: 'demand', direction: 'up' }
+            'buy Australian bonds. Which curve moves, and which way? Move it, then check.',
+        ask: { param: 'demand', direction: 'up', among: ['demand', 'supply'], illustrate: 10 }
     },
     {
         set: { ...BASELINE },
         say: 'Prices in Australia rise faster than in the US, and Australians switch to ' +
-            'imports that now look cheap. Move supply of A$, then check.',
-        ask: { param: 'supply', direction: 'up' }
+            'imports that now look cheap. Which curve moves, and which way?',
+        ask: { param: 'supply', direction: 'up', among: ['demand', 'supply'], illustrate: 10 }
     },
     {
         set: { ...BASELINE },
-        say: 'China\'s steel mills cut output and buy less Australian iron ore. Move demand ' +
-            'for A$, then check.',
-        ask: { param: 'demand', direction: 'down' }
+        say: 'China\'s steel mills cut output and buy less Australian iron ore. Which curve ' +
+            'moves, and which way?',
+        ask: { param: 'demand', direction: 'down', among: ['demand', 'supply'], illustrate: 10 }
     },
     {
         set: { ...BASELINE },
-        say: 'In a downturn, Australians buy fewer imported cars and holiday at home. Move ' +
-            'supply of A$, then check.',
-        ask: { param: 'supply', direction: 'down' }
+        say: 'In a downturn, Australians buy fewer imported cars and holiday at home. Which ' +
+            'curve moves, and which way?',
+        ask: { param: 'supply', direction: 'down', among: ['demand', 'supply'], illustrate: 10 }
     },
     {
         set: { ...BASELINE },
