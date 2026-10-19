@@ -15,6 +15,10 @@ export interface SegmentDefinition extends GraphObjectDefinition {
     startArrow?: boolean;
     endArrow?: boolean;
     label?: LabelDefinition;
+    /** Pixels to draw it above itself, parallel — see the view's `offset`. */
+    offset?: number;
+    /** Pixels to stop short of each end — see the view's `inset`. */
+    inset?: number;
 }
 
 

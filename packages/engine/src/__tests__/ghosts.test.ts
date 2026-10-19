@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { mountConfig, stubContainerLayout, captureWarnings } from './helpers';
+import { insetVector } from '../ts/view/viewObjects/segment';
 
 /**
  * `ghost: true` — the shorthand for "and where this was, one snapshot ago".
@@ -347,6 +348,53 @@ describe('the shift arrow', () => {
         expect([arrow.x1, arrow.y1]).toEqual([9, 11]);
         expect([arrow.x2, arrow.y2]).toEqual([6, 8]);
         r.destroy();
+    });
+
+    it('is drawn beside the path it describes, on the same side both ways', () => {
+        // Both ends of the move are on a curve that stayed put, so drawn where
+        // it is the arrow lies on top of that curve. It stands eight pixels off,
+        // square to its own direction — and up the screen whichever way the
+        // student went, or it would hop across the curve on the way back.
+        const r = build([EQUILIBRIUM], CALCS);
+        const arrow = objectsIn(r).filter((o: any) => o.constructor.name === 'Segment')[0];
+        const line = r.container.querySelector(`line.line-${arrow.id}`) as Element;
+
+        const drawn = () => {
+            const at = (k: string) => Number(line.getAttribute(k));
+            const from = [arrow.xScale.scale(arrow.x1), arrow.yScale.scale(arrow.y1)];
+            const to = [arrow.xScale.scale(arrow.x2), arrow.yScale.scale(arrow.y2)];
+            const run = [to[0] - from[0], to[1] - from[1]];
+            // The insets cancel at the middle, so its shift is the offset alone.
+            const shift = [
+                (at('x1') + at('x2') - from[0] - to[0]) / 2,
+                (at('y1') + at('y2') - from[1] - to[1]) / 2
+            ];
+            const drawnRun = [at('x2') - at('x1'), at('y2') - at('y1')];
+            expect(drawnRun[0] * run[1] - drawnRun[1] * run[0]).toBeCloseTo(0);
+            expect(Math.hypot(shift[0], shift[1])).toBeCloseTo(8);
+            expect(shift[0] * run[0] + shift[1] * run[1]).toBeCloseTo(0);
+            return { shift, length: Math.hypot(run[0], run[1]), drawn: Math.hypot(drawnRun[0], drawnRun[1]) };
+        };
+
+        move(r, 14);
+        const there = drawn();
+        expect(there.shift[1]).toBeLessThan(0);
+        // Twelve short of each end, on a move long enough to spare it.
+        expect(there.length).toBeGreaterThan(40);
+        expect(there.drawn).toBeCloseTo(there.length - 24);
+
+        move(r, 20);
+        expect(drawn().shift[1]).toBeLessThan(0);
+        r.destroy();
+    });
+
+    it('stops short of its ends only as far as a short move allows', () => {
+        // Long enough: twelve off each end.
+        expect(insetVector(100, 0, 12)).toEqual([12, 0]);
+        // Thirty long: what leaves sixteen, so an arrowhead and a little shaft.
+        expect(insetVector(0, 30, 12)).toEqual([0, 7]);
+        // Shorter than that already: left as it is, never turned round.
+        expect(insetVector(10, 0, 12)).toEqual([0, 0]);
     });
 
     it('is not drawn for a curve, which has no single displacement', () => {

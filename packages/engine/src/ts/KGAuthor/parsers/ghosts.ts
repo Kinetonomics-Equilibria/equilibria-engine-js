@@ -83,6 +83,24 @@ const GHOST_STYLE = {
 const GHOST_SOLID_FILL = { opacity: 0.35 };
 
 /**
+ * Where the shift arrow is drawn, in pixels: beside the path it describes, and
+ * along the middle of it.
+ *
+ * A point that moves because the *other* curve shifted slides along the curve
+ * that stayed, so its arrow joins two places on that curve and, drawn where it
+ * is, is a green stroke laid over the curve itself. Offset, it reads as a note
+ * about the curve — "the market moved along here".
+ *
+ * Offset alone puts the head level with the new point, where the curve that
+ * crossed there and both droplines pass; whichever side the arrow is on, one of
+ * them runs through the head. Each of those lines cuts the offset shaft within
+ * about ten pixels of the point at the angles a market diagram draws, so the
+ * arrow stops twelve short of either end and touches none of them.
+ */
+const GHOST_ARROW_OFFSET = 8;
+const GHOST_ARROW_INSET = 12;
+
+/**
  * Keys a ghost must not inherit.
  *
  * `drag` and `click` because a ghost that could be dragged would be writing a
@@ -453,6 +471,8 @@ function arrowDef(def: any, ghost: any, options: GhostDefinition, type: string):
             begin: position(ghost),
             end: here,
             color: def.color,
+            offset: GHOST_ARROW_OFFSET,
+            inset: GHOST_ARROW_INSET,
             show: ghost.show
         }
     } as TypeAndDef;
