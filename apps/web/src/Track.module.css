@@ -2,26 +2,54 @@
  *
  * Fixed height, like the strip above it, for the same reason — everything in
  * this column sits under a stage that measures its own box, and a row that grew
- * as the lesson went on would resize the diagram mid-sentence. */
+ * as the lesson went on would resize the diagram mid-sentence. A `height`
+ * rather than a `min-height`, so that nothing inside can push it: a classic
+ * scrollbar under the markers, on a system that draws one, overhangs the row
+ * instead of growing it.
+ *
+ * A size container, so the readout can drop its words when the row is too
+ * narrow to hold them (see the end of this file). */
 
 .track {
     display: flex;
     align-items: center;
     gap: var(--mantine-spacing-xs);
-    min-height: 2.25rem;
+    height: 2.25rem;
     padding: 0 var(--mantine-spacing-xs);
     border-top: 1px solid var(--mantine-color-default-border);
+    container-type: inline-size;
 }
 
-/* The markers are the track. They take the space, so the position readout and
- * the reset control sit at the end rather than in the middle of the line. */
+/* ‹ and ›. They hold their size, so a short row takes its room from the
+ * markers, which scroll. */
+.step {
+    flex: none;
+}
+
+/* The markers are the track, and with ‹, › and the readout either side of
+ * them they are one control read left to right. They used to take every spare
+ * pixel (`flex: 1`), which at 1440px wide put › some 900px from ‹ and 550px
+ * past the last marker it steps to. Now they take the room they need and no
+ * more; when the row is short of room they give way first, and scroll
+ * sideways rather than wrap, since the row's height is fixed.
+ *
+ * The padding is room for what is drawn outside a marker's box, the focus
+ * ring. A box that scrolls on one axis clips on both, and at exactly a
+ * marker's height it was cutting the ring off top and bottom.
+ *
+ * Never fewer than three markers wide: the current one and a neighbour either
+ * side, which is what `Track` scrolls to keep in view. With no floor, a
+ * phone-width row at a question gave every pixel to the controls around them
+ * and showed no markers at all. */
 .markers {
     display: flex;
-    flex: 1;
+    flex: 0 1 auto;
     align-items: center;
     gap: 6px;
-    min-width: 0;
+    min-width: calc(3 * 1.5rem + 2 * 6px + 8px);
+    padding: 4px;
     overflow-x: auto;
+    scrollbar-width: thin;
 }
 
 .marker {
@@ -43,39 +71,79 @@
     transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
+/* The start says "Start" rather than wearing a glyph, so it is as wide as the
+ * word — at a fixed width, since the word goes bold when it is current and the
+ * whole row after it would shift by a couple of pixels each time it did. */
+.start {
+    width: 2.75rem;
+}
+
+/* A marker's states.
+ *
+ * Each is written `.marker:where(…)`, which weighs exactly what `.marker`
+ * weighs: nothing inside `:where()` counts towards specificity. So no state
+ * outranks another because of how its selector happens to be spelled, and the
+ * order of this file is the order of precedence — later wins.
+ *
+ * That is the bug this layout replaces. `[data-kinds~='set'][data-reached]`
+ * was one attribute heavier than `[aria-current='step']`, so on any step that
+ * moved the diagram the current marker's blue border turned teal like every
+ * other move already passed; `[data-kinds~='ask']` weighed the same and came
+ * later, so on a question it turned yellow. What was left was a halo at about
+ * 1.2:1 against white, which is to say nothing marked where the student was. */
+
 /* A step already passed is filled; one still ahead is an outline. The
  * distinction is carried by weight rather than by colour alone, since a
  * build-up read by someone who cannot separate two hues is still a build-up. */
-.marker[data-reached='true'] {
+.marker:where([data-reached='true']) {
     color: var(--mantine-color-text);
     background: var(--mantine-color-default-hover);
     border-color: var(--mantine-color-dimmed);
 }
 
-/* Where the student is. The ring sits outside the border so it reads at a
- * glance along a row of otherwise identical boxes. */
-.marker[aria-current='step'] {
-    color: var(--mantine-color-bright);
-    border-color: var(--mantine-color-blue-6);
-    box-shadow: 0 0 0 2px var(--mantine-color-blue-light);
-}
-
-/* A step the track will not reach yet — past an unanswered question. Still a
- * button, still focusable, and clicking it moves as far as it can. Dimming it
- * says why the diagram will not follow. */
-.marker[data-reachable='false'] {
-    opacity: 0.45;
-}
-
 /* A step that asks something is the only kind that stops the track, so it is
  * the only one that gets a colour of its own. */
-.marker[data-kinds~='ask'] {
+.marker:where([data-kinds~='ask']) {
     border-color: var(--mantine-color-yellow-6);
 }
 
 /* A step that moves the diagram is the one a student has to watch. */
-.marker[data-kinds~='set'][data-reached='true'] {
+.marker:where([data-kinds~='set'][data-reached='true']) {
     border-color: var(--mantine-color-teal-6);
+}
+
+/* A step the track will not reach yet — past an unanswered question. Still a
+ * button, still focusable, and clicking it moves as far as it can.
+ *
+ * It looks locked rather than disabled. It used to keep its glyph at 45%
+ * opacity, and a faded "→" is what a dead "next" button looks like: something
+ * broken, when this is something waiting. Now the glyph gives way to a lock
+ * (in the markup) and the box goes dashed, a place marked out and not open
+ * yet, at full strength. Why it is waiting is the "?" just before it. */
+.marker:where([data-reachable='false']) {
+    color: var(--mantine-color-dimmed);
+    background: transparent;
+    border-color: var(--mantine-color-dimmed);
+    border-style: dashed;
+}
+
+/* Where the student is: the one solid block on the row, its glyph in bold
+ * white. Fill and weight carry it before hue does, so it reads in greyscale,
+ * to someone who cannot tell blue from teal, and at a glance along a row of
+ * pale boxes.
+ *
+ * Blue 8 rather than the usual filled blue 6: a 12px white glyph on blue 6 is
+ * about 3.6:1, on blue 8 about 5:1. Blue 8 is also what Mantine fills with in
+ * the dark scheme, where it is still about 3:1 against the page.
+ *
+ * Last, and one attribute heavier than every `:where()` rule above, so it wins
+ * over every combination of kind and reached by both order and specificity,
+ * with no `!important` to fight later. */
+.marker[aria-current='step'] {
+    color: var(--mantine-color-white);
+    background: var(--mantine-color-blue-8);
+    border-color: var(--mantine-color-blue-8);
+    font-weight: 700;
 }
 
 .marker:focus-visible {
@@ -83,13 +151,67 @@
     outline-offset: 1px;
 }
 
+/* "7 / 9  → moves the diagram": where we are, then what the step here does,
+ * with the glyph that means it. */
 .position {
     flex: none;
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--mantine-spacing-xs);
+    white-space: nowrap;
+}
+
+.count {
+    color: var(--mantine-color-dimmed);
     font-variant-numeric: tabular-nums;
+}
+
+.kind {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.kindGlyph {
+    font-weight: 700;
+}
+
+/* What belongs to this step rather than to moving along: "reset to this step"
+ * and "Answer to continue.", at the far end, clear of the group. */
+.end {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-xs);
+    margin-left: auto;
 }
 
 .blocked {
     flex: none;
+}
+
+/* A narrow row keeps its markers and lets the readout's words go. The count
+ * still says where the student is, the filled marker says it again, and each
+ * marker's name still says what its step does.
+ *
+ * The words cost the markers about 110px, and they are worth it while the row
+ * has room: at 1000px wide, with the dock as a sheet, the A$ lesson's fifteen
+ * markers already scroll at its question, the current one kept in view. Below
+ * this width they would be squeezed to two or three, and the words go first. */
+@container (max-width: 40rem) {
+    .kind {
+        display: none;
+    }
+}
+
+/* At a phone's width "Answer to continue." goes too, so the markers keep their
+ * three. It is the one thing in the row said twice: the locks after the
+ * question say it, in their shape and in their names, and the question row
+ * just above is the question. */
+@container (max-width: 30rem) {
+    .blocked {
+        display: none;
+    }
 }
 
 /* The transition is a nicety on a control that is fully usable without it. */

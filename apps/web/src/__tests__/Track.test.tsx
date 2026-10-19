@@ -72,6 +72,62 @@ describe('the track renders the lesson', () => {
         expect(markers()[1].getAttribute('aria-current')).toBeNull();
     });
 
+    // The dot it used to wear is the universal mark for "you are here", and
+    // the start is only that once.
+    it('marks the start in words rather than with a dot', () => {
+        mount({ state: at(2) });
+        expect(markers()[0].textContent).toBe('Start');
+        expect(markers()[0].getAttribute('aria-label')).toBe('Start, before the first step');
+    });
+
+    // The glyphs were explained only in tooltips. The readout says what the
+    // step here does, beside the glyph its marker wears, so stepping through
+    // teaches them one at a time.
+    it('says what the step here does, in words', () => {
+        const words = ['adds to the diagram', 'moves the diagram', 'asks a question', 'says something'];
+        const shown = () => words.filter(w => screen.queryByText(w) !== null);
+
+        const { result } = mount({ state: at(1) });
+        expect(shown()).toEqual(['adds to the diagram']);
+
+        // The leading kind only, the one the glyph shows: step 3 moves the
+        // diagram *and* says something, and the sentence is on screen already.
+        result.rerender(
+            <MantineProvider theme={theme} env="test">
+                <Track steps={STEPS} state={at(3)} onGoTo={vi.fn()} />
+            </MantineProvider>
+        );
+        expect(shown()).toEqual(['moves the diagram']);
+
+        result.rerender(
+            <MantineProvider theme={theme} env="test">
+                <Track steps={STEPS} state={at(4)} onGoTo={vi.fn()} />
+            </MantineProvider>
+        );
+        expect(shown()).toEqual(['asks a question']);
+    });
+
+    it('says nothing about a step before the first one', () => {
+        mount({ state: at(0) });
+        expect(screen.getByText('0 / 4')).toBeTruthy();
+        expect(screen.queryByText(/the diagram|a question|something/)).toBeNull();
+    });
+
+    // Reading and focus order: back, every step, forward, then where we are.
+    // The step's own controls come after all of that, not in the middle of it.
+    it('keeps back, the steps, forward and the count together, in that order', () => {
+        mount({ state: at(3), onReset: vi.fn() });
+        const row = screen.getByRole('group', { name: 'Lesson steps' });
+        const order = [...row.querySelectorAll('button, [class*="count"]')].map(el =>
+            el.getAttribute('aria-label')?.startsWith('Step') || el.textContent === 'Start'
+                ? 'marker'
+                : el.getAttribute('aria-label') || el.textContent);
+        expect(order).toEqual([
+            'Previous step', 'marker', 'marker', 'marker', 'marker', 'marker',
+            'Next step', '3 / 4', 'reset to this step'
+        ]);
+    });
+
     it('marks the steps already passed', () => {
         mount({ state: at(2) });
         expect(markers().map(m => m.getAttribute('data-reached')))
@@ -159,10 +215,27 @@ describe('a question stops it', () => {
         expect(screen.getByText('Answer to continue.')).toBeTruthy();
     });
 
-    it('dims the steps it cannot reach yet', () => {
+    // Locked rather than dimmed: a faded glyph read as a dead "next" button.
+    // The lock is drawn in place of the glyph and said in the name.
+    it('locks the steps it cannot reach yet, and says so', () => {
         quiz(at(2));
         expect(markers().map(m => m.getAttribute('data-reachable')))
             .toEqual(['true', 'true', 'true', 'false']);
+
+        const locked = markers()[3];
+        expect(locked.textContent).toBe('');
+        expect(locked.querySelector('svg')).not.toBeNull();
+        expect(locked.getAttribute('aria-label'))
+            .toBe('Step 3, adds to the diagram (locked until the question before it is answered)');
+
+        // Still a button, still pressable: it moves as far as the track will go.
+        expect(locked.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('unlocks them once the question is answered', () => {
+        quiz(at(2, [1]));
+        expect(markers()[3].textContent).toBe('+');
+        expect(markers()[3].getAttribute('aria-label')).toBe('Step 3, adds to the diagram');
     });
 
     it('says nothing about answering once the question is answered', () => {

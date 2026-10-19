@@ -979,3 +979,128 @@ test('the reveal draws the answer beside the student\'s, and takes it away again
     await expect(page.getByRole('group', { name: 'Question' })).toHaveCount(0);
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
 });
+
+/**
+ * The lesson track (phase 5 of the study-screen audit).
+ *
+ * What a unit test cannot see here is the cascade. The current marker's rule
+ * was right on its own and lost to two others: a passed move's teal border
+ * outranked it on specificity and a question's yellow came later, so on most
+ * steps all that marked the student's place was a halo at about 1.2:1. That
+ * only shows in a computed style, so these read computed styles and boxes.
+ */
+
+/** Every marker's fill, glyph colour and weight as drawn, and which is current. */
+const markerStyles = (page: Page) => page.locator('button[data-kinds]').evaluateAll(nodes =>
+    nodes.map(node => {
+        const style = getComputedStyle(node);
+        return {
+            current: node.getAttribute('aria-current') === 'step',
+            fill: style.backgroundColor,
+            ink: style.color,
+            weight: style.fontWeight
+        };
+    }));
+
+test('the current step is the one solid marker, whatever kind of step it is', async ({ page }) => {
+    // The markers fade between states. A reader who asks for less motion gets
+    // the end state at once, and so does this.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const markers = page.locator('button[data-kinds]');
+
+    // The start; a reveal; a move already passed (teal used to win there); the
+    // question (yellow used to win there); and a move at the very end.
+    for (const scheme of ['light', 'dark']) {
+        await page.evaluate(s => document.documentElement.setAttribute('data-mantine-color-scheme', s), scheme);
+
+        for (const position of [0, 1, 7, ASK_MARKER, 9]) {
+            const where = `${scheme}, at step ${position}`;
+            await markers.nth(position).click();
+            await expect(markers.nth(position)).toHaveAttribute('aria-current', 'step');
+
+            const styles = await markerStyles(page);
+            const current = styles.filter(m => m.current);
+            expect(current, where).toHaveLength(1);
+            expect(styles.filter(m => !m.current).map(m => m.fill), where).not.toContain(current[0].fill);
+
+            // Carried by fill and weight as well as hue: a solid block with a
+            // bold white glyph, on a row of pale boxes.
+            expect(current[0].ink, where).toBe('rgb(255, 255, 255)');
+            expect(current[0].weight, where).toBe('700');
+        }
+    }
+});
+
+test('forward sits beside the steps, and only the step\'s own controls go to the far end', async ({ page }) => {
+    // A move, so "reset to this step" is on offer.
+    const markers = page.locator('button[data-kinds]');
+    await markers.nth(7).click();
+
+    const row = page.getByRole('group', { name: 'Lesson steps' });
+    const box = async (target: ReturnType<Page['locator']>) => (await target.boundingBox())!;
+    const right = (b: { x: number; width: number }) => b.x + b.width;
+
+    const track = await box(row);
+    const back = await box(row.getByRole('button', { name: 'Previous step' }));
+    const first = await box(markers.first());
+    const last = await box(markers.last());
+    const forward = await box(row.getByRole('button', { name: 'Next step' }));
+    const count = await box(row.getByText('7 / 9', { exact: true }));
+    const reset = await box(row.getByRole('button', { name: 'reset to this step' }));
+
+    // ‹, the markers, › and the count are neighbours. › used to sit hundreds of
+    // pixels past the last marker at this width, pushed there by the markers
+    // taking `flex: 1`.
+    expect(first.x - right(back)).toBeLessThan(24);
+    expect(forward.x - right(last)).toBeLessThan(24);
+    expect(count.x - right(forward)).toBeLessThan(24);
+
+    // The step's own control is at the far end, well clear of the group.
+    expect(right(track) - right(reset)).toBeLessThan(16);
+    expect(reset.x - right(count)).toBeGreaterThan(100);
+});
+
+test('on a narrow stage the steps scroll, and the current one stays in view with a neighbour either side', async ({ page }) => {
+    await page.setViewportSize({ width: 480, height: 800 });
+
+    const row = page.getByRole('group', { name: 'Lesson steps' });
+    const strip = page.locator('button[data-kinds]').first().locator('..');
+    const height = (await row.boundingBox())!.height;
+
+    await page.locator('button[data-kinds]').first().click();
+    expect(await strip.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true);
+
+    // Forward by ›, which is always in view, rather than by clicking markers:
+    // a click scrolls its own target into view and would prove nothing.
+    const markers = page.locator('button[data-kinds]');
+    const last = (await markers.count()) - 1;
+    for (let position = 1; position <= last; position++) {
+        await row.getByRole('button', { name: 'Next step' }).click();
+        await expect(markers.nth(position)).toHaveAttribute('aria-current', 'step');
+
+        // The step just taken and the one ahead stay on screen too, so the
+        // student can see what came before and what is next.
+        const span = [position - 1, position, Math.min(position + 1, last)];
+        await expect.poll(async () => {
+            const s = (await strip.boundingBox())!;
+            const boxes = await Promise.all(span.map(async i => (await markers.nth(i).boundingBox())!));
+            return boxes.every(b => b.x >= s.x && b.x + b.width <= s.x + s.width);
+        }, { message: `steps ${span.join(', ')} in view` }).toBe(true);
+    }
+
+    // The row never grows (the stage above measures its own box) and never
+    // spills sideways off the page.
+    expect((await row.boundingBox())!.height).toBe(height);
+    expect(await row.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+});
+
+test('a step past an unanswered question looks locked, not disabled', async ({ page }) => {
+    await toTheQuestion(page);
+
+    const locked = page.locator('button[data-kinds][data-reachable="false"]');
+    await expect(locked).toHaveCount(1);
+    expect(await locked.evaluate(el => {
+        const style = getComputedStyle(el);
+        return { opacity: style.opacity, border: style.borderStyle, lock: !!el.querySelector('svg'), glyph: el.textContent };
+    })).toEqual({ opacity: '1', border: 'dashed', lock: true, glyph: '' });
+});
