@@ -10,19 +10,19 @@ import { STEP_PARAM } from 'equilibria-engine-js';
 import type {
     KineticGraph, ParamBlockedEvent, ParamChangedEvent, ParamInfo
 } from 'equilibria-engine-js';
-import {
-    studyDiagram, EXPLAINED_CALCS, LESSON, NARRATED_CALCS, PANELS, QUESTION_APPARATUS, SCENARIOS
-} from './studyDiagram';
+import type { StudyContent } from './lessons/content';
+import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
 import { NarrationStrip } from './NarrationStrip';
 import { QuestionRow } from './QuestionRow';
 import { Track } from './Track';
 import {
     AT_START, askAt, paramsAt, paramsBetween, revealedPanels, sayAt, trackReducer
 } from './track/track';
-import type { LessonQuestion, LessonStep, TrackState } from './track/track';
+import type { LessonQuestion, TrackState } from './track/track';
 import { attemptReducer, isFrozen, isResolved } from './quiz/attempt';
 import type { Attempt } from './quiz/attempt';
 import { grade, validateQuestion } from './quiz/grade';
+import { parkApparatus } from './quiz/apparatus';
 import { Dock } from './dock/Dock';
 import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
@@ -60,29 +60,31 @@ type Readout = Record<string, number>;
 const REST: NarrationLine = { kind: 'rest', causes: [], mechanism: null, effects: [], whyTarget: null };
 
 /**
- * The lesson, and the panels it can bring in.
+ * What the screen works out from its lesson, once per lesson.
  *
- * `LESSON` is the same array the config hands the engine, which is what keeps
+ * `steps` is the same array the config hands the engine, which is what keeps
  * one ordered list rather than two — `kg.steps()` would return it too, and is
- * there for a host rendering a config it did not write. This screen wrote it,
- * and needs it before the engine has mounted: the stage has to know at its first
- * render that only one panel has arrived, or three appear and then two vanish.
- */
-const STEPS = LESSON as LessonStep[];
-const PANEL_KEYS = PANELS.map(p => p.key) as string[];
-
-/**
- * Each narrated calc by name: what a number on this screen is called, in what
- * unit, to how many places.
+ * there for a host rendering a config it did not write. This screen was handed
+ * it, and needs it before the engine has mounted: the stage has to know at its
+ * first render that only one panel has arrived, or three appear and then two
+ * vanish.
  *
- * A panel's caption looks its headline up here rather than carrying a label of
- * its own, and the maths instrument looks up its decimals here too. The strip
- * reads the same list, so a caption, a chip, a clause and a formula's result
- * print one quantity one way.
+ * `narrated` is each narrated calc by name: what a number on this screen is
+ * called, in what unit, to how many places. A panel's caption looks its
+ * headline up here rather than carrying a label of its own, and the maths
+ * instrument looks up its decimals here too. The strip reads the same list, so
+ * a caption, a chip, a clause and a formula's result print one quantity one way.
  */
-const NARRATED: Record<string, NarratedCalc> = {};
-NARRATED_CALCS.forEach(calc => { NARRATED[calc.name] = calc });
-const precisionOf = (calc: string) => calcPrecision(NARRATED[calc]);
+function prepare(content: StudyContent) {
+    const narrated: Record<string, NarratedCalc> = {};
+    content.narratedCalcs.forEach(calc => { narrated[calc.name] = calc });
+    return {
+        steps: content.lesson,
+        panelKeys: content.panels.map(p => p.key),
+        narrated,
+        precisionOf: (calc: string) => calcPrecision(narrated[calc])
+    };
+}
 
 /**
  * The question apparatus, stood down.
@@ -155,12 +157,29 @@ const CHROME_BOX: Record<PanelRole, CSSProperties> = {
 };
 
 /** Whether this question has a correct *position* the diagram can draw. */
-function drawableAnswer(question: LessonQuestion): boolean {
-    return question.target !== undefined && !!QUESTION_APPARATUS[question.param];
+function drawableAnswer(
+    question: LessonQuestion, apparatus: StudyContent['questionApparatus']
+): boolean {
+    return question.target !== undefined && !!apparatus[question.param];
 }
 
-export function StudyScreen() {
-    const [focused, setFocused] = useState<string>(PANELS[0].key);
+export interface StudyScreenProps {
+    /**
+     * The lesson on screen. Fixed for the life of the screen: a different
+     * lesson is a different screen, which is how `App` mounts it, rather than
+     * this one rebuilding its engine and its track under the student.
+     */
+    content?: StudyContent;
+}
+
+export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
+    const {
+        diagram, panels, narratedCalcs, explainedCalcs, scenarios,
+        questionApparatus, directionWords
+    } = content;
+    const { steps, panelKeys, narrated, precisionOf } = useMemo(() => prepare(content), [content]);
+
+    const [focused, setFocused] = useState<string>(panels[0].key);
     const [mode, setMode] = useState<StageMode>('focus');
     const [readout, setReadout] = useState<Readout>({});
     const [line, setLine] = useState<NarrationLine>(REST);
@@ -247,6 +266,16 @@ export function StudyScreen() {
     asking.current = attempt;
 
     /**
+     * The other params' question apparatus, as the question being asked left it.
+     *
+     * A diagram with two askable params draws a "where it started" line for
+     * each, and a question about one of them has to say where the other one
+     * started too — see `armQuestion`. Kept beside `asking` because a remount
+     * forgets it just as thoroughly.
+     */
+    const parked = useRef<{ name: string; value: number }[]>([]);
+
+    /**
      * True only while a step's own param update is in flight.
      *
      * A step that sets params fires `kg:param_changed` for the very params the
@@ -269,7 +298,7 @@ export function StudyScreen() {
     // Memoised because `useEquilibria` remounts when the config's identity
     // changes, and rebuilding the diagram on every keystroke elsewhere in the
     // app would undo everything P7 does to avoid a remount.
-    const config = useMemo(() => studyDiagram, []);
+    const config = useMemo(() => diagram, [diagram]);
 
     /**
      * The params the strip is allowed to talk about, and the precision it prints
@@ -310,10 +339,10 @@ export function StudyScreen() {
             after: { params: event.params, calcs: event.calcs },
             affected: event.affected,
             params: narratedParams,
-            calcs: NARRATED_CALCS,
+            calcs: narratedCalcs,
             live
         }));
-    }, [narratedParams]);
+    }, [narratedParams, narratedCalcs]);
 
     const onParamChanged = useCallback((data: unknown) => {
         const event = data as ParamChangedEvent;
@@ -420,7 +449,7 @@ export function StudyScreen() {
         const previous = lastParams.current,
             position = trackAt.current.position,
             question = asking.current,
-            apparatus = question ? QUESTION_APPARATUS[question.question.param] : undefined;
+            apparatus = question ? questionApparatus[question.question.param] : undefined;
 
         // Presentation params are not restored: `stageFocus`, `stageMode` and
         // the revealed count are the stage's own and it re-applies them itself.
@@ -438,7 +467,7 @@ export function StudyScreen() {
                 { name: 'submitted', value: isFrozen(question) ? 1 : 0 },
                 { name: 'revealed', value: question.phase === 'reveal'
                     || (question.phase === 'verdict' && !!question.grade?.correct
-                        && drawableAnswer(question.question)) ? 1 : 0 }
+                        && drawableAnswer(question.question, questionApparatus)) ? 1 : 0 }
             );
             if (apparatus) {
                 restoring.push(
@@ -446,6 +475,7 @@ export function StudyScreen() {
                     { name: apparatus.answer, value: question.question.target ?? question.startValue }
                 );
             }
+            restoring.push(...parked.current);
         }
 
         if (restoring.length === 0) return;
@@ -472,7 +502,7 @@ export function StudyScreen() {
         // went with the old one, so a refusal left on screen would be the only
         // party still remembering a boundary.
         setRefusal(null);
-    }, []);
+    }, [questionApparatus]);
 
     /**
      * Put the params back where the snapshot found them.
@@ -619,12 +649,19 @@ export function StudyScreen() {
                 engine.update({ params: QUESTION_OFF });
                 setAttempt(null);
             }
+            parked.current = [];
             return;
         }
 
-        const info = engine.getParams().filter(p => p.name === question.param)[0],
+        const values = engine.getParams(),
+            info = values.filter(p => p.name === question.param)[0],
             start = info ? info.value : 0,
-            apparatus = QUESTION_APPARATUS[question.param];
+            apparatus = questionApparatus[question.param];
+
+        // Every other askable param's apparatus, parked where its curve is now:
+        // the market as the question found it. Left alone, it would sit wherever
+        // the last question about that param put it. See `parkApparatus`.
+        parked.current = parkApparatus(question.param, questionApparatus, values);
 
         // A question nobody can answer is indistinguishable, from the student's
         // side, from not being able to do economics — so it fails loudly here
@@ -646,7 +683,8 @@ export function StudyScreen() {
                     // Parked on the start when there is no target: nothing draws
                     // it, and a stale answer from a previous question would.
                     { name: apparatus.answer, value: question.target ?? start }
-                ] : [])
+                ] : []),
+                ...parked.current
             ]
         });
 
@@ -659,10 +697,10 @@ export function StudyScreen() {
         // the same reason scrubbing back recomputes: it reads the engine, which
         // now agrees with itself, and comes back as rest.
         retell(false);
-    }, [attempt, retell]);
+    }, [attempt, retell, questionApparatus]);
 
     const goTo = useCallback((position: number) => {
-        const next = trackReducer(track, { type: 'goTo', position }, STEPS);
+        const next = trackReducer(track, { type: 'goTo', position }, steps);
         if (next === track) return;
 
         // Before the step's own `set`, which would otherwise read as the student
@@ -670,7 +708,7 @@ export function StudyScreen() {
         asked.current = null;
 
         const backwards = next.position < track.position;
-        applyStep(paramsBetween(STEPS, track.position, next.position), next.position, backwards);
+        applyStep(paramsBetween(steps, track.position, next.position), next.position, backwards);
 
         // The step param is presentation, so its own change is not narrated and
         // the chain would otherwise still be describing the move we just
@@ -683,10 +721,10 @@ export function StudyScreen() {
         // A question's prompt goes to the question row, not to the strip. P10's
         // rule is that the student's own action wins the strip, so a prompt left
         // there would vanish the instant they moved something to answer it.
-        const question = askAt(STEPS, next.position);
-        setSaying(question ? null : sayAt(STEPS, next.position));
+        const question = askAt(steps, next.position);
+        setSaying(question ? null : sayAt(steps, next.position));
         armQuestion(question, next.position - 1);
-    }, [track, applyStep, retell, armQuestion]);
+    }, [track, steps, applyStep, retell, armQuestion]);
 
     /**
      * Take the answer.
@@ -714,17 +752,17 @@ export function StudyScreen() {
                 // A right answer gets the exact position too: their curve is
                 // within tolerance of it, and seeing where "close enough" sat is
                 // the difference between being told yes and being shown why.
-                ...(marked.correct && drawableAnswer(attempt.question)
+                ...(marked.correct && drawableAnswer(attempt.question, questionApparatus)
                     ? [{ name: 'revealed', value: 1 }] : [])
             ]
         });
 
         if (isResolved(next)) {
             setTrack(current => trackReducer(
-                current, { type: 'resolve', index: Number(attempt.questionId) }, STEPS
+                current, { type: 'resolve', index: Number(attempt.questionId) }, steps
             ));
         }
-    }, [attempt]);
+    }, [attempt, steps, questionApparatus]);
 
     const onRetry = useCallback(() => {
         setAttempt(current => attemptReducer(current, { type: 'retry' }));
@@ -748,13 +786,13 @@ export function StudyScreen() {
         if (next === attempt) return;
 
         setAttempt(next);
-        if (drawableAnswer(attempt.question)) {
+        if (drawableAnswer(attempt.question, questionApparatus)) {
             engineRef.current?.update({ params: [{ name: 'revealed', value: 1 }] });
         }
         setTrack(current => trackReducer(
-            current, { type: 'resolve', index: Number(attempt.questionId) }, STEPS
+            current, { type: 'resolve', index: Number(attempt.questionId) }, steps
         ));
-    }, [attempt]);
+    }, [attempt, steps, questionApparatus]);
 
     /**
      * Put the params back where this step established them.
@@ -766,7 +804,7 @@ export function StudyScreen() {
      * one written: the state at step 4 is what steps 1 to 4 between them said.
      */
     const resetToStep = useCallback(() => {
-        const authored = paramsAt(STEPS, track.position);
+        const authored = paramsAt(steps, track.position);
         const params = Object.keys(authored).map(name => ({ name, value: authored[name] }));
         if (params.length === 0) return;
 
@@ -777,8 +815,8 @@ export function StudyScreen() {
         } finally {
             applyingStep.current = false;
         }
-        setSaying(sayAt(STEPS, track.position));
-    }, [track.position]);
+        setSaying(sayAt(steps, track.position));
+    }, [steps, track.position]);
 
     /**
      * Which panels the lesson has brought in.
@@ -789,8 +827,8 @@ export function StudyScreen() {
      * with a name over it.
      */
     const revealed = useMemo(
-        () => revealedPanels(STEPS, track.position, PANEL_KEYS),
-        [track.position]
+        () => revealedPanels(steps, track.position, panelKeys),
+        [steps, panelKeys, track.position]
     );
 
     // Deliberately not called for undo, which is the mirror case: undo restores
@@ -814,14 +852,14 @@ export function StudyScreen() {
     }, []);
 
     const chrome = useCallback((panel: StagePanel) => {
-        const declared = PANELS.filter(p => p.key === panel.key)[0];
+        const declared = panels.filter(p => p.key === panel.key)[0];
         if (!declared) return null;
 
         // The caption says what its number *is*. "Market $13.0" left a student
         // to guess that the figure was the clearing price and not, say, the
         // revenue — and on the revenue panel, that "$91.0" was revenue and not
         // a price. The label is the one the strip uses for the same calc.
-        const metric = NARRATED[declared.headline],
+        const metric = narrated[declared.headline],
             label = metric ? metric.label : declared.headline,
             unit = metric && metric.unit ? metric.unit : '',
             places = calcPrecision(metric);
@@ -907,7 +945,7 @@ export function StudyScreen() {
         }
 
         return <div className={classes[panel.role]} style={style}>{body}</div>;
-    }, [readout]);
+    }, [readout, panels, narrated]);
 
     /**
      * The instruments, and what they are all handed.
@@ -922,7 +960,7 @@ export function StudyScreen() {
         {
             id: 'scenarios',
             label: 'Scenarios',
-            Component: (props: InstrumentProps) => <Scenarios {...props} scenarios={SCENARIOS} />
+            Component: (props: InstrumentProps) => <Scenarios {...props} scenarios={scenarios} />
         },
         {
             id: 'maths',
@@ -935,17 +973,17 @@ export function StudyScreen() {
                 />
             )
         }
-    ], []);
+    ], [scenarios, precisionOf]);
 
     const dockContext = useMemo(() => ({
         params: dockParams,
         calcs: readout,
-        calcExpressions: EXPLAINED_CALCS,
+        calcExpressions: explainedCalcs,
         updateParams,
         beginGesture,
         endGesture,
         snapshot
-    }), [dockParams, readout, updateParams, beginGesture, endGesture, snapshot]);
+    }), [dockParams, readout, explainedCalcs, updateParams, beginGesture, endGesture, snapshot]);
 
     /**
      * "Why?" — the strip names a calc, and this is where it goes.
@@ -964,12 +1002,8 @@ export function StudyScreen() {
         <Stack gap="sm" className={classes.screen}>
             <Group justify="space-between" align="flex-end" wrap="nowrap">
                 <div>
-                    <Title order={2} size="h4">A market, and what it does to everything else</Title>
-                    <Text c="dimmed" size="sm">
-                        Step through the lesson below, or drag a curve at any point. The
-                        panels are the same market seen three ways, and they arrive as the
-                        lesson reaches them.
-                    </Text>
+                    <Title order={2} size="h4">{content.title}</Title>
+                    <Text c="dimmed" size="sm">{content.intro}</Text>
                 </div>
                 <Group gap="xs" wrap="nowrap">
                     <SegmentedControl
@@ -1013,7 +1047,7 @@ export function StudyScreen() {
                     renderChrome={chrome}
                     chromeRoom={CHROME_ROOM}
                     promoteLabel={key => {
-                        const declared = PANELS.filter(p => p.key === key)[0];
+                        const declared = panels.filter(p => p.key === key)[0];
                         return `Show ${declared ? declared.name : key}`;
                     }}
                     onParamChanged={onParamChanged}
@@ -1047,7 +1081,7 @@ export function StudyScreen() {
                 line={line}
                 authored={saying}
                 refusal={refusal}
-                restHint={track.position === 0 && STEPS.length > 0
+                restHint={track.position === 0 && steps.length > 0
                     ? 'Step forward to begin the lesson.'
                     : undefined}
                 onUndo={onUndo}
@@ -1061,9 +1095,10 @@ export function StudyScreen() {
               * sits directly under a stage measuring its own box. */}
             {attempt ? (
                 <QuestionRow
-                    prompt={sayAt(STEPS, track.position)}
+                    prompt={sayAt(steps, track.position)}
                     attempt={attempt}
                     param={dockParams.filter(p => p.name === attempt.question.param)[0]}
+                    directionWords={directionWords ? directionWords[attempt.question.param] : undefined}
                     onChange={value => updateParams([{ name: attempt.question.param, value }])}
                     onGestureStart={beginGesture}
                     onGestureEnd={endGesture}
@@ -1083,7 +1118,7 @@ export function StudyScreen() {
               * would be a control that moves a curve the diagram is refusing to
               * let the student move. */}
             <Track
-                steps={STEPS}
+                steps={steps}
                 state={track}
                 onGoTo={goTo}
                 onReset={frozenParam ? undefined : resetToStep}

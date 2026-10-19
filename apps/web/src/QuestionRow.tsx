@@ -5,6 +5,7 @@ import { ParamSlider } from './ParamSlider';
 import type { Attempt } from './quiz/attempt';
 import { isFrozen, isResolved } from './quiz/attempt';
 import { verdictFor } from './quiz/verdict';
+import type { DirectionWords } from './quiz/verdict';
 import classes from './QuestionRow.module.css';
 
 /**
@@ -32,6 +33,12 @@ export interface QuestionRowProps {
     /** The asked param as the engine declares it — bounds, step, precision. */
     param: ParamInfo | undefined;
 
+    /**
+     * Which way a rise and a fall in that param read, when "up" and "down"
+     * would not describe what the student did — a curve dragged sideways.
+     */
+    directionWords?: DirectionWords;
+
     /** Move the param. The same call the dock's sliders make. */
     onChange(value: number): void;
     onGestureStart(): void;
@@ -55,13 +62,13 @@ export interface QuestionRowProps {
 }
 
 export function QuestionRow({
-    prompt, attempt, param, onChange, onGestureStart, onGestureEnd,
+    prompt, attempt, param, directionWords, onChange, onGestureStart, onGestureEnd,
     onCommit, onRetry, onReveal, onContinue
 }: QuestionRowProps) {
 
     const frozen = isFrozen(attempt);
     const verdict = attempt.grade && param && attempt.committedValue !== undefined
-        ? verdictFor(attempt.question, attempt.grade, attempt.committedValue, param)
+        ? verdictFor(attempt.question, attempt.grade, attempt.committedValue, param, directionWords)
         : null;
 
     /**

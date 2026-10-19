@@ -1,8 +1,15 @@
+import { useCallback, useEffect, useState } from 'react';
 import { AppShell, Burger } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { DoubleNavbar } from './components/DoubleNavbar';
 import { StudyScreen } from './StudyScreen';
+import { LESSONS, lessonById } from './lessons';
 import classes from './App.module.css';
+
+/** The lesson the address names: `?lesson=fx`. */
+function lessonInUrl(): string | null {
+    return new URLSearchParams(window.location.search).get('lesson');
+}
 
 // The navbar's two columns, in rem-free numbers because AppShell converts them.
 // `RAIL` is the icon rail on its own — it must match `flex: 0 0 60px` on
@@ -16,8 +23,36 @@ export function App() {
     // and starts closed. Above it the navbar is always present and the burger
     // is hidden; what collapses there is the navbar's second column, which
     // starts open.
-    const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
+    const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
     const [linksOpened, { toggle: toggleLinks }] = useDisclosure(true);
+
+    /**
+     * Which lesson is open, kept in the address as well as here.
+     *
+     * The address is what makes a lesson something a teacher can hand out, and
+     * it is read once at load and written on every change — pushed rather than
+     * replaced, so the browser's back button goes back to the last lesson
+     * rather than out of the app.
+     */
+    const [lessonId, setLessonId] = useState(() => lessonById(lessonInUrl()).id);
+    const lesson = lessonById(lessonId);
+
+    useEffect(() => {
+        const follow = () => setLessonId(lessonById(lessonInUrl()).id);
+        window.addEventListener('popstate', follow);
+        return () => window.removeEventListener('popstate', follow);
+    }, []);
+
+    const selectLesson = useCallback((id: string) => {
+        if (id !== lessonId) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lesson', id);
+            window.history.pushState(null, '', url);
+            setLessonId(id);
+        }
+        // Below `sm` the navbar is an overlay over the lesson just chosen.
+        closeMobile();
+    }, [lessonId, closeMobile]);
 
     return (
         // No `header` config and no AppShell.Header: the navbar is the only
@@ -53,15 +88,26 @@ export function App() {
             />
 
             <AppShell.Navbar className={classes.shellNavbar}>
-                <DoubleNavbar collapsed={!linksOpened} onToggleCollapse={toggleLinks} />
+                <DoubleNavbar
+                    collapsed={!linksOpened}
+                    onToggleCollapse={toggleLinks}
+                    lessons={LESSONS}
+                    activeLesson={lesson.id}
+                    onSelectLesson={selectLesson}
+                />
             </AppShell.Navbar>
 
             <AppShell.Main>
                 {/* No `.page` width cap here. That class exists for
                   * article-shaped pages and centres their text in 56rem; a
                   * study screen is not an article, and capping it would leave
-                  * the stage measuring a column while the window has a room. */}
-                <StudyScreen />
+                  * the stage measuring a column while the window has a room.
+                  *
+                  * Keyed by lesson, so another lesson is another screen: a new
+                  * engine, a track at its start and no question half-asked,
+                  * rather than one screen's state carried into a diagram it
+                  * was never about. */}
+                <StudyScreen key={lesson.id} content={lesson} />
             </AppShell.Main>
         </AppShell>
     );

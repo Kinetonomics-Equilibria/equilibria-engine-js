@@ -32,7 +32,19 @@ export interface Verdict {
     magnitude?: string;
 }
 
-const WORD: Record<Question['direction'], string> = { up: 'up', down: 'down' };
+/** How a rise and a fall in the param read: which way the student moved it. */
+export type DirectionWords = Record<Question['direction'], string>;
+
+/**
+ * The default reading, for a param that moves its curve up as it rises.
+ *
+ * Right for a curve dragged by its intercept, which is what this was written
+ * against, and wrong for one dragged sideways — there the param rises as the
+ * curve moves right, and "you moved it up" describes the model's bookkeeping
+ * rather than the student's hand. A lesson says so per param, and the words
+ * arrive here; the direction the grade checks is still the param's own.
+ */
+const WORD: DirectionWords = { up: 'up', down: 'down' };
 
 /**
  * Nothing here says "demand".
@@ -43,16 +55,17 @@ const WORD: Record<Question['direction'], string> = { up: 'up', down: 'down' };
  * writes, which a hard-coded noun would not.
  */
 export function verdictFor(
-    question: Question, grade: Grade, committed: number, param: ParamInfo
+    question: Question, grade: Grade, committed: number, param: ParamInfo,
+    words: DirectionWords = WORD
 ): Verdict {
     const show = (value: number) => value.toFixed(param.precision);
 
     const direction = !grade.moved
         ? 'You did not move it. The answer is a shift, so it has to go somewhere.'
         : grade.directionCorrect
-            ? `Right direction — you moved it ${WORD[question.direction]}.`
-            : `Wrong direction — you moved it ${WORD[question.direction === 'up' ? 'down' : 'up']}, ` +
-              `and it should go ${WORD[question.direction]}.`;
+            ? `Right direction — you moved it ${words[question.direction]}.`
+            : `Wrong direction — you moved it ${words[question.direction === 'up' ? 'down' : 'up']}, ` +
+              `and it should go ${words[question.direction]}.`;
 
     let magnitude: string | undefined;
     if (grade.magnitudeCorrect !== undefined && question.target !== undefined) {

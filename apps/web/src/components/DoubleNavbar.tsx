@@ -18,9 +18,10 @@ import classes from './DoubleNavbar.module.css';
 // narrow rail of section icons, and a second column listing the links within
 // the selected section.
 //
-// Both lists are still the recipe's placeholder data — the app has no
-// navigation to wire them to yet. Replace these two arrays (and the `useState`
-// defaults below) when it does; nothing else here is placeholder.
+// The second column is real: it lists the lessons, and choosing one is the
+// app's only navigation so far. The rail is still the recipe's placeholder
+// data — there are no sections to wire it to yet. Replace this array (and the
+// `useState` default below) when there are; nothing else here is placeholder.
 const mainLinksMockdata = [
     { icon: IconHome2, label: 'Home' },
     { icon: IconGauge, label: 'Dashboard' },
@@ -29,20 +30,6 @@ const mainLinksMockdata = [
     { icon: IconUser, label: 'Account' },
     { icon: IconFingerprint, label: 'Security' },
     { icon: IconSettings, label: 'Settings' }
-];
-
-const linksMockdata = [
-    'Security',
-    'Settings',
-    'Dashboard',
-    'Releases',
-    'Account',
-    'Orders',
-    'Clients',
-    'Databases',
-    'Pull Requests',
-    'Open Issues',
-    'Wiki pages'
 ];
 
 // The id the toggle points `aria-controls` at, so a screen reader can tell that
@@ -59,13 +46,22 @@ interface DoubleNavbarProps {
 
     /** Called when the collapse toggle in the rail is pressed. */
     onToggleCollapse: () => void;
+
+    /** The lessons to list, in order. */
+    lessons: { id: string; label: string }[];
+
+    /** Which lesson is open. Owned by the shell, which mounts it. */
+    activeLesson: string;
+
+    /** Called with a lesson's id when the student chooses it. */
+    onSelectLesson: (id: string) => void;
 }
 
-export function DoubleNavbar({ collapsed, onToggleCollapse }: DoubleNavbarProps) {
-    // Which section is selected, and which link within it. Local state: nothing
-    // outside the navbar reads it yet.
-    const [active, setActive] = useState('Releases');
-    const [activeLink, setActiveLink] = useState('Settings');
+export function DoubleNavbar({
+    collapsed, onToggleCollapse, lessons, activeLesson, onSelectLesson
+}: DoubleNavbarProps) {
+    // Which rail section is highlighted. Local state: nothing reads it yet.
+    const [active, setActive] = useState('Home');
 
     const mainLinks = mainLinksMockdata.map((link) => (
         <Tooltip
@@ -86,18 +82,22 @@ export function DoubleNavbar({ collapsed, onToggleCollapse }: DoubleNavbarProps)
         </Tooltip>
     ));
 
-    const links = linksMockdata.map((link) => (
+    // Real addresses, so a lesson can be opened in a new tab or handed to a
+    // class as a link; a plain click stays in the page and swaps the lesson.
+    const links = lessons.map((lesson) => (
         <a
             className={classes.link}
-            data-active={activeLink === link || undefined}
-            href="#"
+            data-active={activeLesson === lesson.id || undefined}
+            aria-current={activeLesson === lesson.id ? 'page' : undefined}
+            href={`?lesson=${encodeURIComponent(lesson.id)}`}
             onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
                 event.preventDefault();
-                setActiveLink(link);
+                onSelectLesson(lesson.id);
             }}
-            key={link}
+            key={lesson.id}
         >
-            {link}
+            {lesson.label}
         </a>
     ));
 
@@ -138,7 +138,7 @@ export function DoubleNavbar({ collapsed, onToggleCollapse }: DoubleNavbarProps)
 
                 <div className={classes.main} id={LINKS_PANEL_ID}>
                     <Title order={4} className={classes.title}>
-                        {active}
+                        Lessons
                     </Title>
 
                     {links}
