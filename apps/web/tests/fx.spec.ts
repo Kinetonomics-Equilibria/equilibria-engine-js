@@ -377,6 +377,11 @@ test('the navbar moves between lessons, and the back button returns', async ({ p
         .toBeVisible();
     expect(new URL(page.url()).searchParams.get('lesson')).toBe('market');
 
+    // Choosing a lesson puts the list away, and the rail's toggle brings it back.
+    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toBeHidden();
+    await page.getByRole('button', { name: 'Show links' }).click();
+    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toBeVisible();
+
     await page.goBack();
     await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();
 });

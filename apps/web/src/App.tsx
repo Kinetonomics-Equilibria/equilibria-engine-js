@@ -24,7 +24,7 @@ export function App() {
     // is hidden; what collapses there is the navbar's second column, which
     // starts open.
     const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
-    const [linksOpened, { toggle: toggleLinks }] = useDisclosure(true);
+    const [linksOpened, { toggle: toggleLinks, close: closeLinks }] = useDisclosure(true);
 
     /**
      * Which lesson is open, kept in the address as well as here.
@@ -50,9 +50,13 @@ export function App() {
             window.history.pushState(null, '', url);
             setLessonId(id);
         }
-        // Below `sm` the navbar is an overlay over the lesson just chosen.
+        // Choosing a lesson puts the list away, so the lesson gets the room:
+        // below `sm` the navbar is an overlay over the lesson just chosen, and
+        // above it the second column only narrows the stage. The rail's toggle
+        // brings the list back.
         closeMobile();
-    }, [lessonId, closeMobile]);
+        closeLinks();
+    }, [lessonId, closeMobile, closeLinks]);
 
     return (
         // No `header` config and no AppShell.Header: the navbar is the only
