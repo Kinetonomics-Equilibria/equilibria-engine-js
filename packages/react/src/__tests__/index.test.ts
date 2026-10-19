@@ -17,6 +17,7 @@ describe('public API', () => {
         // its own arrangement policy needs the numbers without rendering one.
         expect(typeof publicApi.arrange).toBe('function');
         expect(typeof publicApi.toCustomLayout).toBe('function');
+        expect(typeof publicApi.layoutParams).toBe('function');
         expect(typeof publicApi.pixelBox).toBe('function');
     });
 
@@ -38,7 +39,9 @@ describe('public API', () => {
             'REVEALED_PARAM',
             'Stage',
             'arrange',
+            'layoutParams',
             'pixelBox',
+            'rectParamName',
             'revealedCount',
             'toCustomLayout',
             'useEquilibria'

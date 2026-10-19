@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { KG_CONTAINER_CLASS, densityIndex, densityParamName } from 'equilibria-engine-js';
 import type { KineticGraph, KineticGraphOptions } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { UseEquilibriaEventCallbacks } from './useEquilibria';
-import {
-    arrange, pixelBox, revealedCount, toCustomLayout,
-    FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
-} from './arrangement';
+import { arrange, layoutParams, pixelBox, revealedCount, toCustomLayout, FURNITURE } from './arrangement';
 import type { Arrangement, PanelRole, RoomByRole, StageMode } from './arrangement';
 
 /**
@@ -20,9 +18,10 @@ import type { Arrangement, PanelRole, RoomByRole, StageMode } from './arrangemen
  * is the design this replaced, and which makes linkage between panels an
  * illusion the app maintains by hand.
  *
- * So `Stage` supplies mechanism only: measure the box, compile every
- * arrangement into one layout, mount one engine, position an overlay per panel,
- * and turn a click or an Enter on a rail panel into a param change. What a
+ * So `Stage` supplies mechanism only: measure the box, mount one engine whose
+ * panels' rects are params, lay it out again whenever the arrangement changes,
+ * position an overlay per panel, and turn a click or an Enter on a rail panel
+ * into a promotion. What a
  * panel is called, what its chip says and which one should be focal are all the
  * application's, and arrive through `renderChrome` and `focused`. If economics
  * vocabulary appears in this file, the line has been crossed.
@@ -119,6 +118,11 @@ export interface StageProps extends UseEquilibriaEventCallbacks {
      * For the state a host needs *at rest* — `getCalcs()` for a value to put
      * beside a panel, `snapshot()` for a boundary only the app knows about.
      * Events cover what changes; this covers what is.
+     *
+     * A rebuild is now only a new `config` or `options` — the stage lays the
+     * same engine out again for everything it owns, a change of shape included —
+     * but a host should still treat a second call as an engine that has never
+     * heard of what the first one was doing.
      */
     onReady?: (engine: KineticGraph) => void;
 
@@ -143,22 +147,6 @@ function customLayoutDef(layout: any): any {
     return null;
 }
 
-/**
- * The aspect ratio the layout is computed for, quantised.
- *
- * Every fraction in a `CustomLayout` is computed for one canvas shape, so a new
- * shape means a new layout and therefore a remount. `arrange` is scale-free, so
- * the *size* never matters — but a `ResizeObserver` reports every pixel of a
- * window drag, and an un-quantised ratio would rebuild the diagram each time
- * the proportions moved by a fraction of a percent. Rounding to a hundredth
- * makes that about once per percent, and a proportional resize costs nothing at
- * all.
- */
-function quantiseRatio(width: number, height: number): number {
-    if (!(width > 0) || !(height > 0)) return 0;
-    return Math.round((width / height) * 100) / 100;
-}
-
 export function Stage({
     config,
     focused,
@@ -179,6 +167,17 @@ export function Stage({
     const outerRef = useRef<HTMLDivElement>(null);
     const [size, setSize] = useState<{ width: number; height: number } | null>(null);
 
+    /**
+     * Whether the stage has ever had an area to build at.
+     *
+     * Kept apart from `size`, and never set back: a stage that is hidden after
+     * it was built — its box collapsing to nothing — has nothing to arrange,
+     * but it still has an engine holding everything the student did, and
+     * destroying it to build nothing would be the very loss this component is
+     * arranged to avoid.
+     */
+    const [measurable, setMeasurable] = useState(false);
+
     // Measured rather than assumed, and measured on the *outer* element rather
     // than on the one the engine mounts into — the engine writes a height onto
     // its own container from the aspect ratio, so measuring that element would
@@ -187,20 +186,30 @@ export function Stage({
         const el = outerRef.current;
         if (!el) return;
 
-        const read = () => setSize(prev => {
+        const read = () => {
             const next = { width: el.clientWidth, height: el.clientHeight };
-            if (prev && prev.width === next.width && prev.height === next.height) return prev;
-            return next;
-        });
+            if (next.width > 0 && next.height > 0) setMeasurable(true);
+            setSize(prev => (prev && prev.width === next.width && prev.height === next.height ? prev : next));
+        };
 
         read();
         if (typeof ResizeObserver === 'undefined') return;
-        const ro = new ResizeObserver(read);
+
+        // Rendered synchronously, inside the observer's callback. An observer
+        // runs after layout and before paint, and so does the engine's own,
+        // which redraws the canvas at its new width the moment the box changes —
+        // at the *old* proportions, until it is told the new ones. Left to
+        // React's scheduler, the stage's half arrived a frame later: the diagram
+        // drawn at one shape and the captions placed for another, once for
+        // every frame of a navbar sliding shut. Flushed here, the relayout below
+        // lands in the same frame as the resize that caused it.
+        const ro = new ResizeObserver(() => flushSync(read));
         ro.observe(el);
         return () => ro.disconnect();
     }, []);
 
     const keys = useMemo(() => panelKeys(config), [config]);
+    const keysKey = keys.join(' ');
 
     useEffect(() => {
         if (keys.length === 0) {
@@ -210,51 +219,82 @@ export function Stage({
         }
     }, [keys.length]);
 
-    const ratio = size ? quantiseRatio(size.width, size.height) : 0;
-
-    // Whether the stage is wide enough for a rail beside the focal panel or has
-    // to lay it out underneath. The one thing besides the ratio that changes the
-    // fractions, so it is named here and used as a dependency below.
-    const filmstrip = !!size && size.width < FILMSTRIP_BELOW_PX;
-
-    /**
-     * The box the arrangement is computed for: the quantised shape, at the
-     * width the stage had when that shape was last new.
-     *
-     * The width matters only to room, which is pixels — everything else in
-     * `arrange` is scale-free. So it is read when the shape changes and not
-     * otherwise, deliberately leaving `size` out of the dependencies: a resize
-     * that keeps the proportions still costs nothing, and the room scales with
-     * the canvas until the next change of shape measures it again. Anything
-     * that moves the width alone also moves the ratio, in practice, so the
-     * drift this allows is the drift of a resize nobody makes.
-     */
-    const box = useMemo(
-        () => {
-            if (ratio <= 0 || !size) return null;
-            return { width: size.width, height: size.width / ratio };
-        },
-        [ratio, filmstrip]
-    );
+    // A box with an area, or nothing to arrange in.
+    const box = size && size.width > 0 && size.height > 0 ? size : null;
 
     // By value: an app writing its room as an object literal hands the stage a
-    // new one every render, and the config below is rebuilt on identity.
+    // new one every render, and the arrangement below is recomputed on identity.
     const roomKey = JSON.stringify(chromeRoom || {});
     const room = useMemo(() => JSON.parse(roomKey) as RoomByRole, [roomKey]);
 
+    const focusIndex = Math.max(0, keys.indexOf(focused as string));
+
+    // Joined rather than passed by identity: a host that recomputes the array
+    // every render would otherwise re-arrange the stage on every render.
+    const revealedKey = revealed ? revealed.join(' ') : '';
+    const arrived = useMemo(
+        () => revealedCount(keys, revealed),
+        [keysKey, revealedKey]
+    );
+
+    useEffect(() => {
+        if (!revealed) return;
+        const skipped = keys.slice(0, arrived).filter(k => revealed.indexOf(k) < 0);
+        if (skipped.length > 0) {
+            console.warn(`Stage: "${skipped.join('", "')}" ${skipped.length === 1 ? 'is' : 'are'} not ` +
+                `revealed, but a panel declared after ${skipped.length === 1 ? 'it' : 'them'} is. ` +
+                `Panels arrive in the order the config declares them, because the arrangement is ` +
+                `of how many have arrived — so ${skipped.length === 1 ? 'it was' : 'they were'} ` +
+                `shown anyway. Reorder the panels in the config, or reveal them in declared order.`);
+        }
+    }, [keysKey, revealedKey, arrived]);
+
     /**
-     * The engine config, rebuilt only when the diagram's *shape* changes.
+     * Where everything goes, at this size, for this focus, mode and reveal.
      *
-     * Deliberately not a function of `focused` or `mode`: those move through
-     * params, and rebuilding here would remount the engine and undo the whole
-     * design. `useEquilibria` remounts on config identity, so this memo's
-     * dependency list is the list of things that are allowed to cost a rebuild.
+     * Over the panels that have arrived, so a panel the lesson has not reached
+     * has no name floating over it and no promote button to tab into. And at
+     * the box the stage measures *now*, every pixel of it: the room the chrome
+     * and the axes need is pixels, and an arrangement made at another width
+     * keeps the wrong amount of it. That used to be the price of not rebuilding
+     * — the box was re-read only when the shape changed by a hundredth, because
+     * every new arrangement was a new engine — and it is not paid any more.
+     *
+     * The chrome is placed from this and the diagram is laid out from it, so
+     * the two cannot disagree about which square is which.
+     */
+    const arrangement: Arrangement | null = useMemo(
+        () => (box && keys.length > 0
+            ? arrange({
+                width: box.width, height: box.height,
+                panels: keys.slice(0, arrived), focused: keys[focusIndex], mode,
+                chrome: room, furniture: FURNITURE
+            })
+            : null),
+        [box && box.width, box && box.height, keysKey, focusIndex, mode, arrived, room]
+    );
+
+    /**
+     * The engine config, built once and laid out from then on.
+     *
+     * Its panels' rects are params (`toCustomLayout`), so nothing the stage
+     * owns — promotion, the mode, a reveal, the box changing size or shape —
+     * is allowed to cost a rebuild, and this memo's dependencies are the list
+     * of things that still do: a new config, or a new set of panels in it.
+     * `useEquilibria` remounts on this object's identity, and a remount is a
+     * new model, which forgets `prev` and with it every ghost, delta and
+     * sentence describing what the student just did.
+     *
+     * Built at the arrangement as it stands when it is built, so the engine's
+     * first frame is already right — which is why `arrangement` is read here
+     * and deliberately left out of the dependencies.
      */
     const stageConfig = useMemo(() => {
-        if (!box || keys.length === 0) return null;
+        if (!measurable || !arrangement || keys.length === 0) return null;
 
         const layout = toCustomLayout({
-            width: box.width, height: box.height, panels: keys, chrome: room, furniture: FURNITURE
+            width: box!.width, height: box!.height, panels: keys, focused: keys[focusIndex], mode,
+            arrived: arrived, chrome: room, furniture: FURNITURE
         });
         const next: any = JSON.parse(JSON.stringify(config));
         const def = customLayoutDef(next.layout);
@@ -277,13 +317,13 @@ export function Stage({
         });
 
         return next as Record<string, unknown>;
-    }, [config, keys.join(' '), box, room]);
+    }, [config, keysKey, measurable]);
 
     /**
      * The panels whose level the author set, which the stage leaves alone.
      *
-     * Every other panel's level is the arrangement's, written as a param each
-     * time the arrangement changes; an author's own level is not the stage's to
+     * Every other panel's level is the arrangement's, written each time the
+     * arrangement changes; an author's own level is not the stage's to
      * overwrite.
      */
     const authoredDensity = useMemo(() => {
@@ -293,117 +333,90 @@ export function Stage({
             .filter((k: string | null) => k !== null) as string[];
     }, [config]);
 
-    /** The level every stage-owned panel was built at, which a new engine holds until told otherwise. */
-    const builtLevels = useMemo(() => {
-        const out: { [key: string]: string } = {};
-        const def = stageConfig ? customLayoutDef((stageConfig as any).layout) : null;
+    /**
+     * What a new engine holds before the stage has told it anything: the shape
+     * and the values it was built with — the author's own, where they declared
+     * a param the stage would otherwise have.
+     */
+    const built = useMemo(() => {
+        if (!stageConfig) return null;
+        const values: { [name: string]: number } = {};
+        ((stageConfig as any).params || []).forEach((p: any) => { values[p.name] = p.value });
+        const def = customLayoutDef((stageConfig as any).layout);
         ((def && def.panels) || []).forEach((p: any, i: number) => {
             const key = p.key || 'panel' + i;
-            if (authoredDensity.indexOf(key) < 0) out[key] = p.density;
+            if (authoredDensity.indexOf(key) < 0) values[densityParamName(key)] = densityIndex(p.density);
         });
-        return out;
+        return { aspectRatio: def.aspectRatio as number, values: values };
     }, [stageConfig, authoredDensity]);
 
-    const { containerRef, instance, error, isReady, updateParams } =
-        useEquilibria(stageConfig, options, events);
+    const { containerRef, instance, error, isReady } = useEquilibria(stageConfig, options, events);
 
     useEffect(() => { if (error && onError) onError(error) }, [error, onError]);
     useEffect(() => { if (isReady && instance && onReady) onReady(instance) }, [isReady, instance, onReady]);
 
-    const focusIndex = Math.max(0, keys.indexOf(focused as string));
-    const modeValue = MODE_VALUE[mode];
-
-    // Joined rather than passed by identity: a host that recomputes the array
-    // every render would otherwise re-apply the param on every render.
-    const revealedKey = revealed ? revealed.join(' ') : '';
-    const arrived = useMemo(
-        () => revealedCount(keys, revealed),
-        [keys.join(' '), revealedKey]
-    );
-
-    useEffect(() => {
-        if (!revealed) return;
-        const skipped = keys.slice(0, arrived).filter(k => revealed.indexOf(k) < 0);
-        if (skipped.length > 0) {
-            console.warn(`Stage: "${skipped.join('", "')}" ${skipped.length === 1 ? 'is' : 'are'} not ` +
-                `revealed, but a panel declared after ${skipped.length === 1 ? 'it' : 'them'} is. ` +
-                `Panels arrive in the order the config declares them, because the arrangement is ` +
-                `indexed by how many have arrived — so ${skipped.length === 1 ? 'it was' : 'they were'} ` +
-                `shown anyway. Reorder the panels in the config, or reveal them in declared order.`);
-        }
-    }, [keys.join(' '), revealedKey, arrived]);
-
-    // Over the panels that have arrived, so the chrome is placed against the
-    // same arrangement the compiled expressions resolve to — and so a panel the
-    // lesson has not reached has no name floating over it and no promote button
-    // to tab into.
-    const arrangement: Arrangement | null = useMemo(
-        () => (box && keys.length > 0
-            ? arrange({
-                width: box.width, height: box.height,
-                panels: keys.slice(0, arrived), focused: keys[focusIndex], mode,
-                chrome: room, furniture: FURNITURE
-            })
-            : null),
-        [box, keys.join(' '), focusIndex, mode, arrived, room]
-    );
-
     /**
-     * Promotion, the mode toggle, the reveal and every panel's level, as param
-     * updates.
+     * The arrangement, told to the engine: one `relayout` with whatever moved.
      *
-     * Only what actually changed is sent. The params are independent, and a
-     * multi-param update is applied one at a time and validated separately, so
-     * sending a param that did not move is a rejection risk for no gain.
+     * Every rect, the focus, the mode, the reveal and every stage-owned panel's
+     * level are presentation params, and they travel together. That is what
+     * keeps a promoted panel from drawing a frame at its new size with its old
+     * furniture, and what keeps the room the arrangement kept and the furniture
+     * the engine draws describing the same level. Only what changed is sent,
+     * compared against what was last sent — or, for a new engine, against what
+     * it was built with.
      *
-     * The levels travel in the same update as the rects they belong to, which
-     * is what keeps a promoted panel from drawing a frame at its new size with
-     * its old furniture — and what keeps the room the arrangement kept and the
-     * furniture the engine draws describing the same level.
+     * The shape goes with them whenever the box changed at all, not only when
+     * its proportions did: the room the arrangement keeps is pixels, so a box
+     * that only grew still moves every rect a little, and the engine is told to
+     * measure itself again in the same redraw rather than in a separate one.
      *
-     * Keyed on the instance rather than on the config, because a rebuild
-     * produces a new engine at the config's declared values and whatever was
-     * applied to the previous one no longer holds.
+     * Nothing here snapshots. The engine's `prev` is the student's — the ghost
+     * of the curve they moved, and the "before" of every delta and sentence on
+     * the screen — and laying the diagram out again leaves it exactly where the
+     * student's last move put it.
+     *
+     * A layout effect, so that a resize flushed by the observer above reaches
+     * the engine before the browser paints.
      */
     const applied = useRef<{
-        instance: unknown; focus: number; mode: number; arrived: number;
-        levels: { [key: string]: string };
+        instance: unknown; width: number; height: number; values: { [name: string]: number };
     } | null>(null);
-    useEffect(() => {
-        if (!isReady || !instance || !arrangement) return;
+    useLayoutEffect(() => {
+        if (!isReady || !instance || !arrangement || !built || !box) return;
         const last = applied.current && applied.current.instance === instance ? applied.current : null;
-        const pending: { name: string; value: number }[] = [];
-        if (!last || last.focus !== focusIndex) pending.push({ name: FOCUS_PARAM, value: focusIndex });
-        if (!last || last.mode !== modeValue) pending.push({ name: MODE_PARAM, value: modeValue });
-        if (!last || last.arrived !== arrived) pending.push({ name: REVEALED_PARAM, value: arrived });
+        const held = last ? last.values : built.values;
 
-        // Compared against what the engine holds, which for a new engine is what
-        // it was built with — so a level that is already right is not re-sent.
-        const levels: { [key: string]: string } = { ...(last ? last.levels : builtLevels) };
-        arrangement.panels.forEach(function (panel) {
-            if (authoredDensity.indexOf(panel.key) > -1) return;
-            if (levels[panel.key] !== panel.level) {
-                pending.push({ name: densityParamName(panel.key), value: densityIndex(panel.level) });
-                levels[panel.key] = panel.level;
-            }
-        });
+        const wanted = layoutParams(keys, arrangement, authoredDensity);
+        const pending = wanted.filter(p => held[p.name] !== p.value);
+        const reshaped = last
+            ? last.width !== box.width || last.height !== box.height
+            : arrangement.aspectRatio !== built.aspectRatio;
 
-        applied.current = { instance: instance, focus: focusIndex, mode: modeValue, arrived: arrived, levels: levels };
-        if (pending.length > 0) updateParams(pending);
-    }, [isReady, instance, focusIndex, modeValue, arrived, arrangement, authoredDensity, builtLevels, updateParams]);
+        const values = { ...held };
+        wanted.forEach(p => { values[p.name] = p.value });
+        applied.current = { instance: instance, width: box.width, height: box.height, values: values };
+
+        if (pending.length > 0 || reshaped) {
+            instance.relayout({
+                aspectRatio: reshaped ? arrangement.aspectRatio : undefined,
+                params: pending
+            });
+        }
+    }, [isReady, instance, arrangement, built, authoredDensity, keysKey]);
 
     const promote = useCallback((key: string) => { onPromote?.(key) }, [onPromote]);
 
     return (
         <div ref={outerRef} className={className} style={{ position: 'relative', height: '100%', ...style }}>
             <div ref={containerRef} className={KG_CONTAINER_CLASS} />
-            {arrangement && size ? (
+            {arrangement && box ? (
                 <div style={OVERLAY} data-testid="stage-chrome">
                     {arrangement.panels.map(function (panel) {
                         // Positioned against the *measured* width: the
                         // arrangement's fractions apply at whatever size the
                         // canvas actually came out.
-                        const pxBox = pixelBox(arrangement, panel.key, size.width)!;
+                        const pxBox = pixelBox(arrangement, panel.key, box.width)!;
                         // The role `arrange` resolved, not `keys[focusIndex]`:
                         // with a staged reveal the focused key may not have
                         // arrived yet, and a lone panel is focal in either mode.

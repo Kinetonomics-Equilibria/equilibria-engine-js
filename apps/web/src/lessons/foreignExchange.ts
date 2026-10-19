@@ -176,8 +176,8 @@ const BASELINE = { demand: 50, supply: 50 };
  *
  * One idea per step, and one line per idea. A step's sentence is shown in the
  * narration strip, which is one line that never grows — a strip that grew would
- * take height from the stage and rebuild the engine — so a sentence longer than
- * the strip is cut off at an ellipsis. About 110 characters fits at 1280px. Where
+ * take height from the stage and shrink the diagram under the student — so a
+ * sentence longer than the strip is cut off at an ellipsis. About 110 characters fits at 1280px. Where
  * the slides make two points on one slide, this makes them on two steps: the
  * shift, and then what the shift did to each currency.
  *

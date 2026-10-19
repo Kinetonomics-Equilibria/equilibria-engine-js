@@ -11,10 +11,16 @@
  * It reports fractions, which is the engine's unit: `x`/`width` are fractions
  * of the canvas width, `y`/`height` of its height. It computes in a normalised
  * space where the canvas is 1 wide and `1 / aspectRatio` tall, so a square is a
- * square and — the property that matters — **the result depends on the stage's
- * shape but not on its size**. A stage that doubles produces the same
- * arrangement, which is what lets a resize scale the canvas instead of
- * recomputing a layout and rebuilding the diagram.
+ * square and **the result depends on the stage's shape but not on its size**: a
+ * stage that doubles produces the same arrangement, and its panels keep their
+ * proportions to each other at every size.
+ *
+ * That property used to carry more weight than it does now. While the rects
+ * were compiled into the engine's config, a new arrangement meant a rebuilt
+ * diagram, and being scale-free was what kept a window drag from rebuilding it
+ * on every pixel. The rects are params now and a new arrangement is one
+ * `relayout` (see `toCustomLayout`), so this is a property of the design rather
+ * than a defence of it.
  *
  * Nothing here knows what a panel *contains*. No economics vocabulary belongs
  * in this file or in the component that consumes it; which panel is focal and
@@ -29,7 +35,7 @@
  * is scale-free exactly as before.
  */
 
-import { levelForSize } from 'equilibria-engine-js';
+import { densityIndex, densityParamName, levelForSize } from 'equilibria-engine-js';
 import type { DensityLevel } from 'equilibria-engine-js';
 
 /** How the stage is arranged. `grid` is a toggle, never the landing state. */
@@ -133,9 +139,10 @@ export const FILMSTRIP_BELOW_PX = 900;
  * vertical ones — that is what "normalised" means here, and it is why they can
  * be compared with each other. On a 900px stage `PAD` is 16px.
  *
- * They are fractions rather than pixels so the arrangement is scale-free. Pixel
- * padding would make the fractions a function of the stage's size, and every
- * pixel of a window drag would then be a new layout and a rebuilt diagram.
+ * They are fractions rather than pixels so the arrangement is scale-free, and
+ * the screen was tuned with them as they are. They became fractions to stop a
+ * window drag rebuilding the diagram on every pixel, which a resize no longer
+ * does whatever they are.
  */
 const PAD = 0.018;
 const GAP = 0.018;
@@ -358,9 +365,17 @@ export function arrange(input: ArrangeInput): Arrangement {
     };
 }
 
-// --- turning a set of arrangements into one layout ------------------------------
+// --- turning an arrangement into params ------------------------------------------
 
-/** The param that says which panel is focal. Its value is an index into `panels`. */
+/**
+ * The param that says which panel is focal. Its value is an index into `panels`.
+ *
+ * This, `MODE_PARAM` and `REVEALED_PARAM` say what the arrangement *is*, for an
+ * author whose diagram wants to know — a `show` that reads `params.stageMode`.
+ * They used to be what every rect was an expression of; the rects are params of
+ * their own now (see `toCustomLayout`), and these three are written beside them
+ * so they keep telling the truth.
+ */
 export const FOCUS_PARAM = 'stageFocus';
 
 /** The param that says which mode the stage is in: 0 focus, 1 grid. */
@@ -373,18 +388,95 @@ export const MODE_PARAM = 'stageMode';
  * A lesson brings panels in one at a time (P10), and the arrangement has to
  * answer differently for two panels than for four — a rail of blank squares
  * reserving space for panels the student has not met is exactly the "four charts
- * at once" problem in a politer costume. So the count joins focus and mode as a
- * thing every rect is an expression of, for the same reason and at the same
- * cost: a reveal moves panels without rebuilding the diagram.
+ * at once" problem in a politer costume.
  *
  * Panels arrive in declared order. That is what lets one number carry the state:
- * the alternative is a set, and a set means compiling every subset.
+ * the alternative is a set, and a host has to be able to say which one it means.
  */
 export const REVEALED_PARAM = 'stageRevealed';
 
 export const MODE_VALUE: { [m in StageMode]: number } = { focus: 0, grid: 1 };
 
-/** A panel def for `CustomLayout`, whose rect is an expression rather than a number. */
+/** One edge of a panel's rect, as `PanelRect` names them. */
+export type RectProp = 'x' | 'y' | 'width' | 'height';
+
+const RECT_PROPS: RectProp[] = ['x', 'y', 'width', 'height'];
+
+/**
+ * The param holding one edge of one panel's rect: `stageX0`, `stageWidth2`.
+ *
+ * By declared index rather than by key, because a key is the author's and need
+ * not be a name mathjs can read: `supply-side` would parse as a subtraction.
+ */
+export function rectParamName(index: number, prop: RectProp): string {
+    return 'stage' + prop.charAt(0).toUpperCase() + prop.slice(1) + index;
+}
+
+/**
+ * The grid a rect param snaps to.
+ *
+ * A param has to have one, and a fraction of the canvas rounded to a millionth
+ * is a thousandth of a pixel out on a 1000px stage — well under anything a
+ * screen can draw — while the chrome is positioned from the unrounded numbers.
+ */
+const RECT_ROUND = 0.000001;
+
+/** A param the stage writes, and what it holds. */
+export interface StageParamValue {
+    name: string;
+    value: number;
+}
+
+/**
+ * Every param that puts the panels where an arrangement says.
+ *
+ * Focus, mode and how many panels have arrived; each panel's rect, four
+ * numbers; and the level each arrived panel draws at, unless its author set
+ * one (`authoredDensity`). That is the whole of an arrangement as the engine
+ * sees it, so a host that sends the ones that changed has told it everything —
+ * and this is the function the chrome's arrangement and the diagram's both come
+ * from, which is what keeps a caption over the panel it names.
+ *
+ * A panel that has not arrived is given the focal panel's box rather than a
+ * rect of its own. It draws nothing — everything in it is hidden by the step
+ * that will reveal it — so where it sits is arbitrary, and every arbitrary
+ * choice except this one is worse: a zero-extent rect collapses its scales, and
+ * a box outside the canvas is drawn outside the canvas, because the engine's
+ * svg is deliberately `overflow: visible`. Parking it under the focal panel
+ * keeps every scale sane and every fraction inside 0–1. Its level is left
+ * where it was, since nothing it draws is on screen.
+ */
+export function layoutParams(
+    keys: string[], arrangement: Arrangement, authoredDensity: string[] = []
+): StageParamValue[] {
+    if (keys.length === 0) return [];
+
+    const byKey: { [key: string]: PanelRect } = {};
+    arrangement.panels.forEach(function (p) { byKey[p.key] = p });
+    const focal = byKey[arrangement.focused] || arrangement.panels[0];
+
+    const out: StageParamValue[] = [
+        { name: FOCUS_PARAM, value: Math.max(0, keys.indexOf(arrangement.focused)) },
+        { name: MODE_PARAM, value: MODE_VALUE[arrangement.mode] },
+        { name: REVEALED_PARAM, value: Math.max(1, arrangement.panels.length) }
+    ];
+
+    keys.forEach(function (key, i) {
+        const rect = byKey[key] || focal;
+        RECT_PROPS.forEach(function (prop) {
+            out.push({ name: rectParamName(i, prop), value: rect ? rect[prop] : 0 });
+        });
+    });
+
+    arrangement.panels.forEach(function (p) {
+        if (authoredDensity.indexOf(p.key) > -1) return;
+        out.push({ name: densityParamName(p.key), value: densityIndex(p.level) });
+    });
+
+    return out;
+}
+
+/** A panel def for `CustomLayout`, whose rect reads four params rather than holding numbers. */
 export interface LayoutPanel {
     key: string;
     x: string;
@@ -404,151 +496,86 @@ export interface StageLayout {
     }[];
 }
 
-/** `a == b ? t : f`, with both branches already parenthesised by their caller. */
-const ternary = (test: string, t: string, f: string) => `(${test} ? ${t} : ${f})`;
-
-/**
- * A chain of tests over one fallthrough, collapsed when it decides nothing.
- *
- * Three params now index the rect expressions, and most rects do not depend on
- * all three: a single-panel stage has no mode to test, and a panel's box under
- * `grid` is the same whichever panel is focal. Emitting the ternary anyway would
- * triple the length of an expression that mathjs re-evaluates on every param
- * change, which is the drag path. So a level that gives one answer emits one
- * answer.
- */
-function chain(cases: { test: string; value: string }[], fallback: string): string {
-    if (cases.every(c => c.value === fallback)) return fallback;
-    let expr = fallback;
-    for (let i = cases.length - 1; i >= 0; i--) {
-        expr = ternary(cases[i].test, cases[i].value, expr);
-    }
-    return expr;
+/** What `toCustomLayout` lays out: an arrangement's input, and how many panels have arrived. */
+export interface LayoutInput extends ArrangeInput {
+    /** How many panels have arrived, from the front of `panels`. Every one, by default. */
+    arrived?: number;
 }
 
-const round6 = (n: number) => String(Math.round(n * 1e6) / 1e6);
-
 /**
- * Every arrangement the stage can be in, compiled into one layout.
+ * One layout for every arrangement the stage can be in: a `CustomLayout` whose
+ * rects are params.
  *
- * This is what makes a promotion a *param change*. P3 made a panel's rect an
- * evaluated expression, so the whole set of positions can be written down once
- * — a ternary over which panel is focal and which mode the stage is in — and
- * moving between them costs one `updateParams` call and no remount. The
- * alternative is recomputing the numbers in JS and handing the engine a new
- * config, which is a rebuild: the diagram flashes and any drag in progress is
- * lost.
+ * This is what makes a promotion, a reveal and a resize *param changes*. P3
+ * made a panel's rect an evaluated expression, and the stage used to spend that
+ * on a ternary — every arrangement there could be, compiled into one string per
+ * edge over which panel was focal, which mode, how many had arrived — so that
+ * moving between them cost one param. What the ternary could not hold was the
+ * stage changing *shape*: every number in it was computed for one canvas, so a
+ * new shape was a new config and a rebuilt engine, and the rebuild threw away
+ * the student's last move along with the old model's `prev`.
  *
- * The one thing it cannot absorb is the stage changing *shape*, because that
- * changes `aspectRatio` and every fraction with it. A resize within the same
- * aspect ratio is free — the engine scales the canvas and the fractions still
- * hold — so this is only paid when the container's proportions actually change.
+ * So the rect is the variable now, not the state it is chosen from: each edge
+ * reads its own param, the host computes the arrangement with `arrange` and
+ * writes it with `layoutParams`, and the engine's `relayout` changes the
+ * canvas's aspect ratio in the same redraw. Nothing about the stage needs a
+ * rebuild — and nothing about it is compiled, so no expression grows with the
+ * number of panels, modes and counts.
  *
- * Density is a level, not `auto`, and each panel starts at the level its role
- * gives it with every panel arrived and the first one focal — the state the
- * params below start in. It was `auto` for as long as the arrangement made size
- * and role the same thing, which the grid undid: a cell being read came out
- * the size `auto` reserves for glyphs. Levels cannot be expressions the way
- * rects are, so `Stage` moves them as params whenever the arrangement changes,
- * in the same update that moves the rects — which keeps the one property `auto`
- * had, a panel gaining its labels in the same tick it grows.
+ * The values declared here are the arrangement `input` describes, so the
+ * engine's first frame is already right and a host has nothing to send until
+ * something changes. Density is declared at each panel's level for the same
+ * reason; a panel that has not arrived starts as an `indicator`, the cheapest
+ * thing to hold for a panel nobody can see.
  */
-export function toCustomLayout(input: ArrangeInput): StageLayout {
+export function toCustomLayout(input: LayoutInput): StageLayout {
     const keys = input.panels || [],
-        modes: StageMode[] = ['focus', 'grid'],
-        counts = keys.map((_, i) => i + 1);
+        arrived = Math.min(keys.length, Math.max(1, input.arrived === undefined ? keys.length : input.arrived)),
+        arrangement = arrange({ ...input, panels: keys.slice(0, arrived) });
 
-    // Every arrangement, indexed [count][mode][focusIndex]. The focus index is
-    // irrelevant in grid mode, so that row is computed once.
-    const byCount: { [count: number]: { [m: string]: Arrangement[] } } = {};
-    counts.forEach(function (count) {
-        const arrived = keys.slice(0, count);
-        const byMode: { [m: string]: Arrangement[] } = {};
-        modes.forEach(function (mode) {
-            byMode[mode] = (mode === 'grid' ? [arrived[0]] : keys).map(focused =>
-                arrange({ ...input, panels: arrived, mode: mode, focused: focused }));
-        });
-        byCount[count] = byMode;
-    });
+    const values: { [name: string]: number } = {};
+    layoutParams(keys, arrangement).forEach(function (p) { values[p.name] = p.value });
 
-    const component = function (key: string, prop: 'x' | 'y' | 'width' | 'height'): string {
-
-        /**
-         * One number, for one state of the three params.
-         *
-         * A panel that has not arrived yet is given the focal panel's box rather
-         * than a rect of its own. It draws nothing — everything in it is hidden
-         * by the step that will reveal it — so where it sits is arbitrary, and
-         * every arbitrary choice except this one is worse: a zero-extent rect
-         * collapses its scales, and a box outside the canvas is drawn outside
-         * the canvas, because the engine's svg is deliberately `overflow:
-         * visible`. Parking it under the focal panel keeps every scale sane and
-         * every fraction inside 0–1.
-         */
-        const at = (count: number, mode: StageMode, focusIndex: number) => {
-            const a = byCount[count][mode][mode === 'grid' ? 0 : focusIndex];
-            const panel = a.panels.filter(p => p.key === key)[0]
-                || a.panels.filter(p => p.key === a.focused)[0];
-            return round6(panel ? panel[prop] : 0);
-        };
-
-        // Innermost first: the focus chain, with the last key as the
-        // fallthrough rather than a redundant test. Then the mode, then how many
-        // panels have arrived.
-        const forCount = function (count: number): string {
-            const focusExpr = chain(
-                keys.slice(0, -1).map((_, i) => ({
-                    test: `params.${FOCUS_PARAM} == ${i}`,
-                    value: at(count, 'focus', i)
-                })),
-                at(count, 'focus', Math.max(0, keys.length - 1))
-            );
-            return chain(
-                [{ test: `params.${MODE_PARAM} == ${MODE_VALUE.grid}`, value: at(count, 'grid', 0) }],
-                focusExpr
-            );
-        };
-
-        if (keys.length === 0) return '0';
-
-        return chain(
-            counts.slice(0, -1).map(count => ({
-                test: `params.${REVEALED_PARAM} == ${count}`,
-                value: forCount(count)
-            })),
-            forCount(keys.length)
-        );
+    const levelOf = function (key: string): DensityLevel {
+        const p = arrangement.panels.filter(r => r.key === key)[0];
+        return p ? p.level : 'indicator';
     };
 
-    const full = byCount[keys.length],
-        initial = full && full.focus[0] ? full.focus[0] : null;
+    // Declared as presentation params, and it matters: `prev.changed` gates
+    // every ghost an author draws, and promoting a panel — or revealing one, or
+    // resizing the window — is not the student moving anything. Without the
+    // flag, clicking a rail panel would put a ghost and a shift arrow over a
+    // diagram nobody had touched. It is also what `relayout` insists on before
+    // it will write a param at all.
+    const params: StageLayout['params'] = keys.length === 0 ? [] : [
+        {
+            name: FOCUS_PARAM, value: values[FOCUS_PARAM],
+            min: 0, max: Math.max(0, keys.length - 1), round: 1, presentation: true
+        },
+        { name: MODE_PARAM, value: values[MODE_PARAM], min: 0, max: 1, round: 1, presentation: true },
+        {
+            name: REVEALED_PARAM, value: values[REVEALED_PARAM],
+            min: 1, max: Math.max(1, keys.length), round: 1, presentation: true
+        }
+    ];
+    keys.forEach(function (_, i) {
+        RECT_PROPS.forEach(function (prop) {
+            const name = rectParamName(i, prop);
+            params.push({ name: name, value: values[name], min: 0, max: 1, round: RECT_ROUND, presentation: true });
+        });
+    });
 
     return {
-        aspectRatio: initial ? initial.aspectRatio : 1,
-        panels: keys.map(key => ({
+        aspectRatio: keys.length > 0 ? arrangement.aspectRatio : 1,
+        panels: keys.map((key, i) => ({
             key: key,
-            x: component(key, 'x'),
-            y: component(key, 'y'),
-            width: component(key, 'width'),
-            height: component(key, 'height'),
-            density: initial ? initial.panels.filter(p => p.key === key)[0].level : 'full'
+            x: 'params.' + rectParamName(i, 'x'),
+            y: 'params.' + rectParamName(i, 'y'),
+            width: 'params.' + rectParamName(i, 'width'),
+            height: 'params.' + rectParamName(i, 'height'),
+            density: levelOf(key)
         })),
-        // Declared as presentation params, and it matters: `prev.changed` gates
-        // every ghost an author draws, and promoting a panel — or revealing
-        // one — is not the student moving anything. Without the flag, clicking a
-        // rail panel would put a ghost and a shift arrow over a diagram nobody
-        // had touched.
-        //
-        // `REVEALED_PARAM` starts at every panel, so a host that never mentions
-        // reveal gets exactly the arrangement it got before this existed.
-        params: [
-            { name: FOCUS_PARAM, value: 0, min: 0, max: Math.max(0, keys.length - 1), round: 1, presentation: true },
-            { name: MODE_PARAM, value: MODE_VALUE.focus, min: 0, max: 1, round: 1, presentation: true },
-            {
-                name: REVEALED_PARAM, value: Math.max(1, keys.length),
-                min: 1, max: Math.max(1, keys.length), round: 1, presentation: true
-            }
-        ]
+        params: params
     };
 }
 
@@ -556,10 +583,11 @@ export function toCustomLayout(input: ArrangeInput): StageLayout {
  * How many panels have arrived, from the keys a host says are revealed.
  *
  * The count is one past the *last* revealed panel in declared order, not the
- * size of the set: the compiled expressions index prefixes, so a set that skips
- * one has to resolve to something, and treating the gap as arrived keeps the
- * chrome and the diagram agreeing. `Stage` warns when it happens; this function
- * is what makes the two halves agree while it does.
+ * size of the set: the stage arranges a prefix of the declared panels, which is
+ * what lets `REVEALED_PARAM` be one number, so a set that skips one has to
+ * resolve to something, and treating the gap as arrived keeps the chrome and
+ * the diagram agreeing. `Stage` warns when it happens; this function is what
+ * makes the two halves agree while it does.
  */
 export function revealedCount(keys: string[], revealed?: string[]): number {
     if (!revealed) return Math.max(1, keys.length);

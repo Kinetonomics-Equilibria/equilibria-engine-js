@@ -111,6 +111,13 @@ own aspect ratio independent of its rect — a square panel on a wide canvas is 
 and height fractions happen to produce a square at the current canvas size. This is a real
 constraint on any focus-and-rail arrangement, not an oversight.
 
+The shape can change without a remount. `kg.relayout({ aspectRatio, params })` gives the canvas a
+new aspect ratio and new values for presentation params in one redraw — so a host whose box changes
+proportions declares each panel's rect as params (`x: params.stageX0`, …, each declared
+`presentation: true`) and writes the new fractions with the new shape. A new config would do the
+same at the cost of a new engine, which forgets `prev`: every ghost and delta describing the
+student's last move. See [Laying the diagram out again](../interactivity.md#laying-the-diagram-out-again).
+
 ## Density: how much detail a panel draws
 
 A 190px panel in a rail and a 620px panel on the stage have **different jobs**, not the same job at

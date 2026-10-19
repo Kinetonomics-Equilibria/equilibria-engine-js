@@ -743,6 +743,58 @@ export class View implements IView {
         view.model.updateParam(panel.param, densityIndex(level));
     }
 
+    /**
+     * Change how the diagram is laid out — the canvas's shape, and the
+     * presentation params that place its panels — without rebuilding it.
+     *
+     * The shape was the one thing about a layout that could not move. It was
+     * read from the config once, in `render`, so a host whose box changed
+     * proportions had to hand the engine a new config, and a new config is a
+     * new engine: every object rebuilt, every listener re-registered, and `prev`
+     * — the memory a ghost, a delta and a sentence about the last move are all
+     * drawn from — thrown away with the old model. A student who resized their
+     * window lost the move they had just made.
+     *
+     * Nothing else about the view depends on the shape. The scales hold their
+     * edges as fractions and take the canvas's size from `updateDimensions`, so
+     * a new ratio is a new height and one more pass of the arithmetic that
+     * already runs on every resize. That is all this does: write the params,
+     * set the ratio, and redraw once.
+     *
+     * The redraw *is* a resize, whether or not the shape changed, and has to be.
+     * A panel that moved may have grown past an `auto` threshold, and its level
+     * is read off its scales — so the scales must have taken the new rect
+     * before the level is chosen, and every object must then redraw. Updating
+     * the scales first and broadcasting after does not do it: a scale that has
+     * already moved reports no change on the broadcast, and an object only
+     * redraws when its scale reports one, so the panel stayed where it was.
+     * `updateDimensions` is the one sequence that gets all three right — scales,
+     * levels, one forced broadcast — and it re-measures the container on the
+     * way, which a host saying the shape changed is saying it should.
+     *
+     * No snapshot and no `kg:param_changed`. Laying the diagram out again is not
+     * something the student did, and the event's subscribers narrate what the
+     * student did.
+     */
+    relayout(change: { aspectRatio?: number, params?: { name: string, value: any }[] }) {
+        const view = this;
+        const moved = view.model.setPresentation((change && change.params) || []);
+
+        let reshaped = false;
+        const ratio = change ? change.aspectRatio : undefined;
+        if (ratio !== undefined) {
+            if (typeof ratio === 'number' && isFinite(ratio) && ratio > 0) {
+                view.aspectRatio = ratio;
+                reshaped = true;
+            } else {
+                console.warn(`relayout: aspectRatio ${ratio} is not a shape, so the canvas kept its own ` +
+                    `(${view.aspectRatio}). It is width over height, and has to be a positive number.`);
+            }
+        }
+
+        if (moved || reshaped) view.updateDimensions();
+    }
+
     // update dimensions, either when first rendering or when the window is resized
     updateDimensions(printing?: boolean) {
         let view = this;

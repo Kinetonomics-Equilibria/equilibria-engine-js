@@ -12,17 +12,20 @@ What it is:
   `retry()` and `updateParams()`.
 - **`<EquilibriaChart />`** — a div with a ref and the engine's container class on it. No
   chrome, no theme, no sizing. Panel chrome belongs to whatever renders it.
-- **`<Stage />`** — several panels, one engine. Measures its own box, compiles every
-  arrangement it can be in into one `CustomLayout`, mounts one engine, and floats an overlay
-  over each panel. Promotion is a param update: no remount, no flash, no lost drag. Each panel
+- **`<Stage />`** — several panels, one engine. Measures its own box, mounts one engine whose
+  panels' rects are presentation params, lays it out again with the engine's `relayout` whenever
+  the arrangement changes, and floats an overlay over each panel. Promotion, a reveal and a
+  resize — a change of shape included — are each one relayout: no remount, no flash, no lost
+  drag, and no lost ghost. Each panel
   has a **role** — `focal`, `rail`, `strip` or `grid` — which sets the level of detail it draws
   at and tells the app's chrome which side of the panel it may use. `chromeRoom` says how many
   pixels that chrome takes, and the stage keeps it clear along with the room the engine's own
   axes need. Only the rail and the strip lay a promote button across a panel; a grid panel is
   dragged like the focal one, and its chrome is handed `promote` instead.
-- **`arrange` / `toCustomLayout` / `pixelBox`** — the arrangement arithmetic, exported on its
-  own because it is a pure function of a box and a list of keys and an app may want the
-  numbers without rendering anything.
+- **`arrange` / `toCustomLayout` / `layoutParams` / `pixelBox`** — the arrangement arithmetic,
+  exported on its own because it is a pure function of a box and a list of keys and an app may
+  want the numbers without rendering anything. `toCustomLayout` declares the rect params and
+  `layoutParams` gives their values for an arrangement.
 - Re-exports of `KG_EVENTS` and `KG_CONTAINER_CLASS`.
 
 `Stage` supplies mechanism only. Which panel is focal, what each is called and what its chip
@@ -36,7 +39,7 @@ drift shows up as diagrams that look subtly wrong in dark mode. Its stylesheet a
 `min-height: 300px` on the chart container, which beat the height the engine writes, so a
 210px `ThreeHorizontalGraphs` canvas sat in a 300px box.
 
-## Four things that will otherwise be rediscovered painfully
+## Five things that will otherwise be rediscovered painfully
 
 **1. `isReady` is derived, never stored.** `KineticGraph.mount()` does not throw when a mount
 fails: it catches internally and emits `'error'` — *synchronously*, while control is still
@@ -58,24 +61,34 @@ every render, so a listener registered at mount always calls the *current* callb
 them to the engine directly would mean either stale closures or a re-mount on every parent
 render, and re-mounting rebuilds the whole diagram.
 
-**4. A layout's fractions belong to a canvas *shape*, not a canvas size.** `arrange` computes
-in a normalised canvas — 1 wide, `1/aspectRatio` tall — so two stages of the same proportions
-produce identical fractions. This is not tidiness: `useEquilibria` remounts when the config's
-identity changes, and with pixel padding the fractions moved on every pixel of a window drag,
-rebuilding the diagram each time. `Stage` also quantises the ratio to a hundredth, so only a
-real change of proportions costs a rebuild.
+**4. A change of shape must not rebuild the engine.** A remount is a new model, and a new
+model has no `prev`: the ghost of the curve the student just moved, every delta beside a panel
+and the sentence under the stage all go with the old one. The stage used to compile every
+arrangement into one `CustomLayout` of ternaries, which held every focus, mode and reveal but
+not a new canvas shape — every number in it was for one — so any resize that moved the
+proportions by a hundredth rebuilt the diagram, and a host restoring the lesson onto the new
+engine had to snapshot to keep the restore from being drawn as a move, which is what forgot the
+student's. Now each rect is four presentation params, the engine's `relayout` takes a new aspect
+ratio in the same redraw, and the config is built once. `arrange` is still scale-free —
+fractions of a normalised canvas, 1 wide and `1/aspectRatio` tall — but that is a property of the
+design now, not a defence against rebuilds.
 
-The one exception is **room**. Tick labels, axis titles and the app's captions sit outside a
-panel at fixed pixel offsets, and a gutter that was a fraction of the canvas came to 18px where
-50 were needed — the grid's rows printed over each other. So room is asked for in pixels, and
-`Stage` computes it at the width the stage had when its shape last changed. A proportional
-resize still costs nothing; the room just scales with everything else until the next change of
-shape measures it again.
+The exception to scale-free is **room**. Tick labels, axis titles and the app's captions sit
+outside a panel at fixed pixel offsets, and a gutter that was a fraction of the canvas came to
+18px where 50 were needed — the grid's rows printed over each other. So room is asked for in
+pixels, and `Stage` arranges at the box it measures *now*, every time; it used to measure only
+when the shape changed, because each new arrangement was a new engine.
+
+**5. The stage's resize reaches the engine before the browser paints.** The engine observes its
+own container and redraws at the new width — at the old proportions — as soon as the box
+changes. `Stage`'s observer flushes its render synchronously and lays the engine out in a layout
+effect, so the drawing and the captions take the new shape in the same frame rather than one
+apart.
 
 Still true, and still a limitation: **the hook re-mounts whenever `config` changes identity.**
-Callers must `useMemo` the config. `Stage` handles this for the things it owns — its config
-memo deliberately excludes `focused` and `mode`, because those move through params — but a
-caller whose config varies with state still pays for it.
+Callers must `useMemo` the config. `Stage` handles this for everything it owns — its config
+memo depends on the config and its panels and nothing else — but a caller whose config varies
+with state still pays for it.
 
 ## Tests
 

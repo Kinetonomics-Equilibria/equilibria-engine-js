@@ -682,6 +682,55 @@ export class Model implements IModel {
     }
 
     /**
+     * Write presentation params, all of them, and redraw nothing.
+     *
+     * The path `updateParam` takes is built for state: each value is validated
+     * against the restrictions on its own, may be rolled back, may snapshot in
+     * `'change'` mode, and is broadcast before the next one is written. None of
+     * that is right for a param that says how the diagram is *shown*. A panel's
+     * rect is not something a restriction can sensibly forbid, and moving a
+     * panel is not a student action that `prev` should be re-based around — and
+     * a stage moving three panels at once wants one redraw, not twelve with the
+     * panels half-way to where they are going.
+     *
+     * So each value is put straight onto its param, through `Param.update` for
+     * its bounds and its rounding, the way `View.refreshAutoDensity` sets a
+     * level. The caller broadcasts once. A param that is not presentation is
+     * refused with a warning and left where it was: written here it would skip
+     * the restrictions and the snapshot, and a host that wants to move state has
+     * `updateParam` for it.
+     *
+     * The current values are re-read before returning, though nothing is
+     * broadcast. Whatever the caller does next will evaluate expressions — a
+     * scale re-reading its range as the canvas is re-measured — and those read
+     * `currentParamValues`, not the params themselves.
+     *
+     * Returns whether anything changed.
+     */
+    setPresentation(values: { name: string, value: any }[]): boolean {
+        const model = this;
+        let changed = false;
+        (values || []).forEach(function (entry) {
+            const param = model.getParam(entry.name);
+            if (!param) return;
+            if (!param.presentation) {
+                console.warn(`relayout: "${entry.name}" is not a presentation param, so it was not written. ` +
+                    `Moving state goes through update({ params }), which checks the restrictions and ` +
+                    `snapshots; relayout only says how the diagram is shown.`);
+                return;
+            }
+            const before = param.value;
+            param.update(entry.value);
+            if (param.value !== before) changed = true;
+        });
+        if (changed) {
+            model.currentParamValues = model.evalParams();
+            model.evalCalcs();
+        }
+        return changed;
+    }
+
+    /**
      * Announce a refusal, once per cause.
      *
      * The signature is the cause and nothing else — which end of the range, or

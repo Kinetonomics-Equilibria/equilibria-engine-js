@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { densityIndex } from 'equilibria-engine-js';
 import {
-    arrange, toCustomLayout, pixelBox, revealedCount,
+    arrange, layoutParams, rectParamName, toCustomLayout, pixelBox, revealedCount,
     FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
 } from '../arrangement';
 import type { ArrangeInput } from '../arrangement';
@@ -342,14 +343,16 @@ describe('degenerate inputs', () => {
     });
 });
 
-// --- the compiled layout ---------------------------------------------------------
+// --- the layout, and the params that place it -------------------------------------
 
-describe('every arrangement compiles into one layout', () => {
+describe('one layout, whose rects are params', () => {
 
     const layout = toCustomLayout({ ...STAGE, panels: KEYS });
+    const rectNames = KEYS.flatMap((_, i) =>
+        (['x', 'y', 'width', 'height'] as const).map(prop => rectParamName(i, prop)));
 
-    it('declares the three params the expressions read', () => {
-        expect(layout.params.map(p => p.name)).toEqual([FOCUS_PARAM, MODE_PARAM, REVEALED_PARAM]);
+    it('declares the focus, the mode, the reveal and four edges for every panel', () => {
+        expect(layout.params.map(p => p.name)).toEqual([FOCUS_PARAM, MODE_PARAM, REVEALED_PARAM, ...rectNames]);
         expect(layout.params[0].max).toBe(KEYS.length - 1);
     });
 
@@ -363,16 +366,26 @@ describe('every arrangement compiles into one layout', () => {
 
     it('declares them as presentation, so a promotion is not a student action', () => {
         // `prev.changed` gates every ghost in a diagram. Promoting a panel is
-        // the host rearranging the screen, not the student moving a curve.
+        // the host rearranging the screen, not the student moving a curve —
+        // and `relayout` will write nothing else.
         expect(layout.params.every(p => p.presentation)).toBe(true);
     });
 
-    it('gives every panel an expression rather than a number', () => {
-        layout.panels.forEach(p => {
-            expect(typeof p.x).toBe('string');
-            expect(p.x).toContain(`params.${FOCUS_PARAM}`);
-            expect(p.x).toContain(`params.${MODE_PARAM}`);
+    // An edge used to be a ternary over every state the stage could be in, and
+    // it could not hold a new shape: every number in it was for one canvas.
+    it('gives every edge a param of its own, and compiles nothing into it', () => {
+        layout.panels.forEach((p, i) => {
+            expect(p.x).toBe(`params.${rectParamName(i, 'x')}`);
+            expect(p.y).toBe(`params.${rectParamName(i, 'y')}`);
+            expect(p.width).toBe(`params.${rectParamName(i, 'width')}`);
+            expect(p.height).toBe(`params.${rectParamName(i, 'height')}`);
         });
+    });
+
+    it('names the params by position, since a key need not be a name mathjs can read', () => {
+        const odd = toCustomLayout({ ...STAGE, panels: ['supply-side', 'demand side'] });
+        expect(odd.panels[0].x).toBe('params.stageX0');
+        expect(odd.panels[1].height).toBe('params.stageHeight1');
     });
 
     // The state the params start in: every panel arrived, the first one focal.
@@ -384,56 +397,87 @@ describe('every arrangement compiles into one layout', () => {
         expect(layout.panels.map(p => p.key)).toEqual(KEYS);
     });
 
-    /**
-     * The point of the whole exercise: the expressions have to agree with
-     * `arrange` for every state, because the chrome is positioned from one and
-     * the diagram is drawn from the other. Evaluated here the way mathjs would,
-     * with a scope rather than by string comparison.
-     */
-    const evaluate = (expr: string, scope: { [k: string]: number }) => {
-        const body = expr.replace(
-            new RegExp(`params\\.(${FOCUS_PARAM}|${MODE_PARAM}|${REVEALED_PARAM})`, 'g'), 's.$1');
-        // eslint-disable-next-line no-new-func
-        return Function('s', `return ${body}`)(scope) as number;
-    };
+    const declared = (l: ReturnType<typeof toCustomLayout>, name: string) =>
+        l.params.filter(p => p.name === name)[0].value;
 
+    /**
+     * The point of the whole exercise: the diagram is drawn from these numbers
+     * and the chrome is positioned from `arrange`, so they have to be the same
+     * numbers — in every state, and with the room that makes them depend on
+     * more than the shape.
+     */
     const agrees = (input: ArrangeInput) => {
-        const compiled = toCustomLayout(input);
         KEYS.forEach(function (_, i) {
             const arrived = i + 1;
             (['focus', 'grid'] as const).forEach(function (mode) {
-                KEYS.forEach(function (focused, focusIndex) {
-                    const expected = arrange({
-                        ...input, panels: KEYS.slice(0, arrived), focused: focused, mode: mode
-                    });
-                    const scope = {
-                        [FOCUS_PARAM]: focusIndex,
-                        [MODE_PARAM]: MODE_VALUE[mode],
-                        [REVEALED_PARAM]: arrived
-                    };
+                KEYS.slice(0, arrived).forEach(function (focused) {
+                    const compiled = toCustomLayout({ ...input, focused, mode, arrived });
+                    const expected = arrange({ ...input, panels: KEYS.slice(0, arrived), focused, mode });
 
                     expected.panels.forEach(function (want) {
-                        const p = compiled.panels.filter(e => e.key === want.key)[0];
+                        const index = KEYS.indexOf(want.key);
                         (['x', 'y', 'width', 'height'] as const).forEach(function (prop) {
-                            expect(evaluate(p[prop], scope)).toBeCloseTo(want[prop], 5);
+                            expect(declared(compiled, rectParamName(index, prop))).toBeCloseTo(want[prop], 9);
                         });
                     });
+                    expect(declared(compiled, FOCUS_PARAM)).toBe(KEYS.indexOf(focused));
+                    expect(declared(compiled, MODE_PARAM)).toBe(MODE_VALUE[mode]);
+                    expect(declared(compiled, REVEALED_PARAM)).toBe(arrived);
                 });
             });
         });
     };
 
-    it('resolves to exactly what arrange() computed, in every state', () => {
+    it('starts at exactly what arrange() computes, in every state', () => {
         agrees({ ...STAGE, panels: KEYS });
     });
 
-    // Room is the one input that makes the fractions depend on more than the
-    // shape, so it is the one most likely to reach one side and not the other.
     it('and still does with room kept for chrome and furniture', () => {
         agrees({
             ...STAGE, panels: KEYS, furniture: FURNITURE,
             chrome: { focal: { top: 28 }, grid: { top: 28 }, rail: { bottom: 46 }, strip: { right: 150 } }
         });
+    });
+
+    // Nothing it draws is on screen, so the cheapest level there is.
+    it('starts a panel that has not arrived as a glyph', () => {
+        const early = toCustomLayout({ ...STAGE, panels: KEYS, arrived: 1 });
+        expect(early.panels.map(p => p.density)).toEqual(['full', 'indicator', 'indicator', 'indicator']);
+    });
+});
+
+/**
+ * What a host sends to move the stage from one arrangement to another — and
+ * the only description of an arrangement the engine ever gets.
+ */
+describe('layoutParams', () => {
+
+    const valuesOf = (params: { name: string; value: number }[]) => {
+        const out: { [name: string]: number } = {};
+        params.forEach(p => { out[p.name] = p.value });
+        return out;
+    };
+
+    const boxAt = (values: { [name: string]: number }, key: string) =>
+        (['x', 'y', 'width', 'height'] as const).map(prop => values[rectParamName(KEYS.indexOf(key), prop)]);
+
+    it('puts each panel where the arrangement does', () => {
+        const a = arrange({ ...STAGE, panels: KEYS, focused: 'cost' });
+        const values = valuesOf(layoutParams(KEYS, a));
+
+        a.panels.forEach(p => expect(boxAt(values, p.key)).toEqual([p.x, p.y, p.width, p.height]));
+        expect(values[FOCUS_PARAM]).toBe(2);
+        expect(values[MODE_PARAM]).toBe(MODE_VALUE.focus);
+        expect(values[REVEALED_PARAM]).toBe(KEYS.length);
+    });
+
+    it('sets each panel\'s level, and leaves an author\'s own alone', () => {
+        const a = arrange({ ...STAGE, panels: KEYS, focused: 'firm' });
+        const values = valuesOf(layoutParams(KEYS, a, ['cost']));
+
+        expect(values.density_firm).toBe(densityIndex('full'));
+        expect(values.density_market).toBe(densityIndex('indicator'));
+        expect(values.density_cost).toBeUndefined();
     });
 
     /**
@@ -444,30 +488,34 @@ describe('every arrangement compiles into one layout', () => {
      * collapses the panel's scales, and a box outside the canvas is drawn
      * outside the canvas, since the engine's svg is `overflow: visible`.
      */
-    it('parks a panel that has not arrived on the focal box', () => {
-        const scope = { [FOCUS_PARAM]: 0, [MODE_PARAM]: MODE_VALUE.focus, [REVEALED_PARAM]: 2 };
-        const boxAt = (key: string) => (['x', 'y', 'width', 'height'] as const)
-            .map(prop => evaluate(layout.panels.filter(p => p.key === key)[0][prop], scope));
+    it('parks a panel that has not arrived on the focal box, and leaves its level alone', () => {
+        const a = arrange({ ...STAGE, panels: KEYS.slice(0, 2), focused: 'market' });
+        const values = valuesOf(layoutParams(KEYS, a));
 
-        expect(boxAt('cost')).toEqual(boxAt('market'));
-        expect(boxAt('welfare')).toEqual(boxAt('market'));
-        expect(boxAt('firm')).not.toEqual(boxAt('market'));
+        expect(boxAt(values, 'cost')).toEqual(boxAt(values, 'market'));
+        expect(boxAt(values, 'welfare')).toEqual(boxAt(values, 'market'));
+        expect(boxAt(values, 'firm')).not.toEqual(boxAt(values, 'market'));
+        expect(values.density_cost).toBeUndefined();
+        expect(values[REVEALED_PARAM]).toBe(2);
     });
 
-    // Three params index these expressions and most rects do not vary with all
-    // three. Emitting the ternary anyway triples the length of something mathjs
-    // re-evaluates on every param change, which is the drag path.
-    it('does not test a param the answer does not depend on', () => {
-        const one = toCustomLayout({ ...STAGE, panels: ['only'] });
-        expect(one.panels[0].x).not.toContain('?');
+    // The focal key may be a panel the lesson has not reached. The engine is
+    // told the panel that is actually focal, which is the one the chrome names.
+    it('reports the panel arrange made focal, not the one it was asked for', () => {
+        const a = arrange({ ...STAGE, panels: KEYS.slice(0, 1), focused: 'cost' });
+        expect(valuesOf(layoutParams(KEYS, a))[FOCUS_PARAM]).toBe(0);
     });
 
+    it('has nothing to say about no panels', () => {
+        expect(layoutParams([], arrange({ ...STAGE, panels: [] }))).toEqual([]);
+    });
 });
 
 /**
  * How many panels have arrived, from the set a host says are revealed.
  *
- * A count rather than a set because the compiled expressions index prefixes.
+ * A count rather than a set because the stage arranges a prefix of the
+ * declared panels.
  * A set with a gap has to resolve to something; this is where that is decided,
  * so the chrome and the diagram cannot decide it differently.
  */
@@ -507,16 +555,16 @@ describe('the arrangement depends on the stage\'s shape, not its size', () => {
     });
 
     /**
-     * This is what the property is *for*: a `CustomLayout`'s fractions are
-     * computed for one canvas shape, so anything that changes them means a new
-     * config and a rebuilt diagram. Being scale-free means a resize that keeps
-     * the shape costs nothing at all.
+     * A new arrangement used to be a new config and a rebuilt diagram, and this
+     * property was what kept a window drag from paying for one per pixel. It
+     * is cheaper than that now — a `relayout` — but a resize that keeps the
+     * shape, with no room asked for, still has no panel to move.
      */
-    it('so a stage that only scales needs no new layout', () => {
-        const small = toCustomLayout({ width: 900, height: 714, panels: KEYS });
-        const large = toCustomLayout({ width: 1800, height: 1428, panels: KEYS });
+    it('so a stage that only scales has nothing to move', () => {
+        const small = layoutParams(KEYS, arrange({ width: 900, height: 714, panels: KEYS }));
+        const large = layoutParams(KEYS, arrange({ width: 1800, height: 1428, panels: KEYS }));
 
-        expect(large.panels).toEqual(small.panels);
+        expect(large).toEqual(small);
     });
 });
 

@@ -858,17 +858,138 @@ test('the longest chain keeps the strip to one line, and the diagram with it', a
     await page.getByRole('button', { name: 'Boom and cost squeeze' }).click();
     await expect(page.getByText(CHIP)).toHaveCount(3);
 
-    // A rebuild follows a resize within a frame or two, unthrottled; give it ten.
-    await page.evaluate(() => new Promise<void>(resolve => {
-        let frames = 10;
-        const tick = () => (--frames > 0 ? requestAnimationFrame(tick) : resolve());
-        requestAnimationFrame(tick);
-    }));
+    // A rebuild followed a resize within a frame or two, unthrottled; give it ten.
+    await frames(page);
 
     expect((await strip.boundingBox())!.height).toBe(height);
     await expect(page.locator('.kg-container svg[data-witness="1"]')).toHaveCount(1);
     await expect(page.getByText(CHIP)).toHaveCount(3);
     await expect(strip).toHaveAttribute('data-kind', 'settled');
+});
+
+/** Let the page draw a few frames, which is longer than a resize takes to reach the diagram. */
+async function frames(page: Page, count = 10) {
+    await page.evaluate((n) => new Promise<void>(resolve => {
+        let left = n;
+        const tick = () => (--left > 0 ? requestAnimationFrame(tick) : resolve());
+        requestAnimationFrame(tick);
+    }), count);
+}
+
+/**
+ * A change of the stage's shape keeps the student's last move.
+ *
+ * The stage used to rebuild the engine whenever its proportions changed — the
+ * navbar folding away, the window resized, a question row arriving under the
+ * stage — and the screen then had to put the lesson back onto an engine that
+ * had never heard of it. It put back the values, and snapshotted so that the
+ * restore would not be drawn as a move; and the snapshot was exactly what
+ * forgot the move the student *had* made. The ghost of the curve they had just
+ * dragged went, every delta chip went, and the strip went back to rest.
+ *
+ * Now the same engine is laid out again, and nothing about that is a move. So
+ * this drags demand, crosses the filmstrip breakpoint in both directions and
+ * makes an ordinary change of proportions, and asks after all three every time.
+ */
+test('a change of shape keeps the last move: its ghost, its deltas and its chain', async ({ page }) => {
+    // At the suite's own size, with the navbar open, the stage is under the
+    // filmstrip breakpoint.
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+
+    await dragDemandDown(page);
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
+    await expect(page.getByText(CHIP)).toHaveCount(3);
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
+
+    const chain = (await chainText(page))!;
+    expect(chain).toContain('demand shifts down');
+    const chips = await page.getByText(CHIP).allTextContents();
+    await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
+
+    const remembered = async (where: string) => {
+        await frames(page);
+        await expect(page.locator(RENDERED.visibleCurve), `${where}: the ghost`).toHaveCount(7);
+        await expect(page.locator(`${LABEL}:visible`), `${where}: the ghost's label`)
+            .toHaveCount(LABELS_PER_PANEL + GHOST_LABELS);
+        expect(await page.getByText(CHIP).allTextContents(), `${where}: the deltas`).toEqual(chips);
+        await expect(page.locator(STRIP), `${where}: the strip`).toHaveAttribute('data-kind', 'settled');
+        expect(await chainText(page), `${where}: the chain`).toBe(chain);
+        await expect(page.locator('.kg-container svg[data-witness="1"]'), `${where}: the same diagram`).toHaveCount(1);
+    };
+
+    // The navbar's second column folds away, the stage passes 900px, and the
+    // strip stands up beside the focal panel as a rail.
+    await page.getByRole('button', { name: 'Hide links' }).click();
+    await expect(page.locator('[data-role="rail"]')).toHaveCount(2);
+    await remembered('navbar folded, rail');
+
+    await page.getByRole('button', { name: 'Show links' }).click();
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+    await remembered('navbar back, filmstrip');
+
+    // A shorter window: new proportions, and no breakpoint anywhere near.
+    await page.setViewportSize({ width: 1440, height: 760 });
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+    await remembered('a shorter window');
+
+    // And undo still puts the market back, because `prev` is still the market
+    // as it was before the drag rather than as it was at the last resize.
+    await page.getByRole('button', { name: 'undo' }).click();
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
+    await expect(page.getByText(CHIP)).toHaveCount(0);
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
+});
+
+/**
+ * The diagram and its captions take a new shape in the same frame.
+ *
+ * The engine redraws its canvas as soon as its box changes, at the proportions
+ * it was last given. When the stage rebuilt the engine for a new shape, that
+ * left a frame — in practice about a second, while the new one was built — with
+ * the old drawing stretched to the new width and the captions placed for the
+ * new arrangement, each describing a different diagram. A relayout delivered
+ * in the stage's own resize callback lands before the browser paints.
+ *
+ * Read from an observer registered after the stage's and the engine's, so each
+ * sample is the state the next paint shows, through every frame of the navbar
+ * sliding shut.
+ */
+test('the diagram and its captions change shape in the same frame', async ({ page }) => {
+    await page.evaluate(() => {
+        const outer = document.querySelector('[data-testid="stage-chrome"]')!.parentElement!;
+        const samples: { stage: number; canvas: number; caption: number; axis: number }[] = [];
+        (window as unknown as { samples: typeof samples }).samples = samples;
+        new ResizeObserver(() => {
+            const svg = document.querySelector('.kg-container svg')!;
+            const caption = document.querySelector('[data-testid="stage-chrome"] [data-focused="true"]')!;
+            // The focal panel is the one whose axes have ticks; its x axis runs
+            // the panel's whole width.
+            const axis = [...document.querySelectorAll('.kg-container g.axis')]
+                .filter(a => a.querySelectorAll('g.tick').length >= 2)
+                .map(a => a.querySelector('path.domain')!.getBoundingClientRect());
+            samples.push({
+                stage: outer.clientHeight,
+                canvas: Number(svg.getAttribute('height')),
+                caption: caption.getBoundingClientRect().right,
+                axis: Math.max(...axis.map(b => b.right))
+            });
+        }).observe(outer);
+    });
+
+    await page.getByRole('button', { name: 'Hide links' }).click();
+    await expect(page.locator('[data-role="rail"]')).toHaveCount(2);
+    await frames(page);
+
+    const samples = await page.evaluate(() =>
+        (window as unknown as { samples: { stage: number; canvas: number; caption: number; axis: number }[] }).samples);
+    // The first is the observer's own first look; the rest are the slide.
+    expect(samples.length, 'frames of the navbar sliding shut').toBeGreaterThan(3);
+    samples.forEach((s, i) => {
+        expect(Math.abs(s.canvas - s.stage), `frame ${i}: canvas ${s.canvas}px in a ${s.stage}px stage`)
+            .toBeLessThan(1.5);
+        expect(Math.abs(s.caption - s.axis), `frame ${i}: caption ends at ${s.caption}, panel at ${s.axis}`)
+            .toBeLessThan(1.5);
+    });
 });
 
 /**
@@ -977,7 +1098,20 @@ test('the reveal draws the answer beside the student\'s, and takes it away again
     // the rest of the lesson.
     await question.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByRole('group', { name: 'Question' })).toHaveCount(0);
-    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
+    const dotted = () => page.locator(RENDERED.visibleCurve).evaluateAll(nodes => nodes
+        .filter(n => (n as SVGElement).style.strokeDasharray.replace(/\s|px/g, '') === '1,2').length);
+    await expect.poll(dotted, 'the answer line').toBe(0);
+
+    // What stays is the student's own move. The question's faint start line
+    // stands down with it, and demand's ghost — off while a question is asked —
+    // takes its place at the same height: `D₀`, where the question found the
+    // curve, beside the curve where they left it. A forward step that only
+    // reveals does not re-base. This used to count six, because the question
+    // row leaving changed the stage's shape, the engine was rebuilt, and the
+    // rebuilt one had forgotten the move (NOTES.md, issue 19).
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
+    const labels = await page.locator(`${LABEL}:visible`).allTextContents();
+    expect(labels.filter(t => t.includes('D_0')), `labels: ${labels.join(' | ')}`).toHaveLength(1);
 });
 
 /**

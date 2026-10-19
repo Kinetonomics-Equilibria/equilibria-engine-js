@@ -239,6 +239,30 @@ export class KineticGraph extends EventEmitter {
     }
 
     /**
+     * Lay the diagram out again: a new canvas shape, new values for the params
+     * that say how it is shown, or both — in one redraw, with no remount.
+     *
+     * For a host whose box changes proportions, and for one that places panels
+     * itself. Before this a canvas kept the `aspectRatio` it was built with, so
+     * a stage that went from wide to tall had to be handed a new config, and a
+     * new config is a new engine — which forgets `prev`, and with it the ghost,
+     * the delta and the sentence describing the move a student had just made.
+     *
+     * `params` may only name presentation params. They are written straight
+     * onto the model, past the restrictions and without a snapshot, because a
+     * panel's rect is not state: a state param named here is refused with a
+     * warning, and moves through `update({ params })` as before. `aspectRatio` is
+     * width over height, as in a layout, and giving one re-measures the
+     * container.
+     *
+     * Raises no `kg:param_changed`: nothing the student did has changed. Read
+     * `getParams()` for the values if they matter.
+     */
+    public relayout(change: { aspectRatio?: number; params?: { name: string; value: number }[] }) {
+        this.view?.relayout(change || {});
+    }
+
+    /**
      * Every calc, as it now stands.
      *
      * `kg:param_changed` carries the same thing, but only once something has

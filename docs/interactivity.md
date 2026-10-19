@@ -278,6 +278,28 @@ choose — setting one warns, because the next resize will overwrite it. See
 [Density](./schema/03-layouts.md#density-how-much-detail-a-panel-draws) for the levels, what each
 one drops, and how a level composes with what the author wrote.
 
+## Laying the diagram out again
+
+```js
+kg.relayout({
+    aspectRatio: 1.62,                                   // the canvas's new shape
+    params: [{ name: 'stageX0', value: 0.018 }, /* … */]  // presentation params only
+});
+```
+
+For a host whose box changes proportions, or that places panels itself. A canvas used to keep the
+`aspectRatio` it was built with, so a new shape meant a new config, and a new config is a new
+engine — which has forgotten `prev`, and with it the ghost, the deltas and the sentence describing
+the move the student had just made. `relayout` changes the shape and writes the params in one
+redraw, with no remount, and leaves `prev` where it was.
+
+`params` may only name **presentation** params, which are written straight onto the model: past the
+restrictions, without a snapshot, and without a `kg:param_changed`, because how the diagram is shown
+is not something the student did. A state param named here is refused with a warning — it moves
+through `update({ params })`, as before. Giving `aspectRatio` re-measures the container in the same
+redraw. `Stage` in `packages/react` is built on this: every panel's rect is four presentation params,
+and a promotion, a reveal and a resize are each one `relayout`.
+
 ## Gestures and Snapshots
 
 The engine keeps a one-deep memory of its own state, which diagram expressions read as `prev` — see [Remembering the Previous State](./schema/02-parameters-and-interactions.md#remembering-the-previous-state-prev) for the authoring side. Drags inside the diagram snapshot themselves. The host has to take part in two cases: its own continuous controls, and boundaries only the app knows about.

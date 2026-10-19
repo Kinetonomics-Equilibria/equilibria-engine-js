@@ -59,6 +59,17 @@ export class FakeKineticGraph {
     /** Configs passed to `update()`, in call order. */
     readonly updates: unknown[] = [];
 
+    /**
+     * What each `relayout()` asked for, in call order.
+     *
+     * Kept apart from `updates` because the two are different promises: an
+     * update is the student's state moving, and a relayout is the diagram being
+     * shown differently with its state — and its `prev` — left alone. A stage
+     * that sent its arrangement through `update` would pass a test that only
+     * counted param writes.
+     */
+    readonly relayouts: { aspectRatio?: number; params?: { name: string; value: number }[] }[] = [];
+
     private readonly listeners = new Map<string, Listener[]>();
 
     constructor(config: unknown, options?: unknown) {
@@ -111,6 +122,10 @@ export class FakeKineticGraph {
 
     update(newConfig: unknown) {
         this.updates.push(newConfig);
+    }
+
+    relayout(change: { aspectRatio?: number; params?: { name: string; value: number }[] }) {
+        this.relayouts.push(change);
     }
 
     destroy() {

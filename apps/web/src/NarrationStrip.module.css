@@ -22,6 +22,11 @@
  * moving both params, both curves shifting) a line and a half at the suite's
  * own 1440px, where at one decimal it had fitted by three pixels.
  *
+ * A change of the stage's shape no longer rebuilds anything — the stage lays
+ * the same engine out again, and the chain survives it — but a strip that grew
+ * would still shrink the whole diagram under a student's pointer the moment
+ * they let go of a curve, so the rule stands for that reason now.
+ *
  * So clauses still wrap — whole, never mid-number — onto a second line that is
  * clipped. They wrap from the end, and the end is where the least of it is:
  * the cause and the mechanism come first, and the effects follow in the order

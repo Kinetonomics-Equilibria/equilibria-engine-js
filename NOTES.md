@@ -7,7 +7,7 @@ code paths involved are untouched by those changes. Everything under **Fixed**
 is closed and named by the test that holds it in place; three items remain
 **Open** at the end.
 
-Issues 9 to 18 were found later, while implementing the plans in `docs/plans`,
+Issues 9 to 19 were found later, while implementing the plans in `docs/plans`,
 and mostly by the same move: building something that asks the engine for a
 *number* rather than for a picture. Issue 13 is the only regression in the list
 — introduced by the density work and caught the next day by the screen that
@@ -459,6 +459,44 @@ rather than the generated expression.
 
 **Note:** every P13 test passed through it because each built a diagram with one param. Found by the
 study-screen UX audit, by reading the labels on a screenshot and asking which curve had moved.
+
+## 19. A change of the canvas's shape forgot the student's last move — FIXED
+
+**Symptom:** on the study screen, drag demand or apply a scenario, then collapse the navbar at
+1440×833. The ghost of the curve and its shift arrow vanish, every delta chip goes ("▲ $2.00"), and
+the narration strip drops back to rest. For about a second before that, the old drawing is shown
+stretched to the new width with the captions placed for a different arrangement. Any resize that
+changed the stage's proportions did the same: the dock turning into a sheet, the window resized, and
+the question row arriving or leaving, since it takes height from the stage.
+
+**Cause:** the engine could not change shape. `View.render` read `aspectRatio` once, and nothing
+could set it afterwards, so `Stage` compiled every arrangement into a `CustomLayout` for one canvas
+shape and built a new config whenever the shape moved by a hundredth. `useEquilibria` remounts on
+config identity, and a new engine is a new model with no `prev` — the memory every ghost, delta and
+sentence about the last move is drawn from. The study screen then restored the student's values and
+called `snapshot()`, which it had to: without it the restore would be drawn as a ghost of a move
+nobody made. But the snapshot re-based `prev` to "now", and that is what removed the move the
+student *had* made. The second of wrong layout was the old engine redrawing itself at the new width,
+at its old proportions, while the main thread was busy building the new one.
+
+**Fix:** `kg.relayout({ aspectRatio, params })` gives the canvas a new shape and writes presentation
+params in one redraw — the same sequence a resize runs, through `updateDimensions` — with no
+remount, no snapshot and no `kg:param_changed`. It refuses a state param with a warning, because
+written that way it would skip the restrictions. `Stage` declares each panel's rect as four
+presentation params (`stageX0` …), computes the arrangement with `arrange` at the box it measures
+now, and sends what changed with the new shape in one `relayout`; the config is built once. Its
+resize observer flushes synchronously, so the relayout lands in the same frame as the resize.
+Covered by `src/__tests__/relayout.test.ts` (a move made before a relayout keeps its ghost, its
+delta and its snapshot; an untouched diagram raises no ghost), by the "resize" cases in
+`packages/react/src/__tests__/stage.test.tsx`, and in the browser by "a change of shape keeps the
+last move" in both `apps/web/tests/app.spec.ts` and `fx.spec.ts`, which drag a curve, cross the
+filmstrip breakpoint, and ask after the ghost, the chips and the chain, plus "the diagram and its
+captions change shape in the same frame".
+
+**Note:** the rebuild was a tested decision rather than an oversight — P3 and P7 both wrote down
+that a new shape costs a remount, and the arrangement was made scale-free precisely so that only a
+new shape would. Each of those tests passed, and what they had in common is that nothing on the
+screen had moved yet when they ran. Found by the study-screen UX audit, by moving something first.
 
 ## D. A stray horizontal line is drawn across a panel once a curve is dragged — FIXED
 

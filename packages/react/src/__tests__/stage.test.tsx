@@ -9,7 +9,9 @@ import userEvent from '@testing-library/user-event';
 // looks like a tidy-up and is not.
 import { KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 import { Stage } from '../Stage';
-import { FOCUS_PARAM, MODE_PARAM, MODE_VALUE, REVEALED_PARAM } from '../arrangement';
+import {
+    arrange, pixelBox, rectParamName, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
+} from '../arrangement';
 import { engineControl, resetEngineMock, latestInstance } from './engineMock';
 
 vi.mock('equilibria-engine-js', async () => {
@@ -19,13 +21,15 @@ vi.mock('equilibria-engine-js', async () => {
 });
 
 /**
- * The stage: one engine, chrome above it, promotion as a param change.
+ * The stage: one engine, chrome above it, every arrangement a param change.
  *
- * The test that matters most is the lifecycle one. Promotion must not destroy
- * and recreate the engine — if it does, the whole "panels keep their identity
- * through the change" premise is gone and nobody notices until they look at a
- * transition in a browser. It is asserted on the mock's construct and destroy
- * counts, which is the only place that regression is visible from the outside.
+ * The tests that matter most are the lifecycle ones. Neither a promotion nor a
+ * resize may destroy and recreate the engine — a promotion because the whole
+ * "panels keep their identity through the change" premise goes with it, and a
+ * resize because a new engine is a new model, and a new model has forgotten the
+ * student's last move: the ghost, the deltas and the sentence describing it.
+ * Both are asserted on the mock's construct and destroy counts, which is the
+ * only place that regression is visible from the outside.
  */
 
 const KEYS = ['market', 'firm', 'cost'];
@@ -87,8 +91,21 @@ const boxOf = (el: HTMLElement) => ({
     width: parseFloat(el.style.width), height: parseFloat(el.style.height)
 });
 
+/** Every state write the stage made, which should be none: the arrangement is not state. */
 const paramUpdates = () =>
     latestInstance().updates.flatMap((u: any) => u.params as { name: string; value: number }[]);
+
+/** Every presentation param the stage has laid the engine out with, in order. */
+const laidOut = () =>
+    latestInstance().relayouts.flatMap(r => r.params || []);
+
+/** What the stage built the engine with, by name. */
+const declared = (name: string) =>
+    ((latestInstance().config as any).params as { name: string; value: number }[])
+        .filter(p => p.name === name)[0];
+
+const rectNames = (index: number) =>
+    (['x', 'y', 'width', 'height'] as const).map(prop => rectParamName(index, prop));
 
 describe('what the stage hands the engine', () => {
 
@@ -102,13 +119,12 @@ describe('what the stage hands the engine', () => {
         expect(container.querySelectorAll(`.${KG_CONTAINER_CLASS}`)).toHaveLength(1);
     });
 
-    it('replaces every panel rect with an expression over the focus param', () => {
+    it('gives every panel rect four params of its own', () => {
         render(<Stage config={config()} focused="market" />);
         const panels = (latestInstance().config as any).layout.CustomLayout.panels;
 
-        panels.forEach((p: any) => {
-            expect(typeof p.x).toBe('string');
-            expect(p.x).toContain(`params.${FOCUS_PARAM}`);
+        panels.forEach((p: any, i: number) => {
+            expect([p.x, p.y, p.width, p.height]).toEqual(rectNames(i).map(n => `params.${n}`));
         });
     });
 
@@ -121,10 +137,26 @@ describe('what the stage hands the engine', () => {
         expect((latestInstance().config as any).params[0]).toEqual({ name: 'price', value: 10 });
     });
 
-    it('declares the params the expressions read, alongside the author\'s', () => {
+    it('declares the params the rects read, alongside the author\'s', () => {
         render(<Stage config={config()} focused="market" />);
         const names = (latestInstance().config as any).params.map((p: any) => p.name);
-        expect(names).toEqual(['price', FOCUS_PARAM, MODE_PARAM, REVEALED_PARAM]);
+        expect(names).toEqual([
+            'price', FOCUS_PARAM, MODE_PARAM, REVEALED_PARAM, ...rectNames(0), ...rectNames(1), ...rectNames(2)
+        ]);
+    });
+
+    // So the engine's first frame is already the stage the student sees, and
+    // there is nothing to correct before it is painted.
+    it('builds the engine at the arrangement as it stands, and has nothing to send', () => {
+        const { container } = render(<Stage config={config()} focused="cost" />);
+        const focal = boxOf(chromeFor(container, 'cost'));
+        const canvas = 900;   // the stubbed stage width
+
+        expect(declared(FOCUS_PARAM).value).toBe(2);
+        const [x, , width] = rectNames(2).map(n => declared(n).value);
+        expect(x * canvas).toBeCloseTo(focal.x, 6);
+        expect(width * canvas).toBeCloseTo(focal.width, 6);
+        expect(latestInstance().relayouts).toEqual([]);
     });
 
     it('does not mutate the config it was given', () => {
@@ -149,7 +181,8 @@ describe('what the stage hands the engine', () => {
         const { rerender } = render(<Stage config={withDensity} focused="market" />);
         rerender(<Stage config={withDensity} focused="firm" />);
 
-        expect(paramUpdates().map(p => p.name)).not.toContain('density_firm');
+        expect(laidOut().map(p => p.name)).toContain(FOCUS_PARAM);
+        expect(laidOut().map(p => p.name)).not.toContain('density_firm');
     });
 });
 
@@ -291,12 +324,18 @@ describe('room for chrome', () => {
         expect(engineControl.instances).toHaveLength(1);
     });
 
-    it('rebuilds when the room actually changes, since every fraction moves with it', () => {
+    // Every fraction moves with the room, which used to mean a new config and
+    // so a new engine. It is a new arrangement now, and nothing more.
+    it('moves the panels when the room changes, without rebuilding', () => {
         const cfg = config();
-        const { rerender } = render(<Stage config={cfg} focused="market" chromeRoom={{ focal: { top: 28 } }} />);
+        const { container, rerender } = render(
+            <Stage config={cfg} focused="market" chromeRoom={{ focal: { top: 28 } }} />
+        );
         rerender(<Stage config={cfg} focused="market" chromeRoom={{ focal: { top: 40 } }} />);
 
-        expect(engineControl.instances).toHaveLength(2);
+        expect(engineControl.instances).toHaveLength(1);
+        expect(laidOut().map(p => p.name)).toContain(rectParamName(0, 'y'));
+        expect(boxOf(chromeFor(container, 'market')).y).toBeGreaterThanOrEqual(40);
     });
 });
 
@@ -345,7 +384,7 @@ describe('promotion', () => {
 
 describe('promotion does not rebuild the diagram', () => {
 
-    it('changes a param instead of remounting', () => {
+    it('lays the same engine out again instead of remounting', () => {
         const cfg = config();
         const { rerender } = render(<Stage config={cfg} focused="market" />);
         const engine = latestInstance();
@@ -354,22 +393,26 @@ describe('promotion does not rebuild the diagram', () => {
 
         expect(engineControl.instances).toHaveLength(1);
         expect(engine.destroyed).toBe(false);
-        expect(paramUpdates()).toContainEqual({ name: FOCUS_PARAM, value: 2 });
+        expect(laidOut()).toContainEqual({ name: FOCUS_PARAM, value: 2 });
     });
 
-    // The focus, and the levels of the two panels that traded places — in one
-    // update, so the promoted panel never draws a frame at its new size with
-    // its old furniture. `cost` stayed a glyph and is not mentioned.
+    // The focus, the rects of the two panels that traded places and their
+    // levels — in one relayout, so the promoted panel never draws a frame at
+    // its new size with its old furniture. `cost` stayed where it was, a
+    // glyph, and is not mentioned; and the box did not change, so neither is
+    // the shape.
     it('sends only what moved', () => {
         const cfg = config();
         const { rerender } = render(<Stage config={cfg} focused="market" />);
-        latestInstance().updates.length = 0;
 
         rerender(<Stage config={cfg} focused="firm" />);
 
-        expect(latestInstance().updates).toHaveLength(1);
-        expect(paramUpdates()).toEqual([
-            { name: FOCUS_PARAM, value: 1 },
+        expect(latestInstance().relayouts).toHaveLength(1);
+        expect(latestInstance().relayouts[0].aspectRatio).toBeUndefined();
+        expect(laidOut().map(p => p.name)).toEqual([
+            FOCUS_PARAM, ...rectNames(0), ...rectNames(1), 'density_market', 'density_firm'
+        ]);
+        expect(laidOut().slice(-2)).toEqual([
             { name: 'density_market', value: 2 },
             { name: 'density_firm', value: 0 }
         ]);
@@ -378,15 +421,27 @@ describe('promotion does not rebuild the diagram', () => {
     it('toggles the mode the same way', () => {
         const cfg = config();
         const { rerender } = render(<Stage config={cfg} focused="market" />);
-        latestInstance().updates.length = 0;
 
         rerender(<Stage config={cfg} focused="market" mode="grid" />);
 
         expect(engineControl.instances).toHaveLength(1);
-        const names = paramUpdates().map(p => p.name);
+        const names = laidOut().map(p => p.name);
         expect(names[0]).toBe(MODE_PARAM);
         expect(names).not.toContain(FOCUS_PARAM);
-        expect(names.slice(1).every(n => n.indexOf('density_') === 0)).toBe(true);
+        expect(names.slice(1).every(n => n.indexOf('stage') === 0 || n.indexOf('density_') === 0)).toBe(true);
+    });
+
+    // The arrangement is how the diagram is shown, not what the student did
+    // to it. An `update` is the road state takes, and it is the road a ghost
+    // and a delta are measured along.
+    it('never writes the arrangement as state', () => {
+        const cfg = config();
+        const { rerender } = render(<Stage config={cfg} focused="market" revealed={['market']} />);
+        rerender(<Stage config={cfg} focused="firm" revealed={KEYS} mode="grid" />);
+        resizeStageTo(700, 555);
+
+        expect(latestInstance().relayouts.length).toBeGreaterThan(0);
+        expect(paramUpdates()).toEqual([]);
     });
 
     it('moves the chrome with the panels', () => {
@@ -401,19 +456,17 @@ describe('promotion does not rebuild the diagram', () => {
 
     it('starts at the focused panel the app asked for, not at the first', () => {
         render(<Stage config={config()} focused="cost" />);
-        expect(paramUpdates()).toContainEqual({ name: FOCUS_PARAM, value: 2 });
+        expect(declared(FOCUS_PARAM).value).toBe(2);
     });
 
-    it('re-applies the focus after a rebuild, since a new engine starts at zero', () => {
-        const { rerender } = render(<Stage config={config()} focused="cost" />);
-        expect(engineControl.instances).toHaveLength(1);
-
-        // A new config object is a shape change, which is the one thing that
-        // does cost a rebuild.
+    // A new config is the one thing that still costs a new engine, and the
+    // new one starts where the stage is rather than where the first one did.
+    it('builds a new config at the focus as it stands, since that is still a rebuild', () => {
+        const { rerender } = render(<Stage config={config()} focused="market" />);
         rerender(<Stage config={config()} focused="cost" />);
 
         expect(engineControl.instances).toHaveLength(2);
-        expect(paramUpdates()).toContainEqual({ name: FOCUS_PARAM, value: 2 });
+        expect(declared(FOCUS_PARAM).value).toBe(2);
     });
 });
 
@@ -452,22 +505,26 @@ describe('a staged reveal', () => {
         expect(container.querySelectorAll('button')).toHaveLength(1);
     });
 
-    it('reveals by changing a param, not by rebuilding', () => {
+    it('reveals by laying the engine out again, not by rebuilding', () => {
         const cfg = config();
         const { rerender } = render(<Stage config={cfg} focused="market" revealed={['market']} />);
         const engine = latestInstance();
-        engine.updates.length = 0;
 
         rerender(<Stage config={cfg} focused="market" revealed={['market', 'firm']} />);
 
         expect(engineControl.instances).toHaveLength(1);
         expect(engine.destroyed).toBe(false);
-        expect(paramUpdates()).toEqual([{ name: REVEALED_PARAM, value: 2 }]);
+        expect(engine.relayouts).toHaveLength(1);
+        expect(laidOut()).toContainEqual({ name: REVEALED_PARAM, value: 2 });
+        // The panel that arrived leaves the focal box it was parked on for a
+        // rail slot of its own, and the focal panel gives up the rail's width.
+        const names = laidOut().map(p => p.name);
+        rectNames(0).concat(rectNames(1)).forEach(n => expect(names).toContain(n));
     });
 
     it('says every panel has arrived when the app does not mention it', () => {
         render(<Stage config={config()} focused="market" />);
-        expect(paramUpdates()).toContainEqual({ name: REVEALED_PARAM, value: KEYS.length });
+        expect(declared(REVEALED_PARAM).value).toBe(KEYS.length);
     });
 
     // The focal key may be a panel the lesson has not reached — an app that
@@ -526,6 +583,13 @@ describe('when the stage cannot do as it is told', () => {
     });
 });
 
+/**
+ * A change of size or shape, which used to be the one thing that rebuilt the
+ * diagram — any resize that moved the proportions by a hundredth, the dock
+ * turning into a sheet, a question row arriving under the stage — and with it
+ * the student's last move. It is a relayout now: a new aspect ratio and new
+ * rects for the same engine.
+ */
 describe('resize', () => {
 
     it('does not rebuild when the stage scales proportionally', () => {
@@ -533,44 +597,103 @@ describe('resize', () => {
         expect(engineControl.instances).toHaveLength(1);
 
         // Same shape, a third larger, and still wide enough for a rail.
-        // `arrange` is scale-free, so every fraction still holds: the canvas
-        // scales and there is nothing to recompute.
         resizeStageTo(1200, 952);
 
         expect(engineControl.instances).toHaveLength(1);
     });
 
-    it('does not rebuild for a change too small to matter', () => {
+    it('does not rebuild when the stage changes proportions, and tells the engine its new shape', () => {
         render(<Stage config={config()} focused="market" />);
-        resizeStageTo(900, 712);
-        expect(engineControl.instances).toHaveLength(1);
-    });
-
-    it('rebuilds when the stage changes proportions', () => {
-        render(<Stage config={config()} focused="market" />);
+        const engine = latestInstance();
 
         resizeStageTo(1000, 500);
 
-        expect(engineControl.instances).toHaveLength(2);
+        expect(engineControl.instances).toHaveLength(1);
+        expect(engine.destroyed).toBe(false);
+        const last = engine.relayouts[engine.relayouts.length - 1];
+        expect(last.aspectRatio).toBe(2);
+        expect(last.params!.map(p => p.name)).toContain(rectNames(0)[2]);
     });
 
-    it('moves the chrome with the canvas as it scales', () => {
+    it('turns the rail into a filmstrip without rebuilding', () => {
         const { container } = render(<Stage config={config()} focused="market" />);
-        const before = boxOf(chromeFor(container, 'market'));
-
-        resizeStageTo(1800, 1428);
-
-        const after = boxOf(chromeFor(container, 'market'));
-        expect(after.width).toBeCloseTo(before.width * 2, 4);
-        expect(after.x).toBeCloseTo(before.x * 2, 4);
-    });
-
-    it('rebuilds when the rail has to become a filmstrip', () => {
-        render(<Stage config={config()} focused="market" />);
 
         // Same shape, but now too narrow for a rail beside the focal panel.
         resizeStageTo(700, 555);
 
-        expect(engineControl.instances).toHaveLength(2);
+        expect(engineControl.instances).toHaveLength(1);
+        expect(chromeFor(container, 'firm').getAttribute('data-role')).toBe('strip');
+    });
+
+    // A box that grows keeps the same shape and still moves every rect a
+    // little, because the room for the axes and the captions is pixels. The
+    // engine is told to measure itself in the same redraw.
+    it('sends the shape whenever the box changes, so the engine re-measures in the same redraw', () => {
+        render(<Stage config={config()} focused="market" />);
+        resizeStageTo(1800, 1428);
+
+        const last = latestInstance().relayouts[latestInstance().relayouts.length - 1];
+        expect(last.aspectRatio).toBeCloseTo(1800 / 1428, 9);
+    });
+
+    /**
+     * The room is pixels, so a stage twice the size keeps the same room — the
+     * arrangement is made at the box as it is *now*, every time.
+     *
+     * It used to be made at the width the stage had when its shape last
+     * changed, and scaled from there, because a new arrangement was a new
+     * engine. So a stage that grew kept proportionally more room than its axes
+     * needed, and one that shrank kept less.
+     */
+    it('places the chrome at the box measured now, with room in pixels', () => {
+        const { container } = render(<Stage config={config()} focused="market" />);
+
+        resizeStageTo(1800, 1428);
+
+        const now = arrange({ width: 1800, height: 1428, panels: KEYS, focused: 'market', furniture: FURNITURE });
+        const expected = pixelBox(now, 'market', 1800)!;
+        const after = boxOf(chromeFor(container, 'market'));
+        expect(after.x).toBeCloseTo(expected.x, 6);
+        expect(after.width).toBeCloseTo(expected.width, 6);
+    });
+
+    // Hidden is not gone. A stage whose box collapses has nothing to arrange,
+    // but its engine still holds everything the student did.
+    it('keeps the engine while the stage has no area, and lays it out again when it has one', () => {
+        const { container } = render(<Stage config={config()} focused="market" />);
+        const engine = latestInstance();
+
+        resizeStageTo(0, 0);
+        expect(engine.destroyed).toBe(false);
+        expect(chromeFor(container, 'market')).toBeNull();
+
+        resizeStageTo(1000, 500);
+        expect(engineControl.instances).toHaveLength(1);
+        expect(chromeFor(container, 'market')).toBeTruthy();
+        expect(engine.relayouts[engine.relayouts.length - 1].aspectRatio).toBe(2);
+    });
+
+    /**
+     * The observer's callback and the engine's own both run after layout and
+     * before paint, and the engine's redraws the canvas at its new width — at
+     * its old proportions — straight away. If the stage's half waited for
+     * React's scheduler, a frame would be painted with the diagram at one shape
+     * and the captions at another. So by the time the callback returns, the
+     * engine has been told.
+     */
+    it('lays the engine out before the resize callback returns', () => {
+        render(<Stage config={config()} focused="market" />);
+        const engine = latestInstance();
+        const before = engine.relayouts.length;
+
+        // Deliberately outside `act`, which would flush the render for us and
+        // hide whether the stage flushes it itself. React says so, loudly.
+        const quiet = vi.spyOn(console, 'error').mockImplementation(() => { });
+        stubStageSize(1000, 500);
+        observers.forEach(cb => cb([], null as unknown as ResizeObserver));
+        const after = engine.relayouts.length;
+        quiet.mockRestore();
+
+        expect(after).toBe(before + 1);
     });
 });

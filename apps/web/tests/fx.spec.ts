@@ -304,6 +304,58 @@ test('"Show me" draws demand for A$ shifted ten to the right', async ({ page, pa
     expect(pageErrors).toEqual([]);
 });
 
+/**
+ * A change of the stage's shape keeps the student's last move, here as in the
+ * market lesson: the ghost of the curve they dragged, the change beside each
+ * panel, and the chain under the stage. It used to rebuild the engine, and the
+ * rebuilt one remembered none of them. See the market lesson's test of the same
+ * name for the history.
+ */
+test('a change of shape keeps the last move: its ghost, its deltas and its chain', async ({ page }) => {
+    await toTheEnd(page);
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(1);
+    const curves = await page.locator(RENDERED.visibleCurve).count();
+
+    await dragSideways(page, 'down', 60);
+    const strip = page.locator('[data-kind]');
+    await expect(strip).toHaveAttribute('data-kind', 'settled');
+    // A ghost in each panel: the market's demand for A$ and, linked to it, the
+    // mirror's supply of US$.
+    const ghosted = await page.locator(RENDERED.visibleCurve).count();
+    expect(ghosted).toBeGreaterThan(curves);
+    const chips = [await caption(page, 'market').innerText(), await caption(page, 'mirror').innerText()];
+    expect(chips[0]).toContain('▲');
+    expect(chips[1]).toContain('▼');
+    const chain = await strip.locator('> div[aria-hidden="true"]').textContent();
+    expect(chain).toContain('demand for A$ shifts to the right');
+    await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
+
+    const remembered = async (where: string) => {
+        // Longer than a resize takes to reach the diagram.
+        await page.evaluate(() => new Promise<void>(resolve => {
+            let left = 10;
+            const tick = () => (--left > 0 ? requestAnimationFrame(tick) : resolve());
+            requestAnimationFrame(tick);
+        }));
+        await expect(page.locator(RENDERED.visibleCurve), `${where}: the ghosts`).toHaveCount(ghosted);
+        expect([await caption(page, 'market').innerText(), await caption(page, 'mirror').innerText()],
+            `${where}: the deltas`).toEqual(chips);
+        await expect(strip, `${where}: the strip`).toHaveAttribute('data-kind', 'settled');
+        expect(await strip.locator('> div[aria-hidden="true"]').textContent(), `${where}: the chain`).toBe(chain);
+        await expect(page.locator('.kg-container svg[data-witness="1"]'), `${where}: the same diagram`).toHaveCount(1);
+    };
+
+    // Across the filmstrip breakpoint, as the navbar's second column folds away.
+    await page.getByRole('button', { name: 'Hide links' }).click();
+    await expect(page.locator('[data-role="rail"]')).toHaveCount(1);
+    await remembered('navbar folded, rail');
+
+    // And a change of proportions that crosses nothing.
+    await page.setViewportSize({ width: 1440, height: 760 });
+    await expect(page.locator('[data-role="rail"]')).toHaveCount(1);
+    await remembered('a shorter window');
+});
+
 test('no text on the stage lands on other text', async ({ page }) => {
     await toTheEnd(page);
     await page.getByRole('tab', { name: 'Scenarios' }).click();

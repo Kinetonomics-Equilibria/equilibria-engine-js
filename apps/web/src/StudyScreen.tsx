@@ -243,13 +243,19 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     /**
      * What the engine held, so a remount can be undone.
      *
-     * `Stage` rebuilds its config — and so remounts the engine — when the box's
-     * quantised aspect ratio changes, which is any resize big enough to matter
-     * and includes the question row arriving and leaving. A rebuilt engine
-     * starts from the config: `params.step` back to 0, every reveal undone, the
-     * student's own drag discarded, and the track underneath still reading
-     * "8 / 9". Nothing announces it, so what a student sees is the lesson
-     * evaporating when they resize their window.
+     * `Stage` keeps its engine through everything it owns — a promotion, a
+     * reveal, the box changing size or shape, the question row arriving and
+     * leaving are all a relayout of the same engine. What still remounts it is
+     * a new config or new options, which this screen never hands it (a
+     * different lesson is a different screen), or a retry after a failed
+     * mount. A remounted engine starts from the config: `params.step` back to
+     * 0, every reveal undone, the student's own drag discarded, and the track
+     * underneath still reading "8 / 9". Nothing announces it, so what a student
+     * would see is the lesson evaporating.
+     *
+     * Until the stage stopped rebuilding for a change of shape, that was every
+     * resize that moved the proportions by a hundredth, and this was written
+     * for it. It is a rarer road now, and still a road.
      *
      * The position and the question are the app's and are restored from state.
      * The param *values* are not — they live in the engine, which has just been
@@ -422,19 +428,26 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * The event only fires once something has changed, so the chips would sit
      * blank until the student moved something; this is the reading at rest.
      *
-     * And it is also where a remount is repaired. `Stage` rebuilds the engine
-     * whenever the box's quantised shape changes, so this runs again with an
-     * engine that has never heard of the lesson — at step 0, with the market
-     * back at its authored values and any question stood down. Restoring is not
-     * optional politeness: without it, a resize is indistinguishable from the
-     * whole lesson being thrown away, and the track underneath goes on claiming
-     * a position the diagram is not at.
+     * And it is also where a remount is repaired. `Stage` lays the same
+     * engine out again for everything it owns, a resize included, so this no
+     * longer runs for one; but a new config or a retry after a failed mount
+     * hands it an engine that has never heard of the lesson — at step 0, with
+     * the market back at its authored values and any question stood down.
+     * Restoring is not optional politeness: without it, a remount is
+     * indistinguishable from the whole lesson being thrown away, and the track
+     * underneath goes on claiming a position the diagram is not at.
      *
      * Order matters, and it is the order every other boundary in this file
      * uses: put the state back, *then* snapshot. A restore that snapshotted
      * first would draw a ghost for every param it restored — the diagram
      * showing a movement nobody made, which is the failure P9 shipped and P10
      * inherited.
+     *
+     * The snapshot costs the student's last move: its ghost, its deltas and its
+     * sentence. The new engine never saw that move, and the `prev` it would be
+     * drawn from went with the old one. That used to be the price of resizing
+     * the window, which is why the stage stopped rebuilding for it (NOTES.md,
+     * issue 19); it is the price of a remount only now.
      */
     const onReady = useCallback((engine: KineticGraph) => {
         engineRef.current = engine;

@@ -71,7 +71,8 @@ const onGrid = (def: ParamDef, value: number) =>
  * The most a step's sentence can say on one line of the narration strip.
  *
  * The strip is one line that never grows — growing would take height from the
- * stage and rebuild the engine — so a longer sentence is cut off at an ellipsis.
+ * stage and shrink the diagram under the student — so a longer sentence is cut
+ * off at an ellipsis.
  * Measured: the strip's sentence is about 760px wide at its narrowest beside the
  * dock (a 1100px window) and the sans-serif runs a little over 6px a character.
  * A question's prompt is exempt: it sits in the question row, which wraps.
