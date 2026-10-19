@@ -180,21 +180,42 @@ export const LESSON = [
         reveal: ['revenue'],
         say: 'And the money that changes hands: the price times the quantity sold.'
     },
+    // "Where we started" is both params, not just the one the lesson moved.
+    // Setting `a` alone made this sentence false for any student who had moved
+    // supply on the way — "Input costs rise" and then this step left P* at
+    // 13.00, not 11.00, under a sentence saying the market was back where it
+    // started — and so did the two steps after it. The lesson's own steps only ever move `a`, which is
+    // how the gap hid: the author's walk through it never left `c`.
+    //
+    // Two params in one update is order-dependent in general, because the
+    // engine applies and validates them one at a time (plans README, finding
+    // 4). It is not here, and the reason is worth stating rather than relying
+    // on: the diagram declares no restrictions, and `a` (12–28) and `c` (0–8)
+    // are each bounded only by their own range, so every interim state between
+    // two legal markets is itself legal and either order lands in the same
+    // place. A restriction tying the two together could end that, and these
+    // three steps would then need the batched update the finding asks for.
     {
-        set: { a: 20 },
+        set: { a: 20, c: 2 },
         say: 'Back where we started, with every panel on screen.'
     },
     // The question the build-up was for (P11). It sets its own starting value
     // rather than inheriting whatever the student last left — the answer is
     // marked from where the question began, so where it begins should not
-    // depend on what they did while exploring. One param, so the non-atomic
-    // multi-param update cannot bite here; two would be order-dependent.
+    // depend on what they did while exploring. That includes supply: the
+    // target of 26 is "incomes rise again" from the baseline the step before
+    // announced, so the market the question starts in is that baseline.
+    //
+    // Resetting `c` here touches neither the arming nor the grade. The step's
+    // `set` is applied before the question is armed, while the screen is not
+    // yet listening for the asked param, so it is not read as an attempt; the
+    // snapshot is taken after it; and the grade reads `a` and only `a`.
     //
     // Direction is the question. The target makes the magnitude half real as
     // well, and gives the reveal something to draw — a direction-only question
     // has no "correct position", only a correct way.
     {
-        set: { a: 20 },
+        set: { a: 20, c: 2 },
         say: 'Now you. Incomes rise again — move demand to where it belongs, then check.',
         ask: { param: 'a', direction: 'up', target: 26, tolerance: 1 }
     },
@@ -203,7 +224,7 @@ export const LESSON = [
     // nearly true: the end of the build-up is the diagram as the config
     // declares it, with everything drawn and nothing left mid-demonstration.
     {
-        set: { a: 20 },
+        set: { a: 20, c: 2 },
         say: 'That is the mechanism: one shift, and price, quantity, surplus and revenue all move together. The market is yours now.'
     }
 ];
