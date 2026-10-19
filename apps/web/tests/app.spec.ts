@@ -368,6 +368,23 @@ test('no text on the stage lands on other text, in any arrangement', async ({ pa
     await noTextCollides(page, 'grid, wide');
 });
 
+/**
+ * The ghost's label and the live one, after a move too small to separate them.
+ *
+ * One arrow-key press on the dock's slider is a gesture of its own, so the ghost
+ * is a tenth of a unit from the live curve — and both labels used to be placed
+ * at the same x on it, `D₀` printed underneath `D`. The engine now slides the
+ * ghost's along its own line until it clears; this asks for the effect.
+ */
+test("a nudge keeps the ghost's label off the live one", async ({ page }) => {
+    await page.getByRole('slider', { name: 'a' }).focus();
+    await page.keyboard.press('ArrowRight');
+
+    // The ghost is up, label and all — otherwise there is nothing to collide.
+    await expect(page.locator(`${LABEL}:visible`)).toHaveCount(LABELS_PER_PANEL + GHOST_LABELS);
+    await expect.poll(() => textCollisions(page)).toEqual([]);
+});
+
 test('a curve can be dragged in the grid', async ({ page }) => {
     await page.getByText('Grid', { exact: true }).click();
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);

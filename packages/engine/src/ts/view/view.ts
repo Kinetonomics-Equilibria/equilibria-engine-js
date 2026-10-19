@@ -9,6 +9,7 @@ import { MarkerDefinition, Marker } from "./viewObjects/marker";
 import { ViewObjectDefinition, ViewObject } from "./viewObjects/viewObject";
 import { Sample, Movement, describeMovement, noiseFor } from "./movement";
 import { AxisMarks } from "./axisMarks";
+import { LabelYields } from "./labelYields";
 import { KG_EVENTS } from "../constants";
 import { parse } from "../KGAuthor/parsers/parsingFunctions";
 import { StepDefinition, compileSteps } from "../KGAuthor/parsers/steps";
@@ -563,9 +564,12 @@ export class View implements IView {
             });
         }
 
-        // Last, so that on every update it runs after every axis and label has
-        // redrawn: it decides which tick labels a dropline's label has covered,
-        // and that needs both of their boxes as they are now.
+        // Last, so that on every update they run after every axis and label has
+        // redrawn: one moves a ghost's label off the live label beside it, the
+        // other decides which tick labels a dropline's label has covered, and
+        // both need the boxes as they are now rather than as they were.
+        const labelYields = LabelYields.over(view.viewObjects);
+        if (labelYields) view.model.addUpdateListener(labelYields as any);
         const axisMarks = AxisMarks.over(view.viewObjects);
         if (axisMarks) view.model.addUpdateListener(axisMarks as any);
 

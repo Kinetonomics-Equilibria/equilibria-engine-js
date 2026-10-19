@@ -94,7 +94,7 @@ eventually.
 | The twin | The same def with every `params.x` read as `prev.params.x` and every `calcs.y` as `prev.calcs.y`, drawn dashed at 35% stroke opacity, *underneath* the live object. |
 | Its visibility | Whatever `show` you wrote, **and** `prev.changed`, **and** one of the object's own `params.x` / `calcs.y` bindings differing from its snapshot — so the ghost is off until the student has moved *this* object. Moving supply does not raise demand's ghost. |
 | A shift arrow | Only for an object that has a single position (a point). Two parallel lines have no one displacement between them; the arrow belongs on the equilibrium, not on the curves that cross there. |
-| Paired labels | The ghost keeps the label; the live object is relabelled with the schema's `newValueLabel` idiom for as long as the ghost is up — `D` and `D′` by default, `D_1` and `D_2` under `custom: '..1'`. Or, with `label: '_0'`, the ghost alone is qualified (`D_0`) and the live label never changes. |
+| Paired labels | The ghost keeps the label; the live object is relabelled with the schema's `newValueLabel` idiom for as long as the ghost is up — `D` and `D′` by default, `D_1` and `D_2` under `custom: '..1'`. Or, with `label: '_0'`, the ghost alone is qualified (`D_0`) and the live label never changes. Either way the two are placed at one coordinate, so after a small move the ghost's label slides along its own curve until it clears the live one, which stays put. |
 
 **What it does not inherit**
 

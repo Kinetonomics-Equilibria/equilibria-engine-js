@@ -1,6 +1,7 @@
 import { TypeAndDef } from "../../view/view";
 import { KGAuthorClasses } from "../classRegistry";
 import { anonymizeCopy } from "./nameRegistry";
+import { randomString } from "../../model/updateListener";
 import { combineShow } from "./steps";
 
 /**
@@ -364,6 +365,7 @@ function ghostDef(def: any, options: GhostDefinition, type: string): any {
     ghost.show = combineShow(show, moved(def));
 
     pairLabels(def, ghost, options);
+    yieldLabel(def, ghost);
 
     const overrides = { ...options };
     ['show', 'arrow', 'label'].forEach(function (key) { delete overrides[key]; });
@@ -405,6 +407,25 @@ function pairLabels(def: any, ghost: any, options: GhostDefinition) {
 
     ghost.label = { ...ghost.label, text: `concat(${text}, idioms.oldValueLabel)` };
     def.label.text = `(${ghost.show}) ? concat(${text}, idioms.newValueLabel) : ${text}`;
+}
+
+/**
+ * The ghost's label keeps clear of the live one, which stays put.
+ *
+ * Both are copied from one def, so both are placed at one coordinate, on two
+ * curves that a small move leaves a fraction of a unit apart. The view moves the
+ * ghost's along its own curve until it clears — see `view/labelYields.ts`. The
+ * link is a fresh id rather than the object's name, which the ghost does not
+ * have and which a label never carries.
+ *
+ * Whatever the pairing mode: with `label: false` the two still print the same
+ * text in the same place.
+ */
+function yieldLabel(def: any, ghost: any) {
+    if (!def.label || !ghost.label) return;
+    const id = randomString(8);
+    def.label.labelId = id;
+    ghost.label = { ...ghost.label, yieldsTo: id };
 }
 
 /** The move itself: from where the thing was to where it is. */

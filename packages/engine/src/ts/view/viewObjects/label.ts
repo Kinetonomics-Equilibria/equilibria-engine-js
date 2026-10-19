@@ -25,11 +25,20 @@ export interface LabelDefinition extends ViewObjectDefinition {
      * by — set by `Curve` in the authoring layer, never by hand. See `slide`.
      */
     along?: UnivariateFunctionDefinition;
+    /** See `Label.labelId` and `Label.yieldsTo`. */
+    labelId?: string;
+    yieldsTo?: string;
 }
 
 /** How finely `slide` looks along a curve before narrowing down on the edge. */
 const SLIDE_SAMPLES = 64;
 const SLIDE_REFINEMENTS = 16;
+
+/** Pixels kept between a label and the one it gives way to. */
+const LABEL_GAP = 2;
+
+/** A label's box in its panel's pixels — the coordinates `left` and `top` are written in. */
+export interface LabelBox { left: number; top: number; width: number; height: number; }
 
 /**
  * A label whose text is a bare name draws that name.
@@ -68,6 +77,14 @@ export class Label extends ViewObject {
     private size = { width: 0, height: 0 };
     /** Placed on an axis rather than in the plot; read by `AxisMarks`. */
     public axisMark: boolean;
+    /**
+     * A pairing between two labels, set by the `ghost` shorthand: the label
+     * whose `yieldsTo` names another's `labelId` keeps clear of it. Read by
+     * `LabelYields`; see `view/labelYields.ts`.
+     */
+    public labelId: string;
+    public yieldsTo: string;
+    private avoiding: LabelBox | null = null;
 
     constructor(def: LabelDefinition) {
 
@@ -140,6 +157,8 @@ export class Label extends ViewObject {
 
         this.along = along;
         this.axisMark = axisMark;
+        this.labelId = (def as any).labelId;
+        this.yieldsTo = (def as any).yieldsTo;
 
         // Default to the view's clearColor so labels visually blend with the chart background.
         // Schema authors can override this via the schema's clearColor property.
@@ -171,7 +190,7 @@ export class Label extends ViewObject {
      * bisecting asks only that the curve can be evaluated, which it must be to be
      * drawn at all.
      */
-    private slide(): { x: number, y: number } | null {
+    private slide(ok: (p: { x: number, y: number }) => boolean): { x: number, y: number } | null {
         const label = this,
             fn = label.along,
             byX = fn.ind !== 'y',
@@ -189,7 +208,7 @@ export class Label extends ViewObject {
             try { v = +fn.evaluate(t); } catch (e) { v = NaN; }
             return byX ? { x: t, y: v } : { x: v, y: t };
         };
-        const fits = (p: { x: number, y: number }) => isFinite(p.x) && isFinite(p.y) && label.fits(p);
+        const fits = (p: { x: number, y: number }) => isFinite(p.x) && isFinite(p.y) && ok(p);
 
         const wanted = byX ? +label.x : +label.y;
         if (isFinite(wanted)) {
@@ -246,20 +265,72 @@ export class Label extends ViewObject {
         }
 
         const left = Math.min(x0, x1) + margin, right = Math.max(x0, x1) - margin,
-            top = Math.min(y0, y1) + margin, bottom = Math.max(y0, y1) - margin;
+            top = Math.min(y0, y1) + margin, bottom = Math.max(y0, y1) - margin,
+            box = label.boxAt(p, width, height);
 
-        const ax = label.xScale.scale(p.x) + (+label.xPixelOffset),
-            ay = label.yScale.scale(p.y) - (+label.yPixelOffset),
-            boxLeft = ax - (label.align == 'left' ? 0 : label.align == 'right' ? width : width / 2),
-            boxTop = ay - (label.valign == 'top' ? 0 : label.valign == 'bottom' ? height : height / 2);
-
-        return boxLeft >= left && boxLeft + width <= right && boxTop >= top && boxTop + height <= bottom;
+        return box.left >= left && box.left + width <= right && box.top >= top && box.top + height <= bottom;
     }
 
-    /** Where the label is drawn: where the author put it, or the nearest place on its curve that fits. */
+    /** The box this label would occupy anchored at a point, in the panel's pixels. */
+    private boxAt(p: { x: number, y: number }, width: number, height: number): LabelBox {
+        const label = this,
+            ax = label.xScale.scale(p.x) + (+label.xPixelOffset),
+            ay = label.yScale.scale(p.y) - (+label.yPixelOffset);
+        return {
+            left: ax - (label.align == 'left' ? 0 : label.align == 'right' ? width : width / 2),
+            top: ay - (label.valign == 'top' ? 0 : label.valign == 'bottom' ? height : height / 2),
+            width, height
+        };
+    }
+
+    /**
+     * Does this label, anchored at a point, keep clear of the label it gives way to?
+     *
+     * A gap of a couple of pixels rather than mere non-intersection: two KaTeX
+     * boxes that touch read as one word.
+     */
+    private clears(p: { x: number, y: number }): boolean {
+        const label = this, other = label.avoiding;
+        if (!other) return true;
+        const box = label.boxAt(p, label.size.width, label.size.height);
+        return box.left + box.width + LABEL_GAP <= other.left || other.left + other.width + LABEL_GAP <= box.left
+            || box.top + box.height + LABEL_GAP <= other.top || other.top + other.height + LABEL_GAP <= box.top;
+    }
+
+    /**
+     * Where the label is drawn: where the author put it, or the nearest place on
+     * its curve that fits — and, for a label that gives way to another, the
+     * nearest that fits *and* keeps clear of it. When nowhere on the curve does
+     * both, keeping on the plot wins: an overlap is legible, a missing label is
+     * not.
+     */
     private placement(): { x: number, y: number } {
         const label = this;
-        return (label.along && label.slide()) || { x: label.x, y: label.y };
+        if (!label.along) return { x: label.x, y: label.y };
+        const inPanel = (p: { x: number, y: number }) => label.fits(p);
+        return (label.avoiding && label.slide(p => inPanel(p) && label.clears(p)))
+            || label.slide(inPanel)
+            || { x: label.x, y: label.y };
+    }
+
+    /**
+     * Keep off another label's box, and move now.
+     *
+     * Called by `LabelYields` once every object has drawn for this update, with
+     * the box the other label was just given, or with null when it is not on
+     * screen. Only the position is rewritten — the text, colour and size were
+     * set by this label's own redraw moments earlier in the same update.
+     */
+    giveWay(box: LabelBox | null) {
+        const label = this;
+        label.avoiding = box;
+        if (!label.along || !label.rootElement || label.rootElement.node().style.display === 'none') return;
+        const at = label.placement();
+        label.position(
+            label.xScale.scale(at.x) + (+label.xPixelOffset),
+            label.yScale.scale(at.y) - (+label.yPixelOffset),
+            label.size.width, label.size.height
+        );
     }
 
     /**
@@ -276,7 +347,7 @@ export class Label extends ViewObject {
         if (!label.along) return super.onGraph();
         if (!label.checkOnGraph) return true;
         if (label.along.hasChanged) label.hasChanged = true;
-        return label.slide() !== null;
+        return label.slide(p => label.fits(p)) !== null;
     }
 
     // create div for text
