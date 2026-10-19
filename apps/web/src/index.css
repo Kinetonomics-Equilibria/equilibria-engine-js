@@ -10,10 +10,11 @@
 }
 
 body {
-    /* The page sits on a subtle grey rather than flat white, so the diagram
-     * cards read as raised. `light-dark()` is provided by
-     * postcss-preset-mantine, so this follows the colour scheme. */
-    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+    /* The page is the same white as the diagrams' label backgrounds, so an
+     * axis label doesn't sit in a visible white box. `--mantine-color-body` is
+     * white in light mode and dark-7 in dark, so this follows the colour
+     * scheme. */
+    background: var(--mantine-color-body);
     /* No padding here: AppShell's sections are position: fixed and offset the
      * main area themselves, so page-level padding would push the shell out of
      * alignment. The content's breathing room is AppShell's `padding` prop. */
