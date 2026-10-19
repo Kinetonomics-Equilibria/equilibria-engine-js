@@ -68,7 +68,11 @@ function Instruments({ instruments, open, onOpenChange, context, focus }: {
 
             {instruments.map(i => (
                 <Tabs.Panel key={i.id} value={i.id} className={classes.panel}>
-                    <ScrollArea.Autosize className={classes.scroll} type="auto">
+                    {/* `hover`: a scrollbar when the student is pointing at the
+                      * instrument, and none otherwise. `auto` showed one for as
+                      * long as the content overflowed at all, so the maths sat
+                      * beside a permanent bar for want of fourteen pixels. */}
+                    <ScrollArea.Autosize className={classes.scroll} type="hover">
                         <div className={classes.panelInner}>
                             <i.Component
                                 {...context}

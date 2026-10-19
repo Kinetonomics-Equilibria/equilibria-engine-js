@@ -47,6 +47,24 @@ export interface NarratedCalc {
     unit?: string;
     /** Decimal places, where the calc's unit has a view of its own. See `calcPrecision`. */
     precision?: number;
+    /**
+     * The calc as a symbol in a formula, where its label is not one.
+     *
+     * The Maths instrument writes a calc the way its label reads, so `P*` is
+     * typeset `P^*` — the letter the diagram's dropline carries. A label written
+     * to sit in front of a number, like the exchange rate's "A$1 =", is no
+     * symbol at all, and this is what the formula calls it instead: `e^*`, as
+     * the diagram does. TeX, because the formula is.
+     */
+    tex?: string;
+    /**
+     * What the label stands for, in plain words: "Equilibrium price".
+     *
+     * The heading over the calc in the Maths instrument. The strip and the
+     * captions never print it — they are one line each, and a student reading
+     * them has the diagram's own letters beside them.
+     */
+    meaning?: string;
 }
 
 /**

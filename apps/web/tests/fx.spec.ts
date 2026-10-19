@@ -166,6 +166,38 @@ test('clears at the rate the lesson quotes, on both sides', async ({ page }) => 
     await expect(caption(page, 'mirror')).toContainText('US$1 = A$1.54');
 });
 
+/**
+ * The Maths instrument, in this lesson's letters and currencies.
+ *
+ * Its labels are written to sit in front of a number — "A$1 =" — so the
+ * formulas take the diagram's own symbols instead: `e*` from the market's
+ * dropline and `1/e*` from the mirror's. And every result is in the currency
+ * the caption quotes it in, because the caption is beside it.
+ */
+test('the maths instrument writes the rate as the diagram does', async ({ page }) => {
+    await toTheEnd(page);
+    await page.getByRole('tab', { name: 'Maths' }).click();
+    const open = page.getByRole('tabpanel');
+    const working = async (calc: string) =>
+        (await open.locator(`[data-calc="${calc}"] .katex-html`).innerText()).replace(/[\s\u200b]/g, '');
+
+    await expect(open.locator('[data-calc]')).toHaveCount(3);
+    await expect(open.locator('.katex-error')).toHaveCount(0);
+
+    expect(await working('rate')).toMatch(/^e∗=0\.65\+200demand−supply=0\.65\+20050−50=US\$0\.65$/);
+    await expect(caption(page, 'market')).toContainText('A$1 = US$0.65');
+
+    // `1/e*` is the whole of its formula, so it is said once, not twice.
+    expect(await working('inverse')).toMatch(/^e∗1=0\.651=A\$1\.54$/);
+    await page.getByRole('button', { name: 'Show US$ market' }).click();
+    await expect(caption(page, 'mirror')).toContainText('US$1 = A$1.54');
+
+    expect(await working('Qe')).toMatch(/^Q∗=2demand\+supply=250\+50=50$/);
+
+    // The words, upright and explained, rather than d·e·m·a·n·d in italics.
+    await expect(open.getByRole('definition')).toHaveText(['A$ demanded at US$0.65', 'A$ supplied at US$0.65']);
+});
+
 test('demand for A$ is dragged right, and the A$ appreciates', async ({ page, pageErrors }) => {
     await toTheEnd(page);
     const before = await focalPointCoordinates(page);

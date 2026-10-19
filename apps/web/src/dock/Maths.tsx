@@ -2,8 +2,12 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Code, Stack, Text } from '@mantine/core';
 import katex from 'katex';
 import type { InstrumentProps } from './types';
-import { isTypesettable, toSubstitutedTex, toSymbolicTex } from './mathsText';
-import type { Places } from './mathsText';
+import { calcPrecision, formatValue } from '../narration/narrate';
+import type { NarratedCalc } from '../narration/narrate';
+import {
+    isTypesettable, lessonSymbols, referencesOf, toResultTex, toSubstitutedTex, toSymbolicTex, toWorkingTex
+} from './mathsText';
+import type { Places, Symbols } from './mathsText';
 import classes from './Maths.module.css';
 
 /**
@@ -11,6 +15,9 @@ import classes from './Maths.module.css';
  *
  * Three lines — the formula, the formula with values substituted, the result —
  * and the middle one is the whole instrument. The other two are its endpoints.
+ * They are set as one derivation, `P* = (a + c)/2 = (24.0 + 2.0)/2 = $13.00`,
+ * in the diagram's own letters and the caption's own units, because a student
+ * reads it beside both and should not have to translate between them.
  *
  * This is the clearest place the product's reframe pays off: nobody writes this
  * content. `calcs` already hold their formulas as strings because the engine
@@ -19,36 +26,38 @@ import classes from './Maths.module.css';
  * one is zero.
  */
 
-function Tex({ tex }: { tex: string }) {
+function Tex({ tex, display = false }: { tex: string; display?: boolean }) {
     const ref = useRef<HTMLSpanElement | null>(null);
 
     useEffect(() => {
         if (!ref.current) return;
         try {
-            katex.render(tex, ref.current, { throwOnError: false, displayMode: false });
+            katex.render(tex, ref.current, { throwOnError: false, displayMode: display });
         } catch {
             // `throwOnError: false` already renders the error inline in red, so
             // reaching here means KaTeX failed structurally. The raw string is
             // more use to whoever has to fix it than an empty box.
             ref.current.textContent = tex;
         }
-    }, [tex]);
+    }, [tex, display]);
 
     return <span ref={ref} />;
 }
 
-function Row({ name, expression, calcs, params, prevCalcs, places, highlighted }: {
+function Row({ name, expression, calcs, params, prevCalcs, places, symbols, narrated, highlighted }: {
     name: string;
     expression: string;
     calcs: Record<string, number | string>;
     params: Record<string, number>;
     prevCalcs: Record<string, unknown> | null;
     places: Places;
+    symbols: Symbols;
+    narrated: NarratedCalc | undefined;
     highlighted: boolean;
 }) {
     const value = calcs[name];
 
-    const symbolic = useMemo(() => toSymbolicTex(expression), [expression]);
+    const symbolic = useMemo(() => toSymbolicTex(expression, symbols), [expression, symbols]);
     const substituted = useMemo(
         () => toSubstitutedTex(expression, calcs, params, prevCalcs, places),
         [expression, calcs, params, prevCalcs, places]
@@ -57,22 +66,25 @@ function Row({ name, expression, calcs, params, prevCalcs, places, highlighted }
     // Parsing is not the test — `colors.demand` parses fine and typesets into
     // confident nonsense. What separates a formula from a color name is whether
     // the engine got a number out of it.
-    const showable = isTypesettable(value) && symbolic !== null;
+    const working = isTypesettable(value) && symbolic !== null
+        ? toWorkingTex(symbols('calcs', name), [
+            symbolic,
+            substituted,
+            toResultTex(value as number, places('calcs', name), narrated && narrated.unit)
+        ])
+        : null;
+
+    // The words, where the lesson has them. The letters are the first thing
+    // in the working underneath, so a heading that repeated them would say the
+    // same thing twice in the same few pixels.
+    const heading = narrated ? narrated.meaning || narrated.label : name;
 
     return (
-        <div className={highlighted ? classes.rowFocused : classes.row}>
-            <Text component="div" size="sm" fw={600} className={classes.name}>{name}</Text>
+        <div className={highlighted ? classes.rowFocused : classes.row} data-calc={name}>
+            <Text component="div" size="xs" fw={600} className={classes.name}>{heading}</Text>
 
-            {showable ? (
-                <div className={classes.lines}>
-                    <div><Tex tex={symbolic!} /></div>
-                    {substituted ? (
-                        <div className={classes.substituted}><Tex tex={substituted} /></div>
-                    ) : null}
-                    <div className={classes.result}>
-                        = {(value as number).toFixed(places('calcs', name))}
-                    </div>
-                </div>
+            {working ? (
+                <div className={classes.lines}><Tex tex={working} display /></div>
             ) : (
                 // Honest and still useful. A calc that is a color, a label or a
                 // forward reference is not broken, and rendering it as maths
@@ -83,14 +95,42 @@ function Row({ name, expression, calcs, params, prevCalcs, places, highlighted }
     );
 }
 
+/**
+ * What the letters in the formulas stand for, and what they are now.
+ *
+ * Once, above every formula, rather than under each: `a` means the same thing
+ * in all three of the formulas it appears in, and three copies of one sentence
+ * would cost the height that lets every calc be read without scrolling.
+ */
+function Key({ entries }: { entries: { name: string; tex: string; meaning: string }[] }) {
+    return (
+        <dl className={classes.key}>
+            {entries.map(entry => (
+                <div key={entry.name} className={classes.entry}>
+                    <dt><Tex tex={entry.tex} /></dt>
+                    <dd>{entry.meaning}</dd>
+                </div>
+            ))}
+        </dl>
+    );
+}
+
 export interface MathsProps extends InstrumentProps {
     /**
-     * Decimal places for a calc's value — the app's one answer, shared with the
-     * strip and the panel captions. Per calc, because money is printed to the
-     * cent and a quantity is not, and a result that read "= 13.0" beside a
-     * caption reading "$13.00" would be two answers to one question.
+     * What the lesson calls each calc: its label, unit and decimals, and the
+     * symbol and words the formulas use for it.
+     *
+     * The decimals are the app's one answer, shared with the strip and the
+     * panel captions, because a result that read "= 13.0" beside a caption
+     * reading "$13.00" would be two answers to one question. The symbol is the
+     * same argument made about letters: the diagram labels the equilibrium P*,
+     * and a formula calling it `Pe` is a second name for a thing a student was
+     * only just taught the first one of. A calc the lesson does not name is
+     * written as its own name, to one decimal.
      */
-    precision(calc: string): number;
+    narrated?: Record<string, NarratedCalc>;
+    /** What a param means, where its label does not say. See `StudyContent`. */
+    paramMeanings?: Record<string, string>;
     /**
      * The `prev` calc values, so a calc over `prev` substitutes the same numbers
      * the ghosts are drawn from. `unknown` because a calc is not always a
@@ -100,7 +140,11 @@ export interface MathsProps extends InstrumentProps {
     prevCalcs?: Record<string, unknown> | null;
 }
 
-export function Maths({ calcs, calcExpressions, params, focus, precision, prevCalcs = null }: MathsProps) {
+const NONE: Record<string, never> = {};
+
+export function Maths({
+    calcs, calcExpressions, params, focus, narrated = NONE, paramMeanings = NONE, prevCalcs = null
+}: MathsProps) {
     const paramValues = useMemo(() => {
         const out: Record<string, number> = {};
         params.forEach(p => { out[p.name] = p.value });
@@ -112,8 +156,10 @@ export function Maths({ calcs, calcExpressions, params, focus, precision, prevCa
     const places = useMemo<Places>(() => {
         const declared: Record<string, number> = {};
         params.forEach(p => { declared[p.name] = p.precision });
-        return (scope, name) => scope === 'params' ? declared[name] : precision(name);
-    }, [params, precision]);
+        return (scope, name) => scope === 'params' ? declared[name] : calcPrecision(narrated[name]);
+    }, [params, narrated]);
+
+    const symbols = useMemo(() => lessonSymbols(narrated), [narrated]);
 
     // Opened *at* something, by P8's "why?". The named calc goes first — the
     // student asked about that one, and making them find it in a list is a way
@@ -124,12 +170,37 @@ export function Maths({ calcs, calcExpressions, params, focus, precision, prevCa
         return [focus.calc].concat(all.filter(n => n !== focus.calc));
     }, [calcExpressions, focus]);
 
+    // Every param a typeset formula uses, in the order the diagram declares
+    // them, and only those with something to say. A param with no label is
+    // labelled with its own name, and "a = 20.0: a" is not a key.
+    const key = useMemo(() => {
+        const used: Record<string, boolean> = {};
+        names
+            .filter(name => isTypesettable(calcs[name]))
+            .forEach(name => referencesOf(calcExpressions[name]).forEach(ref => {
+                if (ref.scope === 'params' && !ref.isPrev) used[ref.name] = true;
+            }));
+        return params
+            .filter(p => used[p.name])
+            .map(p => ({
+                name: p.name,
+                tex: symbols('params', p.name) + ' = ' + formatValue(p.value, p.precision),
+                meaning: paramMeanings[p.name] || (p.label !== p.name ? p.label : '')
+            }))
+            .filter(entry => entry.meaning);
+    }, [names, calcs, calcExpressions, params, paramMeanings, symbols]);
+
     if (names.length === 0) {
         return <Text size="sm" c="dimmed">This diagram computes nothing to explain.</Text>;
     }
 
     return (
-        <Stack gap="lg">
+        // Spaced to fit. Four calcs, each a heading and three lines of display
+        // maths, are taller than the dock at a laptop's height by about the
+        // gaps between them at `lg`, and the row's own tint is what separates
+        // the focused one — the space does not have to.
+        <Stack gap={6}>
+            {key.length > 0 ? <Key entries={key} /> : null}
             {names.map(name => (
                 <Row
                     key={name}
@@ -139,6 +210,8 @@ export function Maths({ calcs, calcExpressions, params, focus, precision, prevCa
                     params={paramValues}
                     prevCalcs={prevCalcs}
                     places={places}
+                    symbols={symbols}
+                    narrated={narrated[name]}
                     highlighted={focus?.calc === name}
                 />
             ))}

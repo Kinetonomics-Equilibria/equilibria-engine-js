@@ -44,6 +44,18 @@ export interface StudyContent {
     /** The calcs the Maths instrument typesets, by name. */
     explainedCalcs: Record<string, string>;
 
+    /**
+     * What a param in those formulas means, in words, for the Maths key.
+     *
+     * The engine's `label` says it when the author gave one, and this is for
+     * when that is not enough — or not there. A param with no label is labelled
+     * with its own name, which is how the first lesson's `a` and `c` reach a
+     * student: as letters in a formula with nothing anywhere saying what they
+     * are. Giving them engine labels instead would rename them in the strip and
+     * the sliders too, where the letter is the point and the width is spent.
+     */
+    paramMeanings?: Record<string, string>;
+
     /** Which params draw a question's start and answer, per askable param. */
     questionApparatus: Record<string, { start: string; answer: string }>;
 

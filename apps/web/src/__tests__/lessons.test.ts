@@ -7,6 +7,11 @@ import { candidatesOf, nearestAchievable, validateChoice, validateQuestion } fro
 import { parkApparatus } from '../quiz/apparatus';
 import { verdictFor } from '../quiz/verdict';
 import { grade } from '../quiz/grade';
+import katex from 'katex';
+import {
+    lessonSymbols, referencesOf, toResultTex, toSubstitutedTex, toSymbolicTex, toWorkingTex
+} from '../dock/mathsText';
+import type { NarratedCalc } from '../narration/narrate';
 
 /**
  * Every lesson, held to the things a lesson can get wrong without anything
@@ -180,6 +185,52 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
             expect(calcs[panel.delta], `panel "${panel.key}" delta "${panel.delta}"`).toBeDefined();
         });
         narrated.forEach(name => expect(calcs[name], `narrated calc "${name}"`).toBeDefined());
+    });
+
+    // What the Maths instrument sets for every calc it explains, built as it
+    // builds it, with every value a 1 — the TeX does not depend on the numbers,
+    // and a lesson's calcs are only numbers once an engine has solved them.
+    // KaTeX renders an error in red rather than throwing, so a calc that
+    // typeset into nonsense would look, to everything but this, like maths.
+    it('typesets every calc it explains, in its own symbols', () => {
+        const narrated: Record<string, NarratedCalc> = {};
+        lesson.narratedCalcs.forEach(c => { narrated[c.name] = c });
+        const symbols = lessonSymbols(narrated);
+        const ones = (expression: string) => {
+            const out: Record<string, number> = {};
+            referencesOf(expression).forEach(r => { out[r.name] = 1 });
+            return out;
+        };
+
+        Object.keys(lesson.explainedCalcs).forEach(name => {
+            const expression = lesson.explainedCalcs[name];
+            const formula = toSymbolicTex(expression, symbols);
+            const substituted = toSubstitutedTex(expression, ones(expression), ones(expression), null, () => 2);
+            expect(formula, `calc "${name}" parses`).not.toBeNull();
+            expect(substituted, `calc "${name}" substitutes`).not.toBeNull();
+
+            const tex = toWorkingTex(symbols('calcs', name), [formula, substituted, toResultTex(1, 2)]);
+            expect(() => katex.renderToString(tex, { throwOnError: true, displayMode: true }), tex).not.toThrow();
+            // Every calc it uses is written as the lesson writes it, not by key.
+            referencesOf(expression).filter(r => r.scope === 'calcs').forEach(r => {
+                expect(lesson.narratedCalcs.map(c => c.name), `calc "${name}" uses "${r.name}"`).toContain(r.name);
+            });
+            expect(narrated[name], `calc "${name}" is named`).toBeDefined();
+        });
+    });
+
+    // The key above the formulas says what each letter means. A letter with
+    // nothing to say is left out of it, which is right for a param and wrong
+    // for a lesson: it is a letter in a formula that nothing explains.
+    it('says what every letter in its formulas means', () => {
+        const meanings = lesson.paramMeanings || {};
+        Object.keys(lesson.explainedCalcs).forEach(name => {
+            referencesOf(lesson.explainedCalcs[name]).filter(r => r.scope === 'params').forEach(r => {
+                const def = paramNamed(lesson, r.name);
+                expect(meanings[r.name] || (def.label !== undefined && def.label !== def.name),
+                    `param "${r.name}" in calc "${name}"`).toBeTruthy();
+            });
+        });
     });
 });
 

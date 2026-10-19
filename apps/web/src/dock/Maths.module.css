@@ -1,12 +1,16 @@
 .row,
 .rowFocused {
-    padding: var(--mantine-spacing-xs);
+    padding: 4px var(--mantine-spacing-xs);
     border-radius: var(--mantine-radius-sm);
 }
 
-/* The calc the student actually asked about, when they arrived by "why?". */
+/* The calc the student actually asked about, when they arrived by "why?".
+ *
+ * The primary colour's light tint, not the hover grey this used to be: the page
+ * behind the dock is that same grey, so the row a student asked about was
+ * marked in a colour nobody could see. */
 .rowFocused {
-    background: var(--mantine-color-default-hover);
+    background: var(--mantine-primary-color-light);
 }
 
 .name {
@@ -14,22 +18,55 @@
 }
 
 .lines {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    /* KaTeX lays out wider than its container on a long expression, and the dock
-     * is a fixed 320px on purpose. Scroll the maths, not the page. */
+    /* KaTeX scales itself from the text around it, and at the page's 16px it
+     * set a display fraction too tall for four calcs to fit beside the stage.
+     * Sized from the small text the headings are in instead. */
+    font-size: var(--mantine-font-size-sm);
+    /* A display formula does not wrap, and the dock is a fixed 320px on
+     * purpose. Scroll the maths, not the page. */
     overflow-x: auto;
+    /* The scroll box clips at its own edge, and a fraction's bar or a
+     * subscript can sit a pixel or two outside the formula's box. */
+    padding: 2px 0;
 }
 
-/* The line doing the teaching, so it is the one with weight. */
-.substituted {
+/* Display maths is centred with an em of margin either side, which is right in
+ * a page of prose and wrong in a column of them: every formula would start at a
+ * different place, and the gaps would be the formulas' and not the column's. */
+.lines :global(.katex-display) {
+    margin: 0;
+    text-align: left;
+}
+
+.lines :global(.katex-display > .katex) {
+    text-align: left;
+}
+
+.key {
+    /* A grid of two columns rather than a row per entry, so the meanings
+     * start in one place whether the letter beside them is `c = 2.0` or
+     * `demand = 50`. */
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 0.75em;
+    align-items: baseline;
+    margin: 0;
+    padding: 0 var(--mantine-spacing-xs);
+    font-size: var(--mantine-font-size-xs);
+    color: var(--mantine-color-dimmed);
+}
+
+/* Its entries are a `div` each, for the `dl`'s sake, and none for the grid's. */
+.entry {
+    display: contents;
+}
+
+.entry dt {
     color: var(--mantine-color-text);
 }
 
-.result {
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
+.entry dd {
+    margin: 0;
 }
 
 .raw {

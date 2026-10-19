@@ -387,11 +387,22 @@ const PANELS = [
  * cent, because that is how a rate is quoted. The caption, its chip and the
  * strip then read "A$1 = US$0.65 → US$0.70" without anyone formatting a rate
  * twice.
+ *
+ * A label made to sit in front of a number is no symbol for a formula, so the
+ * two rates carry the diagram's own: `e*` on the A$ market's dropline and
+ * `1/e*` on the US$ market's. The second is also the whole of its formula, and
+ * the Maths instrument says so once rather than twice.
  */
 const NARRATED_CALCS = [
-    { name: 'rate', label: 'A$1 =', unit: 'US$', precision: 2 },
-    { name: 'inverse', label: 'US$1 =', unit: 'A$', precision: 2 },
-    { name: 'Qe', label: 'Q*', precision: 0 }
+    {
+        name: 'rate', label: 'A$1 =', unit: 'US$', precision: 2,
+        tex: 'e^*', meaning: 'Exchange rate: the price of A$1 in US$'
+    },
+    {
+        name: 'inverse', label: 'US$1 =', unit: 'A$', precision: 2,
+        tex: '\\frac{1}{e^*}', meaning: 'The price of US$1 in A$'
+    },
+    { name: 'Qe', label: 'Q*', precision: 0, meaning: 'Quantity of A$ traded' }
 ];
 
 /**
@@ -463,6 +474,12 @@ export const FOREIGN_EXCHANGE: StudyContent = {
     panels: PANELS,
     narratedCalcs: NARRATED_CALCS,
     explainedCalcs: explainable(calcs),
+    // The engine's labels, "Demand for A$", say which curve and not what the
+    // number is. It is that curve's quantity at the rate the lesson starts at.
+    paramMeanings: {
+        demand: 'A$ demanded at US$0.65',
+        supply: 'A$ supplied at US$0.65'
+    },
     questionApparatus: {
         demand: { start: 'startDemand', answer: 'answerDemand' },
         supply: { start: 'startSupply', answer: 'answerSupply' }

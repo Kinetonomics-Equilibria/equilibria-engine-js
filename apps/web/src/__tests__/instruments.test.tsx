@@ -141,44 +141,105 @@ describe('Scenarios', () => {
 
 describe('Maths', () => {
     const props = () => base({
-        calcs: { Qe: 11, Pe: 13, band: '#ff0000' },
+        calcs: { Qe: 11, Pe: 13, TR: 143, band: '#ff0000' },
         calcExpressions: {
             Qe: '(params.a - params.c)/2',
             Pe: '(params.a + params.c)/2',
+            TR: 'calcs.Pe * calcs.Qe',
             band: 'colors.demand'
         },
-        params: [param({ name: 'a', value: 24 }), param({ name: 'c', value: 2 })]
+        params: [param({ name: 'a', value: 24 }), param({ name: 'c', label: 'c', value: 2 })]
     });
 
-    /** One decimal for every calc, where the test is not about precision. */
-    const ONE = () => 1;
+    /** What the lesson calls them: P* in dollars to the cent, Q* to the default tenth. */
+    const NARRATED = {
+        Pe: { name: 'Pe', label: 'P*', meaning: 'Equilibrium price', unit: '$', precision: 2 },
+        Qe: { name: 'Qe', label: 'Q*', meaning: 'Equilibrium quantity' }
+    };
+
+    /** A row's maths as it is seen, without KaTeX's spacing or its MathML copy. */
+    const seen = (calc: string) => {
+        const row = document.querySelector(`[data-calc="${calc}"] .katex-html`);
+        return (row ? row.textContent || '' : '').replace(/[\s\u200b]/g, '');
+    };
+
+    /** The TeX a row was set from. */
+    const source = (calc: string) =>
+        document.querySelector(`[data-calc="${calc}"] annotation`)?.textContent || '';
+
+    const order = () => Array.from(document.querySelectorAll('[data-calc]')).map(n => n.getAttribute('data-calc'));
 
     // Per calc, because the app prints money to the cent and a quantity to a
     // tenth — and the result line has to agree with the caption beside it.
-    it('shows the result of each calc at the app precision for that calc', () => {
-        view(<Maths {...props()} precision={name => name === 'Pe' ? 2 : 1} />);
-        expect(screen.getByText('= 11.0')).toBeDefined();
-        expect(screen.getByText('= 13.00')).toBeDefined();
+    it('ends each calc on its result, at the lesson\'s precision and in its unit', () => {
+        view(<Maths {...props()} narrated={NARRATED} />);
+        expect(seen('Qe')).toMatch(/=11\.0$/);
+        expect(seen('Pe')).toMatch(/=\$13\.00$/);
+    });
+
+    // The diagram's dropline says P*. `Pe` is the engine's key for it, and
+    // typeset as it was it read as P times e.
+    it('writes each calc in the lesson\'s symbol, wherever it appears', () => {
+        view(<Maths {...props()} narrated={NARRATED} />);
+        expect(source('Pe')).toMatch(/^\\begin\{aligned\}P\^\* &=/);
+        expect(source('TR')).toContain('P^*');
+        expect(source('TR')).toContain('Q^*');
+        expect(source('TR')).not.toMatch(/Pe|Qe/);
+    });
+
+    it('heads each calc with its plain words, or its name when there are none', () => {
+        view(<Maths {...props()} narrated={NARRATED} />);
+        const heading = (calc: string) => document.querySelector(`[data-calc="${calc}"]`)!.firstElementChild!.textContent;
+        expect(heading('Pe')).toBe('Equilibrium price');
+        expect(heading('TR')).toBe('TR');
+    });
+
+    // `displayMode: false` set a fraction in text style, at the height of the
+    // text beside it.
+    it('sets the maths in display style', () => {
+        const { container } = view(<Maths {...props()} narrated={NARRATED} />);
+        expect(container.querySelectorAll('[data-calc] .katex-display')).toHaveLength(3);
     });
 
     // Parsing is not the test — `colors.demand` parses fine and would typeset
     // into confident nonsense. What separates a formula from a color is whether
     // the engine got a number out of it.
     it('falls back to the plain expression when a calc is not a number', () => {
-        view(<Maths {...props()} precision={ONE} />);
+        view(<Maths {...props()} />);
         expect(screen.getByText('colors.demand')).toBeDefined();
     });
 
+    // `a` and `c` were letters in a formula with nothing anywhere saying what
+    // they are. `c` here has no label of its own, so it is in the key only
+    // when the lesson says what it means.
+    it('keys the letters it uses, with what they mean and what they are now', () => {
+        view(<Maths {...props()} narrated={NARRATED} />);
+        const key = screen.getByRole('definition').closest('dl')!;
+        expect(key.textContent).toContain('Demand intercept');
+        expect(key.querySelector('annotation')!.textContent).toBe('a = 24.0');
+        expect(screen.getAllByRole('definition')).toHaveLength(1);
+    });
+
+    it('takes a lesson\'s words for a param over its label', () => {
+        view(<Maths {...props()} narrated={NARRATED} paramMeanings={{ c: 'where supply meets the P axis' }} />);
+        expect(screen.getAllByRole('definition').map(d => d.textContent))
+            .toEqual(['Demand intercept', 'where supply meets the P axis']);
+    });
+
+    it('has no key when no letter has a meaning', () => {
+        view(<Maths {...props()} params={[param({ name: 'a', label: 'a' }), param({ name: 'c', label: 'c' })]} />);
+        expect(screen.queryByRole('definition')).toBeNull();
+    });
+
     // A student who asked "why?" about P* should not have to find it in a list.
-    it('puts the calc it was opened at first', () => {
-        view(<Maths {...props()} precision={ONE} focus={{ calc: 'Pe' }} />);
-        const names = screen.getAllByText(/^(Qe|Pe|band)$/).map(n => n.textContent);
-        expect(names[0]).toBe('Pe');
+    it('puts the calc it was opened at first, and marks it', () => {
+        const { container } = view(<Maths {...props()} narrated={NARRATED} focus={{ calc: 'Pe' }} />);
+        expect(order()[0]).toBe('Pe');
+        expect(container.querySelector('[class*="rowFocused"]')!.getAttribute('data-calc')).toBe('Pe');
     });
 
     it('lists calcs in declaration order when opened at nothing', () => {
-        view(<Maths {...props()} precision={ONE} />);
-        const names = screen.getAllByText(/^(Qe|Pe|band)$/).map(n => n.textContent);
-        expect(names).toEqual(['Qe', 'Pe', 'band']);
+        view(<Maths {...props()} />);
+        expect(order()).toEqual(['Qe', 'Pe', 'TR', 'band']);
     });
 });

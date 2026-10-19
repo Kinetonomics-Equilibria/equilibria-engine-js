@@ -81,8 +81,7 @@ function prepare(content: StudyContent) {
     return {
         steps: content.lesson,
         panelKeys: content.panels.map(p => p.key),
-        narrated,
-        precisionOf: (calc: string) => calcPrecision(narrated[calc])
+        narrated
     };
 }
 
@@ -167,10 +166,10 @@ export interface StudyScreenProps {
 
 export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const {
-        diagram, panels, narratedCalcs, explainedCalcs, scenarios,
+        diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, scenarios,
         questionApparatus, directionWords
     } = content;
-    const { steps, panelKeys, narrated, precisionOf } = useMemo(() => prepare(content), [content]);
+    const { steps, panelKeys, narrated } = useMemo(() => prepare(content), [content]);
 
     const [focused, setFocused] = useState<string>(panels[0].key);
     const [mode, setMode] = useState<StageMode>('focus');
@@ -1008,8 +1007,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * The instruments, and what they are all handed.
      *
      * Scenarios and Maths need a little more than the shared contract, and both
-     * extras are content rather than capability — the scenario list, and the
-     * app's one answer for how many decimals each calc is worth. Bound here so
+     * extras are content rather than capability — the scenario list, and what
+     * the lesson calls each number: its symbol, its words, its unit and its
+     * decimals, which are the app's one answer for each. Bound here so
      * the contract itself stays the narrow thing every instrument gets.
      */
     const instruments: Instrument[] = useMemo(() => [
@@ -1025,12 +1025,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             Component: (props: InstrumentProps) => (
                 <Maths
                     {...props}
-                    precision={precisionOf}
+                    narrated={narrated}
+                    paramMeanings={paramMeanings}
                     prevCalcs={before.current ? before.current.calcs : null}
                 />
             )
         }
-    ], [scenarios, precisionOf]);
+    ], [scenarios, narrated, paramMeanings]);
 
     const dockContext = useMemo(() => ({
         params: dockParams,

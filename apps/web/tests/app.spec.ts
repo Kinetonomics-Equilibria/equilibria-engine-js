@@ -747,21 +747,86 @@ test('the maths instrument shows the calc the strip named', async ({ page }) => 
     // calc it named — not by a list the student has to search.
     await expect(page.getByRole('tab', { name: 'Maths' })).toHaveAttribute('aria-selected', 'true');
 
-    const names = await page.locator('[class*="rowFocused"]').first().textContent();
-    expect(names).toContain('Pe');
+    const rows = page.getByRole('tabpanel').locator('[data-calc]');
+    await expect(rows.first()).toHaveAttribute('data-calc', 'Pe');
+    await expect(page.locator('[class*="rowFocused"]')).toHaveAttribute('data-calc', 'Pe');
 });
+
+/** A row of the Maths instrument as it reads: KaTeX's text, without its spacing. */
+async function workingOf(page: Page, calc: string) {
+    const seen = await page.getByRole('tabpanel').locator(`[data-calc="${calc}"] .katex-html`).innerText();
+    return seen.replace(/[\s\u200b]/g, '');
+}
 
 test('the maths instrument prints the same numbers as the diagram', async ({ page }) => {
     await page.getByRole('tab', { name: 'Maths' }).click();
 
     // The whole reframe: the explainer is the calc string typeset, so it cannot
     // hold a number the diagram disagrees with. If these two differed, one of
-    // them would be doing its own arithmetic.
-    const open = page.getByRole('tabpanel');
-    await expect(open.getByText('= 11.00')).toBeVisible();
+    // them would be doing its own arithmetic. In the same unit, too: the result
+    // is typeset now, and carries the caption's dollar sign rather than a bare
+    // number in a different typeface.
+    expect(await workingOf(page, 'Pe')).toMatch(/^P∗=2a\+c=220\.0\+2\.0=\$11\.00$/);
 
     const caption = (await page.getByText('P* $11.00').first().textContent())!;
-    expect(caption).toContain('11.00');
+    expect(caption).toContain('$11.00');
+});
+
+/**
+ * The Maths instrument at the height the audit measured it at.
+ *
+ * At 1440×833 its four calcs overflowed the dock by fourteen pixels, so a
+ * scrollbar stood beside them for good — and that was with every fraction set
+ * at the height of the text beside it. Now they are set in display style, which
+ * is taller, and the spacing between calcs is what paid for it.
+ */
+test('the maths instrument fits beside the stage at a laptop\'s height', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 833 });
+    await page.getByRole('tab', { name: 'Maths' }).click();
+
+    const open = page.getByRole('tabpanel');
+    await expect(open.locator('[data-calc]')).toHaveCount(4);
+
+    const box = await open.locator('.mantine-ScrollArea-viewport')
+        .evaluate(el => ({ client: el.clientHeight, scroll: el.scrollHeight }));
+    expect(box.scroll, `content ${box.scroll}px in ${box.client}px`).toBeLessThanOrEqual(box.client);
+
+    // And pointing at it raises no scrollbar, because there is nothing to scroll.
+    await open.hover();
+    await expect(open.locator('.mantine-ScrollArea-scrollbar[data-state="visible"]')).toHaveCount(0);
+
+    // A display fraction is two lines of maths tall. In text style — which is
+    // what `displayMode: false` gave — it was squeezed into one and a half.
+    const fraction = await open.locator('[data-calc="Pe"] .mfrac').first().evaluate(el => {
+        let top = Infinity, bottom = -Infinity;
+        el.querySelectorAll('span').forEach(s => {
+            if (s.children.length || !(s.textContent || '').trim()) return;
+            const r = s.getBoundingClientRect();
+            top = Math.min(top, r.top);
+            bottom = Math.max(bottom, r.bottom);
+        });
+        return { height: bottom - top, font: parseFloat(getComputedStyle(el.closest('.katex')!).fontSize) };
+    });
+    expect(fraction.height).toBeGreaterThan(2 * fraction.font);
+});
+
+/** Where the dock is too short for its maths, it scrolls — and says so only when asked. */
+test('the maths instrument scrolls when it must, with a bar only on hover', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 700 });
+    await page.getByRole('tab', { name: 'Maths' }).click();
+
+    const open = page.getByRole('tabpanel');
+    const viewport = open.locator('.mantine-ScrollArea-viewport');
+    const box = await viewport.evaluate(el => ({ client: el.clientHeight, scroll: el.scrollHeight }));
+    expect(box.scroll).toBeGreaterThan(box.client);
+
+    const bar = open.locator('.mantine-ScrollArea-scrollbar[data-state="visible"]');
+    await expect(bar).toHaveCount(0);
+
+    await open.hover();
+    await expect(bar).toHaveCount(1);
+    await page.mouse.wheel(0, 200);
+    await expect.poll(() => viewport.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
 });
 
 test('a scenario applies every param it names', async ({ page }) => {

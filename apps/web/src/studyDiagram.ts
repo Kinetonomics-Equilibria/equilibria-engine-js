@@ -385,11 +385,24 @@ const MONEY = { unit: '$', precision: 2 };
  * entry is what "why?" opens the maths explainer on.
  */
 export const NARRATED_CALCS = [
-    { name: 'Pe', label: 'P*', ...MONEY },
-    { name: 'Qe', label: 'Q*' },
-    { name: 'CS', label: 'CS', ...MONEY },
-    { name: 'TR', label: 'TR', ...MONEY }
+    { name: 'Pe', label: 'P*', meaning: 'Equilibrium price', ...MONEY },
+    { name: 'Qe', label: 'Q*', meaning: 'Equilibrium quantity' },
+    { name: 'CS', label: 'CS', meaning: 'Consumer surplus', ...MONEY },
+    { name: 'TR', label: 'TR', meaning: 'Total revenue', ...MONEY }
 ];
+
+/**
+ * What `a` and `c` are, for the Maths instrument's key.
+ *
+ * The curves are `P = a − Q` and `P = c + Q`, so each param is where its curve
+ * meets the price axis — which a student can see, and check, on the diagram
+ * beside the formula. The params themselves stay unlabelled: the strip and the
+ * sliders call them `a` and `c`, and so do the formulas this explains.
+ */
+export const PARAM_MEANINGS = {
+    a: 'where demand meets the P axis',
+    c: 'where supply meets the P axis'
+};
 
 /**
  * The calcs worth explaining, and their formulas.
