@@ -150,29 +150,34 @@ describe('Maths', () => {
         params: [param({ name: 'a', value: 24 }), param({ name: 'c', value: 2 })]
     });
 
-    it('shows the result of each calc at the app precision', () => {
-        view(<Maths {...props()} precision={1} />);
+    /** One decimal for every calc, where the test is not about precision. */
+    const ONE = () => 1;
+
+    // Per calc, because the app prints money to the cent and a quantity to a
+    // tenth — and the result line has to agree with the caption beside it.
+    it('shows the result of each calc at the app precision for that calc', () => {
+        view(<Maths {...props()} precision={name => name === 'Pe' ? 2 : 1} />);
         expect(screen.getByText('= 11.0')).toBeDefined();
-        expect(screen.getByText('= 13.0')).toBeDefined();
+        expect(screen.getByText('= 13.00')).toBeDefined();
     });
 
     // Parsing is not the test — `colors.demand` parses fine and would typeset
     // into confident nonsense. What separates a formula from a color is whether
     // the engine got a number out of it.
     it('falls back to the plain expression when a calc is not a number', () => {
-        view(<Maths {...props()} precision={1} />);
+        view(<Maths {...props()} precision={ONE} />);
         expect(screen.getByText('colors.demand')).toBeDefined();
     });
 
     // A student who asked "why?" about P* should not have to find it in a list.
     it('puts the calc it was opened at first', () => {
-        view(<Maths {...props()} precision={1} focus={{ calc: 'Pe' }} />);
+        view(<Maths {...props()} precision={ONE} focus={{ calc: 'Pe' }} />);
         const names = screen.getAllByText(/^(Qe|Pe|band)$/).map(n => n.textContent);
         expect(names[0]).toBe('Pe');
     });
 
     it('lists calcs in declaration order when opened at nothing', () => {
-        view(<Maths {...props()} precision={1} />);
+        view(<Maths {...props()} precision={ONE} />);
         const names = screen.getAllByText(/^(Qe|Pe|band)$/).map(n => n.textContent);
         expect(names).toEqual(['Qe', 'Pe', 'band']);
     });

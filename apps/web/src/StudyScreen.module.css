@@ -116,6 +116,34 @@
     flex: none;
 }
 
+/* "Market · P* $13.00" on one line. In a column the line break is the
+ * separator, and a dot left at the end of the name's line would be stray. */
+.separator {
+    flex: none;
+    color: var(--mantine-color-dimmed);
+}
+
+.rail .separator,
+.strip .separator {
+    display: none;
+}
+
+/* A strip's column is narrow and its panel has height to spare beside it, so
+ * the chip goes under the number rather than beside it: "TR $160.00" and
+ * "▲ $69.00" side by side are wider than the room the stage keeps, and
+ * `.values` does not give way. Still anchored at the bottom, so the name rises
+ * a line when the chip arrives rather than the chip dropping into whatever is
+ * under the caption. */
+.strip .values {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.change {
+    font-variant-numeric: tabular-nums;
+}
+
 /* The glyphs are not being read, so their names step back. The grid's are
  * being read, so they do not — every grid caption used to be dimmed, because
  * in a grid no panel is focal. */

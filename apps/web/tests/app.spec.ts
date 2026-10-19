@@ -24,6 +24,15 @@ const TOLERANCE = 0.1;
 
 const panel = (name: string) => `[aria-label="Show ${name}"]`;
 
+/**
+ * A panel's change chip: a direction and an amount in the panel's unit.
+ *
+ * Matched on the arrow rather than on a sign, and on the unit after it. The
+ * chips used to read "+2.0" in teal and "−2.0" in red, which put a verdict on a
+ * price falling and left the reader to guess what the number was in.
+ */
+const CHIP = /^[▲▼] \$\d/;
+
 /** A label is a positioned div, not an SVG node — KaTeX needs HTML to lay out. */
 const LABEL = '.kg-container div[class^="rootElement-"]';
 
@@ -185,11 +194,14 @@ test('solves the equilibrium its config describes', async ({ page }) => {
 
 test('puts each panel\'s headline number beside it, from the diagram\'s own calcs', async ({ page }) => {
     await expect(page.getByText('Market', { exact: true })).toBeVisible();
-    await expect(page.getByText('$11.0')).toBeVisible();
+    // Each number says what it is, in the strip's own words for it, and money
+    // is to the cent. "Market $11.0" left a student to work out that the figure
+    // was the clearing price.
+    await expect(page.getByText('P* $11.00', { exact: true })).toBeVisible();
     // Consumer surplus is 0.5 * Q* * (a - P*). It read $0.5 until Model.evaluate
     // stopped truncating an expression to the number it happens to start with.
-    await expect(page.getByText('$40.5')).toBeVisible();
-    await expect(page.getByText('$99.0')).toBeVisible();
+    await expect(page.getByText('CS $40.50', { exact: true })).toBeVisible();
+    await expect(page.getByText('TR $99.00', { exact: true })).toBeVisible();
 });
 
 test('promotes a rail panel without rebuilding the diagram', async ({ page }) => {
@@ -236,12 +248,14 @@ test('stays interactive after a promotion', async ({ page, pageErrors }) => {
 
 test('shows a delta once something has moved, and not before', async ({ page }) => {
     // Nothing has moved yet, so nothing claims anything has.
-    await expect(page.getByText(/^[+−]\d/)).toHaveCount(0);
+    await expect(page.getByText(CHIP)).toHaveCount(0);
 
     await dragDemandDown(page);
 
-    // A delta on every panel: they are one market, so all three moved.
-    await expect(page.getByText(/^[+−]\d/)).toHaveCount(3);
+    // A delta on every panel: they are one market, so all three moved — and
+    // all three fell, so all three say so the same way, in the same grey.
+    await expect(page.getByText(CHIP)).toHaveCount(3);
+    await expect(page.getByText(/^▼ \$\d/)).toHaveCount(3);
 });
 
 /**
@@ -429,6 +443,29 @@ test('a grid caption brings its panel to the front, and leaves the grid', async 
     await expect(page.locator('[data-role="grid"]')).toHaveCount(0);
 });
 
+/**
+ * A grid panel too narrow for a name and a number says the number.
+ *
+ * A grid caption is one line and its number never gives way, so at a small
+ * window the name was squeezed to an ellipsis — "C… · CS $40.50" — which names
+ * nothing. Below a width the caption leaves the name out instead; the button
+ * still carries it as its accessible name, which is how this finds the panels.
+ */
+test('a narrow grid drops its names before its numbers', async ({ page }) => {
+    await page.getByText('Grid', { exact: true }).click();
+
+    // At the suite's size every grid caption has room for both.
+    await expect(page.locator(panel('Consumer surplus'))).toContainText('Consumer surplus');
+
+    await page.setViewportSize({ width: 1101, height: 800 });
+    await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
+
+    await expect(page.locator(panel('Market'))).toHaveText('P* $11.00');
+    await expect(page.locator(panel('Consumer surplus'))).toHaveText('CS $40.50');
+    await expect(page.locator(panel('Revenue'))).toHaveText('TR $99.00');
+    await expect.poll(() => textCollisions(page)).toEqual([]);
+});
+
 // Early in the lesson, with the grid on: one panel is the whole stage, and it
 // is where the student works.
 test('a lone panel stays workable in the grid', async ({ page }) => {
@@ -545,11 +582,11 @@ test('the strip narrates once per interaction, not once per frame', async ({ pag
     const chain = (await chainText(page))!;
     expect(chain).toContain('a20.0→');
     expect(chain, 'the middle clause names what the engine said moved').toContain('demand shifts up');
-    expect(chain).toMatch(/P\*\$11\.0→\$\d/);
+    expect(chain).toMatch(/P\*\$11\.00→\$\d/);
 
     // And one utterance, once.
     expect(await page.locator(`${STRIP} [role="status"]`).textContent())
-        .toMatch(/^You changed a from 20\.0 to .*; demand shifts up; P\* from \$11\.0 to /);
+        .toMatch(/^You changed a from 20\.0 to .*; demand shifts up; P\* from \$11\.00 to /);
 });
 
 test('the strip and the panel chips agree about "before"', async ({ page }) => {
@@ -561,19 +598,20 @@ test('the strip and the panel chips agree about "before"', async ({ page }) => {
     // "before"s — the failure the plan warns about — these two numbers would
     // disagree.
     const chain = (await chainText(page))!;
-    const prices = chain.match(/P\*\$(\d+\.\d)→\$(\d+\.\d)/)!;
+    const prices = chain.match(/P\*\$(\d+\.\d\d)→\$(\d+\.\d\d)/)!;
     const narrated = Number(prices[2]) - Number(prices[1]);
 
-    const chip = (await page.getByText(/^[+−]\d/).first().textContent())!;
-    const charted = Number(chip.replace('−', '-').replace('+', ''));
+    // The market's chip is the first: "▼ $1.50" is a fall of a dollar fifty.
+    const chip = (await page.getByText(CHIP).first().textContent())!;
+    const charted = (chip.startsWith('▼') ? -1 : 1) * Number(chip.replace(/^[▲▼] \$/, ''));
 
-    // A tenth, because both sides print to one decimal and they round at
+    // A cent, because both sides print to two decimals and they round at
     // different points: the strip rounds each end of the move and this test
     // subtracts them, while the chip rounds a delta the diagram computed. A
-    // true delta of -1.25 is "-1.2" one way and "-1.3" the other, and that is
+    // true delta of -1.255 is "-1.25" one way and "-1.26" the other, and that is
     // the whole of the disagreement this tolerance admits. Reading a *different*
-    // snapshot — the failure the test exists for — is not a tenth out.
-    expect(Math.abs(narrated - charted), `strip said ${narrated}, chip said ${chip}`).toBeLessThan(0.11);
+    // snapshot — the failure the test exists for — is not a cent out.
+    expect(Math.abs(narrated - charted), `strip said ${narrated}, chip said ${chip}`).toBeLessThan(0.011);
 });
 
 test('undo puts the market back, and the diagram stands down with it', async ({ page }) => {
@@ -593,7 +631,7 @@ test('undo puts the market back, and the diagram stands down with it', async ({ 
     // `prev.changed` is false and the strip reads rest for the same reason.
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
-    await expect(page.getByText(/^[+−]\d/)).toHaveCount(0);
+    await expect(page.getByText(CHIP)).toHaveCount(0);
 });
 
 /**
@@ -720,10 +758,10 @@ test('the maths instrument prints the same numbers as the diagram', async ({ pag
     // hold a number the diagram disagrees with. If these two differed, one of
     // them would be doing its own arithmetic.
     const open = page.getByRole('tabpanel');
-    await expect(open.getByText('= 11.0')).toBeVisible();
+    await expect(open.getByText('= 11.00')).toBeVisible();
 
-    const chip = (await page.getByText('$11.0').first().textContent())!;
-    expect(chip).toContain('11.0');
+    const caption = (await page.getByText('P* $11.00').first().textContent())!;
+    expect(caption).toContain('11.00');
 });
 
 test('a scenario applies every param it names', async ({ page }) => {
@@ -734,6 +772,38 @@ test('a scenario applies every param it names', async ({ page }) => {
     const chain = (await chainText(page))!;
     expect(chain).toContain('a20.0→26.0');
     expect(chain).toContain('c2.0→6.0');
+});
+
+/**
+ * The longest chain keeps the strip to one line, and the diagram with it.
+ *
+ * A scenario moving both params narrates two causes, two shifting curves and
+ * four effects, and with money to the cent that is wider than the strip at the
+ * suite's own size. The chain used to wrap, and the second line took its height
+ * from the stage: the stage's shape changed, the engine was rebuilt, and the
+ * chain and every chip were wiped a tenth of a second after they appeared. The
+ * test above caught it as a chain reading "Drag a curve to see what it changes".
+ */
+test('the longest chain keeps the strip to one line, and the diagram with it', async ({ page }) => {
+    const strip = page.locator(STRIP);
+    const height = (await strip.boundingBox())!.height;
+    await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
+
+    await page.getByRole('tab', { name: 'Scenarios' }).click();
+    await page.getByRole('button', { name: 'Boom and cost squeeze' }).click();
+    await expect(page.getByText(CHIP)).toHaveCount(3);
+
+    // A rebuild follows a resize within a frame or two, unthrottled; give it ten.
+    await page.evaluate(() => new Promise<void>(resolve => {
+        let frames = 10;
+        const tick = () => (--frames > 0 ? requestAnimationFrame(tick) : resolve());
+        requestAnimationFrame(tick);
+    }));
+
+    expect((await strip.boundingBox())!.height).toBe(height);
+    await expect(page.locator('.kg-container svg[data-witness="1"]')).toHaveCount(1);
+    await expect(page.getByText(CHIP)).toHaveCount(3);
+    await expect(strip).toHaveAttribute('data-kind', 'settled');
 });
 
 /**

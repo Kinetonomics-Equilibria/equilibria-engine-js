@@ -57,15 +57,18 @@ describe('substituted form', () => {
     const params = { a: 24, c: 2 };
     const calcs = { Qe: 11, Pe: 13 };
 
+    /** One decimal for everything, which is what every line here is about. */
+    const ONE = () => 1;
+
     it('puts today numbers where the names were', () => {
-        const tex = toSubstitutedTex('(params.a - params.c)/2', calcs, params, null, 1);
+        const tex = toSubstitutedTex('(params.a - params.c)/2', calcs, params, null, ONE);
         expect(tex).toContain('24.0');
         expect(tex).toContain('2.0');
         expect(tex).not.toContain('params');
     });
 
     it('reads prev values from the snapshot, not from current calcs', () => {
-        const tex = toSubstitutedTex('calcs.Pe - prev.calcs.Pe', calcs, params, { Pe: 11 }, 1);
+        const tex = toSubstitutedTex('calcs.Pe - prev.calcs.Pe', calcs, params, { Pe: 11 }, ONE);
         expect(tex).toContain('13.0');
         expect(tex).toContain('11.0');
     });
@@ -73,20 +76,41 @@ describe('substituted form', () => {
     // Substituting `undefined` into arithmetic produces a line that looks
     // authoritative and is not. Better to show no substitution at all.
     it('refuses the whole line rather than substitute a missing value', () => {
-        expect(toSubstitutedTex('calcs.Pe - prev.calcs.Pe', calcs, params, null, 1)).toBeNull();
-        expect(toSubstitutedTex('params.a * params.zzz', calcs, params, null, 1)).toBeNull();
+        expect(toSubstitutedTex('calcs.Pe - prev.calcs.Pe', calcs, params, null, ONE)).toBeNull();
+        expect(toSubstitutedTex('params.a * params.zzz', calcs, params, null, ONE)).toBeNull();
     });
 
     // `a - -3` parses as a double negation and renders as one.
     it('brackets a negative so it stays a subtraction', () => {
-        const tex = toSubstitutedTex('params.a - params.c', calcs, { a: 5, c: -3 }, null, 1);
+        const tex = toSubstitutedTex('params.a - params.c', calcs, { a: 5, c: -3 }, null, ONE);
         expect(tex).toBeTruthy();
         expect(tex).toContain('-3.0');
     });
 
     it('formats to the precision it is given', () => {
-        expect(toSubstitutedTex('params.a', calcs, { a: 24 }, null, 0)).toContain('24');
-        expect(toSubstitutedTex('params.a', calcs, { a: 24 }, null, 2)).toContain('24.00');
+        expect(toSubstitutedTex('params.a', calcs, { a: 24 }, null, () => 0)).toContain('24');
+        expect(toSubstitutedTex('params.a', calcs, { a: 24 }, null, () => 2)).toContain('24.00');
+    });
+
+    // A line mixes quantities, params and prices, and the price is printed to
+    // the cent everywhere else on the screen. One number for the whole line
+    // would print it one way here and another way in the caption beside it.
+    it('formats each reference at its own precision', () => {
+        const money = (scope: string, name: string) => scope === 'calcs' && name === 'Pe' ? 2 : 1;
+        const tex = toSubstitutedTex('0.5 * calcs.Qe * (params.a - calcs.Pe)', calcs, params, null, money)!;
+
+        expect(tex).toContain('11.0');
+        expect(tex).not.toContain('11.00');
+        expect(tex).toContain('24.0');
+        expect(tex).toContain('13.00');
+    });
+
+    it('prints a prev reference at the precision of the calc it is the past of', () => {
+        const money = (scope: string, name: string) => scope === 'calcs' && name === 'Pe' ? 2 : 1;
+        const tex = toSubstitutedTex('calcs.Pe - prev.calcs.Pe', calcs, params, { Pe: 11 }, money)!;
+
+        expect(tex).toContain('13.00');
+        expect(tex).toContain('11.00');
     });
 });
 

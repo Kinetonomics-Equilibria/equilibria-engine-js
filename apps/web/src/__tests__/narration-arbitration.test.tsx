@@ -161,8 +161,8 @@ describe('what a step does to the diagram', () => {
         mount();
         await userEvent.setup().click(marker(MOVES));
 
-        // 20 → 26 on `a`, which the diagram solves to P* 11.0 → 14.0.
+        // 20 → 26 on `a`, which the diagram solves to P* 11.00 → 14.00.
         expect(announced()).toContain('a from 20.0 to 26.0');
-        expect(announced()).toContain('P* from $11.0 to $14.0');
+        expect(announced()).toContain('P* from $11.00 to $14.00');
     });
 });

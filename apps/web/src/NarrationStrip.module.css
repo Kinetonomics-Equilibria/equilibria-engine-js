@@ -13,6 +13,21 @@
     border-top: 1px solid var(--mantine-color-default-border);
 }
 
+/* One line, always, and a clause that does not fit on it is not drawn.
+ *
+ * The chain used to wrap, and a wrapped chain grew the strip by a line — which
+ * took the line from the stage, changed the stage's shape, rebuilt the engine,
+ * and wiped the very chain that had wrapped about a tenth of a second after it
+ * appeared, chips and all. Money to the cent made the longest chain (a scenario
+ * moving both params, both curves shifting) a line and a half at the suite's
+ * own 1440px, where at one decimal it had fitted by three pixels.
+ *
+ * So clauses still wrap — whole, never mid-number — onto a second line that is
+ * clipped. They wrap from the end, and the end is where the least of it is:
+ * the cause and the mechanism come first, and the effects follow in the order
+ * the app ranks them, so what goes is revenue before price. Every number that
+ * goes is still on its own panel's caption, and the live region below still
+ * announces the whole chain. */
 .chain {
     display: flex;
     flex: 1;
@@ -20,6 +35,8 @@
     align-items: baseline;
     gap: 4px var(--mantine-spacing-sm);
     min-width: 0;
+    max-height: 1lh;
+    overflow: hidden;
     font-size: var(--mantine-font-size-sm);
 }
 
@@ -41,16 +58,14 @@
     color: var(--mantine-color-dimmed);
 }
 
+/* One colour whichever way the value went. Teal for up and red for down put a
+ * verdict on every move — a price falling read as bad news, which depends on
+ * which side of the market you are on — and the panel chips above say the
+ * same moves in grey with an arrow. The two numbers either side already say
+ * which way it went; `data-direction` is still there for anything that needs
+ * to know without reading them. */
 .arrow {
     color: var(--mantine-color-dimmed);
-}
-
-.arrow[data-direction='up'] {
-    color: var(--mantine-color-teal-6);
-}
-
-.arrow[data-direction='down'] {
-    color: var(--mantine-color-red-6);
 }
 
 /* A lesson's own sentence. Prose where the chain is chips, and not dimmed: it

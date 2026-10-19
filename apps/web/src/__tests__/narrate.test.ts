@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { AffectedObject } from 'equilibria-engine-js';
-import { CALC_PRECISION, formatValue, narrate, toSentence, undoParams } from '../narration/narrate';
+import { CALC_PRECISION, calcPrecision, formatValue, narrate, toSentence, undoParams } from '../narration/narrate';
 import type { NarratedParam, NarrateInput, Snapshot } from '../narration/narrate';
 import { phraseMechanism, phraseMovement, phraseRefusal } from '../narration/phrasebook';
 import type { ParamBlockedEvent } from 'equilibria-engine-js';
@@ -107,6 +107,31 @@ describe('the effects clause', () => {
     it('carries the unit, so the strip and a panel chip read alike', () => {
         expect(line().effects[0]).toMatchObject({ label: 'P*', unit: '$', from: '11.0', to: '13.0' });
         expect(line().effects[1].unit).toBe('');
+    });
+
+    // The study screen declares money to the cent; a quantity it leaves at the
+    // default. Both in one chain, because the point is that they differ.
+    it('prints each calc at its own precision, and the default where it names none', () => {
+        const effects = line({
+            calcs: [{ name: 'Pe', label: 'P*', unit: '$', precision: 2 }, { name: 'Qe', label: 'Q*' }]
+        }).effects;
+
+        expect(effects[0]).toMatchObject({ from: '11.00', to: '13.00' });
+        expect(effects[1]).toMatchObject({ from: '9.0', to: '11.0' });
+    });
+
+    it('counts a change at the precision it is printed at', () => {
+        // A twentieth of a dollar is invisible at one decimal and is a real
+        // move at two — so whether it is an event depends on the calc.
+        const nudge = {
+            before: { params: { a: 20 }, calcs: { Pe: 11 } },
+            after: { params: { a: 20.1 }, calcs: { Pe: 11.04 } },
+            params: PARAMS
+        };
+
+        expect(narrate({ ...nudge, calcs: CALCS }).effects).toEqual([]);
+        expect(narrate({ ...nudge, calcs: [{ name: 'Pe', label: 'P*', unit: '$', precision: 2 }] }).effects)
+            .toMatchObject([{ from: '11.00', to: '11.04' }]);
     });
 
     it('omits a calc that moved by less than it shows', () => {
@@ -298,6 +323,19 @@ describe('undo', () => {
         const before = market(20);
         const live = narrate({ before, after: market(24), params: PARAMS, calcs: CALCS, live: true });
         expect(undoParams(live, before)).toEqual([]);
+    });
+});
+
+describe('calcPrecision', () => {
+    it('is the calc\'s own where it declares one, and the default where it does not', () => {
+        expect(calcPrecision({ name: 'Pe', label: 'P*', unit: '$', precision: 2 })).toBe(2);
+        expect(calcPrecision({ name: 'Qe', label: 'Q*' })).toBe(CALC_PRECISION);
+        expect(calcPrecision(undefined)).toBe(CALC_PRECISION);
+    });
+
+    // Zero is a precision, not an absence: a count of firms is printed whole.
+    it('takes a declared zero at its word', () => {
+        expect(calcPrecision({ name: 'n', label: 'n', precision: 0 })).toBe(0);
     });
 });
 

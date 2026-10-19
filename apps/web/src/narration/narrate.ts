@@ -5,16 +5,16 @@ import { phraseMechanism } from './phrasebook';
  * What the student just did, and what followed from it — as data.
  *
  * A chain rather than a sentence: `a 20.0 → 24.0` · `demand shifts up` ·
- * `P* $11.0 → $13.0`. A paragraph explains; a chain shows the mechanism, and the
- * mechanism is the thing being learned. It also degrades a clause at a time, so
- * a diagram whose movement cannot be phrased still narrates cause and effect.
+ * `P* $11.00 → $13.00`. A paragraph explains; a chain shows the mechanism, and
+ * the mechanism is the thing being learned. It also degrades a clause at a time,
+ * so a diagram whose movement cannot be phrased still narrates cause and effect.
  *
  * This module is pure and returns structure, never a string. The component
  * renders it, the tests assert on it, and a translation later replaces words
  * without re-parsing English.
  *
- * Every number in it is formatted from the engine's own `precision`, and every
- * value it reads is one the engine computed. Nothing here re-derives a quantity
+ * Every param in it is formatted from the engine's own `precision` and every
+ * calc from `calcPrecision`, and every value it reads is one the engine computed. Nothing here re-derives a quantity
  * the diagram already knows: that is how a readout ends up disagreeing with the
  * picture beside it.
  */
@@ -45,20 +45,35 @@ export interface NarratedCalc {
     label: string;
     /** Prefixed to the value, so the strip and a panel's chip read alike. */
     unit?: string;
+    /** Decimal places, where the calc's unit has a view of its own. See `calcPrecision`. */
+    precision?: number;
 }
 
 /**
- * Decimal places for a calc.
+ * Decimal places for a calc that does not say.
  *
  * Params carry a `precision` derived from their `round`; calcs carry nothing at
- * all, and the plan left the rule open. One decimal, for every calc, chosen
- * because it is what the panel chips already show — the requirement is not that
- * the number be maximally precise but that two places on the screen never print
- * the same quantity differently. Inheriting from the params a calc derives from
- * would mean parsing its expression, and would have no answer for a calc built
- * from params of different precision.
+ * all, and the plan left the rule open. One decimal by default — the requirement
+ * is not that the number be maximally precise but that two places on the screen
+ * never print the same quantity differently. Inheriting from the params a calc
+ * derives from would mean parsing its expression, and would have no answer for
+ * a calc built from params of different precision.
  */
 export const CALC_PRECISION = 1;
+
+/**
+ * Decimal places for a calc: its own, or the default.
+ *
+ * Per calc rather than one number for all of them, because a unit has a
+ * convention the default does not know about. Money is read to the cent — a
+ * price of "$13.0" is a number nobody writes — while a quantity of 9.0 is fine
+ * as it is. The calc declares it once, beside its unit, and every place that
+ * prints the calc asks here: the strip, the panel captions and their change
+ * chips, and the maths instrument.
+ */
+export function calcPrecision(calc: NarratedCalc | undefined): number {
+    return calc && calc.precision !== undefined ? calc.precision : CALC_PRECISION;
+}
 
 /** One `label from → to` unit of the chain. */
 export interface Clause {
@@ -183,7 +198,7 @@ export function narrate(input: NarrateInput): NarrationLine {
         .filter((c): c is Clause => c !== null);
 
     const effects = calcs
-        .map(c => clause(c.name, c.label, c.unit || '', CALC_PRECISION,
+        .map(c => clause(c.name, c.label, c.unit || '', calcPrecision(c),
             before.calcs[c.name], after.calcs[c.name], true))
         .filter((c): c is Clause => c !== null);
 

@@ -73,6 +73,15 @@ export function toSymbolicTex(expression: string): string | null {
 }
 
 /**
+ * Decimal places for one reference, by its scope (`params` or `calcs`) and name.
+ *
+ * Per reference rather than one number for the line, because a line mixes
+ * them: `0.5 * Qe * (a - Pe)` holds a quantity, a param and a price, and the
+ * price is printed to the cent everywhere else on the screen.
+ */
+export type Places = (scope: string, name: string) => number;
+
+/**
  * The same expression with today's numbers in place of the names.
  *
  * This is the line that does the teaching — the other two are its endpoints —
@@ -85,7 +94,7 @@ export function toSubstitutedTex(
     values: Record<string, unknown>,
     params: Record<string, number>,
     prevCalcs: Record<string, unknown> | null,
-    precision: number
+    places: Places
 ): string | null {
     let missing = false;
     const shown: string[] = [];
@@ -104,7 +113,7 @@ export function toSubstitutedTex(
             return name;
         }
         const token = PLACEHOLDER + shown.length;
-        shown.push(value.toFixed(precision));
+        shown.push(value.toFixed(places(scope, name)));
         return token;
     });
 

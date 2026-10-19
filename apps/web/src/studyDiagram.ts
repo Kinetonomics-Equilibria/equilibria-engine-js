@@ -323,12 +323,27 @@ export const studyDiagram = {
  * naming a calc is a claim about what a panel is *for*, which is an editorial
  * decision about economics and belongs in the app rather than in the binding or
  * the engine. The stage never sees it.
+ *
+ * A headline names one of `NARRATED_CALCS` below, and takes its label, unit and
+ * decimals from there rather than declaring its own. The caption reads "Market ·
+ * P* $13.00" and the strip under it reads "P* $11.00 → $13.00"; a panel that
+ * kept its own copy of the unit is how those would come to disagree.
  */
 export const PANELS = [
-    { key: 'market', name: 'Market', headline: 'Pe', delta: 'dPe', unit: '$' },
-    { key: 'surplus', name: 'Consumer surplus', headline: 'CS', delta: 'dCS', unit: '$' },
-    { key: 'revenue', name: 'Revenue', headline: 'TR', delta: 'dTR', unit: '$' }
+    { key: 'market', name: 'Market', headline: 'Pe', delta: 'dPe' },
+    { key: 'surplus', name: 'Consumer surplus', headline: 'CS', delta: 'dCS' },
+    { key: 'revenue', name: 'Revenue', headline: 'TR', delta: 'dTR' }
 ] as const;
+
+/**
+ * Money, wherever a calc is measured in it: dollars, to the cent.
+ *
+ * Declared once and spread into each calc that is money, so the unit and the
+ * decimals cannot be given to one calc and not the other. Two decimals because
+ * that is how a price is written — "$13.0" is a number nobody would put on a
+ * label — and the one-decimal default stays for a quantity, where 9.0 is fine.
+ */
+const MONEY = { unit: '$', precision: 2 };
 
 /**
  * The numbers the narration strip reports as consequences, most important first.
@@ -340,14 +355,19 @@ export const PANELS = [
  * panels' headlines plus `Qe`, which no panel headlines and every chain needs —
  * a price that moved without a quantity is half an event.
  *
+ * It is also what every number on the screen is *called*. The strip's clauses,
+ * the panel captions and their change chips all print a calc with the label,
+ * unit and decimals given here, so `P*` is `P*` and $13.00 is $13.00 wherever
+ * a student reads it.
+ *
  * Order matters twice over: it is the order the clauses appear in, and the first
  * entry is what "why?" opens the maths explainer on.
  */
 export const NARRATED_CALCS = [
-    { name: 'Pe', label: 'P*', unit: '$' },
+    { name: 'Pe', label: 'P*', ...MONEY },
     { name: 'Qe', label: 'Q*' },
-    { name: 'CS', label: 'CS', unit: '$' },
-    { name: 'TR', label: 'TR', unit: '$' }
+    { name: 'CS', label: 'CS', ...MONEY },
+    { name: 'TR', label: 'TR', ...MONEY }
 ];
 
 /**

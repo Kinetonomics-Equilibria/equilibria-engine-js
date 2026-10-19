@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { ActionIcon, Badge, Group, SegmentedControl, Stack, Text, Title, UnstyledButton } from '@mantine/core';
+import {
+    ActionIcon, Badge, Group, SegmentedControl, Stack, Text, Title, UnstyledButton, VisuallyHidden
+} from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { Stage } from 'equilibria-react';
 import type { PanelRole, StageMode, StagePanel } from 'equilibria-react';
@@ -26,9 +28,9 @@ import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
 import { Scenarios } from './dock/Scenarios';
 import type { Instrument, InstrumentProps } from './dock/types';
-import { formatValue, narrate, undoParams, CALC_PRECISION } from './narration/narrate';
+import { calcPrecision, formatValue, narrate, undoParams } from './narration/narrate';
 import { phraseRefusal } from './narration/phrasebook';
-import type { NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
+import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
 import classes from './StudyScreen.module.css';
 
 /**
@@ -70,6 +72,19 @@ const STEPS = LESSON as LessonStep[];
 const PANEL_KEYS = PANELS.map(p => p.key) as string[];
 
 /**
+ * Each narrated calc by name: what a number on this screen is called, in what
+ * unit, to how many places.
+ *
+ * A panel's caption looks its headline up here rather than carrying a label of
+ * its own, and the maths instrument looks up its decimals here too. The strip
+ * reads the same list, so a caption, a chip, a clause and a formula's result
+ * print one quantity one way.
+ */
+const NARRATED: Record<string, NarratedCalc> = {};
+NARRATED_CALCS.forEach(calc => { NARRATED[calc.name] = calc });
+const precisionOf = (calc: string) => calcPrecision(NARRATED[calc]);
+
+/**
  * The question apparatus, stood down.
  *
  * All three are presentation params, so writing them moves nothing a student
@@ -93,6 +108,13 @@ const QUESTION_OFF = [
  * strip is short and wide and a caption under it would take most of its
  * height.
  *
+ * Beside a strip the caption is up to three lines — name, number, chip — where
+ * the rail's is two. Captions name their number now, to the cent, and the
+ * widest number line with its chip is "TR $196.00 ▲ $160.00", 159px measured;
+ * a column that held it would be 180px, and at 1280×800 that took a strip panel
+ * from 126px square to 105px, because the strip is short enough there for its
+ * slot's width to be what bounds it. A line of height costs nothing like that.
+ *
  * The stage keeps exactly this much clear, on top of the room the engine's own
  * axes need — so this is the one place a caption's size is decided.
  */
@@ -102,6 +124,21 @@ const CHROME_ROOM: Record<PanelRole, Partial<Record<'top' | 'right' | 'bottom' |
     rail: { bottom: 48 },
     strip: { right: 140 }
 };
+
+/**
+ * The narrowest grid panel whose one-line caption keeps the panel's name.
+ *
+ * A grid caption is one line, and its number and chip never give way, so in a
+ * narrow panel the name is squeezed until it is an ellipsis and nothing else —
+ * "C… · CS $40.50 ▼ $9.50" in a 173px panel. Below this the name is left out
+ * instead, which reads cleanly: the label says what the number is, the drawing
+ * says which panel it is, and the caption's accessible name ("Show Consumer
+ * surplus") still says it in words.
+ *
+ * The widest number line is 159px at the caption's size, the separator and its
+ * gaps 25px more, and a name is not worth showing in under about 35px.
+ */
+const NAMED_GRID_PX = 220;
 
 /**
  * Each role's caption box, sized from its room where the room is what bounds it.
@@ -780,29 +817,71 @@ export function StudyScreen() {
         const declared = PANELS.filter(p => p.key === panel.key)[0];
         if (!declared) return null;
 
+        // The caption says what its number *is*. "Market $13.0" left a student
+        // to guess that the figure was the clearing price and not, say, the
+        // revenue — and on the revenue panel, that "$91.0" was revenue and not
+        // a price. The label is the one the strip uses for the same calc.
+        const metric = NARRATED[declared.headline],
+            label = metric ? metric.label : declared.headline,
+            unit = metric && metric.unit ? metric.unit : '',
+            places = calcPrecision(metric);
+
         const level = readout[declared.headline],
             delta = readout[declared.delta];
 
+        // Shown only once something has moved *as printed*. At rest a chip that
+        // says "▲ $0.00" is noise pretending to be news, and a threshold of its
+        // own would be a second rule for "changed" beside the strip's.
+        const change = typeof delta === 'number' ? formatValue(Math.abs(delta), places) : null,
+            moved = change !== null && Number(change) !== 0,
+            rose = typeof delta === 'number' && delta > 0;
+
+        const named = panel.role !== 'grid' || panel.box.width >= NAMED_GRID_PX
+            || typeof level !== 'number';
+
         const body = (
             <>
-                <Text component="span" className={classes.panelName}>{declared.name}</Text>
+                {named ? (
+                    <Text component="span" className={classes.panelName}>{declared.name}</Text>
+                ) : null}
                 {typeof level === 'number' ? (
-                    <Group gap={6} wrap="nowrap" className={classes.values}>
-                        <Text component="span" className={classes.headline}>
-                            {declared.unit}{formatValue(level, CALC_PRECISION)}
-                        </Text>
-                        {/* Shown only once something has moved. At rest a chip
-                          * that says "+0.0" is noise pretending to be news. */}
-                        {typeof delta === 'number' && Math.abs(delta) >= 0.05 ? (
-                            <Badge
-                                size="sm"
-                                variant="light"
-                                color={delta > 0 ? 'teal' : 'red'}
-                            >
-                                {delta > 0 ? '+' : '−'}{formatValue(Math.abs(delta), CALC_PRECISION)}
-                            </Badge>
+                    <>
+                        {/* Between the name and its number on one line, and
+                          * nowhere in a column, where the line break already
+                          * separates them. */}
+                        {named ? (
+                            <span className={classes.separator} aria-hidden="true">·</span>
                         ) : null}
-                    </Group>
+                        <Group gap={6} wrap="nowrap" className={classes.values}>
+                            <Text component="span" className={classes.headline}>
+                                {label} {unit}{formatValue(level, places)}
+                            </Text>
+                            {/* A direction and an amount, in the panel's own
+                              * unit, and no verdict. Red for a fall said a lower
+                              * price was bad news, which depends entirely on
+                              * which side of the market you are on — and the
+                              * diagram is about both sides at once. The arrow
+                              * carries the direction; the colour stays out of it.
+                              *
+                              * The glyph is for the eye. A screen reader is
+                              * given the word instead of "black up-pointing
+                              * triangle". */}
+                            {moved ? (
+                                <>
+                                    <Badge
+                                        size="sm"
+                                        variant="light"
+                                        color="gray"
+                                        className={classes.change}
+                                        aria-hidden="true"
+                                    >
+                                        {rose ? '▲' : '▼'} {unit}{change}
+                                    </Badge>
+                                    <VisuallyHidden>{rose ? 'up' : 'down'} {unit}{change}</VisuallyHidden>
+                                </>
+                            ) : null}
+                        </Group>
+                    </>
                 ) : null}
             </>
         );
@@ -835,8 +914,8 @@ export function StudyScreen() {
      *
      * Scenarios and Maths need a little more than the shared contract, and both
      * extras are content rather than capability — the scenario list, and the
-     * app's one answer for how many decimals a calc is worth. Bound here so the
-     * contract itself stays the narrow thing every instrument gets.
+     * app's one answer for how many decimals each calc is worth. Bound here so
+     * the contract itself stays the narrow thing every instrument gets.
      */
     const instruments: Instrument[] = useMemo(() => [
         { id: 'explore', label: 'Explore', Component: Explore },
@@ -851,7 +930,7 @@ export function StudyScreen() {
             Component: (props: InstrumentProps) => (
                 <Maths
                     {...props}
-                    precision={CALC_PRECISION}
+                    precision={precisionOf}
                     prevCalcs={before.current ? before.current.calcs : null}
                 />
             )
