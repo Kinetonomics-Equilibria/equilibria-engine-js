@@ -249,6 +249,83 @@ describe('chrome', () => {
 });
 
 /**
+ * A backdrop: something drawn behind a panel, like a card it sits on.
+ *
+ * The chrome is above the canvas, so a background there would hide the diagram.
+ * What has to hold is that this layer is under the canvas, never in the
+ * pointer's way, and placed by the same numbers as the chrome.
+ */
+describe('backdrop', () => {
+
+    const backdropFor = (root: HTMLElement, key: string) =>
+        root.querySelector(`[data-backdrop="${key}"]`) as HTMLElement;
+
+    it('draws one per panel, under the canvas and out of the pointer\'s way', () => {
+        const { container, getByTestId } = render(
+            <Stage config={config()} focused="market" renderBackdrop={p => <span>{p.key}</span>} />
+        );
+
+        const layer = getByTestId('stage-backdrop'),
+            canvas = container.querySelector(`.${KG_CONTAINER_CLASS}`)!;
+
+        // Before the canvas in the document and below it in the stacking order,
+        // inside a stage that isolates it, so it can sink under the canvas and
+        // not under the page.
+        expect(layer.compareDocumentPosition(canvas) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(layer.style.zIndex).toBe('-1');
+        expect((layer.parentElement as HTMLElement).style.isolation).toBe('isolate');
+        expect(layer.style.pointerEvents).toBe('none');
+
+        KEYS.forEach(key => expect(backdropFor(container, key).textContent).toBe(key));
+    });
+
+    it('sits at the same box as the panel\'s chrome', () => {
+        const { container } = render(
+            <Stage config={config()} focused="market" renderChrome={() => null} renderBackdrop={() => null} />
+        );
+
+        KEYS.forEach(key => expect(boxOf(backdropFor(container, key))).toEqual(boxOf(chromeFor(container, key))));
+    });
+
+    it('does not answer to a selector for the panel\'s chrome', () => {
+        const { container } = render(
+            <Stage config={config()} focused="market" renderBackdrop={() => null} />
+        );
+
+        expect(chromeFor(container, 'market').closest('[data-testid="stage-chrome"]')).toBeTruthy();
+    });
+
+    it('renders no layer when the app draws no backdrop', () => {
+        const { queryByTestId } = render(<Stage config={config()} focused="market" />);
+        expect(queryByTestId('stage-backdrop')).toBeNull();
+    });
+
+    it('hands each panel the share it was given and the room kept around it', () => {
+        const seen: { [key: string]: any } = {};
+        render(<Stage config={config()} focused="market" chromeRoom={{ focal: { top: 30 }, rail: { bottom: 40 } }}
+            renderBackdrop={p => { seen[p.key] = p; return null }} />);
+
+        // The room is the app's chrome plus the engine's axes at that level —
+        // the same sum the arrangement kept clear.
+        expect(seen.market.room).toEqual({
+            top: 30 + FURNITURE.full.top, right: FURNITURE.full.right,
+            bottom: FURNITURE.full.bottom, left: FURNITURE.full.left
+        });
+        expect(seen.firm.room.bottom).toBe(40 + FURNITURE.indicator.bottom);
+
+        // And the slot holds the box with that room around it, so a backdrop
+        // drawn anywhere between the two covers everything the panel draws.
+        KEYS.forEach(key => {
+            const { box, slot, room } = seen[key];
+            expect(box.x - room.left).toBeGreaterThanOrEqual(slot.x - 0.01);
+            expect(box.y - room.top).toBeGreaterThanOrEqual(slot.y - 0.01);
+            expect(box.x + box.width + room.right).toBeLessThanOrEqual(slot.x + slot.width + 0.01);
+            expect(box.y + box.height + room.bottom).toBeLessThanOrEqual(slot.y + slot.height + 0.01);
+        });
+    });
+});
+
+/**
  * The grid, where every panel is read and worked on.
  *
  * It used to lay a promote button across every panel, which is the rail's

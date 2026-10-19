@@ -275,6 +275,94 @@ describe('room', () => {
     });
 });
 
+/**
+ * Each panel's slot: the share it was given, before its square was fitted.
+ *
+ * A host drawing a card behind a panel needs to know how far the card can go,
+ * and the answer is arithmetic only this file does. What has to hold is that a
+ * slot holds its panel *and* the room kept around it, and that no two overlap.
+ */
+describe('slots', () => {
+
+    const CHROME = { focal: { top: 40 }, grid: { top: 40 }, rail: { top: 60 }, strip: { right: 150 } };
+    const ARRANGEMENTS = [
+        { name: 'focus and rail', input: { ...STAGE } },
+        { name: 'filmstrip', input: { width: 736, height: 563 } },
+        { name: 'grid', input: { ...STAGE, mode: 'grid' as const } }
+    ];
+
+    ARRANGEMENTS.forEach(({ name, input }) => {
+        const a = arrange({ ...input, panels: KEYS, chrome: CHROME, furniture: FURNITURE });
+        const h = 1 / a.aspectRatio;
+
+        it(`holds each panel and its room, in ${name}`, () => {
+            a.panels.forEach(p => {
+                const chrome = (CHROME as any)[p.role], furniture = FURNITURE[p.level];
+                const room = (side: 'top' | 'right' | 'bottom' | 'left') =>
+                    ((chrome[side] || 0) + furniture[side]) / input.width;
+                const eps = 1e-9;
+
+                expect(p.x - room('left')).toBeGreaterThanOrEqual(p.slot.x - eps);
+                expect(p.x + p.width + room('right')).toBeLessThanOrEqual(p.slot.x + p.slot.width + eps);
+                expect((p.y - p.slot.y) * h).toBeGreaterThanOrEqual(room('top') - eps);
+                expect((p.slot.y + p.slot.height - p.y - p.height) * h).toBeGreaterThanOrEqual(room('bottom') - eps);
+            });
+        });
+
+        it(`gives no two panels overlapping slots, in ${name}`, () => {
+            const s = a.panels.map(p => p.slot);
+            for (let i = 0; i < s.length; i++) {
+                for (let j = i + 1; j < s.length; j++) {
+                    const apart = s[i].x + s[i].width <= s[j].x || s[j].x + s[j].width <= s[i].x ||
+                        s[i].y + s[i].height <= s[j].y || s[j].y + s[j].height <= s[i].y;
+                    expect(apart, `${a.panels[i].key} and ${a.panels[j].key}`).toBe(true);
+                }
+            }
+        });
+    });
+
+    // A lone rail panel used to be centred in the whole height of the rail,
+    // floating half way down beside a focal panel that starts at the top.
+    it('packs the rail from the top, level with the focal panel', () => {
+        const a = arrange({ ...STAGE, panels: KEYS.slice(0, 2), chrome: CHROME, furniture: FURNITURE });
+        const [focal, rail] = a.panels;
+
+        expect(rail.role).toBe('rail');
+        expect(rail.slot.y).toBeCloseTo(focal.slot.y, 9);
+        expect(rail.slot.height).toBeLessThan(focal.slot.height / 2);
+    });
+
+    it('packs the strip from the left, under the focal panel\'s left edge', () => {
+        const a = arrange({ width: 736, height: 563, panels: KEYS.slice(0, 2), chrome: CHROME, furniture: FURNITURE });
+        const [focal, strip] = a.panels;
+
+        expect(strip.role).toBe('strip');
+        expect(strip.slot.x).toBeCloseTo(focal.slot.x, 9);
+        expect(strip.slot.width).toBeLessThan(focal.slot.width / 2);
+    });
+
+    // Packing moves the squares and does not resize them: a rail panel is as
+    // big as it was when its slot was an equal share of the rail.
+    it('keeps every rail panel the size an equal share gave it', () => {
+        const a = arrange({ ...STAGE, panels: KEYS, chrome: CHROME, furniture: FURNITURE });
+        const rail = a.panels.filter(p => p.role === 'rail');
+        const share = (1 / a.aspectRatio - 2 * 0.018 - (rail.length - 1) * 0.018) / rail.length;
+        const room = (CHROME.rail.top + FURNITURE.indicator.top + FURNITURE.indicator.bottom) / STAGE.width;
+        const across = 0.2 - (FURNITURE.indicator.left + FURNITURE.indicator.right) / STAGE.width;
+
+        rail.forEach(p => expect(p.width).toBeCloseTo(Math.min(across, share - room), 9));
+    });
+
+    it('swaps with its panel on a promotion', () => {
+        const before = arrange({ ...STAGE, panels: KEYS, focused: 'market' });
+        const after = arrange({ ...STAGE, panels: KEYS, focused: 'firm' });
+        const slotOf = (a: any, key: string) => a.panels.filter((p: any) => p.key === key)[0].slot;
+
+        expect(slotOf(after, 'firm')).toEqual(slotOf(before, 'market'));
+        expect(slotOf(after, 'market')).toEqual(slotOf(before, 'firm'));
+    });
+});
+
 describe('below the filmstrip breakpoint', () => {
 
     const narrow = { width: FILMSTRIP_BELOW_PX - 100, height: 900 };

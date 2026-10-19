@@ -6,7 +6,7 @@ import type { KineticGraph, KineticGraphOptions } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { UseEquilibriaEventCallbacks } from './useEquilibria';
 import { arrange, layoutParams, pixelBox, revealedCount, toCustomLayout, FURNITURE } from './arrangement';
-import type { Arrangement, PanelRole, RoomByRole, StageMode } from './arrangement';
+import type { Arrangement, PanelRect, PanelRole, Room, RoomByRole, StageMode } from './arrangement';
 
 /**
  * One engine, several panels, chrome floating above them.
@@ -20,10 +20,10 @@ import type { Arrangement, PanelRole, RoomByRole, StageMode } from './arrangemen
  *
  * So `Stage` supplies mechanism only: measure the box, mount one engine whose
  * panels' rects are params, lay it out again whenever the arrangement changes,
- * position an overlay per panel, and turn a click or an Enter on a rail panel
- * into a promotion. What a
- * panel is called, what its chip says and which one should be focal are all the
- * application's, and arrive through `renderChrome` and `focused`. If economics
+ * position an overlay per panel (and, if asked, a backdrop under it), and turn
+ * a click or an Enter on a rail panel into a promotion. What a panel is called,
+ * what its chip says and which one should be focal are all the application's,
+ * and arrive through `renderChrome` and `focused`. If economics
  * vocabulary appears in this file, the line has been crossed.
  *
  * **The stage needs a height.** It measures the element it renders, and that
@@ -42,6 +42,19 @@ export interface StagePanel {
     role: PanelRole;
     /** The panel's box in CSS pixels, relative to the stage. */
     box: { x: number; y: number; width: number; height: number };
+    /**
+     * The share of the stage the panel was given, in CSS pixels relative to the
+     * stage: the box was fitted into this, centred, with `room` kept clear
+     * around it. A grid cell, a rail slot, the focal column.
+     */
+    slot: { x: number; y: number; width: number; height: number };
+    /**
+     * Pixels the stage kept clear on each side of the box: what `chromeRoom`
+     * asked for this panel's role, plus what the engine's axes need at the
+     * level the panel draws at. Box and room together are everything drawn for
+     * the panel, which is what a backdrop has to cover.
+     */
+    room: Room;
     /**
      * Promote this panel. Set only where the stage puts no control of its own
      * over the panel — in the grid, where the panel is being read and dragged
@@ -90,6 +103,18 @@ export interface StageProps extends UseEquilibriaEventCallbacks {
 
     /** The chrome for one panel: its name, a delta chip, whatever the app wants. */
     renderChrome?: (panel: StagePanel) => ReactNode;
+
+    /**
+     * Something drawn *behind* one panel: a card, a tint, a frame.
+     *
+     * The chrome floats above the diagram, so a background drawn there would
+     * cover it. This layer is under the canvas instead — the diagram's own
+     * background is transparent, so it shows through — and positioned at the
+     * panel's box like the chrome is, so the same `box`, `slot` and `room`
+     * place both. It takes no pointer events: everything here is to be looked
+     * at, and the diagram and the chrome are where the student acts.
+     */
+    renderBackdrop?: (panel: StagePanel) => ReactNode;
 
     /**
      * Pixels the chrome takes outside a panel, by role — `{ focal: { top: 28 } }`
@@ -154,6 +179,7 @@ export function Stage({
     mode = 'focus',
     onPromote,
     renderChrome,
+    renderBackdrop,
     chromeRoom,
     promoteLabel,
     onError,
@@ -407,26 +433,81 @@ export function Stage({
 
     const promote = useCallback((key: string) => { onPromote?.(key) }, [onPromote]);
 
+    /**
+     * One panel in pixels, and what it is: what both layers are handed, and
+     * where both put it.
+     *
+     * Positioned against the *measured* width: the arrangement's fractions
+     * apply at whatever size the canvas actually came out.
+     */
+    const placeOf = function (layout: Arrangement, panel: PanelRect, width: number) {
+        const height = width / layout.aspectRatio,
+            pxBox = pixelBox(layout, panel.key, width)!,
+            chrome = room[panel.role] || {},
+            furniture = FURNITURE[panel.level];
+
+        const info: StagePanel = {
+            key: panel.key,
+            // The role `arrange` resolved, not `keys[focusIndex]`: with a
+            // staged reveal the focused key may not have arrived yet, and a
+            // lone panel is focal in either mode. Reading the resolved answer
+            // is what keeps the chrome and the diagram agreeing about which
+            // square is which.
+            focused: panel.role === 'focal',
+            role: panel.role,
+            box: pxBox,
+            slot: {
+                x: panel.slot.x * width,
+                y: panel.slot.y * height,
+                width: panel.slot.width * width,
+                height: panel.slot.height * height
+            },
+            // The same sum `arrange` kept clear, so whatever is drawn to this
+            // room fits exactly the space the panels were moved apart to leave.
+            room: {
+                top: (chrome.top || 0) + furniture.top,
+                right: (chrome.right || 0) + furniture.right,
+                bottom: (chrome.bottom || 0) + furniture.bottom,
+                left: (chrome.left || 0) + furniture.left
+            }
+        };
+        const position: CSSProperties = {
+            position: 'absolute',
+            left: pxBox.x, top: pxBox.y, width: pxBox.width, height: pxBox.height
+        };
+        return { info: info, position: position };
+    };
+
     return (
-        <div ref={outerRef} className={className} style={{ position: 'relative', height: '100%', ...style }}>
+        // Isolated, so the backdrop's negative z-index puts it under the canvas
+        // and no further: without a stacking context of its own here, it would
+        // sink under whatever the page paints behind the stage as well.
+        <div
+            ref={outerRef}
+            className={className}
+            style={{ position: 'relative', height: '100%', isolation: 'isolate', ...style }}
+        >
+            {arrangement && box && renderBackdrop ? (
+                <div style={BACKDROP} data-testid="stage-backdrop" aria-hidden="true">
+                    {arrangement.panels.map(function (panel) {
+                        const { info, position } = placeOf(arrangement, panel, box.width);
+                        // `data-backdrop` rather than `data-panel`: this layer
+                        // comes first in the document, so a selector written for
+                        // a panel's chrome would find its backdrop instead.
+                        return (
+                            <div key={panel.key} style={position} data-backdrop={panel.key}>
+                                {renderBackdrop(info)}
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : null}
             <div ref={containerRef} className={KG_CONTAINER_CLASS} />
             {arrangement && box ? (
                 <div style={OVERLAY} data-testid="stage-chrome">
                     {arrangement.panels.map(function (panel) {
-                        // Positioned against the *measured* width: the
-                        // arrangement's fractions apply at whatever size the
-                        // canvas actually came out.
-                        const pxBox = pixelBox(arrangement, panel.key, box.width)!;
-                        // The role `arrange` resolved, not `keys[focusIndex]`:
-                        // with a staged reveal the focused key may not have
-                        // arrived yet, and a lone panel is focal in either mode.
-                        // Reading the resolved answer is what keeps the chrome
-                        // and the diagram agreeing about which square is which.
-                        const isFocused = panel.role === 'focal';
-                        const position: CSSProperties = {
-                            position: 'absolute',
-                            left: pxBox.x, top: pxBox.y, width: pxBox.width, height: pxBox.height
-                        };
+                        const { info, position } = placeOf(arrangement, panel, box.width);
+                        const isFocused = info.focused;
 
                         // The focal panel's overlay must not exist as far as the
                         // pointer is concerned: everything a student does to a
@@ -438,7 +519,7 @@ export function Stage({
                         if (isFocused || panel.role === 'grid') {
                             const content = renderChrome
                                 ? renderChrome({
-                                    key: panel.key, focused: isFocused, role: panel.role, box: pxBox,
+                                    ...info,
                                     promote: isFocused ? undefined : () => promote(panel.key)
                                 })
                                 : null;
@@ -455,9 +536,7 @@ export function Stage({
                             );
                         }
 
-                        const content = renderChrome
-                            ? renderChrome({ key: panel.key, focused: false, role: panel.role, box: pxBox })
-                            : null;
+                        const content = renderChrome ? renderChrome(info) : null;
 
                         // A real button, not a div with a click handler: Enter,
                         // Space, focus order and the accessible role all come
@@ -493,6 +572,21 @@ export function Stage({
 const OVERLAY: CSSProperties = {
     position: 'absolute',
     inset: 0,
+    pointerEvents: 'none'
+};
+
+/**
+ * Under the canvas, and out of the pointer's way.
+ *
+ * Under because the canvas comes after it and paints on top — but the canvas is
+ * in normal flow and this is positioned, which on its own would paint it *over*
+ * the canvas. The negative z-index is what keeps it beneath, and the stage's
+ * `isolation` is what keeps it from going any further than that.
+ */
+const BACKDROP: CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    zIndex: -1,
     pointerEvents: 'none'
 };
 

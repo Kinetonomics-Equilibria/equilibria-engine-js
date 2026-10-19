@@ -4,8 +4,9 @@ import {
     ActionIcon, Badge, Group, SegmentedControl, Stack, Text, Title, UnstyledButton, VisuallyHidden
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
+import { IconArrowsDiagonal } from '@tabler/icons-react';
 import { Stage } from 'equilibria-react';
-import type { PanelRole, StageMode, StagePanel } from 'equilibria-react';
+import type { PanelRole, Room, StageMode, StagePanel } from 'equilibria-react';
 import { STEP_PARAM } from 'equilibria-engine-js';
 import type {
     KineticGraph, ParamBlockedEvent, ParamChangedEvent, ParamInfo
@@ -99,15 +100,35 @@ const QUESTION_OFF = [
 ];
 
 /**
+ * The white between a sheet's edge and the furthest thing its panel draws.
+ *
+ * Every panel sits on a sheet: a card a shade lighter than the page, holding
+ * the panel, its axes and its caption, so each diagram reads as one object and
+ * the gaps between them as gaps. It also puts every label the engine draws on
+ * white, which is the colour their backgrounds are — on the bare page they
+ * showed as white boxes.
+ */
+const SHEET_PAD = 12;
+
+/** A caption across the top of a sheet: one line, name at one end and number at the other. */
+const HEADER_PX = 28;
+
+/**
+ * How far in from the sheet's sides that line starts and ends: a little more
+ * than the padding, which put the name hard against the card's rounded corner.
+ */
+const HEADER_INSET = SHEET_PAD + 4;
+
+/**
  * Where each panel's caption goes, and how much room it takes there.
  *
- * Above the panels that are read — the focal one and the grid's — because
- * the band under them is where their tick labels and axis titles are drawn,
- * and a caption there was printed across `0`, `Q*` and `10`. Under a rail
- * panel, which draws no text, in two lines so a long name is not clipped to
- * its first letter by the number beside it. Beside a strip panel, because a
- * strip is short and wide and a caption under it would take most of its
- * height.
+ * Across the top of the sheet for the panels that are read — the focal one and
+ * the grid's — because the band under them is where their tick labels and axis
+ * titles are drawn, and a caption there was printed across `0`, `Q*` and `10`.
+ * At the top of a rail panel's sheet too, in two lines so a long name is not
+ * clipped to its first letter by the number beside it. Beside a strip panel,
+ * because a strip is short and wide and a caption over it would take most of
+ * its height.
  *
  * Beside a strip the caption is up to three lines — name, number, chip — where
  * the rail's is two. Captions name their number now, to the cent, and the
@@ -116,15 +137,41 @@ const QUESTION_OFF = [
  * from 126px square to 105px, because the strip is short enough there for its
  * slot's width to be what bounds it. A line of height costs nothing like that.
  *
- * The stage keeps exactly this much clear, on top of the room the engine's own
- * axes need — so this is the one place a caption's size is decided.
+ * Each side also keeps the sheet's padding, so the room is the sheet: the stage
+ * keeps exactly this much clear, on top of the room the engine's own axes need,
+ * and a sheet drawn to box and room holds everything its panel draws. This is
+ * the one place a caption's size, and a sheet's, is decided.
  */
-const CHROME_ROOM: Record<PanelRole, Partial<Record<'top' | 'right' | 'bottom' | 'left', number>>> = {
-    focal: { top: 30 },
-    grid: { top: 28 },
-    rail: { bottom: 48 },
-    strip: { right: 140 }
+const CHROME_ROOM: Record<PanelRole, Room> = {
+    focal: { top: SHEET_PAD + HEADER_PX, right: SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD },
+    grid: { top: SHEET_PAD + HEADER_PX, right: SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD },
+    rail: { top: SHEET_PAD + 48, right: SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD },
+    strip: { top: SHEET_PAD, right: 140 + SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD }
 };
+
+/**
+ * How far a panel's sheet reaches past its box, on each side.
+ *
+ * Top to bottom it hugs: the room the stage kept is the sheet's padding, its
+ * caption and the axes' furniture, and nothing else. Across, it fills the share
+ * of the stage its panel was given, so the sheets' edges line up with each
+ * other and with the stage's rather than with whatever width a square came
+ * out — the focal sheet as wide as the focal column, every rail sheet as wide
+ * as the rail. A strip's share is already no wider than its panel and room.
+ */
+function sheetOf(panel: StagePanel): Room {
+    const { box, slot, room } = panel;
+    return {
+        top: room.top,
+        right: slot.x + slot.width - (box.x + box.width),
+        bottom: room.bottom,
+        left: box.x - slot.x
+    };
+}
+
+/** An absolutely placed element reaching `sheet` past its panel's box: the sheet's own rect. */
+const reach = (sheet: Room): CSSProperties =>
+    ({ top: -sheet.top, right: -sheet.right, bottom: -sheet.bottom, left: -sheet.left });
 
 /**
  * The narrowest grid panel whose one-line caption keeps the panel's name.
@@ -142,18 +189,41 @@ const CHROME_ROOM: Record<PanelRole, Partial<Record<'top' | 'right' | 'bottom' |
 const NAMED_GRID_PX = 220;
 
 /**
- * Each role's caption box, sized from its room where the room is what bounds it.
+ * Each role's caption box, in the sheet, sized from the room that holds it.
  *
- * A caption above a panel is one line anchored at the panel's edge, so its
- * height is its own; the rail's two lines and the strip's column are given
- * exactly the room the stage kept, so the caption and the room are one number.
+ * A caption across the top of a sheet runs from one side of it to the other,
+ * a padding in, and the rail's two lines sit in the same place — the whole
+ * width, since its number and chip need it; only the name's line leaves the
+ * corner to the promote icon. The strip's column is beside the box, as wide as
+ * the room the stage kept for it, so the caption and the room are one number.
  */
-const CHROME_BOX: Record<PanelRole, CSSProperties> = {
-    focal: {},
-    grid: {},
-    rail: { height: CHROME_ROOM.rail.bottom },
-    strip: { width: CHROME_ROOM.strip.right }
-};
+function captionBox(panel: StagePanel, sheet: Room): CSSProperties {
+    switch (panel.role) {
+        case 'strip':
+            return { width: CHROME_ROOM.strip.right - SHEET_PAD };
+        case 'rail':
+            return {
+                top: -sheet.top + SHEET_PAD, left: -sheet.left + SHEET_PAD,
+                right: -sheet.right + SHEET_PAD, height: CHROME_ROOM.rail.top - SHEET_PAD
+            };
+        default:
+            return {
+                top: -sheet.top + SHEET_PAD, left: -sheet.left + HEADER_INSET,
+                right: -sheet.right + HEADER_INSET, height: HEADER_PX
+            };
+    }
+}
+
+/**
+ * The sheet a panel sits on, under the diagram.
+ *
+ * Drawn in the stage's backdrop rather than with the chrome, because the chrome
+ * floats over the diagram and a white card there would cover it. The diagram's
+ * own background is transparent, so it shows through onto this.
+ */
+const sheetBehind = (panel: StagePanel) => (
+    <div className={classes.sheet} style={reach(sheetOf(panel))} />
+);
 
 export interface StudyScreenProps {
     /**
@@ -953,12 +1023,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 ) : null}
                 {typeof level === 'number' ? (
                     <>
-                        {/* Between the name and its number on one line, and
-                          * nowhere in a column, where the line break already
-                          * separates them. */}
-                        {named ? (
-                            <span className={classes.separator} aria-hidden="true">·</span>
-                        ) : null}
+                        {/* At the other end of the sheet's top from the name,
+                          * or under it in a column. Either way the space
+                          * separates them; a dot between them is not needed. */}
                         <Group gap={6} wrap="nowrap" className={classes.values}>
                             <Text component="span" className={classes.headline}>
                                 {label} {unit}{formatValue(level, places)}
@@ -996,10 +1063,12 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // Sized to exactly the room the stage kept for it, so the two numbers
         // are one number: chrome that outgrew its room would land on the very
         // tick labels the room is there to keep it off.
-        const style = CHROME_BOX[panel.role];
+        const sheet = sheetOf(panel),
+            style = captionBox(panel, sheet);
 
         // In the grid the stage lays nothing across the panel, so a drag
         // reaches the diagram — and the caption is how the panel is promoted.
+        // It is the whole of the sheet's top, which is outside the plot.
         if (panel.promote) {
             return (
                 <UnstyledButton
@@ -1009,7 +1078,29 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                     aria-label={`Show ${declared.name}`}
                 >
                     {body}
+                    <IconArrowsDiagonal size={16} stroke={1.75} className={classes.icon} aria-hidden="true" />
                 </UnstyledButton>
+            );
+        }
+
+        // A rail or strip panel is inside the stage's own promote button, which
+        // covers only the glyph. The tile reaches the rest of the sheet, so the
+        // whole card is the click target, and it is what lights up on a hover
+        // or a keyboard focus — a ring around the glyph alone sat inside the
+        // card, around nothing in particular.
+        if (!panel.focused) {
+            return (
+                <>
+                    <div className={classes.tile} style={reach(sheet)} />
+                    <div className={classes[panel.role]} style={style}>{body}</div>
+                    <IconArrowsDiagonal
+                        size={16}
+                        stroke={1.75}
+                        className={classes.cornerIcon}
+                        style={{ top: -sheet.top + SHEET_PAD - 2, right: -sheet.right + SHEET_PAD - 2 }}
+                        aria-hidden="true"
+                    />
+                </>
             );
         }
 
@@ -1116,6 +1207,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                     mode={mode}
                     onPromote={promote}
                     renderChrome={chrome}
+                    renderBackdrop={sheetBehind}
                     chromeRoom={CHROME_ROOM}
                     promoteLabel={key => {
                         const declared = panels.filter(p => p.key === key)[0];

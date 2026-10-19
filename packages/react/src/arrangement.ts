@@ -90,6 +90,18 @@ export interface PanelRect {
     height: number;
     role: PanelRole;
     level: DensityLevel;
+
+    /**
+     * The share of the stage the panel was given, before its square was fitted
+     * into it with its room kept clear: the whole focal column, a rail slot, a
+     * grid cell. The square is centred in it, so it always holds the panel and
+     * its room. In the same fractions as the rect.
+     *
+     * For a host that draws something behind a panel and wants it to fill the
+     * panel's share rather than hug the square — a card whose edges line up with
+     * the stage's — since that share is otherwise arithmetic only this file knows.
+     */
+    slot: { x: number; y: number; width: number; height: number };
 }
 
 export interface Arrangement {
@@ -182,18 +194,30 @@ function fitInRoom(box: Box, room: Room): Box {
 }
 
 /**
- * Split `box` into `n` equal slots along one axis.
+ * Split `box` into `n` equal slots along one axis, packed from its start.
  *
  * The rail and the filmstrip are the same arrangement rotated, so they are the
  * same code: a stack of equal slots, each with a square in it. Squares because
  * a rail panel is a *smaller version of the same shape* — recognition is the
  * only job it has, and a glyph with different proportions from the diagram it
  * stands for does not do it.
+ *
+ * A slot is no longer along the stack than its square and `room` need. A rail
+ * panel's square is usually as wide as the rail allows, so an equal share of
+ * the rail's height left it centred in a tall slot: one rail panel floated half
+ * way down the stage, beside a focal panel whose top was at the top. Packed
+ * from the start, the stack lines up with the focal panel's top (in a
+ * filmstrip, its left), every square is the size it was, and what is spare
+ * is left at the end.
  */
-function slots(box: Box, n: number, vertical: boolean): Box[] {
+function slots(box: Box, n: number, vertical: boolean, room: Room): Box[] {
     if (n <= 0) return [];
     const along = vertical ? box.height : box.width,
-        slot = (along - (n - 1) * GAP) / n;
+        share = (along - (n - 1) * GAP) / n,
+        roomAlong = vertical ? room.top + room.bottom : room.left + room.right,
+        roomAcross = vertical ? room.left + room.right : room.top + room.bottom,
+        side = Math.max(0, Math.min((vertical ? box.width : box.height) - roomAcross, share - roomAlong)),
+        slot = Math.min(share, side + roomAlong);
 
     const out: Box[] = [];
     for (let i = 0; i < n; i++) {
@@ -223,8 +247,8 @@ function cells(box: Box, cols: number, rows: number): Box[] {
     return out;
 }
 
-/** A panel's square, and the level it will draw at there. */
-interface Placed { box: Box; level: DensityLevel }
+/** A panel's square, the level it will draw at there, and the box it was fitted into. */
+interface Placed { box: Box; level: DensityLevel; slot: Box }
 
 /**
  * The grid whose cells hold the largest panels.
@@ -301,11 +325,11 @@ export function arrange(input: ArrangeInput): Arrangement {
     const place = function (box: Box, role: PanelRole): Placed {
         if (role !== 'grid') {
             const level: DensityLevel = role === 'focal' ? 'full' : 'indicator';
-            return { box: fitInRoom(box, roomFor(role, level)), level: level };
+            return { box: fitInRoom(box, roomFor(role, level)), level: level, slot: box };
         }
         const full = fitInRoom(box, roomFor(role, 'full'));
-        if (levelForSize(full.width * width) === 'full') return { box: full, level: 'full' };
-        return { box: fitInRoom(box, roomFor(role, 'compact')), level: 'compact' };
+        if (levelForSize(full.width * width) === 'full') return { box: full, level: 'full', slot: box };
+        return { box: fitInRoom(box, roomFor(role, 'compact')), level: 'compact', slot: box };
     };
 
     const placed: { [key: string]: Placed & { role: PanelRole } } = {};
@@ -331,7 +355,7 @@ export function arrange(input: ArrangeInput): Arrangement {
         put(focused, { ...inner, height: inner.height - GAP - stripH }, 'focal');
         const strip = slots(
             { x: inner.x, y: inner.y + inner.height - stripH, width: inner.width, height: stripH },
-            keys.length - 1, false
+            keys.length - 1, false, roomFor('strip', 'indicator')
         );
         keys.filter(k => k !== focused).forEach((k, i) => put(k, strip[i], 'strip'));
     } else {
@@ -339,7 +363,7 @@ export function arrange(input: ArrangeInput): Arrangement {
         put(focused, { ...inner, width: inner.width - GAP - railW }, 'focal');
         const rail = slots(
             { x: inner.x + inner.width - railW, y: inner.y, width: railW, height: inner.height },
-            keys.length - 1, true
+            keys.length - 1, true, roomFor('rail', 'indicator')
         );
         keys.filter(k => k !== focused).forEach((k, i) => put(k, rail[i], 'rail'));
     }
@@ -359,7 +383,13 @@ export function arrange(input: ArrangeInput): Arrangement {
                 width: p.box.width,
                 height: p.box.height / height,
                 role: p.role,
-                level: p.level
+                level: p.level,
+                slot: {
+                    x: p.slot.x,
+                    y: p.slot.y / height,
+                    width: p.slot.width,
+                    height: p.slot.height / height
+                }
             };
         })
     };

@@ -14,6 +14,25 @@
      * stage keeps that room inside the canvas now, measured in pixels for the
      * level each panel draws at, so "Q" under a lone panel has its room without
      * this box guessing at it. */
+
+    /* One radius for a sheet and for the tile that lights up over it, which
+     * have to agree to the pixel or the highlight's corners miss the card's. */
+    --sheet-radius: 12px;
+}
+
+/* The card each panel sits on, drawn under the diagram by the stage's backdrop
+ * and placed by `sheetOf` from the panel's box, slot and room.
+ *
+ * The page is a shade darker, so the sheet is what reads as the panel's edge —
+ * and the sheet is the white the engine's labels are filled with, so a label
+ * never shows as a box. A hairline and a shadow only just there: the tint does
+ * the separating, these keep it crisp. */
+.sheet {
+    position: absolute;
+    background: var(--mantine-color-body);
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    border-radius: var(--sheet-radius);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 /* A panel's chrome never sits over the panel itself, where the curves are: it
@@ -22,7 +41,8 @@
  * sized from the same number, so the caption and the room cannot disagree.
  *
  * The stage positions each panel's wrapper absolutely at the panel's box, which
- * makes that box the containing block these measure themselves against. */
+ * makes that box the containing block these measure themselves against; the
+ * offsets that put them in the sheet come from `captionBox`. */
 .focal,
 .grid,
 .rail,
@@ -33,19 +53,19 @@
     min-width: 0;
 }
 
-/* Above the panels that are read. Under them is where their tick labels and
- * axis titles go, and a caption there was printed across `0`, `Q*` and `10`. */
+/* Across the top of the sheet, for the panels that are read. Under them is
+ * where their tick labels and axis titles go, and a caption there was printed
+ * across `0`, `Q*` and `10`. One line on purpose, the name at one end and the
+ * number at the other: the band is as tall as one line and no taller. */
 .focal,
 .grid {
-    left: 0;
-    right: 0;
-    /* Anchored at the panel's top edge and as tall as its one line, so it sits
-     * at the bottom of its room. One line on purpose: a second one would grow
-     * upward, out of the room and into the row above. */
-    bottom: 100%;
-    align-items: baseline;
+    align-items: center;
     flex-wrap: nowrap;
-    padding-bottom: 4px;
+}
+
+.focal .panelName,
+.grid .panelName {
+    margin-right: auto;
 }
 
 .focal .panelName {
@@ -54,32 +74,79 @@
 
 /* A grid caption is a control as well as a label — it is how a grid panel is
  * promoted, now that nothing is laid across the panel to swallow its drags.
- * The stage's overlay is transparent to the pointer, so it opts back in. */
+ * The stage's overlay is transparent to the pointer, so it opts back in. It is
+ * the sheet's whole top band, which is outside the plot, so a bigger target
+ * than the words costs a drag nothing. */
 .grid {
     pointer-events: auto;
     cursor: pointer;
     border-radius: var(--mantine-radius-sm);
-    /* Only as wide as what it says, so the click target is the caption and not
-     * a strip of empty band across the top of the panel. */
-    right: auto;
-    max-width: 100%;
 }
 
 .grid:hover .panelName {
     text-decoration: underline;
 }
 
-/* Under a rail panel, which draws no text, so nothing is there to collide
- * with. Two lines rather than one: a rail panel is narrower than a name, a
- * number and a chip side by side, and on one line the name gave way until it
- * was a single letter. */
+/* The way out of the grid and the way off the rail, shown rather than left for
+ * a student to guess: a card that does something when clicked says so. */
+.icon,
+.cornerIcon {
+    flex: none;
+    color: var(--mantine-color-dimmed);
+    transition: color 120ms ease;
+}
+
+.cornerIcon {
+    position: absolute;
+}
+
+.grid:hover .icon {
+    color: var(--mantine-primary-color-filled);
+}
+
+/* At the top of a rail panel's sheet. Two lines rather than one: a rail panel
+ * is narrower than a name, a number and a chip side by side, and on one line
+ * the name gave way until it was a single letter. */
 .rail {
-    left: 0;
-    right: 0;
-    top: 100%;
     flex-direction: column;
     gap: 0;
-    padding-top: 3px;
+}
+
+/* The top right corner is the promote icon's, and only the name's line
+ * reaches it: the number and chip under it get the sheet's whole width,
+ * which on a rail is what lets them stay on one line. */
+.rail .panelName {
+    padding-right: 24px;
+}
+
+/* The rail and strip panels are buttons the stage lays over their glyphs, and
+ * the tile is the part of the button that reaches the rest of the sheet. It is
+ * clear, so the sheet and the glyph show through, until the card is pointed
+ * at or tabbed to. */
+.tile {
+    position: absolute;
+    border: 1px solid transparent;
+    border-radius: var(--sheet-radius);
+    transition: border-color 120ms ease;
+}
+
+.stageBox button[data-role]:hover .tile {
+    border-color: light-dark(var(--mantine-color-blue-3), var(--mantine-color-blue-7));
+}
+
+.stageBox button[data-role]:hover .cornerIcon {
+    color: var(--mantine-primary-color-filled);
+}
+
+/* The keyboard ring goes round the card, not round the glyph the button
+ * itself covers, which left it floating inside the sheet. */
+.stageBox button[data-role]:focus-visible {
+    outline: none;
+}
+
+.stageBox button[data-role]:focus-visible .tile {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 2px;
 }
 
 /* Beside a strip panel. A strip is short and wide — a caption under it would
@@ -114,18 +181,9 @@
  * something changed. */
 .values {
     flex: none;
-}
-
-/* "Market · P* $13.00" on one line. In a column the line break is the
- * separator, and a dot left at the end of the name's line would be stray. */
-.separator {
-    flex: none;
-    color: var(--mantine-color-dimmed);
-}
-
-.rail .separator,
-.strip .separator {
-    display: none;
+    /* Nor wraps: "US$1 = A$1.43" broken after the "=" read as two numbers,
+     * and in the rail's fixed two lines it pushed the name out altogether. */
+    white-space: nowrap;
 }
 
 /* A strip's column is narrow and its panel has height to spare beside it, so
@@ -144,13 +202,10 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* The glyphs are not being read, so their names step back. The grid's are
- * being read, so they do not — every grid caption used to be dimmed, because
- * in a grid no panel is focal. */
-.rail .panelName,
-.strip .panelName {
-    color: var(--mantine-color-dimmed);
-}
+/* A glyph's name is not dimmed, though the glyph is not being read: it is the
+ * title of a card a student can open, and a dimmed title made the card look
+ * disabled. The glyph steps back by being small; its number is dimmed like
+ * every number. */
 
 .headline {
     font-size: var(--mantine-font-size-sm);

@@ -10,11 +10,13 @@
 }
 
 body {
-    /* The page is the same white as the diagrams' label backgrounds, so an
-     * axis label doesn't sit in a visible white box. `--mantine-color-body` is
-     * white in light mode and dark-7 in dark, so this follows the colour
-     * scheme. */
-    background: var(--mantine-color-body);
+    /* A shade darker than the sheets the diagrams sit on, so each panel reads
+     * as a card of its own. The sheets are `--mantine-color-body`, the white
+     * the engine fills its labels with, and they hold everything a panel
+     * draws — so no label lands on this grey and shows as a white box, which
+     * is what happened when the page was grey and there were no sheets.
+     * `light-dark()` is provided by postcss-preset-mantine. */
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
     /* No padding here: AppShell's sections are position: fixed and offset the
      * main area themselves, so page-level padding would push the shell out of
      * alignment. The content's breathing room is AppShell's `padding` prop. */
