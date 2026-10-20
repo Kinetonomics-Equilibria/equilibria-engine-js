@@ -59,8 +59,9 @@ describe('direction, which is the question that needs no tolerance', () => {
         const g = grade(UP, 20, 20, A);
         expect(g.moved).toBe(false);
         expect(g.directionCorrect).toBe(false);
-        expect(verdictFor(UP, g, 20, A).direction).toContain('did not move');
-        expect(verdictFor(UP, grade(UP, 20, 16, A), 16, A).direction).toContain('Wrong direction');
+        expect(verdictFor(UP, g, 20, A).direction).toContain('haven\'t moved it');
+        expect(verdictFor(UP, grade(UP, 20, 16, A), 16, A).direction)
+            .toBe('You moved it down, but this change moves it up.');
     });
 
     /**
@@ -89,14 +90,16 @@ describe('magnitude, which is the question that brings the traps', () => {
         expect(g.magnitudeCorrect).toBe(false);
         expect(g.correct).toBe(false);
         // The sentence this whole split exists to make possible.
-        expect(verdictFor(toTarget, g, 23, A).direction).toContain('Right direction');
-        expect(verdictFor(toTarget, g, 23, A).magnitude).toContain('Not far enough');
+        expect(verdictFor(toTarget, g, 23, A).direction).toContain('the right direction');
+        expect(verdictFor(toTarget, g, 23, A).magnitude)
+            .toBe('Not quite far enough: you stopped at 23.0, and it goes to 26.0.');
     });
 
     it('says "too far" on the other side of the same target', () => {
         const g = grade(toTarget, 20, 27.5, A);
         expect(g.magnitudeCorrect).toBe(false);
-        expect(verdictFor(toTarget, g, 27.5, A).magnitude).toContain('Too far');
+        expect(verdictFor(toTarget, g, 27.5, A).magnitude)
+            .toBe('A bit too far: you went to 27.5, and it only goes to 26.0.');
     });
 
     // Exactly `tolerance` away is inside. Left to floating point it would be
@@ -245,7 +248,7 @@ describe('which curve moves, which the prompt no longer says', () => {
         expect(g.correct).toBe(true);
         expect(g.othersMoved).toEqual([]);
         expect(g.movedBy).toBe(10);
-        expect(said(60, 50).direction).toBe('Right direction — you moved demand for A$ right.');
+        expect(said(60, 50).direction).toBe('You moved demand for A$ right, which is the right direction.');
     });
 
     /**
@@ -260,7 +263,7 @@ describe('which curve moves, which the prompt no longer says', () => {
         expect(g.correct).toBe(false);
 
         const v = said(50, 60);
-        expect(v.curve).toBe('This one works through demand for A$ — supply of A$ should stay where it was.');
+        expect(v.curve).toBe('This change moves demand for A$, so supply of A$ should stay where it was.');
         // The whole verdict: a sentence about the direction of a curve they never
         // touched would either say nothing or give the direction away.
         expect(v.direction).toBeUndefined();
@@ -275,7 +278,7 @@ describe('which curve moves, which the prompt no longer says', () => {
 
         const v = said(60, 60);
         expect(v.curve).toContain('supply of A$ should stay where it was');
-        expect(v.direction).toBe('Right direction — you moved demand for A$ right.');
+        expect(v.direction).toBe('You moved demand for A$ right, which is the right direction.');
         // "Almost" means direction right and magnitude not. This is a different
         // market: with both curves out the rate has hardly moved.
         expect(v.tone).toBe('wrong');
@@ -283,13 +286,13 @@ describe('which curve moves, which the prompt no longer says', () => {
 
     it('names the curve when the direction is wrong, since the prompt no longer does', () => {
         expect(said(40, 50).direction)
-            .toBe('Wrong direction — you moved demand for A$ left, and it should go right.');
+            .toBe('You moved demand for A$ left, but this change moves it right.');
     });
 
     it('names the choice when nothing moved, rather than an "it" with nothing to refer to', () => {
         expect(gradeChoice(RBA, START, at(50, 50)).othersMoved).toEqual([]);
-        expect(said(50, 50).direction).toBe('You moved neither demand for A$ nor supply of A$. ' +
-            'The answer is a shift, so one of them has to go somewhere.');
+        expect(said(50, 50).direction).toBe('You haven\'t moved demand for A$ or supply of A$ yet. ' +
+            'One of them shifts, so move the one you think it is.');
     });
 
     it('measures the other curve by its own step, as the asked one is measured', () => {
@@ -306,12 +309,12 @@ describe('which curve moves, which the prompt no longer says', () => {
 
         expect(g.othersMoved).toEqual(['supply', 'rates']);
         expect(verdictFor(three, g, 50, DEMAND, SIDEWAYS, moved).curve).toBe(
-            'This one works through demand for A$ — supply of A$ and RBA cash rate should stay ' +
+            'This change moves demand for A$, so supply of A$ and RBA cash rate should stay ' +
             'where they were.'
         );
         expect(verdictFor(three, gradeChoice(three, { ...START, rates: 50 }, at(50, 50).concat(THIRD)),
             50, DEMAND, SIDEWAYS, moved).direction)
-            .toContain('You moved none of demand for A$, supply of A$ or RBA cash rate.');
+            .toContain('You haven\'t moved demand for A$, supply of A$ or RBA cash rate yet.');
     });
 
     /**
@@ -324,7 +327,7 @@ describe('which curve moves, which the prompt no longer says', () => {
         expect(gradeChoice(UP, { a: 20 }, withSupply(24))).toEqual({ ...grade(UP, 20, 24, A), othersMoved: [] });
         expect(gradeChoice(UP, { a: 20 }, withSupply(16))).toEqual({ ...grade(UP, 20, 16, A), othersMoved: [] });
         expect(verdictFor(UP, gradeChoice(UP, { a: 20 }, withSupply(20)), 20, A).direction)
-            .toBe('You did not move it. The answer is a shift, so it has to go somewhere.');
+            .toBe('You haven\'t moved it yet. This change shifts it one way or the other, so move it, then check.');
     });
 
     it('offers the params in the order the author wrote, whichever is asked', () => {

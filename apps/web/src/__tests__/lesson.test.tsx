@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
@@ -33,8 +33,12 @@ const mount = () => render(
     <MantineProvider theme={theme} env="test"><StudyScreen /></MantineProvider>
 );
 
-const marker = (position: number) => screen.getAllByRole('button')
-    .filter(b => b.hasAttribute('data-kinds'))[position];
+/** The progress bar's marker for a step, by position (the first step is 1). */
+const marker = (position: number) =>
+    within(screen.getByRole('group', { name: 'Lesson steps' })).getAllByRole('button')[position - 1];
+
+/** The lesson card's way on: "Start lesson" on its first page, "Next" after. */
+const next = () => screen.getByRole('button', { name: /^(Next|Start lesson)$/ });
 
 /** "Incomes rise": the step that moves demand up. */
 const MOVES = 5;
@@ -87,7 +91,7 @@ describe('where the lesson says the market is', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Show me' }));
         await inputCostsRise(user);
-        await user.click(screen.getByLabelText('Next step'));
+        await user.click(next());
 
         expect(marketCaption()).toContain('P* $11.00');
         expect(await valueOf(user, 'c')).toBe(2);
@@ -124,7 +128,7 @@ describe('the question, after supply has been moved', () => {
         const user = await askAfterMovingSupply();
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
-        expect(verdict()).toContain('did not move');
+        expect(verdict()).toContain('haven\'t moved');
     });
 
     it('marks the answer on demand alone', async () => {
@@ -139,5 +143,35 @@ describe('the question, after supply has been moved', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(verdict()).toContain('Correct');
+    });
+});
+
+/**
+ * The lesson card and the instruments share the side column. A student who has
+ * read a step can fold its words away for the instruments' room; the next step
+ * brings them back, since it has new words to read. Opening an instrument does
+ * not fold it: that moved the tabs from under the pointer that clicked one.
+ */
+describe('folding the lesson card', () => {
+
+    const heading = (name: string) => screen.queryByRole('heading', { name });
+
+    it('folds when the student asks, and unfolds at the next step', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(1));
+        await user.click(screen.getByRole('button', { name: 'Hide this step' }));
+        expect(heading('Demand: what buyers want')).toBeNull();
+
+        await user.click(next());
+        expect(heading('Supply: what sellers offer')).toBeTruthy();
+    });
+
+    it('stays as it is when an instrument opens', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(1));
+        await user.click(screen.getByRole('tab', { name: 'Maths' }));
+        expect(heading('Demand: what buyers want')).toBeTruthy();
     });
 });

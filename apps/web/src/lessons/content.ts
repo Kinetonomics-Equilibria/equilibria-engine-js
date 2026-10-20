@@ -29,6 +29,13 @@ export interface StudyContent {
     title: string;
     intro: string;
 
+    /**
+     * What the student will be able to do by the end, for the lesson card's
+     * first page: three short lines, said before the first step, so the steps
+     * that follow have somewhere to go.
+     */
+    goals: string[];
+
     /** The engine config: params, calcs, `steps` and a `CustomLayout`. */
     diagram: Record<string, unknown>;
 

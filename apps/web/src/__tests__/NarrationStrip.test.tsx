@@ -97,24 +97,24 @@ describe('the controls', () => {
         const onUndo = vi.fn();
         view(<NarrationStrip line={chain()} onUndo={onUndo} />);
 
-        await userEvent.click(screen.getByRole('button', { name: 'undo' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
         expect(onUndo).toHaveBeenCalledTimes(1);
     });
 
     it('offers no undo at rest or mid-gesture', () => {
         const { unmount } = view(<NarrationStrip line={REST} onUndo={() => { }} />);
-        expect(screen.queryByRole('button', { name: 'undo' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
         unmount();
 
         view(<NarrationStrip line={chain({ live: true })} onUndo={() => { }} />);
-        expect(screen.queryByRole('button', { name: 'undo' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
     });
 
     it('hands "why?" the calc the chain named', async () => {
         const onWhy = vi.fn();
         view(<NarrationStrip line={chain()} onWhy={onWhy} />);
 
-        await userEvent.click(screen.getByRole('button', { name: 'why?' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Why?' }));
         expect(onWhy).toHaveBeenCalledWith('Pe');
     });
 
@@ -122,7 +122,7 @@ describe('the controls', () => {
         // The destination is the maths instrument (P9). Until it exists the app
         // passes no handler, and a control that opens nothing must not appear.
         view(<NarrationStrip line={chain()} />);
-        expect(screen.queryByRole('button', { name: 'why?' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Why?' })).toBeNull();
     });
 
     it('gives both controls real button semantics', () => {
@@ -130,24 +130,24 @@ describe('the controls', () => {
 
         // Not divs with click handlers: Enter, Space and focus order come with
         // the element rather than having to be re-implemented and re-tested.
-        expect(screen.getByRole('button', { name: 'undo' }).tagName).toBe('BUTTON');
-        expect(screen.getByRole('button', { name: 'why?' }).tagName).toBe('BUTTON');
+        expect(screen.getByRole('button', { name: 'Undo' }).tagName).toBe('BUTTON');
+        expect(screen.getByRole('button', { name: 'Why?' }).tagName).toBe('BUTTON');
     });
 });
 
 /**
- * Three things want the one line, and only one of them can have it (P12).
+ * Two things want the one line, and only one of them can have it (P12).
  *
- * The order is newest-and-most-surprising first: a refusal, then a lesson's
- * sentence, then the chain. A refusal outranks even a step's sentence because a
- * curve that stopped dead has already raised the question it answers — but only
- * the eye is rationed. A screen reader gets the refusal *and* the chain, by the
- * same argument that already gives it an authored sentence and the chain: the
- * sighted student watched the diagram refuse, and there is nothing to watch if
- * you cannot see it.
+ * A refusal outranks the chain because a curve that stopped dead has already
+ * raised the question it answers — but only the eye is rationed. A screen
+ * reader gets the refusal *and* the chain: the sighted student watched the
+ * diagram refuse, and there is nothing to watch if you cannot see it.
+ *
+ * The lesson's own words are not one of them any more: they are on the lesson
+ * card, where a refusal cannot displace them.
  */
 describe('a refusal on the strip', () => {
-    const REFUSAL = 'a will not go above 28.0.';
+    const REFUSAL = 'a is at the top of its range (28.0) in this diagram.';
 
     it('takes the line from the chain', () => {
         view(<NarrationStrip line={chain()} refusal={REFUSAL} />);
@@ -156,13 +156,15 @@ describe('a refusal on the strip', () => {
         expect(visibleChain()).not.toContain('20.0');
     });
 
-    it('takes the line from a lesson\'s sentence too', () => {
-        view(<NarrationStrip line={REST} authored="Incomes rise." refusal={REFUSAL} />);
+    // A note, not a warning: nothing went wrong, a curve reached the end of
+    // the range the diagram draws. It wears an information mark, and its words
+    // are the strip's own grey rather than orange.
+    it('is said as a note, with an information mark', () => {
+        view(<NarrationStrip line={REST} refusal={REFUSAL} />);
 
-        expect(visibleChain()).toBe(REFUSAL);
-        expect(document.querySelector('[data-refusal]')).toBeTruthy();
-        // The strip stops calling itself authored, so nothing keys off both.
-        expect(document.querySelector('[data-kind]')!.getAttribute('data-authored')).toBeNull();
+        const strip = document.querySelector('[data-refusal]')!;
+        expect(strip).toBeTruthy();
+        expect(strip.querySelector('svg')).not.toBeNull();
     });
 
     it('announces the refusal and the chain, in that order', () => {
@@ -175,6 +177,6 @@ describe('a refusal on the strip', () => {
 
     it('leaves undo reachable, since the move that was refused may still be undone', () => {
         view(<NarrationStrip line={chain()} refusal={REFUSAL} onUndo={vi.fn()} />);
-        expect(screen.getByRole('button', { name: 'undo' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy();
     });
 });

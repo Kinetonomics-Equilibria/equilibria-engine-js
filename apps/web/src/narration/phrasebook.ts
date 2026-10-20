@@ -119,6 +119,14 @@ export function phraseMechanism(affected: AffectedObject[]): string | null {
  * engine reports `{ reason: 'bounds', limit: 'max', max: 28 }` and stops, and
  * what a student should read is copy.
  *
+ * The voice matters more here than anywhere else in the strip, because this is
+ * the one sentence that answers something the student tried and could not do.
+ * It used to read "Demand for A$ will not go above 70.", in orange: a machine
+ * refusing, and to a fifteen-year-old a telling-off. Nothing went wrong. A
+ * curve reached the end of the range this diagram draws, and the sentence
+ * should say that and nothing more — calmly, in the diagram's terms, not the
+ * student's.
+ *
  * Three sentences, addressed to three different situations.
  *
  * **A rule the author wrote** hands back the author's own sentence, verbatim.
@@ -132,10 +140,11 @@ export function phraseMechanism(affected: AffectedObject[]): string | null {
  * mistake, so the sentence says plainly whose fault it is. The engine warns the
  * author separately, in the console.
  *
- * **A param's own end** names the param and the number, because "it stopped" is
- * something the student can already see. What they cannot see is where. Phrased
- * so it reads with a bare symbol as well as with a phrase: a diagram's params
- * are often called `a` and `c`, and the strip's own chips call them that too.
+ * **A param's own end** says which way the range ran out and where. The number
+ * stays: a student can see the curve stop but not the number it stopped at, and
+ * it is the same number the slider shows. Phrased so it reads with a bare
+ * symbol as well as with a phrase: a diagram's params are often called `a` and
+ * `c`, and the strip's own chips call them that too.
  */
 export function phraseRefusal(
     refusal: ParamBlockedEvent,
@@ -144,15 +153,15 @@ export function phraseRefusal(
     if (refusal.reason === 'restriction') {
         const broken = refusal.restrictions.filter(r => !r.unresolved);
         if (broken.length === 0) {
-            return 'The diagram is not accepting changes — that is a fault in the diagram, ' +
-                'not in what you did.';
+            return 'The diagram isn\'t responding right now. That\'s a problem with the diagram, ' +
+                'not with anything you did.';
         }
         const spoken = broken.filter(r => !!r.message);
         if (spoken.length > 0) return spoken.map(r => r.message).join(' ');
-        return 'That would break one of this diagram\'s rules.';
+        return 'This diagram can\'t show that combination.';
     }
 
     return refusal.limit === 'max'
-        ? `${refusal.label} will not go above ${format(refusal.max)}.`
-        : `${refusal.label} will not go below ${format(refusal.min)}.`;
+        ? `${refusal.label} is at the top of its range (${format(refusal.max)}) in this diagram.`
+        : `${refusal.label} is at the bottom of its range (${format(refusal.min)}) in this diagram.`;
 }

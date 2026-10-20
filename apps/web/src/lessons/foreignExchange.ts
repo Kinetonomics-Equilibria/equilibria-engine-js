@@ -174,59 +174,110 @@ const BASELINE = { demand: 50, supply: 50 };
  * price of what it digs up — with Australian examples where the slides had
  * American ones.
  *
- * One idea per step, and one line per idea. A step's sentence is shown in the
- * narration strip, which is one line that never grows — a strip that grew would
- * take height from the stage and shrink the diagram under the student — so a
- * sentence longer than the strip is cut off at an ellipsis. About 110 characters fits at 1280px. Where
- * the slides make two points on one slide, this makes them on two steps: the
- * shift, and then what the shift did to each currency.
+ * Written for Year 10 to first-year students, and chunked twice: three parts,
+ * and one idea per step. Each step has a short title that says the idea, then a
+ * paragraph saying what happens and, where it helps, a second saying what it
+ * means. A word is defined in the step that first uses it, in a key-term box,
+ * and not again. Plain words first and the economics word second ("worth more
+ * — it has appreciated"), contractions, and no sentence a student has to read
+ * twice. Where the slides make two points on one slide, this makes them on two
+ * steps: the shift, and then what the shift did to each currency.
  *
- * Every number a sentence states is one the diagram solves to at that step,
- * and `foreignExchange.test.tsx` holds each sentence to it.
+ * Every number a step states is one the diagram solves to at that step, and
+ * `foreignExchange.test.tsx` holds each one to it — which is why a step never
+ * quotes the rate it moved away from: the caption beside it shows only the
+ * rate now.
  */
 export const FX_LESSON: LessonStep[] = [
     {
+        part: 'Meet the market',
         reveal: ['demand_market'],
-        say: 'Demand for A$: the world buying Australian exports and assets, paid in A$. ' +
-            'The dearer the A$, the less it wants.'
+        title: 'Who wants Australian dollars?',
+        say: 'People overseas need A$ to pay for what Australia sells: iron ore, beef, wine, a ' +
+            'degree at an Australian university, a holiday on the Gold Coast. Investors need A$ ' +
+            'to buy Australian shares and property.\n\n' +
+            'The dearer the A$, the more all of that costs them, so the fewer A$ they want. ' +
+            'That\'s why the demand curve slopes down.',
+        term: {
+            word: 'Demand for A$',
+            meaning: 'How many A$ people want to buy at each exchange rate.'
+        }
     },
     {
         reveal: ['supply_market'],
-        say: 'Supply of A$: Australians selling A$ to pay for imports, travel and assets ' +
-            'abroad — more as each A$ buys more.'
+        title: 'Who sells Australian dollars?',
+        say: 'Australians do, whenever they pay for something from overseas: imported phones ' +
+            'and cars, a holiday in Bali, shares in an American company. To pay, they swap A$ ' +
+            'for foreign currency.\n\n' +
+            'The more US$ each A$ buys, the better the deal, so the more A$ they\'re willing ' +
+            'to sell. That\'s why the supply curve slopes up.',
+        term: {
+            word: 'Supply of A$',
+            meaning: 'How many A$ people want to sell for other currencies at each exchange rate.'
+        }
     },
     {
         reveal: ['equilibrium_market'],
-        say: 'Where they meet is the exchange rate: A$1 = US$0.65. The A$ floats, so the ' +
-            'market sets it, like any price.'
+        title: 'The exchange rate',
+        say: 'Where the curves cross, the A$ people want to buy matches the A$ people want to ' +
+            'sell. That sets the price of the A$: A$1 = US$0.65.\n\n' +
+            'Nobody chooses this number. The A$ floats, so the market sets its price, the same ' +
+            'way it sets the price of anything else.',
+        term: {
+            word: 'Exchange rate',
+            meaning: 'The price of one currency in another. Here, how many US$ one A$ buys.'
+        }
     },
     {
         reveal: ['mirror'],
-        say: 'Buying A$ means selling US$, so demand for A$ is the supply of US$. Read the ' +
-            'other way: US$1 = A$1.54.'
+        title: 'The same trades, from the US side',
+        say: 'Anyone buying A$ with US$ is also selling US$. So demand for A$ and the supply ' +
+            'of US$ are the same trades, and the second panel shows them from the American ' +
+            'side.\n\n' +
+            'Read that way round, the price is US$1 = A$1.54.'
     },
     {
+        part: 'When the A$ moves',
         set: { demand: 60 },
-        say: 'Iron ore prices soar, so the world wants more A$ at every rate: demand for ' +
-            'A$ shifts right.'
+        title: 'Demand for A$ increases',
+        say: 'Say iron ore prices soar. The world spends more on Australian ore, so it wants ' +
+            'more A$ at every exchange rate.\n\n' +
+            'The whole demand curve shifts to the right. Watch where the curves cross now.',
+        term: {
+            word: 'Shift',
+            meaning: 'When something other than the exchange rate changes how many A$ people ' +
+                'want, and the whole curve moves.'
+        }
     },
     {
-        say: 'A$1 now buys US$0.70: the A$ has appreciated. And US$1 costs A$1.43: the US$ ' +
-            'has depreciated.'
+        title: 'The A$ appreciates',
+        say: 'A$1 now buys US$0.70, so the A$ has appreciated: it\'s worth more than before.\n\n' +
+            'From the US side, US$1 now costs A$1.43. The US$ has depreciated: it\'s worth less.',
+        term: {
+            word: 'Appreciate and depreciate',
+            meaning: 'A currency appreciates when it\'s worth more of another currency, and ' +
+                'depreciates when it\'s worth less.'
+        }
     },
     {
         set: { demand: 50 },
-        say: 'Up the price axis the A$ appreciates; down it, the A$ depreciates. Back to ' +
+        title: 'Up is stronger, down is weaker',
+        say: 'Up the price axis, the A$ appreciates. Down it, the A$ depreciates.\n\n' +
+            'Iron ore prices settle, demand goes back to where it was, and so does the rate: ' +
             'A$1 = US$0.65.'
     },
     {
         set: { supply: 60 },
-        say: 'Australians holiday abroad in record numbers, selling A$: supply of A$ shifts ' +
-            'right.'
+        title: 'Supply of A$ increases',
+        say: 'Now say Australians travel overseas in record numbers. Every trip means ' +
+            'swapping A$ for foreign currency, so Australians sell more A$ at every exchange ' +
+            'rate.\n\n' +
+            'This time it\'s the supply curve that shifts to the right.'
     },
     {
-        say: 'A$1 buys only US$0.60: the A$ has depreciated. US$1 now costs A$1.67: the US$ ' +
-            'has appreciated.'
+        title: 'The A$ depreciates',
+        say: 'A$1 now buys only US$0.60, so the A$ has depreciated.\n\n' +
+            'From the US side, US$1 now costs A$1.67. The US$ has appreciated.'
     },
     // The questions. Each starts from the baseline, both curves included: the
     // answer is marked from where the question began, so where it begins should
@@ -237,7 +288,7 @@ export const FX_LESSON: LessonStep[] = [
     //
     // Direction only, deliberately. The slides' practice asks which way a curve
     // moves and what that does to the currency, never by how much; a target
-    // would have the verdict tell a student that the RBA's decision "belongs at
+    // would have the verdict tell a student that the RBA's decision "goes to
     // 60", which is a number this lesson made up. `illustrate` is the same
     // number put where it belongs instead — on the picture "Show me" draws, and
     // nowhere the grade looks.
@@ -252,36 +303,62 @@ export const FX_LESSON: LessonStep[] = [
     // "Australians switch to imports" because the export side of the same
     // change would be a fair answer otherwise — and moves the other curve.
     //
-    // A prompt is in the question row, which wraps, so these may run longer
-    // than a step's sentence.
+    // `explain` is the reasoning, for after the question is finished: who needs
+    // A$ or sells them, so which curve, which way, and what the rate does.
     {
+        part: 'Your turn',
         set: { ...BASELINE },
-        say: 'Your turn. The RBA lifts the cash rate above US rates, and investors overseas ' +
-            'buy Australian bonds. Which curve moves, and which way? Move it, then check.',
-        ask: { param: 'demand', direction: 'up', among: ['demand', 'supply'], illustrate: 10 }
+        title: 'Interest rates rise',
+        say: 'The RBA lifts the cash rate above US interest rates. Investors overseas buy ' +
+            'Australian bonds to earn the higher return.\n\n' +
+            'Which curve moves, and which way? Move it, then press Check.',
+        ask: {
+            param: 'demand', direction: 'up', among: ['demand', 'supply'], illustrate: 10,
+            explain: 'To buy Australian bonds, investors first need A$. So demand for A$ ' +
+                'increases, the demand curve shifts right, and the A$ appreciates.'
+        }
     },
     {
         set: { ...BASELINE },
-        say: 'Prices in Australia rise faster than in the US, and Australians switch to ' +
-            'imports that now look cheap. Which curve moves, and which way?',
-        ask: { param: 'supply', direction: 'up', among: ['demand', 'supply'], illustrate: 10 }
+        title: 'Prices rise faster in Australia',
+        say: 'Prices in Australia rise faster than in the US. Imports now look cheap next to ' +
+            'Australian-made goods, so Australians switch to imports.\n\n' +
+            'Which curve moves, and which way?',
+        ask: {
+            param: 'supply', direction: 'up', among: ['demand', 'supply'], illustrate: 10,
+            explain: 'To pay for imports, Australians sell A$ for foreign currency. So the ' +
+                'supply of A$ increases, the supply curve shifts right, and the A$ depreciates.'
+        }
     },
     {
         set: { ...BASELINE },
-        say: 'China\'s steel mills cut output and buy less Australian iron ore. Which curve ' +
-            'moves, and which way?',
-        ask: { param: 'demand', direction: 'down', among: ['demand', 'supply'], illustrate: 10 }
+        title: 'China buys less iron ore',
+        say: 'China\'s steel mills cut production and buy less Australian iron ore.\n\n' +
+            'Which curve moves, and which way?',
+        ask: {
+            param: 'demand', direction: 'down', among: ['demand', 'supply'], illustrate: 10,
+            explain: 'Less ore bought means fewer A$ needed to pay for it. So demand for A$ ' +
+                'decreases, the demand curve shifts left, and the A$ depreciates.'
+        }
     },
     {
         set: { ...BASELINE },
-        say: 'In a downturn, Australians buy fewer imported cars and holiday at home. Which ' +
-            'curve moves, and which way?',
-        ask: { param: 'supply', direction: 'down', among: ['demand', 'supply'], illustrate: 10 }
+        title: 'Australians spend less overseas',
+        say: 'In a downturn, Australians buy fewer imported cars and holiday at home instead.\n\n' +
+            'Which curve moves, and which way?',
+        ask: {
+            param: 'supply', direction: 'down', among: ['demand', 'supply'], illustrate: 10,
+            explain: 'Fewer imports and trips abroad mean fewer A$ swapped for foreign ' +
+                'currency. So the supply of A$ decreases, the supply curve shifts left, and ' +
+                'the A$ appreciates.'
+        }
     },
     {
         set: { ...BASELINE },
-        say: 'Anything that changes how many A$ the world wants, or Australians sell, moves ' +
-            'the rate. The market is yours.'
+        title: 'Over to you',
+        say: 'Anything that changes how many A$ the world wants to buy, or how many A$ ' +
+            'Australians want to sell, moves the exchange rate.\n\n' +
+            'Try the Scenarios tab for more real-world cases, or drag the curves yourself.'
     }
 ];
 
@@ -467,8 +544,13 @@ export const FOREIGN_EXCHANGE: StudyContent = {
     id: 'fx',
     label: 'Exchange rates (A$)',
     title: 'The Australian dollar, and what moves it',
-    intro: 'Step through the lesson below, or drag a curve at any point. The price is what ' +
-        'A$1 costs in US dollars; the second panel is the same trades seen from the US side.',
+    intro: 'The price on the diagram is what A$1 costs in US dollars. Follow the lesson, or ' +
+        'drag a curve at any time.',
+    goals: [
+        'Who buys Australian dollars, and who sells them',
+        'Why the A$ rises and falls against the US$',
+        'Four real-world cases to work out yourself'
+    ],
     diagram: fxDiagram,
     lesson: FX_LESSON,
     panels: PANELS,

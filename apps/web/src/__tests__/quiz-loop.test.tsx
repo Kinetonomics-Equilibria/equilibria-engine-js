@@ -34,8 +34,12 @@ const mount = () => render(
     <MantineProvider theme={theme} env="test"><StudyScreen /></MantineProvider>
 );
 
-const marker = (position: number) => screen.getAllByRole('button')
-    .filter(b => b.hasAttribute('data-kinds'))[position];
+/** The progress bar's marker for a step, by position (the first step is 1). */
+const marker = (position: number) =>
+    within(screen.getByRole('group', { name: 'Lesson steps' })).getAllByRole('button')[position - 1];
+
+/** The lesson card's way on: "Start lesson" on its first page, "Next" after. */
+const next = () => screen.getByRole('button', { name: /^(Next|Start lesson)$/ });
 
 /** The question step in `studyDiagram.ts`: "move demand to where it belongs". */
 const ASK = 8;
@@ -79,23 +83,26 @@ describe('a question arrives', () => {
         expect(row()).toBeNull();
     });
 
-    it('shows the prompt, and shows it in the row rather than in the strip', async () => {
+    it('shows the prompt on the lesson card, above the question, and not on the strip', async () => {
         mount();
         await userEvent.setup().click(marker(ASK));
 
-        expect(row()!.textContent).toContain('move demand to where it belongs');
-        // P10's rule is that the student's own action wins the strip. A prompt
-        // left there would vanish the moment they moved something to answer it.
+        const card = screen.getByRole('region', { name: 'Lesson' });
+        const words = card.querySelector('[aria-live="polite"]') as HTMLElement;
+        expect(words.textContent).toContain('Move the demand curve to where it goes');
+        expect(words.compareDocumentPosition(row()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        // The student's own move wins the strip, so a prompt there would vanish
+        // the moment they moved something to answer it.
         const strip = document.querySelector('[data-kind]') as HTMLElement;
-        expect(strip.getAttribute('data-authored')).toBeNull();
+        expect(strip.textContent).not.toContain('where it goes');
     });
 
     it('stops the track until it is answered', async () => {
         mount();
         await userEvent.setup().click(marker(ASK));
 
-        expect(screen.getByText('Answer to continue.')).toBeTruthy();
-        expect(screen.getByLabelText('Next step')).toHaveProperty('disabled', true);
+        expect(screen.getByText('Answer the question to unlock the next step.')).toBeTruthy();
+        expect(next()).toHaveProperty('disabled', true);
     });
 
     /**
@@ -123,8 +130,8 @@ describe('the verdict names direction and magnitude separately', () => {
         await ask();
         await userEvent.setup().click(check());
 
-        expect(verdict()).toContain('did not move');
-        expect(screen.getByText('Answer to continue.')).toBeTruthy();
+        expect(verdict()).toContain('haven\'t moved');
+        expect(screen.getByText('Answer the question to unlock the next step.')).toBeTruthy();
     });
 
     it('marks the wrong direction as wrong, and says which way it went', async () => {
@@ -134,8 +141,8 @@ describe('the verdict names direction and magnitude separately', () => {
         fireEvent.keyDown(control, { key: 'Home' });     // 12: down, and a long way
         await userEvent.setup().click(check());
 
-        expect(verdict()).toContain('Wrong direction');
-        expect(verdict()).toContain('It belongs at 26.0');
+        expect(verdict()).toContain('but this change moves it up');
+        expect(verdict()).toContain('It goes to 26.0');
     });
 
     /**
@@ -148,8 +155,8 @@ describe('the verdict names direction and magnitude separately', () => {
         answer(28);                                       // up, but past the answer
         await userEvent.setup().click(check());
 
-        expect(verdict()).toContain('Right direction');
-        expect(verdict()).toContain('Too far');
+        expect(verdict()).toContain('the right direction');
+        expect(verdict()).toContain('too far');
         expect(verdict()).toContain('Almost');
     });
 
@@ -159,7 +166,7 @@ describe('the verdict names direction and magnitude separately', () => {
         await userEvent.setup().click(check());
 
         expect(verdict()).toContain('Correct');
-        expect(verdict()).toContain('Right direction');
+        expect(verdict()).toContain('the right direction');
     });
 });
 
@@ -232,8 +239,8 @@ describe('getting past the question', () => {
         answer(26);
         await user.click(check());
 
-        expect(screen.queryByText('Answer to continue.')).toBeNull();
-        expect(screen.getByLabelText('Next step')).toHaveProperty('disabled', false);
+        expect(screen.queryByText('Answer the question to unlock the next step.')).toBeNull();
+        expect(next()).toHaveProperty('disabled', false);
     });
 
     /**
@@ -247,11 +254,11 @@ describe('getting past the question', () => {
         await user.click(marker(ASK));
         answer(14);
         await user.click(check());
-        expect(screen.getByText('Answer to continue.')).toBeTruthy();
+        expect(screen.getByText('Answer the question to unlock the next step.')).toBeTruthy();
 
         await user.click(screen.getByRole('button', { name: 'Show me' }));
 
-        expect(screen.queryByText('Answer to continue.')).toBeNull();
+        expect(screen.queryByText('Answer the question to unlock the next step.')).toBeNull();
         // And there is nothing left to press: the answer is on the diagram and
         // the way on is the track's own forward arrow, not a second one here.
         expect(screen.queryByRole('button', { name: 'Show me' })).toBeNull();
@@ -264,7 +271,7 @@ describe('getting past the question', () => {
         await user.click(marker(ASK));
         answer(26);
         await user.click(check());
-        await user.click(screen.getByLabelText('Next step'));
+        await user.click(next());
 
         expect(row()).toBeNull();
     });
@@ -280,11 +287,11 @@ describe('getting past the question', () => {
         await user.click(marker(ASK));
         answer(26);
         await user.click(check());
-        await user.click(screen.getByLabelText('Next step'));
+        await user.click(next());
         await user.click(marker(ASK));
 
         expect(verdict()).toBe('');
-        expect(screen.queryByText('Answer to continue.')).toBeNull();
+        expect(screen.queryByText('Answer the question to unlock the next step.')).toBeNull();
     });
 });
 
@@ -318,7 +325,7 @@ describe('a question that names its curve', () => {
         expect(row()!.getAttribute('data-phase')).toBe('prompt');
 
         await user.click(check());
-        expect(verdict()).toContain('did not move');
+        expect(verdict()).toContain('haven\'t moved');
         expect(verdict()).not.toContain('should stay where it was');
 
         const before = shown(supply);

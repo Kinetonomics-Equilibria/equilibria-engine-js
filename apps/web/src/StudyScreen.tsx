@@ -15,9 +15,9 @@ import type { StudyContent } from './lessons/content';
 import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
 import { NarrationStrip } from './NarrationStrip';
 import { QuestionRow } from './QuestionRow';
-import { Track } from './Track';
+import { LessonCard } from './LessonCard';
 import {
-    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, sayAt, trackReducer
+    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, trackReducer
 } from './track/track';
 import type { LessonQuestion, TrackState } from './track/track';
 import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
@@ -35,8 +35,9 @@ import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './nar
 import classes from './StudyScreen.module.css';
 
 /**
- * The study screen: one diagram, several panels, one of them driving, and a
- * line underneath saying what the last thing the student did actually did.
+ * The study screen: one diagram, several panels, one of them driving, a line
+ * underneath saying what the last thing the student did actually did, and the
+ * lesson beside it.
  *
  * The division of labour P7 asks for is visible in what this file contains and
  * what it does not. `Stage` measures the box, arranges the panels and turns a
@@ -255,31 +256,49 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     // a second answer to the same question.
     const narrow = useMediaQuery('(max-width: 1100px)') ?? false;
 
+    // The lesson is the other thing a student reads, so it keeps its column
+    // beside the stage for longer than the instruments do: down to a tablet on
+    // its side, where under the stage it would have taken a third of the height
+    // and left the diagram a postage stamp. Below this it goes under the stage.
+    const stacked = useMediaQuery('(max-width: 899px)') ?? false;
+
     const [instrument, setInstrument] = useState('explore');
+
+    /**
+     * Whether the lesson card's words are folded away.
+     *
+     * The card and the instruments share the side column, and a student who has
+     * read the step and wants the instruments' room can fold the card to where
+     * they are and the way on. Moving along the lesson unfolds it, because the
+     * next step has new words to read. Only where the instruments are beside
+     * the card: as a sheet they cover the page and take nothing from it.
+     *
+     * The student's call, never the screen's. Folding it when the Maths
+     * instrument opened — the one instrument that needs the height — moved the
+     * tabs up from under the pointer that had just clicked one.
+     */
+    const [folded, setFolded] = useState(false);
     const [focus, setFocus] = useState<{ calc?: string } | undefined>(undefined);
     const [sheetOpen, setSheetOpen] = useState(false);
 
     /**
-     * Where the lesson has got to, and what it last said.
+     * Where the lesson has got to.
      *
      * One number, because what is revealed *is* `params.step` — the engine
      * compiled the reveals into `show` predicates over it, and a second record
      * of the same fact is the kind of thing that ends up disagreeing with the
-     * diagram it describes.
-     *
-     * `saying` is separate because it is not derived: a step's sentence stands
-     * until the student does something, and what they did is not a position.
+     * diagram it describes. What the step says is derived from it too: the
+     * lesson card shows the step's words for as long as the student is at that
+     * step, whatever they do to the diagram in the meantime.
      */
     const [track, setTrack] = useState<TrackState>(AT_START);
-    const [saying, setSaying] = useState<string | null>(null);
 
     /**
      * The last move the diagram would not make (P12).
      *
-     * Held beside `saying` rather than folded into the narration line, because
-     * it is not part of the chain: nothing moved, so there is nothing to narrate.
-     * It stands until the student moves something that *does* move, which is the
-     * same rule that retires a lesson's sentence.
+     * Held beside the narration line rather than folded into it, because it is
+     * not part of the chain: nothing moved, so there is nothing to narrate. It
+     * stands until the student moves something that *does* move.
      */
     const [refusal, setRefusal] = useState<string | null>(null);
 
@@ -350,14 +369,14 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const parked = useRef<{ name: string; value: number }[]>([]);
 
     /**
-     * True only while a step's own param update is in flight.
+     * True only while a write that is not the student's is in flight: a lesson
+     * step, a remount's restore, a retry putting a curve back.
      *
-     * A step that sets params fires `kg:param_changed` for the very params the
-     * strip narrates, so the plain rule — any narrated change clears the step's
-     * sentence — would clear it in the same tick it was set. The engine's update
-     * is synchronous, so a flag held across the call is enough, and it is the
-     * whole of what "the student's own action wins" needs in order to be able to
-     * tell whose action it was.
+     * Those writes go through the same `engine.update` a drag does, and raise
+     * the same events, so this is how the handlers tell whose move it was. A
+     * refusal raised by one is the screen's own bookkeeping and is not put in
+     * front of the student. The engine's update is synchronous, so a flag held
+     * across the call is enough.
      */
     const applyingStep = useRef(false);
 
@@ -437,11 +456,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // describing a boundary the student is no longer at.
         setRefusal(null);
 
-        // The arbitration, in one line and in the only place that knows both
-        // sides: the student moved something themselves, so the lesson's
-        // sentence gives way to what they just did.
-        if (!applyingStep.current) setSaying(null);
-
         // Moving any param the question offers is what turns a prompt into an
         // attempt. The reducer returns the same object once it has, so a drag's
         // sixty changes a second cost one state update between them.
@@ -481,7 +495,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         if (!isNarrated(event.name)) return;
 
         const declared = narratedParams.filter(p => p.name === event.name)[0];
-        setSaying(null);
         setRefusal(phraseRefusal(event, v => formatValue(v, declared ? declared.precision : 1)));
     }, [isNarrated, narratedParams]);
 
@@ -671,7 +684,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     /**
      * Move the lesson, and tell the engine in the right order.
      *
-     * Three things happen and the order of all three is load-bearing.
+     * Two things happen and the order of both is load-bearing.
      *
      * `snapshot()` first, when the move establishes params or goes backwards: it
      * marks where the diagram is *now* as the state its ghosts and the sentence
@@ -695,9 +708,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * about it until the engine offers a batched update. The study diagram
      * declares no restrictions, so nothing here can trip today; that is luck,
      * not design.
-     *
-     * The sentence last, after the events the update raised have already been
-     * handled, so it is not cleared by the change that caused it.
      */
     const applyStep = useCallback((
         params: { name: string; value: number }[], position: number, rebase: boolean
@@ -818,13 +828,8 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         if (backwards) retell(false);
 
         setTrack(next);
-
-        // A question's prompt goes to the question row, not to the strip. P10's
-        // rule is that the student's own action wins the strip, so a prompt left
-        // there would vanish the instant they moved something to answer it.
-        const question = askAt(steps, next.position);
-        setSaying(question ? null : sayAt(steps, next.position));
-        armQuestion(question, next.position - 1);
+        setFolded(false);
+        armQuestion(askAt(steps, next.position), next.position - 1);
     }, [track, steps, applyStep, retell, armQuestion]);
 
     /**
@@ -954,7 +959,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         } finally {
             applyingStep.current = false;
         }
-        setSaying(sayAt(steps, track.position));
     }, [steps, track.position]);
 
     /**
@@ -1160,6 +1164,50 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         if (narrow) setSheetOpen(true);
     }, [narrow]);
 
+    /**
+     * The lesson card, with the question in it at a step that asks one.
+     *
+     * The params the question offers are passed in the order it offers them —
+     * the author's `among`, the same whichever is asked, so the first slider is
+     * not the answer. No prompt: the step's words, above it on the card, are
+     * the prompt.
+     *
+     * "Reset the diagram to this step" is withheld while an answer is frozen:
+     * it writes through `engine.update` directly, so offering it there would be
+     * a control that moves a curve the diagram is refusing to let the student
+     * move.
+     */
+    const lesson = (where: 'beside' | 'alone' | 'below') => (
+        <LessonCard
+            className={where === 'beside' ? classes.lessonBeside
+                : where === 'alone' ? classes.lessonAlone : classes.lessonBelow}
+            steps={steps}
+            state={track}
+            goals={content.goals}
+            onGoTo={goTo}
+            onReset={frozen.length > 0 ? undefined : resetToStep}
+            folded={where === 'beside' && folded}
+            onFold={where === 'beside' ? setFolded : undefined}
+        >
+            {attempt ? (
+                <QuestionRow
+                    attempt={attempt}
+                    params={candidatesOf(attempt.question)
+                        .map(name => dockParams.filter(p => p.name === name)[0])
+                        .filter((p): p is ParamInfo => !!p)}
+                    directionWords={directionWords ? directionWords[attempt.question.param] : undefined}
+                    onChange={(name, value) => updateParams([{ name, value }])}
+                    onGestureStart={beginGesture}
+                    onGestureEnd={endGesture}
+                    onCommit={onCommit}
+                    onRetry={onRetry}
+                    onReveal={onReveal}
+                    onContinue={() => goTo(track.position + 1)}
+                />
+            ) : null}
+        </LessonCard>
+    );
+
     return (
         <Stack gap="sm" className={classes.screen}>
             <Group justify="space-between" align="flex-end" wrap="nowrap">
@@ -1192,105 +1240,78 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 </Group>
             </Group>
 
-            {/* Stage and dock are siblings in a row, which is the whole of how
-              * the dock affects the stage's size: it takes space, the stage's
-              * own `ResizeObserver` notices, and the arrangement re-runs. Nobody
-              * passes a width to anybody. What keeps the stage *still* while a
-              * student switches instruments is that the dock's width does not
-              * depend on what is open. */}
+            {/* Two columns: the diagram, with the strip under it, and the
+              * lesson and the instruments beside it. The row is the whole of
+              * how the side column affects the stage's size: it takes its fixed
+              * width, the stage's own `ResizeObserver` notices, and the
+              * arrangement re-runs. Nobody passes a width to anybody. What
+              * keeps the stage *still* while a student moves through the lesson
+              * or switches instruments is that the column's width depends on
+              * neither — and the stage's height depends on nothing in it. */}
             <div className={classes.stageRow}>
-            <div className={classes.stageBox}>
-                <Stage
-                    config={config}
-                    focused={focused}
-                    revealed={revealed}
-                    mode={mode}
-                    onPromote={promote}
-                    renderChrome={chrome}
-                    renderBackdrop={sheetBehind}
-                    chromeRoom={CHROME_ROOM}
-                    promoteLabel={key => {
-                        const declared = panels.filter(p => p.key === key)[0];
-                        return `Show ${declared ? declared.name : key}`;
-                    }}
-                    onParamChanged={onParamChanged}
-                    onParamBlocked={onParamBlocked}
-                    onCurveDragged={onCurveDragged}
-                    onReady={onReady}
-                    onError={error => console.error('Equilibria failed to mount:', error)}
-                />
+                <div className={classes.stageColumn}>
+                    <div className={classes.stageBox}>
+                        <Stage
+                            config={config}
+                            focused={focused}
+                            revealed={revealed}
+                            mode={mode}
+                            onPromote={promote}
+                            renderChrome={chrome}
+                            renderBackdrop={sheetBehind}
+                            chromeRoom={CHROME_ROOM}
+                            promoteLabel={key => {
+                                const declared = panels.filter(p => p.key === key)[0];
+                                return `Show ${declared ? declared.name : key}`;
+                            }}
+                            onParamChanged={onParamChanged}
+                            onParamBlocked={onParamBlocked}
+                            onCurveDragged={onCurveDragged}
+                            onReady={onReady}
+                            onError={error => console.error('Equilibria failed to mount:', error)}
+                        />
+                    </div>
+
+                    {/* Under the diagram, never moving: what the student's last
+                      * move did, in numbers. `onWhy` opens the maths instrument
+                      * on the calc the chain ended with.
+                      *
+                      * The default hint tells a student to drag a curve, which
+                      * before the lesson has begun is advice about a curve that
+                      * has not been drawn yet, so the strip is told which
+                      * applies. */}
+                    <NarrationStrip
+                        line={line}
+                        refusal={refusal}
+                        restHint={track.position === 0 && steps.length > 0
+                            ? 'Press Start lesson when you\'re ready.'
+                            : undefined}
+                        onUndo={onUndo}
+                        onWhy={onWhy}
+                    />
+
+                    {/* Where there is no room for a column beside the stage, the
+                      * lesson goes under it, at a fixed height so that moving
+                      * from a short step to a long one does not resize the
+                      * diagram. */}
+                    {stacked ? lesson('below') : null}
+                </div>
+
+                {!stacked ? (
+                    <div className={classes.side}>
+                        {lesson(narrow ? 'alone' : 'beside')}
+                        {!narrow ? (
+                            <Dock
+                                instruments={instruments}
+                                open={instrument}
+                                onOpenChange={setInstrument}
+                                context={dockContext}
+                                focus={focus}
+                            />
+                        ) : null}
+                    </div>
+                ) : null}
             </div>
-
-            {!narrow ? (
-                <Dock
-                    instruments={instruments}
-                    open={instrument}
-                    onOpenChange={setInstrument}
-                    context={dockContext}
-                    focus={focus}
-                />
-            ) : null}
-            </div>
-
-            {/* Under the stage, spanning it, never moving — one home for words
-              * that change. `onWhy` opens the maths instrument on the calc the
-              * chain ended with; until P9 there was nothing to open, and the
-              * strip hid the control rather than offer a dead one. */}
-            {/* The default hint tells a student to drag a curve, which at the
-              * start of a build-up is advice about a curve that has not been
-              * drawn yet. What to do next is different before the lesson has
-              * begun, so the strip is told which one applies. */}
-            <NarrationStrip
-                line={line}
-                authored={saying}
-                refusal={refusal}
-                restHint={track.position === 0 && steps.length > 0
-                    ? 'Step forward to begin the lesson.'
-                    : undefined}
-                onUndo={onUndo}
-                onWhy={onWhy}
-            />
-
-            {/* Between the strip and the track, and only while a step is asking.
-              * It is the one row on this screen that is not always there, which
-              * is the price of not making the strip grow: a verdict is two
-              * clauses and up to three controls, and the strip is one line that
-              * sits directly under a stage measuring its own box. */}
-            {/* The params the question offers, in the order it offers them —
-              * which is the author's `among`, the same whichever is asked, so
-              * the first slider is not the answer. */}
-            {attempt ? (
-                <QuestionRow
-                    prompt={sayAt(steps, track.position)}
-                    attempt={attempt}
-                    params={candidatesOf(attempt.question)
-                        .map(name => dockParams.filter(p => p.name === name)[0])
-                        .filter((p): p is ParamInfo => !!p)}
-                    directionWords={directionWords ? directionWords[attempt.question.param] : undefined}
-                    onChange={(name, value) => updateParams([{ name, value }])}
-                    onGestureStart={beginGesture}
-                    onGestureEnd={endGesture}
-                    onCommit={onCommit}
-                    onRetry={onRetry}
-                    onReveal={onReveal}
-                    onContinue={() => goTo(track.position + 1)}
-                />
-            ) : null}
-
-            {/* Under the strip, spanning the same width. Free exploration is
-              * this track at its last position — everything revealed, the
-              * scrubber still there — rather than a mode beside it.
-              *
-              * "Reset to this step" is withheld while an answer is frozen: it
-              * writes through `engine.update` directly, so offering it there
-              * would be a control that moves a curve the diagram is refusing to
-              * let the student move. */}
-            <Track
-                steps={steps}
-                state={track}
-                onGoTo={goTo}
-                onReset={frozen.length > 0 ? undefined : resetToStep}
-            />
 
             {narrow ? (
                 <Dock

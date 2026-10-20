@@ -25,11 +25,9 @@ import type { Question } from '../quiz/grade';
 /**
  * A question. P11 owns what is inside; the track only knows that it stops.
  *
- * Its prompt is the step's own `say`, not a field of its own: one sentence per
- * step, written one way. Where that sentence is *rendered* differs — a plain
- * step's goes to the narration strip and a question's goes to the question row,
- * because P10's arbitration would otherwise wipe the question off the screen
- * the moment the student moved something to answer it.
+ * Its prompt is the step's own `say`, not a field of its own: one set of words
+ * per step, written one way, and shown on the lesson card above the question's
+ * controls like any other step's.
  */
 export type LessonQuestion = Question;
 
@@ -43,8 +41,44 @@ export type LessonQuestion = Question;
  * about how many steps there are or what order they are in.
  */
 export interface LessonStep extends StepDefinition {
-    /** A sentence for the student, shown in the narration strip. */
+    /**
+     * What the step is about, in a few words: the heading on the lesson card.
+     *
+     * A student scanning back through the lesson reads these, and a screen
+     * reader names the step's marker by it, so it says the idea ("The A$
+     * appreciates") and not what the step does to the diagram.
+     */
+    title?: string;
+
+    /**
+     * What the student reads at this step, on the lesson card.
+     *
+     * One idea, in a sentence or three. A blank line starts a new paragraph,
+     * and two short paragraphs are easier to take in than one long one: the
+     * first says what happens, the second what it means. The card has room for
+     * that now. The strip it used to share was one line, so every step had to
+     * fit in about 110 characters and came out clipped.
+     */
     say?: string;
+
+    /**
+     * A word the step introduces, with what it means in plain English.
+     *
+     * At most one per step: a term is shown in a box of its own, and two boxes
+     * would be two new ideas at once. A step that uses a word an earlier step
+     * defined does not define it again.
+     */
+    term?: { word: string; meaning: string };
+
+    /**
+     * The name of the part this step begins.
+     *
+     * Written on the first step of a part only; the steps after it belong to it
+     * until another step names a new one. Parts are how a lesson of fourteen
+     * steps reads as three short ones, and the card says which the student is in.
+     */
+    part?: string;
+
     /** A question that stops the track until it is answered. */
     ask?: LessonQuestion;
 }
@@ -170,6 +204,42 @@ export function paramsBetween(steps: LessonStep[], from: number, to: number): { 
 export function sayAt(steps: LessonStep[], position: number): string | null {
     const step = steps[position - 1];
     return step && step.say ? step.say : null;
+}
+
+/** A run of steps under one name, by position: `first` to `last`, both included. */
+export interface LessonPart {
+    title: string;
+    first: number;
+    last: number;
+}
+
+/**
+ * The lesson's parts, in order.
+ *
+ * A part runs from the step that names it to the step before the next one that
+ * does. Steps before the first name are a part with no title, so every step
+ * belongs to exactly one part and the positions are never renumbered: a part
+ * groups the track and does not replace it.
+ */
+export function partsOf(steps: LessonStep[]): LessonPart[] {
+    const parts: LessonPart[] = [];
+    steps.forEach(function (step, i) {
+        const position = i + 1;
+        if (parts.length === 0 || step.part) {
+            parts.push({ title: step.part || '', first: position, last: position });
+        } else {
+            parts[parts.length - 1].last = position;
+        }
+    });
+    return parts;
+}
+
+/** The part a position is in, and its index, or null at the start. */
+export function partAt(parts: LessonPart[], position: number): { part: LessonPart; index: number } | null {
+    for (let i = 0; i < parts.length; i++) {
+        if (position >= parts[i].first && position <= parts[i].last) return { part: parts[i], index: i };
+    }
+    return null;
 }
 
 /** The question the track is stopped on, or null. */

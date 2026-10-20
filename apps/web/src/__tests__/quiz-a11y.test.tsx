@@ -31,8 +31,12 @@ const mount = () => render(
     <MantineProvider theme={theme} env="test"><StudyScreen /></MantineProvider>
 );
 
-const marker = (position: number) => screen.getAllByRole('button')
-    .filter(b => b.hasAttribute('data-kinds'))[position];
+/** The progress bar's marker for a step, by position (the first step is 1). */
+const marker = (position: number) =>
+    within(screen.getByRole('group', { name: 'Lesson steps' })).getAllByRole('button')[position - 1];
+
+/** The lesson card's way on: "Start lesson" on its first page, "Next" after. */
+const next = () => screen.getByRole('button', { name: /^(Next|Start lesson)$/ });
 
 /** The question step in `studyDiagram.ts`. */
 const ASK = 8;
@@ -89,23 +93,25 @@ describe('the keyboard answers the question', () => {
         fireEvent.keyDown(control, { key: 'End' });
         fireEvent.keyDown(control, { key: 'Enter' });
 
-        expect(announcement().textContent).toContain('Right direction');
+        expect(announcement().textContent).toContain('the right direction');
         expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
     });
 
     /**
      * Reading order is the tab order, and the question sits where it looks like
-     * it sits: under the line that narrates the diagram, above the track that
-     * moves the lesson. Nothing here is a `div` with a click handler, so Enter,
-     * Space and focus order come free.
+     * it sits: on the lesson card, after the step's words that ask it and
+     * before the Back and Next that move the lesson on. Nothing here is a `div`
+     * with a click handler, so Enter, Space and focus order come free.
      */
-    it('sits between the strip and the track, with its controls in the tab order', async () => {
+    it('sits on the lesson card between the words and the way on, with its controls in the tab order', async () => {
         await ask();
-        const strip = document.querySelector('[data-kind]') as HTMLElement,
-            track = document.querySelector('[aria-label="Lesson steps"]') as HTMLElement;
+        const card = screen.getByRole('region', { name: 'Lesson' }),
+            words = card.querySelector('[aria-live="polite"]') as HTMLElement,
+            onward = within(card).getByRole('button', { name: 'Next' });
 
-        expect(strip.compareDocumentPosition(row()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-        expect(row().compareDocumentPosition(track) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(card.contains(row())).toBe(true);
+        expect(words.compareDocumentPosition(row()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(row().compareDocumentPosition(onward) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
         expect(slider().getAttribute('tabindex')).toBe('0');
         expect(screen.getByRole('button', { name: 'Check' }).tagName).toBe('BUTTON');
@@ -125,14 +131,14 @@ describe('the verdict reaches a student who cannot see the diagram', () => {
 
         await user.click(screen.getByRole('button', { name: 'Check' }));
         expect(announcement()).toBe(region);
-        expect(region.textContent).toContain('did not move');
+        expect(region.textContent).toContain('haven\'t moved');
     });
 
     /**
      * One thought in two clauses.
      *
      * Without `aria-atomic` the region is read a changed node at a time, so
-     * "Right direction. Too far." arrives as two verdicts with a pause between
+     * "Right direction. A bit too far." arrives as two verdicts with a pause between
      * them — which is exactly the impression the separate reporting is meant to
      * avoid giving.
      */
@@ -144,8 +150,8 @@ describe('the verdict reaches a student who cannot see the diagram', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(announcement().getAttribute('aria-atomic')).toBe('true');
-        expect(announcement().textContent).toContain('Right direction');
-        expect(announcement().textContent).toContain('Too far');
+        expect(announcement().textContent).toContain('the right direction');
+        expect(announcement().textContent).toContain('too far');
     });
 
     /**
@@ -163,7 +169,7 @@ describe('the verdict reaches a student who cannot see the diagram', () => {
 
         const strip = document.querySelector('[data-kind]') as HTMLElement;
         const stripSays = (strip.querySelector('[role="status"]') as HTMLElement).textContent || '';
-        expect(stripSays).not.toContain('Right direction');
+        expect(stripSays).not.toContain('the right direction');
         // It is doing its own job instead: saying what moved and what followed.
         expect(stripSays).toContain('a from 20.0 to 28.0');
     });
@@ -269,7 +275,7 @@ describe('choosing a curve by keyboard', () => {
         fireEvent.keyDown(supply, { key: 'Enter' });
 
         expect(announcement().textContent)
-            .toContain('This one works through demand for A$ — supply of A$ should stay where it was.');
+            .toContain('This change moves demand for A$, so supply of A$ should stay where it was.');
         expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
         // Off the slider that stopped working, onto the first thing that replaced it.
         expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Try again' }));
@@ -281,7 +287,7 @@ describe('choosing a curve by keyboard', () => {
         demand.focus();
         fireEvent.keyDown(demand, { key: 'ArrowRight' });
         fireEvent.keyDown(demand, { key: 'Enter' });
-        expect(announcement().textContent).toContain('Right direction — you moved demand for A$ right.');
+        expect(announcement().textContent).toContain('You moved demand for A$ right, which is the right direction.');
 
         ['Demand for A$', 'Supply of A$'].forEach(name => {
             const control = named(name), before = control.getAttribute('aria-valuetext');

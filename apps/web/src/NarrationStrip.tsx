@@ -1,4 +1,5 @@
 import { Anchor, Button, Group, Text } from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
 import type { NarrationLine } from './narration/narrate';
 import { toSentence } from './narration/narrate';
 import classes from './NarrationStrip.module.css';
@@ -21,28 +22,18 @@ export interface NarrationStripProps {
     line: NarrationLine;
 
     /**
-     * A sentence the lesson wrote, shown instead of the generated chain (P10).
+     * A move the diagram would not make, shown instead of the chain (P12).
      *
-     * The arbitration is not here. This component renders what it is handed, and
-     * the rule — the student's own action always wins, and a step's sentence
-     * persists until they act — lives in the screen, which is the only thing
-     * that knows both what the author said and what the student just did.
-     */
-    authored?: string | null;
-
-    /**
-     * A move the diagram would not make, shown instead of everything else (P12).
+     * It outranks the chain because it is the newer news: a curve that stopped
+     * dead has already raised the question this answers. Displacing rather than
+     * appending, because the strip is one line and sits under a stage that
+     * measures its own box. The chain is not lost: it is still announced, since
+     * a student who cannot see the diagram stop has nothing else to tell them
+     * what happened.
      *
-     * It outranks both the chain and a step's sentence, by the same rule that
-     * makes the chain outrank the sentence: the newest thing the student did
-     * wins the line. A refusal is also the only one of the three that is
-     * *surprising* — a curve that stopped dead has already raised the question
-     * this answers.
-     *
-     * Displacing rather than appending, because the strip is one line and sits
-     * above a stage that measures its own box. The chain is not lost: like an
-     * authored sentence, it is still announced, since a student who cannot see
-     * the diagram stop has nothing else to tell them what happened.
+     * The lesson's own words are not here any more. They are on the lesson card,
+     * where nothing the student does displaces them; when they shared this line,
+     * reaching the end of a slider took the step's explanation off the screen.
      */
     refusal?: string | null;
 
@@ -92,7 +83,6 @@ function Reading({ label, unit, from, to, direction }: NarrationLine['causes'][n
 
 export function NarrationStrip({
     line,
-    authored,
     refusal,
     restHint = 'Drag a curve to see what it changes.',
     onUndo,
@@ -105,22 +95,20 @@ export function NarrationStrip({
     /**
      * Both, for a screen reader, where the eye gets only one.
      *
-     * A sighted student reads the author's sentence and *watches* the diagram
-     * move; there is nothing to watch if you cannot see it, so the numbers are
-     * the only account of what the step did. Replacing the chain on screen and
-     * appending it here is not an inconsistency — it is the same information
-     * reaching two senses that need different amounts of it.
+     * A sighted student reads the refusal and can *see* where the curve
+     * stopped; there is nothing to see if you cannot, so the numbers are still
+     * the account of what happened. Replacing the chain on screen and appending
+     * it here is not an inconsistency — it is the same information reaching two
+     * senses that need different amounts of it.
      */
-    const said = refusal || authored;
-    const sentence = said
-        ? (chain ? said + ' ' + chain : said)
+    const sentence = refusal
+        ? (chain ? refusal + ' ' + chain : refusal)
         : chain;
 
     return (
         <div
             className={classes.strip}
             data-kind={line.kind}
-            data-authored={authored && !refusal ? 'true' : undefined}
             data-refusal={refusal ? 'true' : undefined}
         >
             {/* Read as elements the chain is a dozen fragments and a student
@@ -129,15 +117,16 @@ export function NarrationStrip({
               * live region below. Both are always in the DOM and in the same
               * place, so neither is a second source of truth. */}
             <div className={classes.chain} aria-hidden="true">
-                {/* One of three, never two: a refusal, then a step's sentence,
-                  * then the chain. Each displaces the one below rather than
-                  * joining it, because the strip is one line and must not grow —
-                  * it sits above the stage's own measured box. The chain comes
-                  * back the moment the student moves something that moves. */}
+                {/* One of two, never both: a refusal, then the chain. The
+                  * refusal displaces the chain rather than joining it, because
+                  * the strip is one line and must not grow — it sits under the
+                  * stage's own measured box. The chain comes back the moment the
+                  * student moves something that moves. */}
                 {refusal ? (
-                    <Text component="span" size="sm" className={classes.refusal}>{refusal}</Text>
-                ) : authored ? (
-                    <Text component="span" size="sm" className={classes.authored}>{authored}</Text>
+                    <span className={classes.refusal}>
+                        <IconInfoCircle size={16} stroke={1.75} className={classes.refusalIcon} />
+                        <Text component="span" size="sm" className={classes.refusalText}>{refusal}</Text>
+                    </span>
                 ) : line.kind === 'rest' ? (
                     <Text component="span" size="sm" c="dimmed">{restHint}</Text>
                 ) : (
@@ -159,11 +148,11 @@ export function NarrationStrip({
                         size="sm"
                         onClick={() => onWhy(line.whyTarget!)}
                     >
-                        why?
+                        Why?
                     </Anchor>
                 ) : null}
                 {settled && onUndo ? (
-                    <Button size="compact-xs" variant="default" onClick={onUndo}>undo</Button>
+                    <Button size="compact-xs" variant="default" onClick={onUndo}>Undo</Button>
                 ) : null}
             </Group>
 

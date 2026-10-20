@@ -16,8 +16,12 @@ export const SUPPLY_AND_DEMAND: StudyContent = {
     id: 'market',
     label: 'Supply and demand',
     title: 'A market, and what it does to everything else',
-    intro: 'Step through the lesson below, or drag a curve at any point. The panels are the ' +
-        'same market seen three ways, and they arrive as the lesson reaches them.',
+    intro: 'One market, seen three ways. Follow the lesson, or drag the demand curve at any time.',
+    goals: [
+        'How demand and supply set a price',
+        'What changes when demand rises',
+        'One change to work out yourself'
+    ],
     diagram: studyDiagram,
     lesson: LESSON as LessonStep[],
     panels: PANELS,

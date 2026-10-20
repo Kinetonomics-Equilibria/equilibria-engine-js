@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ParamInfo } from 'equilibria-engine-js';
 import { LESSONS, lessonById } from '../lessons';
 import type { StudyContent } from '../lessons';
-import { paramsAt } from '../track/track';
+import { paramsAt, partsOf } from '../track/track';
 import { candidatesOf, nearestAchievable, validateChoice, validateQuestion } from '../quiz/grade';
 import { parkApparatus } from '../quiz/apparatus';
 import { verdictFor } from '../quiz/verdict';
@@ -68,16 +68,21 @@ const onGrid = (def: ParamDef, value: number) =>
     Math.abs(nearestAchievable(infoOf(def), value) - value) < 1e-9;
 
 /**
- * The most a step's sentence can say on one line of the narration strip.
+ * How much a step may say: the chunking the lesson card is built for, held.
  *
- * The strip is one line that never grows — growing would take height from the
- * stage and shrink the diagram under the student — so a longer sentence is cut
- * off at an ellipsis.
- * Measured: the strip's sentence is about 760px wide at its narrowest beside the
- * dock (a 1100px window) and the sans-serif runs a little over 6px a character.
- * A question's prompt is exempt: it sits in the question row, which wraps.
+ * One idea per step, said in a short title and at most two short paragraphs —
+ * what happens, then what it means. The limits are generous for a sentence
+ * and tight for a lecture: a paragraph of 220 characters is about six lines of
+ * the card at its 320px width, and two of them, a title and a key term still
+ * fit a laptop's column without scrolling. A step that needs more is two
+ * steps. A title is read on the progress bar's markers as well as over the
+ * words, so it is a few words, not a sentence.
  */
-const STRIP_CHARACTERS = 120;
+const TITLE_CHARACTERS = 40;
+const PARAGRAPHS = 2;
+const PARAGRAPH_CHARACTERS = 220;
+/** An explanation is shown under a verdict, in a smaller box than the step's words. */
+const EXPLAIN_CHARACTERS = 200;
 
 describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" lesson', (_id, lesson) => {
 
@@ -106,11 +111,50 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
         });
     });
 
-    it('says each step\'s sentence in one line of the strip', () => {
+    it('gives every step a short title', () => {
         lesson.lesson.forEach((step, i) => {
-            if (!step.say || step.ask) return;
-            expect(step.say.length, `step ${i + 1}: "${step.say}"`).toBeLessThanOrEqual(STRIP_CHARACTERS);
+            expect(step.title, `step ${i + 1} has no title`).toBeTruthy();
+            expect(step.title!.length, `step ${i + 1}: "${step.title}"`).toBeLessThanOrEqual(TITLE_CHARACTERS);
         });
+    });
+
+    it('says one idea per step, in at most two short paragraphs', () => {
+        lesson.lesson.forEach((step, i) => {
+            const paragraphs = (step.say || '').split(/\n\s*\n/);
+            expect(paragraphs.length, `step ${i + 1}`).toBeLessThanOrEqual(PARAGRAPHS);
+            paragraphs.forEach(p => {
+                expect(p.length, `step ${i + 1}: "${p}"`).toBeLessThanOrEqual(PARAGRAPH_CHARACTERS);
+            });
+        });
+    });
+
+    // A word defined twice is a word the second step did not trust the first
+    // to have taught, and a second box saying the same thing.
+    it('defines each key term once', () => {
+        const words = lesson.lesson.filter(step => step.term).map(step => step.term!.word);
+        expect(new Set(words).size).toBe(words.length);
+    });
+
+    it('groups its steps into a few named parts, starting with the first', () => {
+        const parts = partsOf(lesson.lesson);
+        expect(lesson.lesson[0].part, 'the first step names its part').toBeTruthy();
+        expect(parts.length).toBeGreaterThanOrEqual(2);
+        expect(parts.length).toBeLessThanOrEqual(4);
+    });
+
+    // A right answer reached by luck and a student who pressed "Show me" are
+    // both missing the same thing: why.
+    it('explains every question once it is finished', () => {
+        lesson.lesson.forEach((step, i) => {
+            if (!step.ask) return;
+            expect(step.ask.explain, `question at step ${i + 1}`).toBeTruthy();
+            expect(step.ask.explain!.length, `question at step ${i + 1}`).toBeLessThanOrEqual(EXPLAIN_CHARACTERS);
+        });
+    });
+
+    it('says what the student will learn, before the first step', () => {
+        expect(lesson.goals.length).toBeGreaterThanOrEqual(2);
+        expect(lesson.goals.length).toBeLessThanOrEqual(4);
     });
 
     it('asks only questions a student can answer, about params it can draw', () => {
@@ -289,13 +333,13 @@ describe('a verdict about a curve that moves sideways', () => {
 
     it('says which way the student moved it in the lesson\'s words', () => {
         expect(verdictFor(RIGHT, grade(RIGHT, 50, 60, demand), 60, demand, words).direction)
-            .toBe('Right direction — you moved it right.');
+            .toBe('You moved it right, which is the right direction.');
         expect(verdictFor(RIGHT, grade(RIGHT, 50, 40, demand), 40, demand, words).direction)
-            .toBe('Wrong direction — you moved it left, and it should go right.');
+            .toBe('You moved it left, but this change moves it right.');
     });
 
     it('still says up and down for a lesson that gives no words', () => {
         expect(verdictFor(RIGHT, grade(RIGHT, 50, 60, demand), 60, demand).direction)
-            .toBe('Right direction — you moved it up.');
+            .toBe('You moved it up, which is the right direction.');
     });
 });

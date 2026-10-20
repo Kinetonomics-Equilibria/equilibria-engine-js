@@ -11,6 +11,13 @@ import type { Grade, Question } from './grade';
  * review. This is the one place in the product that tells someone they are
  * wrong, so the copy here is worth arguing about.
  *
+ * It is written for a fifteen-year-old who has just had a go. So it says what
+ * they did before it says what is right ("You moved it left, but…"), it never
+ * opens on a verdict word like "Wrong", and it uses contractions, because a
+ * sentence that sounds like a person is easier to take than one that sounds
+ * like a marking scheme. "Wrong direction — you moved…" was accurate, and read
+ * as a buzzer.
+ *
  * Two rules run through all of it.
  *
  * **Direction and magnitude are reported separately**, because "right way, not
@@ -82,11 +89,11 @@ function both(items: string[]): string {
         : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
 }
 
-/** "neither a nor b", "none of a, b or c". */
-function neither(items: string[]): string {
-    return items.length === 2
-        ? `neither ${items[0]} nor ${items[1]}`
-        : `none of ${items.slice(0, -1).join(', ')} or ${items[items.length - 1]}`;
+/** "a or b", "a, b or c". */
+function either(items: string[]): string {
+    return items.length < 2
+        ? items.join('')
+        : items.slice(0, -1).join(', ') + ' or ' + items[items.length - 1];
 }
 
 /**
@@ -119,7 +126,7 @@ export function verdictFor(
     const it = choice ? named(param.name) : 'it';
 
     const curve = strayed.length > 0
-        ? `This one works through ${named(param.name)} — ${both(strayed.map(named))} should stay ` +
+        ? `This change moves ${named(param.name)}, so ${both(strayed.map(named))} should stay ` +
           `where ${strayed.length > 1 ? 'they were' : 'it was'}.`
         : undefined;
 
@@ -128,38 +135,39 @@ export function verdictFor(
         // Moved the wrong curve and not this one: the curve sentence says it all.
         if (strayed.length === 0) {
             direction = choice
-                ? `You moved ${neither(offered.map(named))}. The answer is a shift, so one of them ` +
-                  `has to go somewhere.`
-                : 'You did not move it. The answer is a shift, so it has to go somewhere.';
+                ? `You haven't moved ${either(offered.map(named))} yet. One of them shifts, so move ` +
+                  `the one you think it is.`
+                : 'You haven\'t moved it yet. This change shifts it one way or the other, so move ' +
+                  'it, then check.';
         }
     } else if (grade.directionCorrect) {
-        direction = `Right direction — you moved ${it} ${words[question.direction]}.`;
+        direction = `You moved ${it} ${words[question.direction]}, which is the right direction.`;
     } else {
-        direction = `Wrong direction — you moved ${it} ${words[question.direction === 'up' ? 'down' : 'up']}, ` +
-            `and it should go ${words[question.direction]}.`;
+        direction = `You moved ${it} ${words[question.direction === 'up' ? 'down' : 'up']}, ` +
+            `but this change moves it ${words[question.direction]}.`;
     }
 
-    // In a question with a choice, where the asked curve belongs is said only
-    // once the student has moved it. Before that, "it belongs at 60" would
+    // In a question with a choice, where the asked curve goes is said only
+    // once the student has moved it. Before that, "it goes to 60" would
     // either name the curve the question is asking them to choose or follow a
     // sentence about a different curve, and mean that one.
     let magnitude: string | undefined;
     if (grade.magnitudeCorrect !== undefined && question.target !== undefined
         && (grade.moved || !choice)) {
         if (grade.magnitudeCorrect) {
-            magnitude = `And far enough: ${show(question.target)} is where it belongs.`;
+            magnitude = `And by the right amount, to ${show(question.target)}.`;
         } else if (grade.directionCorrect) {
             // "Not far enough" is only sayable of a shift that went the right
             // way. Said of one that went the wrong way it is arithmetic rather
             // than teaching, so the wrong-direction case just states the answer
             // and lets the reveal do the work.
             magnitude = grade.missBy! < 0
-                ? `Not far enough — you stopped at ${show(committed)}, ` +
-                  `and it belongs at ${show(question.target)}.`
-                : `Too far — you went to ${show(committed)}, ` +
-                  `and it belongs at ${show(question.target)}.`;
+                ? `Not quite far enough: you stopped at ${show(committed)}, ` +
+                  `and it goes to ${show(question.target)}.`
+                : `A bit too far: you went to ${show(committed)}, ` +
+                  `and it only goes to ${show(question.target)}.`;
         } else {
-            magnitude = `It belongs at ${show(question.target)}.`;
+            magnitude = `It goes to ${show(question.target)}.`;
         }
     }
 

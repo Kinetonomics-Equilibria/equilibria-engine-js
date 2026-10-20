@@ -100,6 +100,10 @@ async function dragDemandOffTheTop(page: Page) {
     await page.mouse.up();
 }
 
+/** The lesson card's marker for a step, by position (the first step is 1). */
+const stepMarker = (page: Page, position: number) =>
+    page.getByRole('group', { name: 'Lesson steps' }).getByRole('button').nth(position - 1);
+
 /**
  * Run the lesson out to its end, which is where free exploration lives.
  *
@@ -512,7 +516,7 @@ test('a narrow grid drops its names before its numbers', async ({ page }) => {
 // is where the student works.
 test('a lone panel stays workable in the grid', async ({ page }) => {
     await page.getByText('Grid', { exact: true }).click();
-    await page.locator('button[data-kinds]').nth(2).click();
+    await stepMarker(page, 2).click();
 
     await expect(page.locator('[data-panel="market"]')).toHaveAttribute('data-role', 'focal');
     await expect(page.locator('[data-testid="stage-chrome"] button')).toHaveCount(0);
@@ -522,20 +526,20 @@ test('a panel arrives without rebuilding the diagram', async ({ page }) => {
     // Back to the step before the surplus panel exists, then forward again.
     // A reveal changes what the stage arranges, which is the one thing that
     // used to mean a new engine and a flash.
-    const markers = page.locator('button[data-kinds]');
-    await markers.nth(3).click();
+    await stepMarker(page, 3).click();
     await expect(page.locator(panel('Consumer surplus'))).toHaveCount(0);
 
     await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
 
-    await markers.nth(4).click();
+    await stepMarker(page, 4).click();
     await expect(page.locator(panel('Consumer surplus'))).toBeVisible();
     await expect(page.locator('.kg-container svg[data-witness="1"]')).toHaveCount(1);
 });
 
 test('a panel that has not arrived is neither drawn nor reachable', async ({ page }) => {
-    const markers = page.locator('button[data-kinds]');
-    await markers.nth(0).click();
+    // Before the first step, which is where a fresh load starts.
+    await page.goto('/');
+    await page.locator('.kg-container svg').waitFor();
 
     // Nothing to promote, because nothing else is on the stage; and the market
     // panel is drawn as a frame with nothing in it yet.
@@ -545,7 +549,7 @@ test('a panel that has not arrived is neither drawn nor reachable', async ({ pag
     // The whole stage is the one panel that has arrived, rather than a focal
     // square with two empty slots beside it.
     const wide = (await page.locator('[data-panel="market"]').boundingBox())!;
-    await markers.nth(4).click();
+    await stepMarker(page, 4).click();
     const narrower = (await page.locator('[data-panel="market"]').boundingBox())!;
     expect(wide.width).toBeGreaterThan(narrower.width);
 });
@@ -576,15 +580,13 @@ const chainText = (page: Page) =>
     page.locator(`${STRIP} > div[aria-hidden="true"]`).textContent();
 
 test('the strip is at rest until something moves', async ({ page }) => {
-    // At rest, and — since the lesson has just finished — carrying its closing
-    // line rather than the generated chain. Nothing has moved, so there is
-    // nothing to undo and no chain to read.
+    // At rest. The lesson has just finished, and its closing words are on the
+    // lesson card, not here: the strip is for what the student's moves do.
+    // Nothing has moved, so there is nothing to undo and no chain to read.
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
-    await expect(page.locator(STRIP)).toHaveAttribute('data-authored', 'true');
-    // Twice over, and on purpose: once in the chain area for the eye, and once
-    // in the live region for a screen reader.
-    await expect(page.getByText('The market is yours now.', { exact: false })).toHaveCount(2);
-    await expect(page.getByRole('button', { name: 'undo' })).toHaveCount(0);
+    await expect(page.locator(STRIP)).toContainText('Drag a curve to see what it changes.');
+    await expect(page.getByRole('region', { name: 'Lesson' })).toContainText('The market is yours now.');
+    await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
 });
 
 test('before the lesson begins, the strip offers the lesson rather than a curve', async ({ page }) => {
@@ -595,9 +597,9 @@ test('before the lesson begins, the strip offers the lesson rather than a curve'
     await page.locator('.kg-container svg').waitFor();
 
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
-    await expect(page.getByText('Step forward to begin the lesson.')).toBeVisible();
+    await expect(page.getByText('Press Start lesson when you\'re ready.')).toBeVisible();
 
-    await expect(page.getByRole('button', { name: 'undo' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
     expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
 });
 
@@ -663,7 +665,7 @@ test('undo puts the market back, and the diagram stands down with it', async ({ 
     // The ghosts are the diagram's own account of the same interaction.
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
 
-    await page.getByRole('button', { name: 'undo' }).click();
+    await page.getByRole('button', { name: 'Undo' }).click();
 
     const after = await focalPointCoordinates(page);
     expect(Math.abs(after.x - before.x), 'Q* should be back where it started').toBeLessThan(TOLERANCE);
@@ -693,13 +695,17 @@ test('says why the curve stopped, when it stops', async ({ page }) => {
     await dragDemandOffTheTop(page);
 
     await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
-    await expect(page.getByText('a will not go above 28.0.')).toHaveCount(2);
+    await expect(page.getByText('a is at the top of its range (28.0) in this diagram.')).toHaveCount(2);
 
     // The chain is displaced on screen and kept in the announcement: the eye
     // watched the curve stop, and a screen reader did not.
-    expect(await chainText(page)).toBe('a will not go above 28.0.');
+    expect(await chainText(page)).toBe('a is at the top of its range (28.0) in this diagram.');
     expect(await page.locator(`${STRIP} [role="status"]`).textContent())
-        .toMatch(/^a will not go above 28\.0\..*P\*/);
+        .toMatch(/^a is at the top of its range \(28\.0\) in this diagram\..*P\*/);
+
+    // And the lesson keeps its words. When it shared the strip, reaching the
+    // end of a range took the step's explanation off the screen.
+    await expect(page.getByRole('region', { name: 'Lesson' })).toContainText('Over to you');
 });
 
 test('says it once, however long the drag pushes against the end', async ({ page }) => {
@@ -707,7 +713,7 @@ test('says it once, however long the drag pushes against the end', async ({ page
 
     // Twice is the eye and the live region; a third would be the strip having
     // grown a second line, and a hundred would be a refusal per pointer move.
-    await expect(page.getByText('a will not go above 28.0.')).toHaveCount(2);
+    await expect(page.getByText('a is at the top of its range (28.0) in this diagram.')).toHaveCount(2);
 });
 
 test('gives the strip back the moment something moves again', async ({ page }) => {
@@ -783,7 +789,7 @@ test('a slider scrub is one interaction, not one per frame', async ({ page }) =>
 
 test('the maths instrument shows the calc the strip named', async ({ page }) => {
     await dragDemandDown(page);
-    await page.getByRole('button', { name: 'why?' }).click();
+    await page.getByRole('button', { name: 'Why?' }).click();
 
     // "Why?" is answered by the instrument the strip pointed at, opened on the
     // calc it named — not by a list the student has to search.
@@ -821,9 +827,14 @@ test('the maths instrument prints the same numbers as the diagram', async ({ pag
  * scrollbar stood beside them for good — and that was with every fraction set
  * at the height of the text beside it. Now they are set in display style, which
  * is taller, and the spacing between calcs is what paid for it.
+ *
+ * The dock shares its column with the lesson card now, and under a step's
+ * words the maths scrolls (with a bar only on hover; see the next test). With
+ * the card folded to its progress bar and buttons, it fits as it did.
  */
-test('the maths instrument fits beside the stage at a laptop\'s height', async ({ page }) => {
+test('the maths instrument fits beside the stage at a laptop\'s height, with the lesson folded', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 833 });
+    await page.getByRole('button', { name: 'Hide this step' }).click();
     await page.getByRole('tab', { name: 'Maths' }).click();
 
     const open = page.getByRole('tabpanel');
@@ -976,7 +987,7 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
 
     // And undo still puts the market back, because `prev` is still the market
     // as it was before the drag rather than as it was at the last resize.
-    await page.getByRole('button', { name: 'undo' }).click();
+    await page.getByRole('button', { name: 'Undo' }).click();
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
     await expect(page.getByText(CHIP)).toHaveCount(0);
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
@@ -1053,7 +1064,7 @@ const ASK_MARKER = 8;
 async function toTheQuestion(page: Page) {
     await page.goto('/');
     await page.locator('.kg-container svg').waitFor();
-    await page.locator('button[data-kinds]').nth(ASK_MARKER).click();
+    await stepMarker(page, ASK_MARKER).click();
     const question = page.getByRole('group', { name: 'Question' });
     await expect(question).toBeVisible();
     return question;
@@ -1099,7 +1110,7 @@ test('the question is answered by moving the curve, and marked on where it lands
 
     // Dragging is imprecise, and the tolerance is what makes that fair: the
     // question asks for 26 from 20 and accepts a unit either side.
-    await expect(question.getByText(/Right direction/)).toBeVisible();
+    await expect(question.getByText(/the right direction/)).toBeVisible();
 });
 
 test('committing stops the curve moving, and retrying lets it go again', async ({ page }) => {
@@ -1127,7 +1138,7 @@ test('the reveal draws the answer beside the student\'s, and takes it away again
 
     await dragDemand(page, -4);
     await question.getByRole('button', { name: 'Check' }).click();
-    await expect(question.getByText(/Wrong direction/)).toBeVisible();
+    await expect(question.getByText(/but this change moves it/)).toBeVisible();
 
     // Still nothing drawn where the answer is: a wrong answer is not a reason
     // to give it away, only a reason to offer it.
@@ -1157,126 +1168,120 @@ test('the reveal draws the answer beside the student\'s, and takes it away again
 });
 
 /**
- * The lesson track (phase 5 of the study-screen audit).
+ * The lesson card's progress bar.
  *
- * What a unit test cannot see here is the cascade. The current marker's rule
- * was right on its own and lost to two others: a passed move's teal border
- * outranked it on specificity and a question's yellow came later, so on most
- * steps all that marked the student's place was a halo at about 1.2:1. That
- * only shows in a computed style, so these read computed styles and boxes.
+ * What a unit test cannot see here is the cascade. The old track's current
+ * marker lost to two other rules on specificity, and on most steps nothing
+ * marked the student's place; the bar's states are written so that cannot
+ * happen, and only a computed style shows whether it did. A marker draws its
+ * bar in `::before`, so that is what these read.
  */
 
-/** Every marker's fill, glyph colour and weight as drawn, and which is current. */
-const markerStyles = (page: Page) => page.locator('button[data-kinds]').evaluateAll(nodes =>
-    nodes.map(node => {
-        const style = getComputedStyle(node);
+/** Every marker's bar as drawn: its height and fill, and which is current. */
+const markerBars = (page: Page) => page.getByRole('group', { name: 'Lesson steps' }).getByRole('button')
+    .evaluateAll(nodes => nodes.map(node => {
+        const bar = getComputedStyle(node, '::before');
         return {
             current: node.getAttribute('aria-current') === 'step',
-            fill: style.backgroundColor,
-            ink: style.color,
-            weight: style.fontWeight
+            fill: bar.backgroundColor,
+            height: parseFloat(bar.height)
         };
     }));
 
-test('the current step is the one solid marker, whatever kind of step it is', async ({ page }) => {
-    // The markers fade between states. A reader who asks for less motion gets
-    // the end state at once, and so does this.
+test('the current step is the one taller, darker marker, whatever kind of step it is', async ({ page }) => {
+    // The bars ease between states. A reader who asks for less motion gets the
+    // end state at once, and so does this.
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    const markers = page.locator('button[data-kinds]');
 
-    // The start; a reveal; a move already passed (teal used to win there); the
-    // question (yellow used to win there); and a move at the very end.
+    // The first step; a move already passed; the question; and the very end.
     for (const scheme of ['light', 'dark']) {
         await page.evaluate(s => document.documentElement.setAttribute('data-mantine-color-scheme', s), scheme);
 
-        for (const position of [0, 1, 7, ASK_MARKER, 9]) {
+        for (const position of [1, 7, ASK_MARKER, 9]) {
             const where = `${scheme}, at step ${position}`;
-            await markers.nth(position).click();
-            await expect(markers.nth(position)).toHaveAttribute('aria-current', 'step');
+            await stepMarker(page, position).click();
+            await expect(stepMarker(page, position)).toHaveAttribute('aria-current', 'step');
 
-            const styles = await markerStyles(page);
-            const current = styles.filter(m => m.current);
+            const bars = await markerBars(page);
+            const current = bars.filter(m => m.current);
             expect(current, where).toHaveLength(1);
-            expect(styles.filter(m => !m.current).map(m => m.fill), where).not.toContain(current[0].fill);
+            expect(bars.filter(m => !m.current).map(m => m.fill), where).not.toContain(current[0].fill);
 
-            // Carried by fill and weight as well as hue: a solid block with a
-            // bold white glyph, on a row of pale boxes.
-            expect(current[0].ink, where).toBe('rgb(255, 255, 255)');
-            expect(current[0].weight, where).toBe('700');
+            // Carried by shape as well as hue: taller than every other bar, so
+            // it reads in greyscale and to someone who cannot tell blue apart.
+            const others = bars.filter(m => !m.current).map(m => m.height);
+            expect(current[0].height, where).toBeGreaterThan(Math.max(...others));
         }
     }
-});
-
-test('forward sits beside the steps, and only the step\'s own controls go to the far end', async ({ page }) => {
-    // A move, so "reset to this step" is on offer.
-    const markers = page.locator('button[data-kinds]');
-    await markers.nth(7).click();
-
-    const row = page.getByRole('group', { name: 'Lesson steps' });
-    const box = async (target: ReturnType<Page['locator']>) => (await target.boundingBox())!;
-    const right = (b: { x: number; width: number }) => b.x + b.width;
-
-    const track = await box(row);
-    const back = await box(row.getByRole('button', { name: 'Previous step' }));
-    const first = await box(markers.first());
-    const last = await box(markers.last());
-    const forward = await box(row.getByRole('button', { name: 'Next step' }));
-    const count = await box(row.getByText('7 / 9', { exact: true }));
-    const reset = await box(row.getByRole('button', { name: 'reset to this step' }));
-
-    // ‹, the markers, › and the count are neighbours. › used to sit hundreds of
-    // pixels past the last marker at this width, pushed there by the markers
-    // taking `flex: 1`.
-    expect(first.x - right(back)).toBeLessThan(24);
-    expect(forward.x - right(last)).toBeLessThan(24);
-    expect(count.x - right(forward)).toBeLessThan(24);
-
-    // The step's own control is at the far end, well clear of the group.
-    expect(right(track) - right(reset)).toBeLessThan(16);
-    expect(reset.x - right(count)).toBeGreaterThan(100);
-});
-
-test('on a narrow stage the steps scroll, and the current one stays in view with a neighbour either side', async ({ page }) => {
-    await page.setViewportSize({ width: 480, height: 800 });
-
-    const row = page.getByRole('group', { name: 'Lesson steps' });
-    const strip = page.locator('button[data-kinds]').first().locator('..');
-    const height = (await row.boundingBox())!.height;
-
-    await page.locator('button[data-kinds]').first().click();
-    expect(await strip.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true);
-
-    // Forward by ›, which is always in view, rather than by clicking markers:
-    // a click scrolls its own target into view and would prove nothing.
-    const markers = page.locator('button[data-kinds]');
-    const last = (await markers.count()) - 1;
-    for (let position = 1; position <= last; position++) {
-        await row.getByRole('button', { name: 'Next step' }).click();
-        await expect(markers.nth(position)).toHaveAttribute('aria-current', 'step');
-
-        // The step just taken and the one ahead stay on screen too, so the
-        // student can see what came before and what is next.
-        const span = [position - 1, position, Math.min(position + 1, last)];
-        await expect.poll(async () => {
-            const s = (await strip.boundingBox())!;
-            const boxes = await Promise.all(span.map(async i => (await markers.nth(i).boundingBox())!));
-            return boxes.every(b => b.x >= s.x && b.x + b.width <= s.x + s.width);
-        }, { message: `steps ${span.join(', ')} in view` }).toBe(true);
-    }
-
-    // The row never grows (the stage above measures its own box) and never
-    // spills sideways off the page.
-    expect((await row.boundingBox())!.height).toBe(height);
-    expect(await row.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
 });
 
 test('a step past an unanswered question looks locked, not disabled', async ({ page }) => {
     await toTheQuestion(page);
 
-    const locked = page.locator('button[data-kinds][data-reachable="false"]');
+    const locked = page.locator('button[data-step][data-reachable="false"]');
     await expect(locked).toHaveCount(1);
     expect(await locked.evaluate(el => {
-        const style = getComputedStyle(el);
-        return { opacity: style.opacity, border: style.borderStyle, lock: !!el.querySelector('svg'), glyph: el.textContent };
-    })).toEqual({ opacity: '1', border: 'dashed', lock: true, glyph: '' });
+        const style = getComputedStyle(el), bar = getComputedStyle(el, '::before');
+        return { opacity: style.opacity, border: bar.borderTopStyle };
+    })).toEqual({ opacity: '1', border: 'dashed' });
+});
+
+/**
+ * Where the lesson sits, and what it costs the diagram: nothing.
+ *
+ * The lesson used to speak from the strip under the stage, one line that could
+ * not grow, because growing would shrink the diagram. The card can say two
+ * paragraphs, a key term and a whole question because it is beside the stage,
+ * in a column whose width is fixed, and the stage's height does not depend on
+ * it. These hold that true in a browser, where boxes are real.
+ */
+const stageBox = async (page: Page) => (await page.locator('.kg-container svg').first().boundingBox())!;
+
+test('moving through the lesson never changes the diagram\'s size', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.kg-container svg').waitFor();
+    await stepMarker(page, 1).click();
+    const before = await stageBox(page);
+
+    // A short step, then the question with its sliders, then a verdict: the
+    // card grows each time, beside the stage and not above or below it.
+    await stepMarker(page, 7).click();
+    await stepMarker(page, ASK_MARKER).click();
+    const question = page.getByRole('group', { name: 'Question' });
+    await question.getByRole('button', { name: 'Check' }).click();
+
+    const after = await stageBox(page);
+    expect(after.height).toBeCloseTo(before.height, 0);
+    expect(after.width).toBeCloseTo(before.width, 0);
+});
+
+test('the lesson sits beside the diagram, above the instruments', async ({ page }) => {
+    const card = (await page.getByRole('region', { name: 'Lesson' }).boundingBox())!;
+    const stage = await stageBox(page);
+    const tabs = (await page.getByRole('tab', { name: 'Explore' }).boundingBox())!;
+
+    expect(card.x).toBeGreaterThan(stage.x + stage.width);
+    expect(tabs.y).toBeGreaterThan(card.y + card.height);
+});
+
+test('on a phone the lesson goes under the diagram, at a height that does not change', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await page.locator('.kg-container svg').waitFor();
+
+    const lesson = page.getByRole('region', { name: 'Lesson' });
+    await stepMarker(page, 1).click();
+    const short = (await lesson.boundingBox())!;
+    const stage = await stageBox(page);
+    expect(short.y).toBeGreaterThan(stage.y + stage.height);
+
+    // A step with more to say scrolls inside the card rather than growing it,
+    // which would shrink the diagram above.
+    await stepMarker(page, ASK_MARKER).click();
+    const long = (await lesson.boundingBox())!;
+    expect(long.height).toBeCloseTo(short.height, 0);
+    expect((await stageBox(page)).height).toBeCloseTo(stage.height, 0);
+
+    // And it stays on the page.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

@@ -2,19 +2,14 @@
  * when the open instrument changes. */
 
 .dock {
-    /* Fixed, and fixed on purpose. A dock that sized itself to its contents
-     * would hand the stage a new width every time a student switched tabs, and
-     * the stage — which measures itself — would faithfully re-arrange for it.
-     * `flex: none` is the half that stops a long scenario list stretching it. */
-    flex: none;
-    width: 320px;
+    /* Under the lesson in the side column, taking whatever height the lesson
+     * leaves. Its width is the column's, which is fixed, so switching tabs
+     * hands the stage nothing new to re-arrange for. The floor keeps the
+     * sliders in view when a long question makes the lesson tall. */
+    flex: 1 1 0;
+    min-height: 10rem;
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    /* No rule down its edge. The panels are sheets on the page now, and their
-     * edges are the line between stage and dock; a rule beside them was a
-     * second line saying the same thing. */
-    padding-left: var(--mantine-spacing-sm);
 }
 
 .tabs {

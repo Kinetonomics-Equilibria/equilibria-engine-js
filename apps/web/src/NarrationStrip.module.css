@@ -73,25 +73,29 @@
     color: var(--mantine-color-dimmed);
 }
 
-/* A lesson's own sentence. Prose where the chain is chips, and not dimmed: it
- * is the most important thing on the strip while it is there. */
-.authored {
+/* A refusal: the diagram would not go where the student pushed it. Said as a
+ * note, with an information mark and in the strip's ordinary grey, because
+ * nothing has gone wrong and nobody has made a mistake — a curve has reached
+ * the end of the range this diagram draws. It used to be orange, and read as
+ * a telling-off. */
+.refusal {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
-/* A refusal. Prose like an authored sentence, and coloured, because it is the
- * one thing the strip ever says that is *news the student did not cause* — they
- * pushed and nothing happened, and this is the answer to why. Amber rather than
- * red: nothing has gone wrong, a limit was reached. */
-.refusal {
+.refusalIcon {
+    flex: none;
+    color: var(--mantine-color-blue-6);
+}
+
+.refusalText {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--mantine-color-orange-8);
+    color: var(--mantine-color-dimmed);
 }
 
 /* The middle clause is prose among numbers, so it is set apart as prose. */

@@ -6,15 +6,20 @@ import { StudyScreen } from '../StudyScreen';
 import { theme } from '../theme';
 
 /**
- * Who gets the strip, when a lesson and a student both want to speak.
+ * Where the lesson speaks and where the student's moves are reported, now that
+ * those are two places.
  *
- * The rule is one sentence — the student's own action always wins, and a step's
- * sentence stands until they act — and it has one sharp edge that only shows up
- * with a real engine underneath: **a step that sets params fires the very event
- * that would clear the step's sentence.** So this test mounts the whole screen,
- * engine included, rather than the strip in isolation. A unit test of the rule
- * would pass against the naive implementation, which puts a sentence on screen
- * and wipes it in the same tick.
+ * They used to share the strip under the stage, with one rule deciding who got
+ * it: the student's own action wins, and a step's sentence stands until they
+ * act. It held, and it cost the lesson its words at exactly the wrong moments —
+ * a student who dragged a curve to see what the step meant, or who pushed one
+ * to the end of its range, lost the explanation they were exploring. So the
+ * step's words moved to the lesson card, where nothing the student does
+ * displaces them, and the strip kept the numbers.
+ *
+ * These mount the whole screen, engine included: the sharp edge is still that a
+ * step which sets params fires the very event a student's move fires, and only
+ * a real engine shows which of the two places each one reaches.
  */
 
 /** jsdom performs no layout, so the stage would measure 0x0 and mount nothing. */
@@ -35,95 +40,100 @@ const mount = () => render(
 const strip = () => document.querySelector('[data-kind]') as HTMLElement;
 const announced = () => (strip().querySelector('[role="status"]') as HTMLElement).textContent || '';
 
-const marker = (position: number) => screen.getAllByRole('button')
-    .filter(b => b.hasAttribute('data-kinds'))[position];
+/** The lesson card, and what it announces. */
+const card = () => screen.getByRole('region', { name: 'Lesson' });
+const words = () => (card().querySelector('[aria-live="polite"]') as HTMLElement).textContent || '';
+
+/** The progress bar's marker for a step, by position (the first step is 1). */
+const marker = (position: number) =>
+    within(screen.getByRole('group', { name: 'Lesson steps' })).getAllByRole('button')[position - 1];
 
 /** The step that moves the diagram, and the one after it. */
 const MOVES = 5;
-const MOVES_SAY = 'Incomes rise, so buyers want more at every price. Watch both panels.';
-const NEXT_SAY = 'And the money that changes hands: the price times the quantity sold.';
+const MOVES_TITLE = 'Incomes rise';
+const NEXT_TITLE = 'What sellers earn';
 
-describe('a lesson and a student, one strip', () => {
+describe('the lesson speaks on the card, and the strip reports the numbers', () => {
 
-    // And the hint is about the lesson, not about dragging a curve: at the
-    // start of a build-up there is no curve to drag.
-    it('starts on a hint rather than a sentence, since no step has spoken', () => {
+    // At the start there is no curve to drag, so the strip's hint is about
+    // starting, and the card says what the lesson is for.
+    it('starts on what the lesson is for, with a hint about starting it', () => {
         mount();
-        expect(strip().getAttribute('data-authored')).toBeNull();
-        expect(strip().textContent).toContain('Step forward to begin');
+        expect(words()).toContain('In this lesson');
+        expect(strip().textContent).toContain('Press Start lesson');
     });
 
-    it('shows a step\'s sentence when the step fires', async () => {
+    it('shows a step\'s words on the card when the step fires', async () => {
         mount();
         await userEvent.setup().click(marker(1));
 
-        expect(strip().getAttribute('data-authored')).toBe('true');
-        expect(strip().textContent).toContain('Demand slopes down');
+        expect(within(card()).getByRole('heading', { name: 'Demand: what buyers want' })).toBeTruthy();
+        // And not on the strip, which no longer carries the lesson's words.
+        expect(strip().textContent).not.toContain('Demand: what buyers want');
     });
 
     /**
      * The edge. Step 5 sets `a`, which is a param the strip narrates, so the
-     * change the step *causes* arrives as `kg:param_changed` before the sentence
-     * is set — and a rule that cleared on any narrated change would clear it
-     * again immediately, leaving a lesson that silently refuses to speak
-     * whenever it has something to show.
+     * change the step causes arrives as `kg:param_changed` — the same event a
+     * student's drag raises. The card keeps the step's words and the strip
+     * reports what the step moved.
      */
-    it('keeps the sentence through the step\'s own param change', async () => {
+    it('reports the step\'s own move on the strip, under the step\'s words', async () => {
         mount();
         await userEvent.setup().click(marker(MOVES));
 
-        expect(strip().getAttribute('data-authored')).toBe('true');
-        expect(strip().textContent).toContain('Incomes rise');
+        expect(words()).toContain(MOVES_TITLE);
+        expect(strip().getAttribute('data-kind')).toBe('settled');
+        expect(announced()).toContain('a from 20.0 to 26.0');
     });
 
-    // A screen reader gets both: the eye reads the sentence and watches the
-    // diagram move, and there is nothing to watch if you cannot see it.
-    it('announces the sentence and the numbers it caused', async () => {
+    // A screen reader hears both, each from its own place: the words when the
+    // step changes, the numbers when the diagram does.
+    it('announces the step\'s words from the card, and the numbers from the strip', async () => {
         mount();
         await userEvent.setup().click(marker(MOVES));
 
-        expect(announced()).toContain(MOVES_SAY);
+        expect(words()).toContain('they want more at every price');
         expect(announced()).toContain('P*');
+        expect(announced()).not.toContain('want more at every price');
     });
 
-    it('gives the strip back to the student the moment they move something', async () => {
+    /**
+     * The defect this layout exists for: a student who moved something to see
+     * what the step meant used to lose the step's words for it.
+     */
+    it('keeps the step\'s words when the student moves something', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(MOVES));
-        expect(strip().textContent).toContain('Incomes rise');
 
         // A scenario is the student acting through the dock — one `updateParams`
-        // call, exactly like a slider or a drag as far as the strip is concerned.
+        // call, exactly like a slider or a drag as far as the screen is concerned.
         await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
         await user.click(screen.getByRole('button', { name: 'Back to baseline' }));
 
-        expect(strip().getAttribute('data-authored')).toBeNull();
-        expect(strip().textContent).not.toContain('Incomes rise');
+        expect(words()).toContain(MOVES_TITLE);
         expect(within(strip()).getByText('a')).toBeTruthy();
     });
 
-    it('speaks again at the next step', async () => {
+    it('moves to the next step\'s words at the next step', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(MOVES));
-        await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
-        await user.click(screen.getByRole('button', { name: 'Back to baseline' }));
+        await user.click(screen.getByRole('button', { name: 'Next' }));
 
-        await user.click(screen.getByLabelText('Next step'));
-
-        expect(strip().getAttribute('data-authored')).toBe('true');
-        expect(strip().textContent).toContain(NEXT_SAY);
+        expect(words()).toContain(NEXT_TITLE);
+        expect(words()).not.toContain(MOVES_TITLE);
     });
 
-    // A step with nothing to say leaves the strip to the chain rather than
-    // holding the previous step's sentence up over an unrelated diagram.
-    it('stands down at a step that says nothing', async () => {
+    // Going back to the start puts the card back on its first page.
+    it('goes back to what the lesson is for at the start', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(1));
-        await user.click(marker(0));
+        await user.click(screen.getByRole('button', { name: 'Back' }));
 
-        expect(strip().getAttribute('data-authored')).toBeNull();
+        expect(words()).toContain('In this lesson');
     });
 });
 

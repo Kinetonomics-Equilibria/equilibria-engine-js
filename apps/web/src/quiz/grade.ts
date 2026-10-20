@@ -76,6 +76,17 @@ export interface Question {
      * which is the point — the number is made up, and it must not become a mark.
      */
     illustrate?: number;
+
+    /**
+     * Why the answer is what it is, in a sentence or two, for after the question.
+     *
+     * Shown once the question is finished, right or shown, and not before. A
+     * verdict says what the student did; this says the economics, which is
+     * what a right answer reached by luck is missing and what a student who
+     * pressed "Show me" came for. Shown after a wrong answer it would give away
+     * the retry. The grade never reads it.
+     */
+    explain?: string;
 }
 
 export interface Grade {

@@ -374,14 +374,23 @@ describe('a refusal', () => {
     const format = (v: number) => formatValue(v, 1);
 
     it('names the end the param stopped at', () => {
-        expect(phraseRefusal(bounds(), format)).toBe('a will not go above 28.0.');
+        expect(phraseRefusal(bounds(), format)).toBe('a is at the top of its range (28.0) in this diagram.');
         expect(phraseRefusal(bounds({ limit: 'min', value: 12 }), format))
-            .toBe('a will not go below 12.0.');
+            .toBe('a is at the bottom of its range (12.0) in this diagram.');
     });
 
     it('reads with a label as readily as with a symbol', () => {
-        expect(phraseRefusal(bounds({ label: 'Demand intercept' }), format))
-            .toBe('Demand intercept will not go above 28.0.');
+        expect(phraseRefusal(bounds({ label: 'Demand for A$' }), format))
+            .toBe('Demand for A$ is at the top of its range (28.0) in this diagram.');
+    });
+
+    // The one sentence that answers something the student tried and could not
+    // do. "Will not" made the diagram sound like it was refusing them; the end
+    // of a range is a fact about the diagram, said as one.
+    it('says where the range ends, not that the student was refused', () => {
+        [bounds(), bounds({ limit: 'min', value: 12 })].forEach(event => {
+            expect(phraseRefusal(event, format)).not.toMatch(/will not|won't|can't|not allowed/i);
+        });
     });
 
     // The author wrote the economics, so the author writes the sentence. An app
@@ -404,7 +413,7 @@ describe('a refusal', () => {
             restrictions: [{ expression: 'calcs.Qe', value: 0.5, min: 1 }]
         }), format);
 
-        expect(said).toMatch(/rule/);
+        expect(said).toBe('This diagram can\'t show that combination.');
     });
 
     it('blames the diagram, not the student, for a rule that is not a rule', () => {
@@ -415,7 +424,8 @@ describe('a refusal', () => {
             }]
         }), format);
 
-        expect(said).toContain('fault in the diagram');
+        expect(said).toContain('a problem with the diagram');
+        expect(said).toContain('not with anything you did');
         expect(said).not.toMatch(/you can|not allowed/i);
     });
 });

@@ -1,23 +1,19 @@
-/* The question row: between the narration strip and the track.
+/* The question, on the lesson card, under the step's words.
  *
- * Unlike the strip and the track it is not always there — it arrives with an
- * `ask` step and leaves with it, and the stage above re-measures both times.
- * That is one reflow per question rather than one per interaction, which is the
- * distinction those two rows' fixed heights exist to protect.
+ * It arrives with an `ask` step and leaves with it, inside the card's body,
+ * which scrolls: so unlike the row it used to be under the stage, it never
+ * changes the diagram's shape, and it can stack its controls rather than
+ * squeeze them onto one line.
  *
- * Within a question the height is held still: the verdict area is rendered
- * empty from the first frame and reserves its space, so a student reading the
- * prompt does not have the diagram jump when they press Check. */
+ * The answer sits on a tint of the colour questions have on this screen (the
+ * question's marker on the progress bar is the same yellow): it is the one
+ * part of the card that asks the student to do something. */
 
 .row {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: var(--mantine-spacing-xs);
-    border-top: 1px solid var(--mantine-color-default-border);
-    /* A question is the one thing on this screen the student must respond to,
-     * so it is the one row that is not the page's own background. */
-    background: var(--mantine-color-yellow-light);
+    gap: 8px;
+    margin: 4px 0 8px;
 }
 
 .prompt {
@@ -25,52 +21,100 @@
     font-weight: 500;
 }
 
-/* Wraps only when there is a choice of curve: a single control can shrink to
- * nothing, so it never forces a line break, and a row of two sliders on a phone
- * stacks them rather than squeezing each to a few pixels of track. */
 .answer {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--mantine-spacing-sm);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--mantine-radius-sm);
+    background: var(--mantine-color-yellow-light);
 }
 
+.answer > button {
+    align-self: flex-start;
+}
+
+/* A slider and its value on one line. */
 .control {
-    display: flex;
-    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--mantine-spacing-sm);
-    min-width: 0;
+    column-gap: var(--mantine-spacing-sm);
+    row-gap: 2px;
 }
 
-/* One of several: wide enough for its name, a usable track and its value. */
-.choice {
-    min-width: 15rem;
+/* One of several: its name and value on a line, and the slider under them at
+ * the card's full width, rather than a name, a track and a number squeezed
+ * across a column a little under 300px wide. */
+.choice .name {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.choice .value {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.choice > :not(.name):not(.value) {
+    grid-column: 1 / -1;
+    grid-row: 2;
 }
 
 .name {
-    flex: none;
     white-space: nowrap;
-}
-
-.slider {
-    flex: 1;
-    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Digits that do not move sideways as the value changes: this one is read
  * while it is being changed. */
 .value {
-    flex: none;
-    min-width: 3rem;
+    min-width: 2.5rem;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    color: var(--mantine-color-dimmed);
 }
 
-/* Two clauses and up to two controls. Reserved rather than grown into, so the
- * row is the same height before and after Check. Two lines is enough at the
- * widths this screen is used at; a narrow one may take a third, which grows the
- * row once and then stops. */
-.verdict {
-    min-height: 1.75rem;
+/* `.verdict` itself has no rule: it is always in the DOM and empty until there
+ * is a verdict, so it takes no room, and it must not be `display: none` while
+ * empty — a live region that is not in the accessibility tree when its content
+ * arrives is not announced. */
+
+.verdictBody {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.sentences {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.sentences:empty {
+    display: none;
+}
+
+/* The economics behind the answer, once the question is finished. */
+.explain {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    align-self: stretch;
+    padding: 8px 10px;
+    border-radius: var(--mantine-radius-sm);
+    background: light-dark(var(--mantine-color-teal-0), rgba(18, 184, 134, 0.12));
+}
+
+.explainLabel {
+    font-size: var(--mantine-font-size-xs);
+    color: light-dark(var(--mantine-color-teal-9), var(--mantine-color-teal-3));
+}
+
+.explainText {
+    margin: 0;
+    line-height: 1.5;
 }

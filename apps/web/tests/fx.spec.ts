@@ -89,13 +89,22 @@ async function dragSideways(page: Page, way: 'down' | 'up', dx: number) {
 
 const caption = (page: Page, key: string) => page.locator(`[data-testid="stage-chrome"] [data-panel="${key}"]`);
 
-/** The first question — the RBA, which works through demand for A$ — from a fresh load. */
+/**
+ * What the lesson card says at this step: its title and words, the prompt at a
+ * question. The first live region on the card; the question's verdict is the
+ * second, under it.
+ */
+const lessonWords = (page: Page) =>
+    page.getByRole('region', { name: 'Lesson' }).locator('[aria-live="polite"]').first();
+
+/** The first question — the RBA, which moves demand for A$ — from a fresh load. */
 async function toTheFirstQuestion(page: Page) {
     const markers = page.locator('button[data-kinds]');
     const kinds = await markers.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-kinds') || ''));
     await markers.nth(kinds.findIndex((k) => k.includes('ask'))).click();
     const question = page.getByRole('group', { name: 'Question' });
-    await expect(question).toContainText('RBA');
+    await expect(question).toBeVisible();
+    await expect(lessonWords(page)).toContainText('RBA');
     return question;
 }
 
@@ -232,13 +241,13 @@ test('supply of A$ is dragged right, and the A$ depreciates', async ({ page }) =
 test('a question about demand is answered by dragging it, and marked in its own words', async ({ page }) => {
     const question = await toTheFirstQuestion(page);
     // The prompt asks which curve, and does not say.
-    await expect(question).toContainText('Which curve moves, and which way?');
-    await expect(question).not.toContainText('demand for A$');
+    await expect(lessonWords(page)).toContainText('Which curve moves, and which way?');
+    await expect(lessonWords(page)).not.toContainText(/demand for A\$/i);
 
     await dragSideways(page, 'down', 50);
     await question.getByRole('button', { name: 'Check' }).click();
 
-    await expect(question.getByRole('status')).toContainText('Right direction — you moved demand for A$ right.');
+    await expect(question.getByRole('status')).toContainText('You moved demand for A$ right, which is the right direction.');
 });
 
 /**
@@ -256,8 +265,8 @@ test('dragging supply on a demand question is told so, in words', async ({ page,
     await question.getByRole('button', { name: 'Check' }).click();
 
     await expect(question.getByRole('status'))
-        .toContainText('This one works through demand for A$ — supply of A$ should stay where it was.');
-    await expect(question.getByRole('status')).not.toContainText('did not move');
+        .toContainText('This change moves demand for A$, so supply of A$ should stay where it was.');
+    await expect(question.getByRole('status')).not.toContainText('haven\'t moved');
     expect(pageErrors).toEqual([]);
 });
 
@@ -271,7 +280,7 @@ test('the keyboard chooses a curve as the mouse does', async ({ page }) => {
     await page.keyboard.press('Enter');
 
     await expect(question.getByRole('status'))
-        .toContainText('This one works through demand for A$ — supply of A$ should stay where it was.');
+        .toContainText('This change moves demand for A$, so supply of A$ should stay where it was.');
     // The supply curve really moved: two steps of two is two US cents off the rate.
     await expect(caption(page, 'market')).toContainText('A$1 = US$0.63');
 });
@@ -285,7 +294,7 @@ test('the keyboard chooses a curve as the mouse does', async ({ page }) => {
 test('"Show me" draws demand for A$ shifted ten to the right', async ({ page, pageErrors }) => {
     const question = await toTheFirstQuestion(page);
     await question.getByRole('button', { name: 'Check' }).click();
-    await expect(question.getByRole('status')).toContainText('You moved neither');
+    await expect(question.getByRole('status')).toContainText('You haven\'t moved demand for A$ or supply of A$ yet.');
 
     // A wrong answer is a reason to offer the answer, not to show it.
     expect(await dottedLines(page)).toEqual([]);
@@ -363,8 +372,8 @@ test('no text on the stage lands on other text', async ({ page }) => {
     for (const arrangement of ['Focus', 'Grid']) {
         await page.getByText(arrangement, { exact: true }).click();
         for (const scenario of ['Back to A$1 = US$0.65', 'Iron ore prices soar', 'Australians holiday abroad']) {
-            // Exact: a track marker is named by its step's sentence, and one of
-            // those ends with the same words as the baseline scenario.
+            // Exact: a progress marker is named by its step's title, and a
+            // title could share words with a scenario.
             await page.getByRole('button', { name: scenario, exact: true }).click();
             await expect.poll(() => textCollisions(page), { message: `${arrangement}, ${scenario}` }).toEqual([]);
         }

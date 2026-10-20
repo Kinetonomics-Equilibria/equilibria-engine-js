@@ -10,15 +10,15 @@ import type { DirectionWords } from './quiz/verdict';
 import classes from './QuestionRow.module.css';
 
 /**
- * The question, under the strip: prompt, answer, verdict.
+ * The question, on the lesson card: answer, verdict, and why.
  *
- * It is a row of its own rather than part of the narration strip, and that is a
- * correction to the plan rather than a preference. P10's arbitration rule is
- * that the student's own action always wins the strip — so the instant they
- * drag to answer, the strip clears the step's sentence and the question
- * disappears from the screen while they are answering it. The prompt lives
- * here; the strip goes on doing its job, which during an attempt is narrating
- * the attempt.
+ * Under the step's own words, which are the prompt — the card shows them for
+ * every step, and a question is a step. It used to be a row of its own under
+ * the stage, because the prompt could not live in the narration strip: the
+ * student's own action wins the strip, so the question would have vanished the
+ * moment they moved something to answer it. The card has no such rule, so the
+ * question sits with the rest of the lesson, and the stage no longer changes
+ * shape when one arrives.
  *
  * Nothing here grades anything. It renders an attempt and reports what the
  * student wants to do, for the same reason `NarrationStrip` renders a line and
@@ -27,8 +27,13 @@ import classes from './QuestionRow.module.css';
  */
 
 export interface QuestionRowProps {
-    /** The step's own sentence. One prompt per step, written one way. */
-    prompt: string | null;
+    /**
+     * The question, in words, when nothing above already says it.
+     *
+     * On the lesson card the step's own words are the prompt and are shown
+     * above this, so the card passes nothing. One prompt per step, written once.
+     */
+    prompt?: string | null;
     attempt: Attempt;
 
     /**
@@ -110,9 +115,9 @@ export function QuestionRow({
             aria-label="Question"
             data-phase={attempt.phase}
         >
-            <Text component="p" size="sm" className={classes.prompt}>
-                {prompt || 'Move the diagram to answer, then check.'}
-            </Text>
+            {prompt ? (
+                <Text component="p" size="sm" className={classes.prompt}>{prompt}</Text>
+            ) : null}
 
             <div className={classes.answer}>
                 {asked ? params.map(param => (
@@ -172,7 +177,7 @@ export function QuestionRow({
               * enough", with a pause in the middle that reads as two verdicts. */}
             <div className={classes.verdict} role="status" aria-live="polite" aria-atomic="true">
                 {verdict ? (
-                    <Group gap="xs" wrap="wrap" align="baseline">
+                    <div className={classes.verdictBody}>
                         <Badge
                             size="sm"
                             variant="light"
@@ -182,37 +187,44 @@ export function QuestionRow({
                             {verdict.headline}
                         </Badge>
                         {/* Which curve, then which way, then how far: the order
-                          * the reasoning goes in. */}
-                        {verdict.curve ? (
-                            <Text component="span" size="sm">{verdict.curve}</Text>
-                        ) : null}
-                        {verdict.direction ? (
-                            <Text component="span" size="sm">{verdict.direction}</Text>
-                        ) : null}
-                        {verdict.magnitude ? (
-                            <Text component="span" size="sm">{verdict.magnitude}</Text>
+                          * the reasoning goes in, as one paragraph. */}
+                        <Text component="p" size="sm" className={classes.sentences}>
+                            {[verdict.curve, verdict.direction, verdict.magnitude]
+                                .filter(Boolean).join(' ')}
+                        </Text>
+
+                        {/* The economics, once the question is finished and not
+                          * before: after a wrong answer it would be the answer
+                          * to the retry. */}
+                        {isResolved(attempt) && attempt.question.explain ? (
+                            <div className={classes.explain}>
+                                <span className={classes.explainLabel}>Why</span>
+                                <Text component="p" size="sm" className={classes.explainText}>
+                                    {attempt.question.explain}
+                                </Text>
+                            </div>
                         ) : null}
 
                         <Group gap="xs" wrap="nowrap" ref={controls}>
                             {attempt.phase === 'verdict' && !attempt.grade!.correct ? (
                                 <>
-                                    <Button size="compact-xs" variant="default" onClick={onRetry}>
+                                    <Button size="compact-sm" variant="default" onClick={onRetry}>
                                         Try again
                                     </Button>
                                     {/* Unlimited retries measure persistence
                                       * rather than recall, which is the better
                                       * thing to measure — but only if nobody
                                       * can be stuck. */}
-                                    <Button size="compact-xs" variant="subtle" onClick={onReveal}>
+                                    <Button size="compact-sm" variant="subtle" onClick={onReveal}>
                                         Show me
                                     </Button>
                                 </>
                             ) : null}
                             {isResolved(attempt) ? (
-                                <Button size="compact-xs" onClick={onContinue}>Continue</Button>
+                                <Button size="compact-sm" onClick={onContinue}>Continue</Button>
                             ) : null}
                         </Group>
-                    </Group>
+                    </div>
                 ) : null}
             </div>
         </section>

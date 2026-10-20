@@ -1,0 +1,220 @@
+/* The lesson card: a sheet like the panels' sheets, so the words and the
+ * diagram read as two things of the same kind, side by side.
+ *
+ * Three bands. The head (where the student is) and the foot (the way on) hold
+ * still; the body between them scrolls when a question and its verdict outgrow
+ * it, so Back and Next never scroll out of reach. */
+
+.card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--mantine-color-body);
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.head {
+    flex: none;
+    padding: 12px 14px 4px;
+}
+
+.label {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-xs);
+    min-height: 22px;
+}
+
+.part {
+    flex: 1;
+    min-width: 0;
+    color: var(--mantine-color-dimmed);
+}
+
+.fold {
+    flex: none;
+    color: var(--mantine-color-dimmed);
+}
+
+/* The progress bar: one group per part, a gap between groups wider than the
+ * gap inside one, so the parts are drawn by the spacing alone. */
+.progress {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.group {
+    display: flex;
+    flex-basis: 0;
+    gap: 3px;
+    min-width: 0;
+}
+
+/* A marker is a 20px-tall button with a thin bar drawn in the middle of it, so
+ * it is easy to hit and quiet to look at. Each is a jump to its step; Back and
+ * Next are the main way through and are full-size. */
+.marker {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 6px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.marker::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 6px;
+    transform: translateY(-50%);
+    border-radius: 3px;
+    background: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+    transition: background-color 120ms ease, height 120ms ease;
+}
+
+/* A marker's states, each written `.marker:where(…)` so that none outweighs
+ * another by how its selector is spelled: the order here is the precedence. */
+
+/* A question still ahead, in the colour questions have on this screen. It is
+ * the only kind of step that stops the lesson, so it is the only one marked. */
+.marker:where([data-kinds~='ask'])::before {
+    background: light-dark(var(--mantine-color-yellow-4), var(--mantine-color-yellow-8));
+}
+
+/* A step already passed: a pale blue on white, a dim one on the dark page —
+ * either way well short of the current step's. */
+.marker:where([data-reached='true'])::before {
+    background: light-dark(var(--mantine-color-blue-3), rgba(34, 139, 230, 0.4));
+}
+
+/* A step the lesson will not reach yet, past an unanswered question: marked
+ * out and not open, rather than greyed as if broken. */
+.marker:where([data-reachable='false'])::before {
+    background: transparent;
+    border: 1px dashed light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+}
+
+/* Where the student is: taller than everything else on the bar, and the
+ * strongest blue on it — dark on the light page and bright on the dark one —
+ * so it reads by shape as well as by colour. Last, and one attribute heavier
+ * than every `:where()` above, so it wins over all of them. */
+.marker[aria-current='step']::before {
+    height: 10px;
+    border-radius: 4px;
+    background: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-4));
+}
+
+.marker:hover::before {
+    filter: brightness(0.92);
+}
+
+.marker:focus-visible {
+    outline: 2px solid var(--mantine-color-blue-6);
+    outline-offset: 1px;
+}
+
+.body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 14px 12px;
+}
+
+.title {
+    font-size: var(--mantine-font-size-lg);
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0 0 6px;
+}
+
+/* Reading size, a touch above the interface's 14px: this is the text the
+ * screen is for, and it is read at arm's length on a school laptop. */
+.para {
+    margin: 0 0 8px;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.goals {
+    margin: 0 0 8px;
+    padding-left: 1.2em;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.goals li + li {
+    margin-top: 4px;
+}
+
+/* A new word and what it means, set apart so it can be found again. */
+.term {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 4px 0 8px;
+    padding: 8px 10px;
+    border-radius: var(--mantine-radius-sm);
+    background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.12));
+}
+
+.termLabel {
+    font-size: var(--mantine-font-size-xs);
+    color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-3));
+}
+
+.termWord {
+    font-size: var(--mantine-font-size-sm);
+    font-weight: 600;
+}
+
+.termMeaning {
+    font-size: var(--mantine-font-size-sm);
+    line-height: 1.5;
+}
+
+.reset {
+    display: inline-block;
+    margin-top: 4px;
+}
+
+.foot {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 14px 10px;
+    border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.blocked {
+    color: var(--mantine-color-dimmed);
+    text-align: right;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-xs);
+}
+
+.count {
+    flex: 1;
+    text-align: center;
+    color: var(--mantine-color-dimmed);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marker::before {
+        transition: none;
+    }
+}

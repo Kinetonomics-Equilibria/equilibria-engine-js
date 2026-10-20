@@ -29,8 +29,12 @@ const mount = () => render(
     <MantineProvider theme={theme} env="test"><StudyScreen content={FOREIGN_EXCHANGE} /></MantineProvider>
 );
 
-const marker = (position: number) => screen.getAllByRole('button')
-    .filter(b => b.hasAttribute('data-kinds'))[position];
+/** The progress bar's marker for a step, by position (the first step is 1). */
+const marker = (position: number) =>
+    within(screen.getByRole('group', { name: 'Lesson steps' })).getAllByRole('button')[position - 1];
+
+/** The lesson card's way on: "Start lesson" on its first page, "Next" after. */
+const next = () => screen.getByRole('button', { name: /^(Next|Start lesson)$/ });
 
 /** What a panel's caption says, name and number. Empty before it has arrived. */
 const caption = (panel: 'market' | 'mirror') => {
@@ -42,6 +46,11 @@ const caption = (panel: 'market' | 'mirror') => {
 const FIRST_QUESTION = FX_LESSON.findIndex(step => !!step.ask) + 1;
 
 const row = () => screen.getByRole('group', { name: 'Question' });
+
+/** What the lesson card says at this step: its title and words, the prompt at a question. */
+const words = () =>
+    (screen.getByRole('region', { name: 'Lesson' }).querySelector('[aria-live="polite"]') as HTMLElement)
+        .textContent || '';
 const verdict = () => row().querySelector('[role="status"]')!.textContent || '';
 
 type Curve = 'Demand for A$' | 'Supply of A$';
@@ -106,7 +115,7 @@ describe('what the lesson says the A$ is worth', () => {
         mount();
 
         for (let position = 1; position < FIRST_QUESTION; position++) {
-            await user.click(screen.getByLabelText('Next step'));
+            await user.click(next());
             const said = FX_LESSON[position - 1].say || '';
 
             // A US$ amount to the cent is the price of A$1; an A$ amount to the
@@ -126,7 +135,7 @@ describe('what the lesson says the A$ is worth', () => {
         mount();
 
         for (let position = 1; position < FIRST_QUESTION; position++) {
-            await user.click(screen.getByLabelText('Next step'));
+            await user.click(next());
             const said = FX_LESSON[position - 1].say || '';
             // The chip is the diagram's own record of which way the rate went
             // at this step, against the snapshot the step took.
@@ -148,7 +157,7 @@ describe('the questions', () => {
 
         expect(verdict()).toContain('Correct');
         // The prompt no longer names the curve, so the verdict does.
-        expect(verdict()).toContain('Right direction — you moved demand for A$ right.');
+        expect(verdict()).toContain('You moved demand for A$ right, which is the right direction.');
         // Five steps of two is ten, and ten is five US cents on the rate.
         expect(caption('market')).toContain('A$1 = US$0.70');
     });
@@ -162,11 +171,11 @@ describe('the questions', () => {
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
         // Relative prices: supply of A$ should go right. Move it left.
-        expect(row().textContent).toContain('Australians switch to imports');
+        expect(words()).toContain('Australians switch to imports');
         press('Supply of A$', 'ArrowLeft', 3);
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
-        expect(verdict()).toContain('Wrong direction — you moved supply of A$ left, and it should go right.');
+        expect(verdict()).toContain('You moved supply of A$ left, but this change moves it right.');
     });
 
     it('starts each question from A$1 = US$0.65, whatever was moved on the way', async () => {
@@ -199,7 +208,7 @@ describe('choosing the curve', () => {
         await user.click(screen.getByRole('button', { name: 'Show me' }));
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-        expect(row().textContent).toContain('Australians switch to imports');   // about supply
+        expect(words()).toContain('Australians switch to imports');   // about supply
         expect(names()).toEqual(['Demand for A$', 'Supply of A$']);
     });
 
@@ -226,9 +235,9 @@ describe('choosing the curve', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(verdict()).toContain('Not yet');
-        expect(verdict()).toContain('This one works through demand for A$ — supply of A$ should stay where it was.');
-        expect(verdict()).not.toContain('did not move');
-        expect(screen.getByText('Answer to continue.')).toBeTruthy();
+        expect(verdict()).toContain('This change moves demand for A$, so supply of A$ should stay where it was.');
+        expect(verdict()).not.toContain('haven\'t moved');
+        expect(screen.getByText('Answer the question to unlock the next step.')).toBeTruthy();
     });
 
     it('freezes both curves once the answer is taken, from the question and from the dock', async () => {
@@ -264,7 +273,7 @@ describe('choosing the curve', () => {
         press('Supply of A$', 'ArrowRight', 3);                    // 56: and supply too
         await user.click(screen.getByRole('button', { name: 'Check' }));
         expect(verdict()).toContain('supply of A$ should stay where it was');
-        expect(verdict()).toContain('Right direction — you moved demand for A$ right.');
+        expect(verdict()).toContain('You moved demand for A$ right, which is the right direction.');
 
         await user.click(screen.getByRole('button', { name: 'Try again' }));
 

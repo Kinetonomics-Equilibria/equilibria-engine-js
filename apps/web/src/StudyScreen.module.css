@@ -213,14 +213,61 @@
     color: var(--mantine-color-dimmed);
 }
 
-/* Stage and dock, side by side.
+/* The diagram and the side column, side by side.
  *
- * The row is the entire mechanism by which the dock affects the stage: it takes
- * its fixed width, the stage gets what is left, and the stage's own
+ * The row is the entire mechanism by which the side column affects the stage:
+ * it takes its fixed width, the stage gets what is left, and the stage's own
  * ResizeObserver does the rest. Nothing here tells the stage anything. */
 .stageRow {
     display: flex;
     flex: 1;
     min-height: 0;
+    gap: var(--mantine-spacing-md);
+}
+
+/* The stage, with the strip under it, and on a narrow screen the lesson under
+ * that. The stage takes whatever height the rest leave, and the rest hold
+ * still, so it changes shape only when the window does. */
+.stageColumn {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* The lesson, then the instruments, at a width that depends on neither.
+ *
+ * The lesson takes the height its step needs, up to most of the column, and
+ * scrolls inside past that; the instruments take the rest, with a floor so the
+ * sliders are never squeezed out by a long question. */
+.side {
+    display: flex;
+    flex: none;
+    flex-direction: column;
     gap: var(--mantine-spacing-sm);
+    width: 320px;
+    min-height: 0;
+}
+
+.lessonBeside {
+    flex: 0 1 auto;
+    max-height: 70%;
+}
+
+/* The column's only occupant, where the instruments are a sheet: as tall as
+ * its step needs, and the whole column if it needs that. */
+.lessonAlone {
+    flex: 0 1 auto;
+    max-height: 100%;
+}
+
+/* Under the stage, at a fixed height: a lesson whose card grew and shrank
+ * with each step would reshape the diagram above it at every Next. A third of
+ * a phone's height, which is a heading and a paragraph and the way on; the
+ * rest scrolls inside. */
+.lessonBelow {
+    flex: none;
+    height: clamp(11rem, 34vh, 18rem);
+    margin-top: var(--mantine-spacing-sm);
 }
