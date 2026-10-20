@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Drawer, ScrollArea, Tabs } from '@mantine/core';
 import type { Instrument, InstrumentFocus, InstrumentProps } from './types';
 import classes from './Dock.module.css';
@@ -14,15 +15,37 @@ import classes from './Dock.module.css';
  * regardless of what is open. An instrument with a long list scrolls inside its
  * own box.
  *
+ * Beside the stage the lesson is a tab here too, ahead of the instruments:
+ * Lesson, Explore, Scenarios, Maths. Still one at a time — while the lesson is
+ * open no instrument is mounted, so the only controls on screen are the ones a
+ * step hands the student — and the card is the same height whichever is open,
+ * so moving from one to another hands neither the stage nor "What changed"
+ * under it anything to re-arrange for.
+ *
  * Below the breakpoint the same instruments are shown in a bottom sheet. The
  * stage is short there and a column beside it would leave neither readable.
  */
 
+/** The lesson's tab, when the dock holds one. */
+export const LESSON_TAB = 'lesson';
+
 export interface DockProps {
     instruments: Instrument[];
-    /** Which instrument is open. Controlled: P8's "why?" opens Maths from outside. */
+    /**
+     * Which tab is open: an instrument's id, or `LESSON_TAB`. Controlled: P8's
+     * "why?" opens Maths from outside, and opening the lesson or leaving it is
+     * a move the screen makes, not the dock.
+     */
     open: string;
     onOpenChange(id: string): void;
+
+    /**
+     * The lesson, as the first tab. Its card brings its own head, body and
+     * foot, and scrolls its body between them so Back and Next never scroll
+     * away, so it is not put in the instruments' scroll area. Absent in the
+     * sheet: on a phone the lesson is under the stage.
+     */
+    lesson?: ReactNode;
 
     /** Everything the instruments are handed; see `InstrumentProps`. */
     context: Omit<InstrumentProps, 'focus'>;
@@ -39,14 +62,18 @@ export interface DockProps {
     sheet?: boolean;
     sheetOpen?: boolean;
     onSheetClose?(): void;
+
+    /** Where the column puts the card and how tall it is: the screen's call. */
+    className?: string;
 }
 
-function Instruments({ instruments, open, onOpenChange, context, focus }: {
+function Instruments({ instruments, open, onOpenChange, context, focus, lesson }: {
     instruments: Instrument[];
     open: string;
     onOpenChange(id: string): void;
     context: Omit<InstrumentProps, 'focus'>;
     focus?: InstrumentFocus;
+    lesson?: ReactNode;
 }) {
     return (
         // `keepMounted={false}` is the "one at a time" claim made literal: an
@@ -56,6 +83,11 @@ function Instruments({ instruments, open, onOpenChange, context, focus }: {
         // `pills` for its geometry only — a rounded tab with no underline — and
         // the colours are this file's: a track with the open tab raised out of
         // it, as the stage's Focus/Grid control is, rather than a blue pill.
+        //
+        // Not `grow`, which shares the track in equal parts: four names in a
+        // 320px column do not fit in quarters of it. Each tab is its name's
+        // width and the room left over is shared out, which the dock's CSS
+        // keeps still by giving the open tab no heavier a weight than the rest.
         <Tabs
             value={open}
             onChange={value => value && onOpenChange(value)}
@@ -63,13 +95,20 @@ function Instruments({ instruments, open, onOpenChange, context, focus }: {
             variant="pills"
             classNames={{ root: classes.tabs, list: classes.list, tab: classes.tab }}
         >
-            <Tabs.List grow>
+            <Tabs.List>
+                {lesson ? <Tabs.Tab value={LESSON_TAB}>Lesson</Tabs.Tab> : null}
                 {instruments.map(i => (
                     <Tabs.Tab key={i.id} value={i.id} leftSection={i.icon}>
                         {i.label}
                     </Tabs.Tab>
                 ))}
             </Tabs.List>
+
+            {lesson ? (
+                <Tabs.Panel value={LESSON_TAB} className={`${classes.panel} ${classes.lessonPanel}`}>
+                    {lesson}
+                </Tabs.Panel>
+            ) : null}
 
             {instruments.map(i => (
                 <Tabs.Panel key={i.id} value={i.id} className={classes.panel}>
@@ -92,8 +131,8 @@ function Instruments({ instruments, open, onOpenChange, context, focus }: {
 }
 
 export function Dock({
-    instruments, open, onOpenChange, context, focus,
-    sheet = false, sheetOpen = false, onSheetClose
+    instruments, open, onOpenChange, context, focus, lesson,
+    sheet = false, sheetOpen = false, onSheetClose, className
 }: DockProps) {
 
     const body = (
@@ -103,6 +142,7 @@ export function Dock({
             onOpenChange={onOpenChange}
             context={context}
             focus={focus}
+            lesson={sheet ? undefined : lesson}
         />
     );
 
@@ -122,7 +162,10 @@ export function Dock({
     }
 
     return (
-        <aside className={classes.dock} aria-label="Instruments">
+        <aside
+            className={className ? `${classes.dock} ${className}` : classes.dock}
+            aria-label={lesson ? 'Lesson and instruments' : 'Instruments'}
+        >
             {body}
         </aside>
     );

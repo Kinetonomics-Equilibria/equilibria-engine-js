@@ -243,14 +243,13 @@
     min-height: 0;
 }
 
-/* The lesson, or the instruments under a line saying where the lesson was
- * left — and under either, "What changed" — at a width that depends on none
- * of them.
+/* The tabs' card — the lesson, or an instrument — and under it "What changed",
+ * at a width that depends on neither.
  *
- * Top to bottom is the order a student works in: where they are, what they
- * can do, what it did. The lesson takes the height its step needs and scrolls
- * inside past that; the instruments take what the line above and the card
- * below leave them, which puts "What changed" at the foot of the column. */
+ * Top to bottom is the order a student works in: where they are and what they
+ * can do, then what it did. The two split the column's height two to one and
+ * keep it whatever they hold, so a long step, a long chain or a change of tab
+ * re-divides nothing: what does not fit scrolls inside its own card. */
 .side {
     display: flex;
     flex: none;
@@ -260,22 +259,18 @@
     min-height: 0;
 }
 
-.lessonBeside {
-    flex: 0 1 auto;
-    max-height: 100%;
-}
-
-.resumeBeside {
+/* The top two thirds of the column, from the top of the screen. A height
+ * rather than a flex ratio, which would share out only what the two cards'
+ * padding left and give "What changed" its padding on top of its third. */
+.dockBeside {
     flex: none;
+    height: calc((100% - var(--mantine-spacing-sm)) * 2 / 3);
 }
 
-/* Last in the column, as tall as its chain, and never so tall that the card
- * above it — the lesson's words, or the instruments — is squeezed to nothing:
- * past this it scrolls inside. It grows away from the controls above it, so a
- * slider does not move under the pointer that is holding it. */
+/* The bottom third: whatever the tabs leave. Below the controls whose effect
+ * it shows, so however much it has to say, nothing a student is holding moves. */
 .narrationBeside {
-    flex: none;
-    max-height: 45%;
+    flex: 1 1 0;
 }
 
 /* Under the stage, at a fixed height: a lesson whose card grew and shrank

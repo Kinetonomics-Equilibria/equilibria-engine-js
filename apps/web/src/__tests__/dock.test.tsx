@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import type { ReactElement } from 'react';
 import type { ParamInfo } from 'equilibria-engine-js';
-import { Dock } from '../dock/Dock';
+import { Dock, LESSON_TAB } from '../dock/Dock';
 import type { Instrument, InstrumentProps } from '../dock/types';
 import { theme } from '../theme';
 
@@ -42,7 +42,9 @@ const INSTRUMENTS: Instrument[] = [
     { id: 'three', label: 'Three', Component: (p: InstrumentProps) => <div>focus: {p.focus?.calc ?? 'none'}</div> }
 ];
 
-function mount(over: { open?: string; onOpenChange?: (id: string) => void; focus?: { calc?: string } } = {}) {
+function mount(over: {
+    open?: string; onOpenChange?: (id: string) => void; focus?: { calc?: string }; lesson?: ReactElement
+} = {}) {
     const onOpenChange = over.onOpenChange ?? vi.fn();
     const result = view(
         <Dock
@@ -51,6 +53,7 @@ function mount(over: { open?: string; onOpenChange?: (id: string) => void; focus
             onOpenChange={onOpenChange}
             context={context()}
             focus={over.focus}
+            lesson={over.lesson}
         />
     );
     return { onOpenChange, result };
@@ -113,5 +116,33 @@ describe('the dock shell', () => {
     it('gives an instrument no focus when it was not opened at anything', () => {
         mount({ open: 'three' });
         expect(screen.getByText('focus: none')).toBeDefined();
+    });
+});
+
+describe('the lesson as a tab', () => {
+    const LESSON = <div>the lesson</div>;
+
+    it('comes first, ahead of the instruments', () => {
+        mount({ open: LESSON_TAB, lesson: LESSON });
+        expect(screen.getByRole('complementary', { name: 'Lesson and instruments' })).toBeDefined();
+        expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual(['Lesson', 'One', 'Two', 'Three']);
+        expect(screen.getByText('the lesson')).toBeDefined();
+        expect(screen.queryByText('first instrument')).toBeNull();
+    });
+
+    // One at a time, the lesson included: while an instrument is open the
+    // lesson's card is not on the screen to be read or tabbed into.
+    it('is not mounted while an instrument is open', () => {
+        mount({ open: 'one', lesson: LESSON });
+        expect(screen.queryByText('the lesson')).toBeNull();
+        expect(screen.getByText('first instrument')).toBeDefined();
+    });
+
+    it('asks for the lesson when its tab is clicked', async () => {
+        const user = userEvent.setup();
+        const { onOpenChange } = mount({ open: 'one', lesson: LESSON });
+
+        await user.click(screen.getByRole('tab', { name: 'Lesson' }));
+        expect(onOpenChange).toHaveBeenCalledWith(LESSON_TAB);
     });
 });

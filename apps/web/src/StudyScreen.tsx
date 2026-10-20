@@ -26,7 +26,7 @@ import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } fro
 import type { Attempt } from './quiz/attempt';
 import { candidatesOf, gradeChoice, validateChoice, validateQuestion } from './quiz/grade';
 import { answerPosition, drawsAnswer, drawsAnswerWhenRight, parkApparatus } from './quiz/apparatus';
-import { Dock } from './dock/Dock';
+import { Dock, LESSON_TAB } from './dock/Dock';
 import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
 import { Scenarios } from './dock/Scenarios';
@@ -110,6 +110,11 @@ const QUESTION_OFF = [
  * beside it. So while a lesson runs, the only controls are the ones a step
  * hands the student: its question, or what it offers to try. The instruments
  * are for when there is no lesson running, and get the whole diagram.
+ *
+ * Beside the stage the two are tabs on one card — Lesson, Explore, Scenarios,
+ * Maths — and which tab is open is this and the open instrument together.
+ * Pressing an instrument's tab puts the lesson away, and the Lesson tab brings
+ * it back, with all that either does to the diagram.
  */
 type Pane = 'lesson' | 'explore';
 
@@ -282,9 +287,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const [readout, setReadout] = useState<Readout>({});
     const [line, setLine] = useState<NarrationLine>(REST);
 
-    // The lesson, or the instruments, beside the stage until there is not room
-    // for a column there; below that the lesson goes under the stage and the
-    // instruments into a bottom sheet. Measured once, here, because the screen
+    // The lesson and the instruments, tabs on a card beside the stage, until
+    // there is not room for a column there; below that the lesson goes under
+    // the stage and the instruments into a bottom sheet. Measured once, here, because the screen
     // is what owns the decision — a dock that measured the viewport itself
     // would be a second answer to the same question.
     const stacked = useMediaQuery('(max-width: 899px)') ?? false;
@@ -1342,7 +1347,8 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const tries = tryAt(steps, track.position);
     const lesson = (where: 'beside' | 'below') => (
         <LessonCard
-            className={where === 'beside' ? classes.lessonBeside : classes.lessonBelow}
+            className={where === 'beside' ? undefined : classes.lessonBelow}
+            tabbed={where === 'beside'}
             steps={steps}
             state={track}
             goals={content.goals}
@@ -1377,10 +1383,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         </LessonCard>
     );
 
-    /** The lesson put away, over the instruments: where it was left, and the way back. */
-    const resume = (where: 'beside' | 'below') => (
+    /**
+     * The lesson put away, under the stage on a phone: where it was left, and
+     * the way back. Beside the stage the Lesson tab is both.
+     */
+    const resume = (
         <LessonResume
-            className={where === 'beside' ? classes.resumeBeside : classes.resumeBelow}
+            className={classes.resumeBelow}
             steps={steps}
             state={track}
             onResume={resumeLesson}
@@ -1390,18 +1399,33 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const exploring = pane === 'explore';
 
     /**
+     * A tab pressed beside the stage. Between two instruments it changes only
+     * which is open. Into the lesson's or out of it, it is the lesson taken up
+     * again or put away — the same moves as Resume and Finish, so the diagram
+     * the lesson gets back is the one it left.
+     */
+    const openTab = useCallback((id: string) => {
+        if (id === LESSON_TAB) {
+            if (exploring) resumeLesson();
+            return;
+        }
+        if (!exploring) leaveLesson();
+        setInstrument(id);
+    }, [exploring, resumeLesson, leaveLesson]);
+
+    /**
      * What the student's last move did, said in one of two places.
      *
-     * Beside the stage it is "What changed", a card at the foot of the side
-     * column, under whichever card the student is working in — the lesson, or
-     * the instruments — and the same card in both. Where there is no column it
-     * is the strip under the stage: one line, which is what a phone has room
-     * for. Never both, and they announce the same sentence.
+     * Beside the stage it is "What changed", the bottom third of the side
+     * column, under the tabs whichever is open, and the same card under all of
+     * them. Where there is no column it is the strip under the stage: one line,
+     * which is what a phone has room for. Never both, and they announce the
+     * same sentence.
      *
-     * Before the lesson has begun nothing is drawn, so nothing can change: the
-     * card waits, rather than repeat the Start button above it. The strip says
-     * so instead of advising a drag, since it holds its line under the stage
-     * whatever it says — a strip that came and went would resize the diagram.
+     * Before the lesson has begun nothing is drawn, so nothing can change, and
+     * both say what they are waiting for rather than advise a drag. Both hold
+     * their place whatever they say: a card that came and went would re-divide
+     * the column, and a strip that did would resize the diagram.
      *
      * "Why?" opens the Maths instrument, and while a lesson runs there is none
      * to open, so neither form offers it then.
@@ -1416,13 +1440,14 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
     // Two columns, and the side one is the screen's whole height: the title is
     // the diagram's, so it heads the stage's column rather than running over
-    // the lesson as well, and the lesson or the instruments get the height it
-    // took. The row is the whole of how the side column affects the stage's
+    // the lesson as well, and the side column gets the height it took — two
+    // thirds of it for the tabs' card, one for "What changed", whatever either
+    // holds. The row is the whole of how the side column affects the stage's
     // size: it takes its fixed width, the stage's own `ResizeObserver`
     // notices, and the arrangement re-runs. Nobody passes a width to anybody.
-    // What keeps the stage *still* while a student moves through the lesson,
-    // switches instruments, or swaps one for the other is that the column's
-    // width depends on none of them — and the stage's height on nothing in it.
+    // What keeps the stage *still* while a student moves through the lesson or
+    // switches tabs is that the column's width depends on none of them — and
+    // the stage's height on nothing in it.
     return (
         <div className={classes.screen}>
             <div className={classes.stageColumn}>
@@ -1498,32 +1523,32 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 {/* Where there is no room for a column beside the stage, the
                   * lesson goes under it, at a fixed height so that moving from
                   * a short step to a long one does not resize the diagram. */}
-                {stacked ? (exploring ? resume('below') : lesson('below')) : null}
+                {stacked ? (exploring ? resume : lesson('below')) : null}
             </div>
 
             {!stacked ? (
                 <div className={classes.side}>
-                    {exploring ? (
-                        <>
-                            {resume('beside')}
-                            <Dock
-                                instruments={instruments}
-                                open={instrument}
-                                onOpenChange={setInstrument}
-                                context={dockContext}
-                                focus={focus}
-                            />
-                        </>
-                    ) : lesson('beside')}
-                    {notStarted ? null : (
-                        <NarrationCard
-                            {...narration}
-                            className={classes.narrationBeside}
-                            restHint={exploring
+                    {/* The lesson is handed over whichever tab is open: the
+                      * dock mounts only the open one, so while an instrument
+                      * is open the lesson's card is not on the screen. */}
+                    <Dock
+                        className={classes.dockBeside}
+                        instruments={instruments}
+                        open={exploring ? instrument : LESSON_TAB}
+                        onOpenChange={openTab}
+                        context={dockContext}
+                        focus={focus}
+                        lesson={lesson('beside')}
+                    />
+                    <NarrationCard
+                        {...narration}
+                        className={classes.narrationBeside}
+                        restHint={notStarted
+                            ? 'Start the lesson, and what each step changes will show here.'
+                            : exploring
                                 ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
                                 : undefined}
-                        />
-                    )}
+                    />
                 </div>
             ) : null}
 

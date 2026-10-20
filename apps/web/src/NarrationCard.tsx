@@ -28,9 +28,9 @@ import classes from './NarrationCard.module.css';
  * A card rather than part of the instruments, because the question it answers
  * is not theirs. A scenario and a drag on the diagram move the market as much
  * as a slider does, and a chain inside the Explore tab would be gone the moment
- * a student opened Scenarios to apply one; while a lesson runs there are no
- * tabs at all. So it sits under whichever card the student is working in, and
- * is the same card in both.
+ * a student opened Scenarios to apply one; a lesson's step moves it too. So it
+ * sits under the tabs, the bottom third of the column whichever is open, and
+ * is the same card under all of them.
  *
  * It renders a line and decides nothing, as the strip does, and announces the
  * same sentence for the same event.

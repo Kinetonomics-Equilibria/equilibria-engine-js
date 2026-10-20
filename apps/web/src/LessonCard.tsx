@@ -10,12 +10,13 @@ import classes from './LessonCard.module.css';
  * The lesson, as something to read: where the student is, what this step says,
  * and the way on.
  *
- * It sits beside the diagram, in the column the instruments have when there is
- * no lesson running, because that is where there is room to say something
- * properly. The two never share it: while a lesson runs the card is the whole
- * column, and the only controls on it are the ones a step hands the student —
- * a question's, or a "see what happens" step's. The instruments come back when
- * the student leaves the lesson or finishes it. The lesson used to speak
+ * It sits beside the diagram, as the first of the side column's tabs — Lesson,
+ * Explore, Scenarios, Maths — because that is where there is room to say
+ * something properly. The lesson and the instruments never share the screen:
+ * while the lesson's tab is open no instrument is mounted, and the only
+ * controls are the ones a step hands the student — a question's, or a "see
+ * what happens" step's. The instruments come back when the student opens one
+ * of their tabs or finishes the lesson. The lesson used to speak
  * through the strip under the stage, which is one line that must never grow: a
  * strip that grew would shrink the diagram under the student's pointer. So
  * every step had to fit in about 110 characters, came out clipped, and gave way
@@ -68,11 +69,21 @@ export interface LessonCardProps {
     className?: string;
 
     /**
+     * Shown under the side column's tabs rather than as a card of its own.
+     *
+     * The tabs' card is its paper, so it has none, and it fills the tab. And it
+     * has no close: the instruments' tabs beside its own are the way out, and
+     * an × beside them would be a second door to the same room.
+     */
+    tabbed?: boolean;
+
+    /**
      * Put the lesson away and hand the student the instruments.
      *
-     * Offered in the card's head at every step, and as Finish in place of Next
-     * at the last one. The screen owns what leaving does to the diagram; the
-     * card only asks. Absent, the card offers neither.
+     * Offered in the card's head at every step, unless the card is `tabbed`,
+     * and as Finish in place of Next at the last one. The screen owns what
+     * leaving does to the diagram; the card only asks. Absent, the card offers
+     * neither.
      */
     onLeave?(): void;
 }
@@ -94,7 +105,7 @@ function markerName(step: LessonStep, position: number, total: number): string {
 }
 
 export function LessonCard({
-    steps, state, goals, onGoTo, onReset, children, className, onLeave
+    steps, state, goals, onGoTo, onReset, children, className, onLeave, tabbed = false
 }: LessonCardProps) {
 
     const body = useRef<HTMLDivElement>(null);
@@ -149,7 +160,10 @@ export function LessonCard({
     };
 
     return (
-        <section className={className ? `${classes.card} ${className}` : classes.card} aria-label="Lesson">
+        <section
+            className={[tabbed ? classes.tabbed : classes.card, className].filter(Boolean).join(' ')}
+            aria-label="Lesson"
+        >
             <div className={classes.head}>
                 <div className={classes.label}>
                     <Text size="xs" className={classes.part}>
@@ -163,7 +177,7 @@ export function LessonCard({
                       * is most of the line, and "Leave lesson" beside it put
                       * the name on two. The words are its name and its
                       * tooltip, and the lesson keeps the student's place. */}
-                    {onLeave ? (
+                    {onLeave && !tabbed ? (
                         <ActionIcon
                             variant="subtle"
                             color="gray"
@@ -289,9 +303,9 @@ export interface LessonResumeProps {
 /**
  * The lesson, put away: where the student left it, and the way back.
  *
- * Shown over the instruments while no lesson is running, in the card's place.
- * One line and a button, so the instruments keep the column: a student who
- * left the lesson to explore came for the instruments.
+ * Shown under the stage on a phone while no lesson is running, in the card's
+ * place: one line and a button, so the diagram gets the height back. Beside the
+ * stage the Lesson tab does this job.
  */
 export function LessonResume({ steps, state, onResume, className }: LessonResumeProps) {
     if (steps.length === 0) return null;

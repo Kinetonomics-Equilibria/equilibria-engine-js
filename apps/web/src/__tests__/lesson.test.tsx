@@ -7,7 +7,8 @@ import { theme } from '../theme';
 
 /**
  * The shipped lesson, held to what it says — and to the rule that the side
- * column holds the lesson or the instruments, never both.
+ * column holds the lesson or the instruments, never both. They are tabs on one
+ * card, and only the open one is mounted.
  *
  * With both on screen a student could apply a scenario before the lesson had
  * drawn a curve, and watch the strip announce new prices over empty axes; or
@@ -56,7 +57,12 @@ const marketCaption = () =>
 /** The panels the stage offers to promote: every one on it but the focal one. */
 const promotable = () => document.querySelectorAll('button[data-panel]');
 
-const instruments = () => screen.queryByRole('complementary', { name: 'Instruments' });
+/** The open instrument, if one is: a tab's panel other than the lesson's. */
+const instruments = () => screen.queryByRole('tabpanel', { name: /^(Explore|Scenarios|Maths)$/ });
+
+/** A tab beside the stage, pressed. */
+const open = (user: ReturnType<typeof userEvent.setup>, name: string) =>
+    user.click(screen.getByRole('tab', { name }));
 const words = () =>
     (screen.getByRole('region', { name: 'Lesson' }).querySelector('[aria-live="polite"]') as HTMLElement)
         .textContent || '';
@@ -86,8 +92,17 @@ describe('the lesson or the instruments', () => {
     it('opens on the lesson, with no instruments beside it', () => {
         mount();
         expect(screen.getByRole('region', { name: 'Lesson' })).toBeTruthy();
+        expect(screen.getByRole('tab', { name: 'Lesson' }).getAttribute('aria-selected')).toBe('true');
         expect(instruments()).toBeNull();
-        expect(screen.queryByRole('tab')).toBeNull();
+        expect(screen.queryAllByRole('slider')).toHaveLength(0);
+    });
+
+    // The tabs are the way out, so the card has no close beside them.
+    it('is a tab ahead of the instruments\', with no close of its own', () => {
+        mount();
+        expect(screen.getAllByRole('tab').map(t => t.textContent))
+            .toEqual(['Lesson', 'Explore', 'Scenarios', 'Maths']);
+        expect(screen.queryByRole('button', { name: /^(Skip|Leave) lesson$/ })).toBeNull();
     });
 
     // Not the lesson's half-built diagram: a scenario applied to curves the
@@ -97,19 +112,32 @@ describe('the lesson or the instruments', () => {
         mount();
         expect(promotable()).toHaveLength(0);
 
-        await user.click(screen.getByRole('button', { name: 'Skip lesson' }));
+        await open(user, 'Explore');
 
         expect(instruments()).toBeTruthy();
+        expect(screen.queryByRole('region', { name: 'Lesson' })).toBeNull();
         expect(promotable()).toHaveLength(2);
         expect(marketCaption()).toContain('P* $11.00');
-        expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
     });
 
-    it('puts the instruments away again when the lesson starts', async () => {
+    // From one instrument to another is only a change of tab: the lesson is
+    // not taken up and put away again on the way, which would reset the market.
+    it('moves between instruments without the lesson', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(screen.getByRole('button', { name: 'Skip lesson' }));
-        await user.click(screen.getByRole('button', { name: 'Start lesson' }));
+        await open(user, 'Scenarios');
+        await user.click(screen.getByRole('button', { name: 'Input costs rise' }));
+        await open(user, 'Maths');
+
+        expect(instruments()).toBeTruthy();
+        expect(marketCaption()).toContain('P* $13.00');
+    });
+
+    it('puts the instruments away again when the lesson is opened', async () => {
+        const user = userEvent.setup();
+        mount();
+        await open(user, 'Explore');
+        await open(user, 'Lesson');
 
         expect(instruments()).toBeNull();
         expect(words()).toContain('In this lesson');
@@ -125,10 +153,10 @@ describe('the lesson or the instruments', () => {
         await user.click(screen.getByRole('button', { name: 'Finish' }));
 
         expect(instruments()).toBeTruthy();
+        expect(screen.getByRole('tab', { name: 'Explore' }).getAttribute('aria-selected')).toBe('true');
         expect(marketCaption()).toContain('P* $11.00');
         expect(await valueOf(user, 'a')).toBe(20);
         expect(await valueOf(user, 'c')).toBe(2);
-        expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
     });
 
     // Exploring starts at rest: the lesson's last move is the lesson's, and a
@@ -139,7 +167,7 @@ describe('the lesson or the instruments', () => {
         await user.click(marker(MOVES));
         expect(strip().getAttribute('data-kind')).toBe('settled');
 
-        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
+        await open(user, 'Explore');
         expect(strip().getAttribute('data-kind')).toBe('rest');
     });
 });
@@ -153,11 +181,11 @@ describe('coming back to the lesson', () => {
         // a = 26 and c = 2: P* = 14.
         expect(marketCaption()).toContain('P* $14.00');
 
-        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
+        await open(user, 'Explore');
         await inputCostsRise(user);
         expect(marketCaption()).toContain('P* $16.00');
 
-        await user.click(screen.getByRole('button', { name: 'Resume' }));
+        await open(user, 'Lesson');
 
         expect(instruments()).toBeNull();
         expect(words()).toContain('Incomes rise');
@@ -170,9 +198,9 @@ describe('coming back to the lesson', () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(MOVES));
-        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
+        await open(user, 'Explore');
         await inputCostsRise(user);
-        await user.click(screen.getByRole('button', { name: 'Resume' }));
+        await open(user, 'Lesson');
 
         expect(strip().getAttribute('data-kind')).toBe('settled');
         // Demand's move, 20 → 26, and not supply's 2 → 6 from the detour.
@@ -188,10 +216,10 @@ describe('coming back to the lesson', () => {
         control.focus();
         fireEvent.keyDown(control, { key: 'End' });
 
-        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
+        await open(user, 'Explore');
         expect(screen.queryByRole('group', { name: 'Question' })).toBeNull();
 
-        await user.click(screen.getByRole('button', { name: 'Resume' }));
+        await open(user, 'Lesson');
         const row = screen.getByRole('group', { name: 'Question' });
         expect(row.getAttribute('data-phase')).toBe('prompt');
         expect(within(row).getByRole('slider', { name: /Your answer/ }).getAttribute('aria-valuenow')).toBe('20');

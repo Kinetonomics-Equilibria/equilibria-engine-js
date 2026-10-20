@@ -12,6 +12,16 @@
     min-height: 0;
 }
 
+/* Under the side column's tabs the lesson is the tab's content, not a card of
+ * its own: the tabs' card is its paper, and it fills the tab, so its head and
+ * foot are at the tab's top and bottom whatever the step says. */
+.tabbed {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
 .head {
     flex: none;
     padding: 12px 14px 4px;
@@ -202,8 +212,8 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* The lesson put away, over the instruments: where the student left it on one
- * side, the way back on the other. */
+/* The lesson put away, on a phone: where the student left it on one side, the
+ * way back on the other. */
 .resume {
     display: flex;
     align-items: center;

@@ -200,15 +200,17 @@ describe('committing takes the answer out of the student\'s hands', () => {
      * The engine's freeze stops the *diagram's* drag and knows nothing about a
      * host control, and P11 makes that host control the equal answer path — so
      * a committed answer another slider could still edit is not frozen at all.
-     * The instruments are put away while a lesson runs, so the question's own
-     * control is the only one on screen; the screen's guard, at the one place
-     * every host param write goes, is behind it for anything that slips past.
+     * The instruments are put away while a lesson runs — their tabs are
+     * there, and pressing one leaves the lesson and stands the question down —
+     * so the question's own control is the only one on screen; the screen's
+     * guard, at the one place every host param write goes, is behind it for
+     * anything that slips past.
      */
     it('leaves no other control on screen that could move it', async () => {
         await committed();
 
         expect(screen.getAllByRole('slider')).toEqual([slider()]);
-        expect(screen.queryByRole('tab', { name: 'Explore' })).toBeNull();
+        expect(screen.queryByRole('tabpanel', { name: /^(Explore|Scenarios|Maths)$/ })).toBeNull();
     });
 
     it('withholds "reset to this step", which would move the frozen curve', async () => {

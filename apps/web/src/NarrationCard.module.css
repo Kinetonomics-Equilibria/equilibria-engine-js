@@ -1,9 +1,7 @@
 /* "What changed": paper, at the foot of the column beside the stage.
  *
- * It takes the height its chain needs, up to what the screen allows it (see
- * `.narrationBeside`), and scrolls inside past that. It grows away from the
- * controls above it — the column puts it last — so nothing a student is
- * holding moves when it changes. */
+ * As tall as the screen makes it (see `.narrationBeside`), whatever the chain
+ * says: its head holds still and the chain scrolls under it past that. */
 
 .card {
     composes: paper from './ui/paper.module.css';
@@ -23,6 +21,7 @@
 
 .body {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: 10px;
     min-height: 0;

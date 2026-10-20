@@ -39,7 +39,7 @@ async function toTheEnd(page: Page) {
     }
     await expect(markers.nth(last)).toHaveAttribute('aria-current', 'step');
     await page.getByRole('button', { name: 'Finish' }).click();
-    await expect(page.getByRole('complementary', { name: 'Instruments' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Explore' })).toHaveAttribute('aria-selected', 'true');
 }
 
 /**

@@ -43,14 +43,16 @@ attention on finding things.
 
 4. **One home for each kind of information.** The chain lives in "What
    changed" and nowhere else on that screen; a number is printed once per place
-   it appears, by one formatter, with one label and unit. A home is on screen
-   whenever it has something to say, and not before: "What changed" waits until
-   the lesson has drawn something that could change.
+   it appears, by one formatter, with one label and unit. A home keeps its
+   place when it has nothing to say: "What changed" is the column's bottom
+   third from the first page, and until the lesson has drawn something that
+   could change, it says what it is waiting for.
 
 5. **Nothing moves under the pointer.** The side column has a fixed width, so
-   nothing in it can resize the diagram. A card that grows grows away from the
-   controls above it, so a slider never slides out from under the student who is
-   holding it. Content that cannot fit scrolls inside its card, never the page.
+   nothing in it can resize the diagram, and its two cards have fixed heights,
+   so nothing in one can move the other: a slider never slides out from under
+   the student who is holding it. Content that cannot fit scrolls inside its
+   card, never the page.
 
 6. **Colour means one thing.** A colour that always means the same thing can be
    read without reading. Numbers never get a verdict colour: a falling price is
@@ -73,30 +75,39 @@ attention on finding things.
 
 ## The side column
 
-Beside the stage, 320px wide, the screen's full height, cards 12px apart:
+Beside the stage, 320px wide, the screen's full height, two cards 12px apart:
 
 ```
  While a lesson runs                 With the lesson put away
 
- ┌────────────────────────┐          ┌────────────────────────┐
- │ Part 2 of 3 · …      × │          │ Lesson         Resume  │  where you are
- │ ▬▬▬▬ ▬▬▬▬▬ ▬▬▬▬        │          ├────────────────────────┤
- │ Demand for A$ …        │          │ Explore  Scenarios  …  │  what you can do
- │ step words, key term,  │          │ Demand for A$       50 │
- │ the question or try-it │          │ who it is              │
- │ Back      1 of 5  Next │          │ ━━━━━━━○━━━━━━━━━━━━━━ │
- ├────────────────────────┤          │ Try this               │
- │ What changed     Undo  │          │ ○ …                    │
- │ ○ Demand … increases   │          ├────────────────────────┤
- │ · … shifts to the right│          │ What changed     Undo  │  what it did
- │ ● The A$ appreciates   │          │ ○ ·  ●  …              │
- └────────────────────────┘          └────────────────────────┘
+ ┌────────────────────────┐          ┌────────────────────────┐ ┬
+ │ Lesson Explore Scen… … │          │ Lesson Explore Scen… … │ │ where you are,
+ │ Part 2 of 3 · …        │          │ Demand for A$       50 │ │ what you can do
+ │ ▬▬▬▬ ▬▬▬▬▬ ▬▬▬▬        │          │ who it is              │ │
+ │ Demand for A$ …        │          │ ━━━━━━━○━━━━━━━━━━━━━━ │ │ two thirds
+ │ step words, key term,  │          │ Try this               │ │
+ │ the question or try-it │          │ ○ …                    │ │
+ │ Back      1 of 5  Next │          │                        │ │
+ ├────────────────────────┤          ├────────────────────────┤ ┼
+ │ What changed     Undo  │          │ What changed     Undo  │ │ what it did
+ │ ○ Demand … increases   │          │ ○ ·  ●  …              │ │
+ │ ● The A$ appreciates   │          │                        │ │ one third
+ └────────────────────────┘          └────────────────────────┘ ┴
 ```
 
-- The lesson card is as tall as its step and scrolls past the column's height;
-  the instruments take whatever the cards above and below leave them.
-- "What changed" is last, as tall as its chain, at most 45% of the column, and
-  scrolls inside past that.
+- One card holds the lesson and the instruments under one row of tabs —
+  Lesson, Explore, Scenarios, Maths — one open at a time, and only the open one
+  mounted. Opening an instrument's tab puts the lesson away and hands the
+  instruments the whole diagram; the Lesson tab brings the lesson back where it
+  was left, its market, ghost and question with it. Finish, at the last step,
+  opens Explore. The tabs are the way out, so the lesson has no close here.
+- The tabs' card is the top two thirds of the column and "What changed" the
+  bottom third, whatever either holds and whichever tab is open. A long step
+  scrolls between the lesson's head and its Back and Next, which hold still; an
+  instrument scrolls inside its tab; a long chain scrolls under "What changed"'s
+  head. At laptop heights (below about 1000px) the Maths tab scrolls.
+- The tabs are each as wide as their name, sharing out what is left, and the
+  open one is no bolder than the rest, so opening one moves no other.
 - On a phone there is no column: the lesson goes under the stage at a fixed
   height, the instruments into a bottom sheet, and the chain into the one-line
   strip under the stage (`NarrationStrip`) — the same narration, at the density
@@ -122,7 +133,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Piece | Where | What it is |
 | --- | --- | --- |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
-| Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close, "What changed"'s Undo). |
+| Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close on a phone, "What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. The gesture wiring is `ParamSlider`'s. |
 | The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine. Rendered from `narrate()`; decides nothing. |
@@ -166,8 +177,9 @@ first version of the screen did, so a lesson can gain them one at a time.
 1. **Which question does it answer?** Put it on that card. If it answers a new
    question, it is a new card, placed where that question comes in the order.
 2. **Must it always be visible?** If not, put it behind a tab, a link or "Why?".
-3. **Does it change size?** Then it goes below the controls whose effect it
-   shows, never above them.
+3. **Does it change size?** The cards beside the stage do not, so it scrolls
+   inside the card it is on. Put it below the controls whose effect it shows,
+   never above them, so that scrolling to it never hides them.
 4. **Does it need a colour?** Use a callout tone. A new meaning is a new colour,
    added to the table above first.
 5. **Does it print a number?** Through `formatValue`, with the narrated label

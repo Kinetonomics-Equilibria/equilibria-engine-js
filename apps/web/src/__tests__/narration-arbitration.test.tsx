@@ -58,13 +58,14 @@ const NEXT_TITLE = 'What sellers earn';
 describe('the lesson speaks on its card, and "What changed" reports the numbers', () => {
 
     // At the start nothing is drawn, so nothing can change: the card says what
-    // the lesson is for and how to start it, and "What changed" waits rather
-    // than repeat the Start button.
+    // the lesson is for and how to start it, and "What changed" holds its
+    // third of the column saying what it is waiting for.
     it('starts on what the lesson is for, with nothing yet to report', () => {
         mount();
         expect(words()).toContain('In this lesson');
         expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
-        expect(narration()).toBeNull();
+        expect(narration().getAttribute('data-kind')).toBe('rest');
+        expect(narration().textContent).toContain('Start the lesson');
     });
 
     it('shows a step\'s words on the card when the step fires', async () => {

@@ -299,9 +299,9 @@ describe('resetting the diagram to this step', () => {
 });
 
 /**
- * While a lesson runs the card is the whole side column, and the instruments
- * come back when the student leaves it. The card only asks; what leaving does
- * to the diagram is the screen's.
+ * While a lesson runs the instruments are put away, and they come back when
+ * the student leaves it. The card only asks; what leaving does to the diagram
+ * is the screen's.
  */
 describe('leaving the lesson', () => {
 
@@ -335,6 +335,14 @@ describe('leaving the lesson', () => {
     it('does not finish past a last question still waiting for its answer', () => {
         leaving(at(STEPS.length));
         expect(screen.getByRole('button', { name: 'Finish' }).hasAttribute('disabled')).toBe(true);
+    });
+
+    // Under the side column's tabs the instruments' tabs are the way out, so
+    // the close goes; Finish stays, as the last step's way on.
+    it('has no close under the tabs, and still finishes', () => {
+        view(<LessonCard steps={STEPS} state={at(STEPS.length, [3])} goals={GOALS} onGoTo={vi.fn()} onLeave={vi.fn()} tabbed />);
+        expect(screen.queryByRole('button', { name: /lesson$/ })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
     });
 
     it('offers neither without a handler', () => {
