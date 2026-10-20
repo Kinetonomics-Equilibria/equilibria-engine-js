@@ -74,7 +74,7 @@ export interface StudyContent {
     /**
      * What each param a student can move stands for, in their words: who it
      * is, under its control in Explore, and what its rise and fall mean, at
-     * the head of the chain in "What changed".
+     * the head of the chain in "What changed", marked in its curve's colour.
      *
      * The words a student is learning to use, so they are the lesson's own —
      * "Demand for A$ increases" is a step title as well. Every field is
@@ -109,6 +109,19 @@ export interface ParamWords extends Reading {
      * the world and not a number on a track.
      */
     about?: string;
+
+    /**
+     * The colour its curve is drawn in, by the name the diagram draws it with:
+     * `'demand'` for a curve drawn `color: 'colors.demand'`.
+     *
+     * "What changed" marks the param's clause in that colour, and the curves
+     * it moved under it, so "Demand for A$ increases" is tied to the blue line
+     * it shifted. A name and not a value, because the engine is what knows
+     * which blue `demand` is (`getColors()`), and a value written here would
+     * be a second palette. The chain says it of every curve the param
+     * moves, so every one of them should be drawn in it.
+     */
+    curve?: string;
 }
 
 export interface PanelSpec {

@@ -223,6 +223,24 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
         });
     });
 
+    // "What changed" marks a cause in its curve's colour and the curves it
+    // moved in the same one, so that is a claim about everything the param
+    // draws — and a marker in the wrong colour renders as happily as the right.
+    it('names, for each param it colours, the colour of everything that param draws', () => {
+        const objects = ((lesson.diagram.layout as any).CustomLayout.panels as any[])
+            .flatMap(panel => panel.objects);
+        Object.keys(lesson.paramWords || {}).forEach(name => {
+            const curve = lesson.paramWords![name].curve;
+            if (!curve) return;
+            const mentions = new RegExp(`params\\.${name}\\b`);
+            const drawn = objects.filter(object => mentions.test(JSON.stringify(object.def)));
+            expect(drawn.length, `param "${name}" draws something`).toBeGreaterThan(0);
+            drawn.forEach(object => {
+                expect(object.def.color, `"${object.def.name}", drawn by "${name}"`).toBe(`colors.${curve}`);
+            });
+        });
+    });
+
     it('offers scenarios the diagram can apply', () => {
         lesson.scenarios.forEach(scenario => {
             Object.keys(scenario.params).forEach(name => {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { AffectedObject } from 'equilibria-engine-js';
 import {
-    CALC_PRECISION, announcement, calcPrecision, formatValue, narrate, toSentence, undoParams
+    CALC_PRECISION, announcement, calcPrecision, curveColor, formatValue, narrate, toSentence, undoParams
 } from '../narration/narrate';
 import type { NarratedCalc, NarratedParam, NarrateInput, Snapshot } from '../narration/narrate';
 import { phraseMechanism, phraseMovement, phraseMovements, phraseRefusal } from '../narration/phrasebook';
@@ -341,6 +341,50 @@ describe('the words', () => {
             calcs: [{ name: 'rate', label: 'A$1 =', unit: 'US$', precision: 2, rise: 'A$ up' }]
         });
         expect(toSentence(fx)).toBe('Demand for A$ increases from 50 to 60; A$ up from US$0.65 to US$0.70.');
+    });
+});
+
+/**
+ * Which colour a cause is marked in: its curve's, where the lesson names one.
+ *
+ * A colour says which curve, not which way, so it is the same whichever way
+ * the param went and whether or not the gesture is over — a marker that was
+ * grey mid-drag and turned blue on release would be news about nothing.
+ */
+describe('the curve colour', () => {
+    const COLORED: NarratedParam[] = [
+        { name: 'a', label: 'a', precision: 1, color: '#1f77b4' },
+        { name: 'c', label: 'c', precision: 1, color: '#ff7f0e' }
+    ];
+    const both = { after: { params: { a: 24, c: 4 }, calcs: market(24, 4).calcs } };
+
+    it('marks a cause in its param\'s colour, whichever way it went, mid-gesture too', () => {
+        expect(line({ params: COLORED }).causes[0].color).toBe('#1f77b4');
+        expect(line({ params: COLORED, after: market(16) }).causes[0].color).toBe('#1f77b4');
+        expect(line({ params: COLORED, live: true }).causes[0].color).toBe('#1f77b4');
+    });
+
+    it('gives a cause no colour where the lesson names none, and an effect none at all', () => {
+        expect(line().causes[0]).not.toHaveProperty('color');
+        expect(line({ params: COLORED }).effects.some(e => 'color' in e)).toBe(false);
+    });
+
+    it('is the chain\'s colour where every cause has the same one', () => {
+        expect(curveColor(line({ params: COLORED }))).toBe('#1f77b4');
+        const blues = COLORED.map(p => ({ ...p, color: '#1f77b4' }));
+        expect(curveColor(line({ params: blues, ...both }))).toBe('#1f77b4');
+    });
+
+    // One marker cannot be both colours, and either would tie a cause to the
+    // other's curve.
+    it('is no colour where the causes disagree, or one of them has none', () => {
+        expect(curveColor(line({ params: COLORED, ...both }))).toBeNull();
+        expect(curveColor(line({ params: [COLORED[0], PARAMS[1]], ...both }))).toBeNull();
+        expect(curveColor(line())).toBeNull();
+    });
+
+    it('is no colour at rest, where there is nothing to mark', () => {
+        expect(curveColor(narrate({ before: null, after: market(20), params: COLORED, calcs: CALCS }))).toBeNull();
     });
 });
 

@@ -6,7 +6,7 @@ import type { ReactElement } from 'react';
 import { NarrationCard } from '../NarrationCard';
 import { NarrationStrip } from '../NarrationStrip';
 import { narrate } from '../narration/narrate';
-import type { NarrationLine, Snapshot } from '../narration/narrate';
+import type { NarrateInput, NarrationLine, Snapshot } from '../narration/narrate';
 import { theme } from '../theme';
 
 /**
@@ -32,7 +32,7 @@ const market = (a: number): Snapshot => ({
     params: { a }, calcs: { Pe: (a + 2) / 2, Qe: (a - 2) / 2 }
 });
 
-const chain = (over: { live?: boolean } = {}): NarrationLine => narrate({
+const chain = (over: Partial<NarrateInput> = {}): NarrationLine => narrate({
     before: market(20),
     after: market(24),
     affected: [{
@@ -104,6 +104,55 @@ describe('the chain', () => {
         view(<NarrationCard line={REST} restHint="Drag something." />);
         expect(screen.getByText('Drag something.')).toBeDefined();
         expect(card().getAttribute('data-kind')).toBe('rest');
+    });
+});
+
+/**
+ * The markers: what moved, and the curves it moved, in the colour those curves
+ * are drawn in; what followed in its own. Read from the `--curve` each part
+ * hands its marker, because jsdom applies no stylesheet — the browser suite
+ * checks the colour that lands on screen against the curve's stroke.
+ */
+describe('the markers', () => {
+    const BLUE = '#1f77b4', ORANGE = '#ff7f0e';
+    const blue = [{ ...PARAMS[0], color: BLUE }];
+    const coloured = (over: { live?: boolean } = {}) => chain({ ...over, params: blue });
+    const curveOf = (name: string) => (part(name) as HTMLElement).style.getPropertyValue('--curve');
+
+    it('draws what moved, and the curves it moved, in their colour', () => {
+        view(<NarrationCard line={coloured()} />);
+        expect(curveOf('cause')).toBe(BLUE);
+        expect(curveOf('movement')).toBe(BLUE);
+    });
+
+    it('leaves what followed in its own', () => {
+        view(<NarrationCard line={coloured()} />);
+        expect(curveOf('effect')).toBe('');
+    });
+
+    it('keeps the colour mid-gesture, so letting go does not repaint it', () => {
+        view(<NarrationCard line={coloured({ live: true })} />);
+        expect(curveOf('cause')).toBe(BLUE);
+    });
+
+    it('keeps today\'s grey where the lesson names no colour', () => {
+        view(<NarrationCard line={chain()} />);
+        expect(curveOf('cause')).toBe('');
+        expect(curveOf('movement')).toBe('');
+    });
+
+    // Demand and supply together: one marker cannot be both, and either one
+    // would tie the other cause to the wrong curve.
+    it('keeps today\'s grey where the causes are curves of two colours', () => {
+        const line = narrate({
+            before: { params: { a: 20, c: 2 }, calcs: { Pe: 11 } },
+            after: { params: { a: 24, c: 4 }, calcs: { Pe: 14 } },
+            params: [...blue, { name: 'c', label: 'c', precision: 1, color: ORANGE }],
+            calcs: CALCS
+        });
+        view(<NarrationCard line={line} />);
+        expect(part('cause')!.children).toHaveLength(2);
+        expect(curveOf('cause')).toBe('');
     });
 });
 

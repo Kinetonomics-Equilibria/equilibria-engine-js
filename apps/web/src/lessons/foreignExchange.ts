@@ -580,17 +580,21 @@ export const FOREIGN_EXCHANGE: StudyContent = {
         'Make the A$ depreciate without touching supply.'
     ],
     // Who is behind each curve, as the first two steps introduce them, and the
-    // titles of the steps that move them.
+    // titles of the steps that move them. Each in its curve's colour, which is
+    // one colour in both panels: the US$ side keeps the colours with the people,
+    // so demand for A$ and the supply of US$ it is are both blue.
     paramWords: {
         demand: {
             about: 'People overseas paying for Australian exports, holidays and assets.',
             rise: 'Demand for A$ increases',
-            fall: 'Demand for A$ decreases'
+            fall: 'Demand for A$ decreases',
+            curve: 'demand'
         },
         supply: {
             about: 'Australians paying for imports, trips and assets overseas.',
             rise: 'Supply of A$ increases',
-            fall: 'Supply of A$ decreases'
+            fall: 'Supply of A$ decreases',
+            curve: 'supply'
         }
     },
     questionApparatus: {

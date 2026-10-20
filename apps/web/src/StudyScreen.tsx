@@ -573,14 +573,25 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         engineRef.current = engine;
         setReadout(engine.getCalcs() as Readout);
         // The engine says what a param is called and to how many places; the
-        // lesson says what its rise and fall mean, where it has words for them.
+        // lesson says what its rise and fall mean, where it has words for them,
+        // and which colour its curve is drawn in — by name, since only the
+        // engine knows the value a name stands for.
+        const colors = engine.getColors();
         setNarratedParams(engine.getParams()
             .filter(p => !p.presentation)
             .map(p => {
-                const words = paramWords ? paramWords[p.name] : undefined;
+                const words = paramWords ? paramWords[p.name] : undefined,
+                    color = words && words.curve ? colors[words.curve] : undefined;
+                // A typo here leaves the marker grey, which looks like nothing
+                // went wrong — so it is said, where the author will see it.
+                if (words && words.curve && !color && import.meta.env.DEV) {
+                    console.warn(`paramWords.${p.name}.curve names "${words.curve}", ` +
+                        'which is not a colour this diagram has.');
+                }
                 return {
                     name: p.name, label: p.label, precision: p.precision,
-                    ...(words ? { rise: words.rise, fall: words.fall } : {})
+                    ...(words ? { rise: words.rise, fall: words.fall } : {}),
+                    ...(color ? { color } : {})
                 };
             }));
         setDockParams(engine.getParams());

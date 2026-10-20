@@ -1,7 +1,8 @@
+import type { CSSProperties } from 'react';
 import { Anchor, Button } from '@mantine/core';
 import { IconArrowBackUp, IconArrowRight, IconInfoCircle } from '@tabler/icons-react';
 import type { Clause, NarrationLine } from './narration/narrate';
-import { announcement } from './narration/narrate';
+import { announcement, curveColor } from './narration/narrate';
 import classes from './NarrationCard.module.css';
 
 /**
@@ -94,10 +95,15 @@ export function NarrationCard({
     // The chain's three parts, each only when it has something in it. The
     // middle one is the engine's account of what moved on the diagram, and is
     // left out rather than guessed when it could not give one.
+    //
+    // The first two are about curves, so their markers are drawn in the
+    // curves' colour where there is one to draw them in. What followed is the
+    // market's answer and no one curve's, and keeps its own.
+    const curve = curveColor(line);
     const parts = [
-        { part: 'cause', rows: line.causes.map(c => <Row key={c.name} clause={c} />) },
-        { part: 'movement', rows: line.movements.map(m => <div key={m} className={classes.movement}>{m}</div>) },
-        { part: 'effect', rows: line.effects.map(c => <Row key={c.name} clause={c} />) }
+        { part: 'cause', curve, rows: line.causes.map(c => <Row key={c.name} clause={c} />) },
+        { part: 'movement', curve, rows: line.movements.map(m => <div key={m} className={classes.movement}>{m}</div>) },
+        { part: 'effect', curve: null, rows: line.effects.map(c => <Row key={c.name} clause={c} />) }
     ].filter(p => p.rows.length > 0);
 
     return (
@@ -146,7 +152,14 @@ export function NarrationCard({
                     ) : (
                         <ol className={classes.parts}>
                             {parts.map(p => (
-                                <li key={p.part} className={classes.part} data-part={p.part}>{p.rows}</li>
+                                <li
+                                    key={p.part}
+                                    className={classes.part}
+                                    data-part={p.part}
+                                    style={p.curve ? { '--curve': p.curve } as CSSProperties : undefined}
+                                >
+                                    {p.rows}
+                                </li>
                             ))}
                         </ol>
                     )}

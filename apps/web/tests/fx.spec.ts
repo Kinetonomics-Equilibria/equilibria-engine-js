@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { dataCoordinates, focalPointCoordinates, RENDERED, test, textCollisions } from './helpers';
 
 /**
@@ -245,6 +245,38 @@ test('supply of A$ is dragged right, and the A$ depreciates', async ({ page }) =
     // And what that is called, in the words the lesson taught.
     await expect(card.locator('[data-part="effect"] > *').first()).toContainText('The A$ depreciates');
     await expect(caption(page, 'market')).toContainText('▼');
+});
+
+/**
+ * The colour a curve is drawn in: its visible path's. The path a pointer takes
+ * hold of is a transparent copy, named with the same engine id.
+ */
+async function strokeOf(dragPath: Locator) {
+    const id = (await dragPath.getAttribute('class'))!.replace(/^dragPath-/, '');
+    return dragPath.page().locator(`.kg-container path.path-${id}`).evaluate((p) => getComputedStyle(p).stroke);
+}
+
+/** The colour of a part's marker on "What changed": a ring for what moved, a dot for the curves. */
+const markerColour = (page: Page, part: 'cause' | 'movement') =>
+    page.getByRole('region', { name: 'What changed' }).locator(`[data-part="${part}"]`).evaluate((li, which) => {
+        const marker = getComputedStyle(li, '::before');
+        return which === 'cause' ? marker.borderTopColor : marker.backgroundColor;
+    }, part);
+
+test('the chain is marked in the colour of the curve that moved', async ({ page }) => {
+    await toTheEnd(page);
+
+    for (const way of ['down', 'up'] as const) {
+        await dragSideways(page, way, 40);
+        const stroke = await strokeOf(await curveSloping(page, way));
+        expect(await markerColour(page, 'cause'), `the curve sloping ${way}`).toBe(stroke);
+        expect(await markerColour(page, 'movement'), `the curve sloping ${way}`).toBe(stroke);
+        await page.getByRole('button', { name: 'Undo' }).click();
+    }
+
+    // Two curves, two colours: the blue of demand and the orange of supply.
+    expect(await strokeOf(await curveSloping(page, 'down')))
+        .not.toBe(await strokeOf(await curveSloping(page, 'up')));
 });
 
 test('a question about demand is answered by dragging it, and marked in its own words', async ({ page }) => {

@@ -238,6 +238,22 @@ Three fields exist because a host cannot work them out for itself:
   control panel that guesses offers a hundred-step slider for a toggle. Nothing
   downstream can recover the fact, so it is recorded where it is still known.
 
+### Reading the colours
+
+```js
+kg.getColors();
+// { demand: '#1f77b4', supply: '#ff7f0e', equilibriumPrice: '#2ca02c', …,
+//   blue: '#1f77b4', orange: '#ff7f0e', … }
+```
+
+Every colour the diagram knows by name, as the CSS value it draws with. A curve
+drawn `color: 'colors.demand'` is stroked in `getColors().demand`: the schema
+says demand is blue, and its palette says which blue, so this is the only place
+a host can learn it — for a marker, a key or a swatch of its own that has to
+match the curve beside it. Writing `#1f77b4` out in the host instead is a second
+palette, and the two disagree the day a config names a colour of its own. A
+copy, and only the values that came out as text.
+
 ## Declaring a boundary the engine cannot see
 
 ```js

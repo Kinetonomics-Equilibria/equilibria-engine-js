@@ -48,6 +48,11 @@ export interface NarratedParam extends Reading {
     name: string;
     label: string;
     precision: number;
+    /**
+     * The colour its curve is drawn in, as CSS: the engine's own value for the
+     * one the lesson names (`ParamWords.curve`). Absent where it names none.
+     */
+    color?: string;
 }
 
 /**
@@ -134,6 +139,12 @@ export interface Clause {
      * Only with a `direction`, since a reading mid-drag has none to mean.
      */
     words?: string;
+    /**
+     * A cause's curve colour, where its param has one. Mid-gesture as well as
+     * after: which curve a param moves does not depend on which way it went,
+     * so a marker drawn in it does not change colour when the student lets go.
+     */
+    color?: string;
 }
 
 export interface NarrationLine {
@@ -249,8 +260,11 @@ export function narrate(input: NarrateInput): NarrationLine {
     if (!before) return REST;
 
     const causes = params
-        .map(p => clause(p.name, p.label, '', p.precision, p,
-            before.params[p.name], after.params[p.name], true))
+        .map(p => {
+            const c = clause(p.name, p.label, '', p.precision, p,
+                before.params[p.name], after.params[p.name], true);
+            return c && p.color ? { ...c, color: p.color } : c;
+        })
         .filter((c): c is Clause => c !== null);
 
     const effects = calcs
@@ -266,7 +280,10 @@ export function narrate(input: NarrateInput): NarrationLine {
         // The same clauses, as readings. A drag fires ~60 changes a second, and
         // "20.0 → 20.1" is not a mechanism — it is a frame. What a student can
         // use mid-drag is the current number; the chain is for when they let go.
-        const reading = (c: Clause): Clause => ({ name: c.name, label: c.label, unit: c.unit, to: c.to });
+        const reading = (c: Clause): Clause => ({
+            name: c.name, label: c.label, unit: c.unit, to: c.to,
+            ...(c.color ? { color: c.color } : {})
+        });
 
         return {
             kind: 'live',
@@ -288,6 +305,20 @@ export function narrate(input: NarrateInput): NarrationLine {
         effects,
         whyTarget: effects.length > 0 ? effects[0].name : null
     };
+}
+
+/**
+ * The colour the chain's curves are drawn in, where that is one colour: every
+ * cause has one and they agree. `null` otherwise, and at rest.
+ *
+ * One answer for the causes and for the curves they moved, because a lesson
+ * says of a param that every curve it moves is drawn in its colour — so where
+ * the causes agree, so does everything under them. Where they do not, one
+ * marker cannot be both, and either would tie a cause to the other's curve.
+ */
+export function curveColor(line: NarrationLine): string | null {
+    const first = line.causes.length > 0 ? line.causes[0].color : undefined;
+    return first && line.causes.every(c => c.color === first) ? first : null;
 }
 
 /**

@@ -80,6 +80,10 @@
     --marker: 9px;
 }
 
+/* `--curve` is the colour of the curves a part is about, where the card has
+ * one: what moved is marked in the colour of the line it shifted, so "Demand
+ * for A$ increases" is tied to the blue curve on the diagram. Grey, as before,
+ * where there is no one colour to give it. */
 .part::before {
     content: '';
     position: absolute;
@@ -87,7 +91,7 @@
     top: calc((var(--line) - var(--marker)) / 2);
     width: var(--marker);
     height: var(--marker);
-    border: 2px solid light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+    border: 2px solid var(--curve, light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2)));
     border-radius: 50%;
     background: var(--mantine-color-body);
 }
@@ -103,12 +107,13 @@
     background: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
-/* What the curves did is the step between, so its marker is the smallest. */
+/* What the curves did is the step between, so its marker is the smallest — in
+ * the same colour as the cause's, since these are the curves it moved. */
 .part[data-part='movement']::before {
     --marker: 7px;
     left: 1px;
     border-width: 0;
-    background: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+    background: var(--curve, light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3)));
 }
 
 /* What followed is the outcome — what the student moved something to see — so

@@ -504,17 +504,22 @@ export const EXPLORE_PROMPTS = [
  * until you know a is demand. Raising `c` lifts the supply curve, which is a
  * *fall* in supply — the reading says what happened to sellers rather than
  * leave a student to work out that up is less.
+ *
+ * Each is marked in its curve's colour, which is what ties a letter to a line
+ * before the student has learnt which is which.
  */
 export const PARAM_WORDS = {
     a: {
         about: 'Where demand meets the price axis. Higher means buyers want more at every price.',
         rise: 'Demand increases',
-        fall: 'Demand decreases'
+        fall: 'Demand decreases',
+        curve: 'demand'
     },
     c: {
         about: 'Where supply meets the price axis. Higher means each unit costs sellers more.',
         rise: 'Sellers\' costs rise',
-        fall: 'Sellers\' costs fall'
+        fall: 'Sellers\' costs fall',
+        curve: 'supply'
     }
 };
 

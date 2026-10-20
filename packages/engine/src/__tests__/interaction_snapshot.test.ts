@@ -511,6 +511,67 @@ describe('the host surface', () => {
         r.destroy();
     });
 
+    /** What each drawn curve was stroked with, leaving out the invisible hit areas. */
+    const strokesOf = (container: HTMLElement) => [...container.querySelectorAll('path')]
+        .filter(p => !(p.getAttribute('class') || '').startsWith('dragPath'))
+        .map(p => p.getAttribute('stroke'));
+
+    const twoCurves = [
+        { type: 'Line', def: { name: 'demand', yIntercept: 'params.a', slope: -1, color: 'colors.demand' } },
+        { type: 'Line', def: { name: 'supply', yIntercept: 2, slope: 1, color: 'colors.supply' } }
+    ];
+
+    // A host drawing something of its own in a curve's colour has to know what
+    // `colors.demand` came to, and only the engine does: the schema says demand
+    // is blue, and its palette says which blue.
+    it('getColors gives each named colour as the value the diagram draws with', () => {
+        const r = mountObjects(twoCurves, { params: [{ name: 'a', value: 20, min: 5, max: 28 }] });
+        const colors = r.kg.getColors();
+
+        expect(colors.demand).toBe('#1f77b4');
+        expect(colors.supply).toBe('#ff7f0e');
+        expect(colors.equilibriumPrice).toBe('#2ca02c');
+        // The same two values the curves were stroked with, which is the claim
+        // a host is relying on when it matches one.
+        expect(strokesOf(r.container).slice(0, 2)).toEqual([colors.demand, colors.supply]);
+        // Every one a CSS value, nothing left as an expression or an object.
+        expect(Object.values(colors).every(c => /^#[0-9a-f]{6}$/i.test(c))).toBe(true);
+
+        r.destroy();
+    });
+
+    it('getColors reports a colour the config chose for itself, through a param change', () => {
+        const r = mountConfig({
+            schema: 'EconSchema',
+            colors: { demand: 'purple' },
+            params: [{ name: 'a', value: 20, min: 5, max: 28 }],
+            layout: { OneGraph: { graph: {
+                xAxis: { title: 'x', min: 0, max: 30 }, yAxis: { title: 'y', min: 0, max: 30 },
+                objects: twoCurves
+            } } }
+        });
+
+        expect(r.kg.getColors().demand).toBe('#9467bd');
+        r.kg.update({ params: [{ name: 'a', value: 24 }] });
+        expect(r.kg.getColors().demand).toBe('#9467bd');
+        expect(strokesOf(r.container)[0]).toBe('#9467bd');
+        // Only the one it named: supply is still the schema's.
+        expect(r.kg.getColors().supply).toBe('#ff7f0e');
+
+        r.destroy();
+    });
+
+    it('getColors hands back a copy', () => {
+        const r = mountObjects(twoCurves, { params: [{ name: 'a', value: 20, min: 5, max: 28 }] });
+
+        r.kg.getColors().demand = 'red';
+        expect(r.kg.getColors().demand).toBe('#1f77b4');
+        r.kg.update({ params: [{ name: 'a', value: 24 }] });
+        expect(strokesOf(r.container)[0]).toBe('#1f77b4');
+
+        r.destroy();
+    });
+
     it('honours snapshotOn from the config root', () => {
         const r = mountConfig({
             schema: 'EconSchema',

@@ -63,7 +63,7 @@ attention on finding things.
    | Yellow | A question waiting for you | the question callout, its progress marker |
    | Teal | The reasoning | "Why" after a question; a right answer |
    | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts |
-   | The curves' colours | The market itself | the diagram only |
+   | The curves' colours | The market itself | the diagram, and the chain's markers for what moved and the curves it moved |
 
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
    the depth one press away: "Why? See the maths" opens the formula behind the
@@ -125,7 +125,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close, "What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. The gesture wiring is `ParamSlider`'s. |
-| The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now. Rendered from `narrate()`; decides nothing. |
+| The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine. Rendered from `narrate()`; decides nothing. |
 | Action row | `dock/Scenarios.tsx` | Something to press that needs its reason beside it: the name, the reasoning under it, an arrow — all one button. |
 | Prompt list | `dock/Explore.tsx` | Suggestions under a "Try this" eyebrow, with hollow markers: things to do, not tasks to tick. |
 
@@ -142,6 +142,7 @@ change:
 | --- | --- | --- |
 | `paramWords.about` | Explore, under each control | Who is behind the curve, one short sentence. Not the unit. |
 | `paramWords.rise` / `fall` | The chain's cause | A whole clause, present tense, sentence case: "Supply of A$ increases". |
+| `paramWords.curve` | The chain's markers | The colour its curve is drawn in, as the diagram names it: `demand` for `color: 'colors.demand'`. Every curve the param moves should be drawn in it. |
 | `narratedCalcs[].rise` / `fall` | The chain's effects | The step title that teaches it: "The A$ appreciates", "Sellers earn more". Mind reciprocals — a dearer US$1 is a US$ that has *appreciated*. |
 | `explorePrompts` | "Try this" | Two or three open questions, each answerable with the controls on screen. |
 | `scenarios[].description` | Scenarios | The reasoning: who needs A$ or sells them, so which curve, which way. |
@@ -176,8 +177,5 @@ first version of the screen did, so a lesson can gain them one at a time.
 
 ## Next
 
-- **The curves' colours on the chain.** A cause row marked in its curve's
-  colour would tie "Demand for A$ increases" to the blue line it moved. The
-  engine resolves `colors.demand` itself and does not publish the palette yet.
 - **Words in the refusal.** "a is at the top of its range" uses the param's
   label; with `paramWords` it could say which curve.

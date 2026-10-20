@@ -356,3 +356,57 @@ describe('showing a direction-only answer', () => {
         expect(drawnCurves().filter(c => c.style === 'dotted')).toEqual([]);
     });
 });
+
+/**
+ * "What changed" marks a move in the colour of the curves it moved, with the
+ * engine's own value for it — so the claim is held against the strokes the
+ * diagram drew, not against a colour written out a second time here.
+ */
+describe('the colour of what changed', () => {
+
+    /** The live curves, each by its path, so a move shows as the ones whose path changed. */
+    const liveCurves = () => [...document.querySelectorAll('svg path[class^="path-"]')]
+        .filter(path => !hidden(path))
+        .filter(path => {
+            const dash = /stroke-dasharray:\s*([^;]+)/.exec(path.getAttribute('style') || '');
+            return !dash || dash[1].replace(/\s/g, '') === '10,0';
+        })
+        .map(path => ({ path, d: path.getAttribute('d'), stroke: path.getAttribute('stroke') }));
+
+    /** Move a curve, and say what it shifted and how the chain is marked. */
+    function move(curve: Curve) {
+        const before = new Map(liveCurves().map(c => [c.path, c.d]));
+        press(curve, 'ArrowRight', 2);
+        const card = screen.getByRole('region', { name: 'What changed' });
+        const curveOf = (part: string) =>
+            (card.querySelector(`[data-part="${part}"]`) as HTMLElement).style.getPropertyValue('--curve');
+        return {
+            strokes: liveCurves().filter(c => before.has(c.path) && before.get(c.path) !== c.d).map(c => c.stroke),
+            cause: curveOf('cause'),
+            movement: curveOf('movement')
+        };
+    }
+
+    it('marks demand for A$ in the colour of both curves it moves', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(FIRST_QUESTION));
+
+        const { strokes, cause, movement } = move('Demand for A$');
+        expect(cause).toMatch(/^#[0-9a-f]{6}$/i);
+        // Demand for A$, and the supply of US$ it is on the other side.
+        expect(strokes).toEqual([cause, cause]);
+        expect(movement).toBe(cause);
+    });
+
+    it('marks supply of A$ in its own', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(FIRST_QUESTION));
+
+        const { strokes, cause, movement } = move('Supply of A$');
+        expect(cause).toMatch(/^#[0-9a-f]{6}$/i);
+        expect(strokes).toEqual([cause, cause]);
+        expect(movement).toBe(cause);
+    });
+});

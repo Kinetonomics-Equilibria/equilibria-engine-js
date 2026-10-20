@@ -307,6 +307,32 @@ export class KineticGraph extends EventEmitter {
     }
 
     /**
+     * Every colour the diagram knows by name, as the CSS value it draws with:
+     * `{ demand: '#1f77b4', supply: '#ff7f0e', … }`.
+     *
+     * A config draws a curve `color: 'colors.demand'` and the schema decides
+     * what that is — `demand` is `blue`, and `blue` is a slot in d3's palette —
+     * so the only party that knows which blue the demand curve is drawn in is
+     * the engine. A host tying something of its own to a curve, like a marker
+     * beside the sentence about it, had nothing to read that from, and could
+     * only write `#1f77b4` out a second time and hope the schema never changed
+     * its mind.
+     *
+     * Read the same way `getCalcs()` is: a colour may be an expression, so this
+     * is what each one evaluates to now. Only the ones that came out as text —
+     * anything else is nothing a host or the diagram could draw with — and a
+     * copy, so mutating it recolours nothing.
+     */
+    public getColors(): Record<string, string> {
+        const resolved = (this.view as any)?.model?.currentColors || {},
+            colors: Record<string, string> = {};
+        Object.keys(resolved).forEach(name => {
+            if (typeof resolved[name] === 'string') colors[name] = resolved[name];
+        });
+        return colors;
+    }
+
+    /**
      * The state at the last snapshot, or `null` if none has been taken.
      *
      * Returns copies. The engine must not hand a caller an object it will later
