@@ -284,12 +284,24 @@ describe('room', () => {
  */
 describe('slots', () => {
 
-    const CHROME = { focal: { top: 40 }, grid: { top: 40 }, rail: { top: 60 }, strip: { right: 150 } };
+    const CHROME = {
+        focal: { top: 40 }, grid: { top: 40 }, rail: { top: 60 }, strip: { right: 150 }, shelf: { top: 76 }
+    };
     const ARRANGEMENTS = [
         { name: 'focus and rail', input: { ...STAGE } },
         { name: 'filmstrip', input: { width: 736, height: 563 } },
+        { name: 'shelf', input: { width: 356, height: 599 } },
         { name: 'grid', input: { ...STAGE, mode: 'grid' as const } }
     ];
+
+    it('names each arrangement truly', () => {
+        ARRANGEMENTS.forEach(({ name, input }) => {
+            const a = arrange({ ...input, panels: KEYS, chrome: CHROME, furniture: FURNITURE });
+            const small = a.panels.filter(p => p.role !== 'focal').map(p => p.role);
+            const expected = { 'focus and rail': 'rail', filmstrip: 'strip', shelf: 'shelf', grid: 'grid' }[name];
+            small.forEach(role => expect(role, name).toBe(expected));
+        });
+    });
 
     ARRANGEMENTS.forEach(({ name, input }) => {
         const a = arrange({ ...input, panels: KEYS, chrome: CHROME, furniture: FURNITURE });
@@ -397,6 +409,102 @@ describe('below the filmstrip breakpoint', () => {
         const wideBoxes: any = {};
         wide.panels.forEach((p: any) => { wideBoxes[p.key] = pixelBox(wide, p.key, FILMSTRIP_BELOW_PX) });
         expect(wideBoxes.firm.x).toBeGreaterThan(wideBoxes.market.x + wideBoxes.market.width);
+    });
+});
+
+/**
+ * A filmstrip too narrow for its captions.
+ *
+ * The study screen at 1024×768, with the navbar open, has a stage 356px across
+ * and 599px down. Its strip's caption column is 152px, and each of two slots
+ * was 168px, so the glyph beside the column came out 0px square: a sheet 30px
+ * tall holding a dot, under a caption that ran off its top. These are that
+ * stage's numbers and the app's room.
+ */
+describe('a filmstrip too narrow for its captions', () => {
+
+    const NARROW = { width: 356, height: 599 };
+    const CHROME = {
+        focal: { top: 40, right: 12, bottom: 12, left: 12 },
+        strip: { top: 12, right: 152, bottom: 12, left: 12 },
+        shelf: { top: 76, right: 12, bottom: 12, left: 12 }
+    };
+    const PANELS = ['market', 'surplus', 'revenue'];
+    const at = (stage: { width: number; height: number }, chrome: any = CHROME, panels = PANELS) =>
+        arrange({ ...stage, panels: panels, chrome: chrome, furniture: FURNITURE });
+    const px = (a: any, key: string, stage: { width: number }) => pixelBox(a, key, stage.width)!;
+
+    it('was a strip of nothing, and is a shelf of glyphs', () => {
+        const { shelf, ...noShelf } = CHROME;
+        const strip = at(NARROW, noShelf);
+        expect(strip.panels[1].role).toBe('strip');
+        expect(px(strip, 'surplus', NARROW).width).toBeLessThan(1);
+
+        const a = at(NARROW);
+        expect(a.panels.map(p => p.role)).toEqual(['focal', 'shelf', 'shelf']);
+        expect(px(a, 'surplus', NARROW).width).toBeGreaterThan(100);
+        expect(isSquare(px(a, 'revenue', NARROW))).toBe(true);
+    });
+
+    // Only a host that has said what its chrome takes above a glyph has
+    // anything to put there.
+    it('offers no shelf to a host that has not given it room', () => {
+        const { shelf, ...noShelf } = CHROME;
+        at(NARROW, noShelf).panels.slice(1).forEach(p => expect(p.role).toBe('strip'));
+    });
+
+    it('keeps the strip where its glyphs are the bigger beside their captions', () => {
+        // The same screen at 1440×900, and at 1024×768 with the navbar folded.
+        [{ width: 772, height: 773 }, { width: 596, height: 599 }].forEach(stage => {
+            at(stage).panels.slice(1).forEach(p => expect(p.role, `${stage.width}`).toBe('strip'));
+        });
+    });
+
+    it('gives the strip the height the focal panel cannot use, and none it can', () => {
+        const a = at(NARROW), focal = px(a, 'market', NARROW), shelf = a.panels[1];
+        const pad = 0.018 * NARROW.width;
+        const room = (side: 'top' | 'right' | 'bottom' | 'left') => CHROME.focal[side] + FURNITURE.full[side];
+
+        // As wide as the stage allows: the width bounds it, as it did before.
+        expect(focal.width).toBeCloseTo(NARROW.width - 2 * pad - room('left') - room('right'), 6);
+        // And the strip starts where the focal panel's room ends, a gap below.
+        expect(shelf.slot.y * NARROW.height)
+            .toBeCloseTo(focal.y + focal.height + room('bottom') + pad, 6);
+        // Which is more than the strip's share of the stage's height.
+        expect(shelf.slot.height).toBeGreaterThan(0.22);
+    });
+
+    it('takes nothing where the focal panel is bounded by its height, as at 1440×900', () => {
+        const stage = { width: 772, height: 773 };
+        const a = at(stage);
+        expect(a.panels[1].slot.height * stage.height).toBeCloseTo(0.22 * stage.height, 6);
+    });
+
+    // One shelf panel has the whole width to itself, which a caption beside a
+    // glyph fits in: it is a strip, and a bigger one than its share would make.
+    it('makes a lone panel under the focal one a strip, as big as the height allows', () => {
+        const a = at(NARROW, CHROME, PANELS.slice(0, 2)), strip = a.panels[1];
+        expect(strip.role).toBe('strip');
+        expect(px(a, 'surplus', NARROW).width).toBeGreaterThan(0.22 * NARROW.height - 30);
+    });
+
+    it('shares the stage\'s width evenly, edge to edge with the focal panel\'s share', () => {
+        const a = at(NARROW), [focal, surplus, revenue] = a.panels;
+        expect(surplus.slot.x).toBeCloseTo(focal.slot.x, 9);
+        expect(revenue.slot.x + revenue.slot.width).toBeCloseTo(focal.slot.x + focal.slot.width, 9);
+        expect(revenue.slot.width).toBeCloseTo(surplus.slot.width, 9);
+    });
+
+    // Promoting the first of them, as with the rail: a straight exchange.
+    it('swaps with its panel on a promotion', () => {
+        const before = at(NARROW), after = arrange({
+            ...NARROW, panels: PANELS, focused: 'surplus', chrome: CHROME, furniture: FURNITURE
+        });
+        const of = (a: any, key: string) => a.panels.filter((p: any) => p.key === key)[0];
+
+        expect(of(after, 'surplus')).toEqual({ ...of(before, 'market'), key: 'surplus' });
+        expect(of(after, 'market')).toEqual({ ...of(before, 'surplus'), key: 'market' });
+        expect(of(after, 'revenue')).toEqual(of(before, 'revenue'));
     });
 });
 

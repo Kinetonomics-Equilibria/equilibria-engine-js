@@ -49,8 +49,16 @@ export type StageMode = 'focus' | 'grid';
  * chrome can go without landing on that detail. A `rail` panel stacks beside
  * the focal one and a `strip` panel lies under it; they are the same glyph in
  * two places, and the chrome that fits under one does not fit under the other.
+ *
+ * A `shelf` panel lies under the focal one too, on a stage too narrow for a
+ * strip. A strip keeps its caption beside its glyph, and a stage a phone wide,
+ * or a tablet's beside an open navbar, has no width for both: the caption took
+ * the slot and left the glyph a square of nothing. A shelf has its caption above
+ * the glyph instead, and spends the stage's height on it, which a narrow stage
+ * has to spare. It is offered only to a host that says what its chrome takes
+ * there (`chrome.shelf`), since a host that has not has nothing to put above it.
  */
-export type PanelRole = 'focal' | 'rail' | 'strip' | 'grid';
+export type PanelRole = 'focal' | 'rail' | 'strip' | 'shelf' | 'grid';
 
 /** Pixels on each side of a panel's box. */
 export interface Room {
@@ -125,6 +133,9 @@ export interface ArrangeInput {
     /**
      * Pixels the host's chrome takes outside a panel, by role — a caption above
      * the focal panel, say, and one under each rail panel.
+     *
+     * Naming `shelf` here is what offers one: a filmstrip too narrow for its
+     * captions beside its glyphs puts them above instead, in this much room.
      */
     chrome?: RoomByRole;
 
@@ -162,7 +173,10 @@ const GAP = 0.018;
 /** The rail's share of the stage width. */
 const RAIL_FRACTION = 0.2;
 
-/** The filmstrip's share of the stage height. */
+/**
+ * The filmstrip's share of the stage height, at the least. It has more under a
+ * focal panel too narrow to use its own (see `filmstrip` in `arrange`).
+ */
 const STRIP_FRACTION = 0.22;
 
 /** A rect in normalised units, before it is expressed as fractions of the canvas. */
@@ -317,10 +331,10 @@ export function arrange(input: ArrangeInput): Arrangement {
      * right while size and role were the same thing — the focal panel was large
      * *because* it was focal — and the grid is where they came apart: a grid
      * cell is a panel being read, at a size `auto` treated as barely worth
-     * labelling. So the focal panel is drawn in full, a rail or strip panel as
-     * a glyph, and a grid cell in full if it is still big enough once the room
-     * for its axis titles is taken out, and compact otherwise — never as a
-     * glyph, since the grid exists to read all of them at once.
+     * labelling. So the focal panel is drawn in full, a rail, strip or shelf
+     * panel as a glyph, and a grid cell in full if it is still big enough once
+     * the room for its axis titles is taken out, and compact otherwise — never
+     * as a glyph, since the grid exists to read all of them at once.
      */
     const place = function (box: Box, role: PanelRole): Placed {
         if (role !== 'grid') {
@@ -337,6 +351,54 @@ export function arrange(input: ArrangeInput): Arrangement {
         placed[key] = { ...place(box, role), role: role };
     };
 
+    /**
+     * The filmstrip under the focal panel: how tall it is, what its `n` panels
+     * are, and the box each is fitted into.
+     *
+     * Its height is a share of the stage's, and more on a narrow stage. There
+     * the focal square is as wide as the stage allows and still shorter than
+     * its column, and what it could not use was left as a band of nothing above
+     * and below it while the glyphs under it were squeezed. So the strip takes
+     * that height — as much of it as its squares can fill, and none the focal
+     * square could use. Where the focal square is bounded by its height, as at
+     * 1440×900 and on most stages, there is none to take, and the strip is the
+     * share it always was.
+     *
+     * Its panels are strip panels, captioned beside, unless the host has room
+     * for a shelf and a shelf holds the bigger glyph — which on a narrow stage it
+     * does by a long way: at 356px across, a strip's caption column took every
+     * pixel of its slot and the glyph came out nothing at all.
+     *
+     * The strip's panels are packed from the left by `slots`, like the rail's
+     * from the top. A shelf's panels share the width out evenly instead, as a
+     * caption across the top of a sheet has the sheet's width to work in, and
+     * width is what a stage that needs a shelf is short of: packed, a shelf's
+     * sheet was only as wide as its glyph, and the name was clipped to fit.
+     */
+    const filmstrip = function (n: number): { role: PanelRole; height: number; boxes: Box[] } {
+        const focalRoom = roomFor('focal', 'full'),
+            least = STRIP_FRACTION * height,
+            // The column the focal square fills when it is as wide as it can be.
+            focalUses = inner.width - focalRoom.left - focalRoom.right + focalRoom.top + focalRoom.bottom,
+            most = Math.max(least, inner.height - GAP - focalUses);
+
+        const lay = function (role: PanelRole) {
+            const room = roomFor(role, 'indicator'),
+                share = (inner.width - (n - 1) * GAP) / n,
+                // Tall enough for a square as wide as its share allows, and no taller.
+                wants = share - room.left - room.right + room.top + room.bottom,
+                stripH = Math.min(most, Math.max(least, wants)),
+                box: Box = { x: inner.x, y: inner.y + inner.height - stripH, width: inner.width, height: stripH },
+                boxes = role === 'shelf' ? cells(box, n, 1) : slots(box, n, false, room);
+            return { role: role, height: stripH, boxes: boxes, side: fitInRoom(boxes[0], room).width };
+        };
+
+        const strip = lay('strip');
+        if (!(input.chrome && input.chrome.shelf)) return strip;
+        const shelf = lay('shelf');
+        return shelf.side > strip.side + 1e-9 ? shelf : strip;
+    };
+
     if (keys.length === 0) {
         // Nothing to place. Reported rather than thrown: an app rendering a
         // stage before its data arrives is ordinary, not an error.
@@ -350,14 +412,11 @@ export function arrange(input: ArrangeInput): Arrangement {
     } else if (width < FILMSTRIP_BELOW_PX) {
         // Filmstrip: the rail lies down under the focal panel. Same slots
         // function, rotated — one code path across the breakpoint, so a rule
-        // that holds above it holds below it.
-        const stripH = STRIP_FRACTION * height;
-        put(focused, { ...inner, height: inner.height - GAP - stripH }, 'focal');
-        const strip = slots(
-            { x: inner.x, y: inner.y + inner.height - stripH, width: inner.width, height: stripH },
-            keys.length - 1, false, roomFor('strip', 'indicator')
-        );
-        keys.filter(k => k !== focused).forEach((k, i) => put(k, strip[i], 'strip'));
+        // that holds above it holds below it — until the stage is too narrow
+        // for a caption beside each glyph, and the panels are a shelf.
+        const strip = filmstrip(keys.length - 1);
+        put(focused, { ...inner, height: inner.height - GAP - strip.height }, 'focal');
+        keys.filter(k => k !== focused).forEach((k, i) => put(k, strip.boxes[i], strip.role));
     } else {
         const railW = RAIL_FRACTION;
         put(focused, { ...inner, width: inner.width - GAP - railW }, 'focal');

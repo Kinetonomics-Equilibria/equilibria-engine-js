@@ -127,6 +127,10 @@ export interface StageProps extends UseEquilibriaEventCallbacks {
      * so a caption never lands on a tick label and a row of the grid never lands
      * on the one above it. Only the app knows how tall its chrome is, so only
      * the app can say; chrome that takes more than it asked for will overlap.
+     *
+     * Room for `shelf` is what lets a narrow filmstrip become one, with each
+     * caption above its glyph rather than beside it. Without it a strip stays a
+     * strip however little of its glyph its captions leave.
      */
     chromeRoom?: RoomByRole;
 

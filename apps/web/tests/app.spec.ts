@@ -438,6 +438,89 @@ test('no text on the stage lands on other text, in any arrangement', async ({ pa
 });
 
 /**
+ * What is wrong with the small panels on screen, if anything: a glyph too small
+ * to be one, a word of a caption outside its own sheet or over its own glyph,
+ * or two sheets that meet.
+ *
+ * The glyph is the stage's promote button, which covers exactly the panel's
+ * box, and its caption is the words inside that button. A span 1px across is a
+ * screen reader's word for the chip's arrow, and nothing anyone sees.
+ */
+async function smallPanelProblems(page: Page): Promise<string[]> {
+    return page.evaluate(() => {
+        const inside = (a: DOMRect, b: DOMRect) =>
+            a.left >= b.left - 0.5 && a.right <= b.right + 0.5 && a.top >= b.top - 0.5 && a.bottom <= b.bottom + 0.5;
+        const meet = (a: DOMRect, b: DOMRect) =>
+            Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 &&
+            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
+
+        const sheets = [...document.querySelectorAll('[data-backdrop]')].map(el => ({
+            key: el.getAttribute('data-backdrop'), box: el.firstElementChild!.getBoundingClientRect()
+        }));
+        const problems: string[] = [];
+
+        document.querySelectorAll('[data-testid="stage-chrome"] button[data-role]').forEach(panel => {
+            const key = panel.getAttribute('data-panel'),
+                glyph = panel.getBoundingClientRect(),
+                sheet = sheets.filter(s => s.key === key)[0].box;
+
+            if (glyph.width < 80) problems.push(`${key}: a glyph ${Math.round(glyph.width)}px across`);
+            panel.querySelectorAll('span').forEach(span => {
+                const text = (span.textContent || '').trim(), box = span.getBoundingClientRect();
+                if (span.children.length > 0 || text === '' || box.width <= 1) return;
+                if (!inside(box, sheet)) problems.push(`${key}: "${text}" outside its sheet`);
+                if (meet(box, glyph)) problems.push(`${key}: "${text}" over its glyph`);
+            });
+        });
+
+        for (let i = 0; i < sheets.length; i++) {
+            for (let j = i + 1; j < sheets.length; j++) {
+                if (meet(sheets[i].box, sheets[j].box)) problems.push(`${sheets[i].key}'s sheet meets ${sheets[j].key}'s`);
+            }
+        }
+        return problems;
+    });
+}
+
+/**
+ * The small panels on a stage too narrow for a caption beside each.
+ *
+ * At 1024×768 with the navbar open the stage is 356px across, and the strip's
+ * caption column took the whole of each slot: a sheet 30px tall holding the
+ * equilibrium dot and the promote icon, with "Consumer surplus / CS $40.50"
+ * across its top edge. The panels are a shelf there, captioned above their
+ * glyphs, and this asks every small panel what was wrong with it — in the
+ * instruments and in the lesson, with a chip and without, and with the navbar
+ * folded, where there is room for a strip again.
+ */
+test('a narrow stage captions its small panels inside their sheets', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await expect(page.locator('[data-role="shelf"]')).toHaveCount(2);
+
+    const fits = async (where: string) => {
+        await expect.poll(() => smallPanelProblems(page), { message: where }).toEqual([]);
+        await expect.poll(() => textCollisions(page), { message: where }).toEqual([]);
+    };
+    await fits('a shelf, at rest');
+
+    // The widest numbers the lesson has, each with its chip under it.
+    await page.getByRole('tab', { name: 'Scenarios' }).click();
+    await page.getByRole('button', { name: 'Boom and cost squeeze' }).click();
+    await expect(page.getByText(CHIP)).toHaveCount(3);
+    await fits('a shelf, with chips');
+    await expect(page.locator(panel('Consumer surplus'))).toContainText('Consumer surplus');
+
+    await page.getByRole('button', { name: 'Hide links' }).click();
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+    await fits('the navbar folded, a strip');
+
+    await page.getByRole('button', { name: 'Show links' }).click();
+    await backToTheLesson(page);
+    await expect(page.locator('[data-role="shelf"]')).toHaveCount(2);
+    await fits('a shelf, in the lesson');
+});
+
+/**
  * The ghost's label and the live one, after a move too small to separate them.
  *
  * One arrow-key press on the dock's slider is a gesture of its own, so the ghost

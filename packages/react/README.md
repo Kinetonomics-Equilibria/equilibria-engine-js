@@ -21,11 +21,13 @@ What it is:
   panel getting smaller fades out of the way of the one coming forward (`motion.ts`). A reveal
   and a resize land in one relayout, and so does everything for a student who prefers reduced
   motion. Each panel
-  has a **role** — `focal`, `rail`, `strip` or `grid` — which sets the level of detail it draws
-  at and tells the app's chrome which side of the panel it may use. `chromeRoom` says how many
-  pixels that chrome takes, and the stage keeps it clear along with the room the engine's own
-  axes need. Only the rail and the strip lay a promote button across a panel; a grid panel is
-  dragged like the focal one, and its chrome is handed `promote` instead.
+  has a **role** — `focal`, `rail`, `strip`, `shelf` or `grid` — which sets the level of detail
+  it draws at and tells the app's chrome which side of the panel it may use. `chromeRoom` says
+  how many pixels that chrome takes, and the stage keeps it clear along with the room the
+  engine's own axes need. A `shelf` is a filmstrip too narrow for its captions beside its
+  glyphs, captioned above them instead, and only an app that gives it room gets one. Only the
+  rail, the strip and the shelf lay a promote button across a panel; a grid panel is dragged
+  like the focal one, and its chrome is handed `promote` instead.
 - **`arrange` / `toCustomLayout` / `layoutParams` / `pixelBox`** — the arrangement arithmetic,
   exported on its own because it is a pure function of a box and a list of keys and an app may
   want the numbers without rendering anything. `toCustomLayout` declares the rect params and

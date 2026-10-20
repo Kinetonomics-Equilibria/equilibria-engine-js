@@ -162,6 +162,14 @@ const HEADER_INSET = SHEET_PAD + 4;
  * from 126px square to 105px, because the strip is short enough there for its
  * slot's width to be what bounds it. A line of height costs nothing like that.
  *
+ * Above a shelf panel, the strip's three lines with nothing beside them. A
+ * shelf is the strip on a stage too narrow for a column beside each glyph — at
+ * 1024×768 with the navbar open the stage is 356px across, a strip slot 168px,
+ * and the column took all of it, leaving a sheet 30px tall with a caption
+ * spilling off its top. The three lines are 63px tall with the chip under the
+ * number, measured; the room is that and the sheet's padding, and the stage
+ * finds the height for it under a focal panel that could not use it.
+ *
  * Each side also keeps the sheet's padding, so the room is the sheet: the stage
  * keeps exactly this much clear, on top of the room the engine's own axes need,
  * and a sheet drawn to box and room holds everything its panel draws. This is
@@ -171,7 +179,8 @@ const CHROME_ROOM: Record<PanelRole, Room> = {
     focal: { top: SHEET_PAD + HEADER_PX, right: SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD },
     grid: { top: SHEET_PAD + HEADER_PX, right: SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD },
     rail: { top: SHEET_PAD + 48, right: SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD },
-    strip: { top: SHEET_PAD, right: 140 + SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD }
+    strip: { top: SHEET_PAD, right: 140 + SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD },
+    shelf: { top: SHEET_PAD + 64, right: SHEET_PAD, bottom: SHEET_PAD, left: SHEET_PAD }
 };
 
 /**
@@ -182,7 +191,8 @@ const CHROME_ROOM: Record<PanelRole, Room> = {
  * of the stage its panel was given, so the sheets' edges line up with each
  * other and with the stage's rather than with whatever width a square came
  * out — the focal sheet as wide as the focal column, every rail sheet as wide
- * as the rail. A strip's share is already no wider than its panel and room.
+ * as the rail, every shelf sheet an even share of the stage's width. A strip's
+ * share is already no wider than its panel and room.
  */
 function sheetOf(panel: StagePanel): Room {
     const { box, slot, room } = panel;
@@ -217,19 +227,21 @@ const NAMED_GRID_PX = 220;
  * Each role's caption box, in the sheet, sized from the room that holds it.
  *
  * A caption across the top of a sheet runs from one side of it to the other,
- * a padding in, and the rail's two lines sit in the same place — the whole
- * width, since its number and chip need it; only the name's line leaves the
- * corner to the promote icon. The strip's column is beside the box, as wide as
- * the room the stage kept for it, so the caption and the room are one number.
+ * a padding in, and the rail's two lines and the shelf's three sit in the same
+ * place — the whole width, since the number and chip need it; only the name's
+ * line leaves the corner to the promote icon. The strip's column is beside the
+ * box, as wide as the room the stage kept for it, so the caption and the room
+ * are one number.
  */
 function captionBox(panel: StagePanel, sheet: Room): CSSProperties {
     switch (panel.role) {
         case 'strip':
             return { width: CHROME_ROOM.strip.right - SHEET_PAD };
         case 'rail':
+        case 'shelf':
             return {
                 top: -sheet.top + SHEET_PAD, left: -sheet.left + SHEET_PAD,
-                right: -sheet.right + SHEET_PAD, height: CHROME_ROOM.rail.top - SHEET_PAD
+                right: -sheet.right + SHEET_PAD, height: CHROME_ROOM[panel.role].top - SHEET_PAD
             };
         default:
             return {
@@ -1211,11 +1223,11 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             );
         }
 
-        // A rail or strip panel is inside the stage's own promote button, which
-        // covers only the glyph. The tile reaches the rest of the sheet, so the
-        // whole card is the click target, and it is what lights up on a hover
-        // or a keyboard focus — a ring around the glyph alone sat inside the
-        // card, around nothing in particular.
+        // A rail, strip or shelf panel is inside the stage's own promote
+        // button, which covers only the glyph. The tile reaches the rest of the
+        // sheet, so the whole card is the click target, and it is what lights
+        // up on a hover or a keyboard focus — a ring around the glyph alone sat
+        // inside the card, around nothing in particular.
         if (!panel.focused) {
             return (
                 <>

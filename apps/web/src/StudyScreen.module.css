@@ -54,7 +54,8 @@
 .focal,
 .grid,
 .rail,
-.strip {
+.strip,
+.shelf {
     position: absolute;
     display: flex;
     gap: var(--mantine-spacing-xs);
@@ -114,8 +115,12 @@
 
 /* At the top of a rail panel's sheet. Two lines rather than one: a rail panel
  * is narrower than a name, a number and a chip side by side, and on one line
- * the name gave way until it was a single letter. */
-.rail {
+ * the name gave way until it was a single letter.
+ *
+ * And at the top of a shelf panel's, in three: a shelf is narrower still, and
+ * its chip goes under its number as a strip's does (`.strip .values`). */
+.rail,
+.shelf {
     flex-direction: column;
     gap: 0;
 }
@@ -127,10 +132,17 @@
     padding-right: 24px;
 }
 
-/* The rail and strip panels are buttons the stage lays over their glyphs, and
- * the tile is the part of the button that reaches the rest of the sheet. It is
- * clear, so the sheet and the glyph show through, until the card is pointed
- * at or tabbed to. */
+/* A shelf's name stops 6px short of the icon rather than 10: a shelf is what
+ * the stage is when it is short of width, and at 1024×768 those 4px are the
+ * difference between "Consumer surplus", 123px, and "Consumer surp…". */
+.shelf .panelName {
+    padding-right: 20px;
+}
+
+/* The rail, strip and shelf panels are buttons the stage lays over their
+ * glyphs, and the tile is the part of the button that reaches the rest of the
+ * sheet. It is clear, so the sheet and the glyph show through, until the card
+ * is pointed at or tabbed to. */
 .tile {
     position: absolute;
     border: 1px solid transparent;
@@ -199,8 +211,13 @@
  * "▲ $69.00" side by side are wider than the room the stage keeps, and
  * `.values` does not give way. Still anchored at the bottom, so the name rises
  * a line when the chip arrives rather than the chip dropping into whatever is
- * under the caption. */
-.strip .values {
+ * under the caption.
+ *
+ * A shelf's column is narrower than a strip's, so its chip goes under too —
+ * anchored at the top, since its caption is, into a line the stage keeps for
+ * the chip whether or not one is showing. */
+.strip .values,
+.shelf .values {
     flex-direction: column;
     align-items: flex-start;
     gap: 2px;
