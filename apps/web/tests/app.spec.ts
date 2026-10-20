@@ -952,20 +952,20 @@ test('the maths instrument prints the same numbers as the diagram', async ({ pag
 });
 
 /**
- * The Maths instrument where the screen has the height for it.
+ * The Maths instrument at a laptop's height.
  *
  * The audit measured it at 1440×833, where its four calcs overflowed the dock
  * by fourteen pixels and a scrollbar stood beside them for good — and that was
  * with every fraction set at the height of the text beside it. They are set in
  * display style now, which is taller, and the spacing between calcs paid for it.
  *
- * The tabs' card is two thirds of the column whatever is in it, so at 833 and
- * at 900 the maths now scrolls inside its tab (see the test after this one);
- * from 1000 it fits, to the pixel. This holds the fit, and that pointing at it
- * raises no bar, a little above that.
+ * Then the tabs' card became two thirds of the column whatever is in it, and
+ * the maths overflowed 1440×900 by 46px. It fits again with 17px to spare, from
+ * a pixel off the maths' size and the padding round it; below about 875 tall it
+ * scrolls inside its tab (see the test after this one).
  */
-test('the maths instrument fits beside the stage when there is the height for it', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 1050 });
+test('the maths instrument fits beside the stage at a laptop\'s height', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByRole('tab', { name: 'Maths' }).click();
 
     const open = page.getByRole('tabpanel');
@@ -996,7 +996,7 @@ test('the maths instrument fits beside the stage when there is the height for it
 
 /**
  * Where the dock is too short for its maths, it scrolls — and says so only when
- * asked. 600 tall, well short of the 1000 where the maths fits.
+ * asked. 600 tall, well short of the 875 where the maths fits.
  */
 test('the maths instrument scrolls when it must, with a bar only on hover', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 600 });

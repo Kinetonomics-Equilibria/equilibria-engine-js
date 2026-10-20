@@ -105,7 +105,8 @@ Beside the stage, 320px wide, the screen's full height, two cards 12px apart:
   bottom third, whatever either holds and whichever tab is open. A long step
   scrolls between the lesson's head and its Back and Next, which hold still; an
   instrument scrolls inside its tab; a long chain scrolls under "What changed"'s
-  head. At laptop heights (below about 1000px) the Maths tab scrolls.
+  head. Four calcs of maths fit their tab at 1440×900; below about 875px tall
+  the Maths tab scrolls.
 - The tabs are each as wide as their name, sharing out what is left, and the
   open one is no bolder than the rest, so opening one moves no other.
 - On a phone there is no column: the lesson goes under the stage at a fixed

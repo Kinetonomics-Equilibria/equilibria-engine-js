@@ -90,9 +90,10 @@
 }
 
 /* In the card, the instruments keep the card's margin all round, as the
- * lesson's words keep theirs. */
+ * lesson's words keep theirs: 14px at the sides, and 12px under the tabs,
+ * where the lesson's head starts, and at the foot. */
 .dock .panelInner {
-    padding: 16px 14px;
+    padding: 12px 14px;
 }
 
 @media (prefers-reduced-motion: reduce) {

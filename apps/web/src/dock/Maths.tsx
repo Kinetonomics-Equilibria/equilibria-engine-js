@@ -196,10 +196,10 @@ export function Maths({
 
     return (
         // Spaced to fit. Four calcs, each a heading and three lines of display
-        // maths, are taller than the dock at a laptop's height by about the
-        // gaps between them at `lg`, and the row's own tint is what separates
-        // the focused one — the space does not have to.
-        <Stack gap={6}>
+        // maths, fill the tab at 1440×900, and every gap here is four of them;
+        // the headings are what separate one calc from the next, and the row's
+        // own tint the focused one — the space does not have to.
+        <Stack gap={4}>
             {key.length > 0 ? <Key entries={key} /> : null}
             {names.map(name => (
                 <Row

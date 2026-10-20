@@ -1,6 +1,8 @@
+/* 3px above and below, not more: the tint of a focused row needs a little
+ * room round the maths, and every pixel here is eight in the tab. */
 .row,
 .rowFocused {
-    padding: 4px var(--mantine-spacing-xs);
+    padding: 3px var(--mantine-spacing-xs);
     border-radius: var(--mantine-radius-sm);
 }
 
@@ -15,19 +17,26 @@
 
 .name {
     color: var(--mantine-color-dimmed);
+    /* One line, so the leading is only what keeps it off the maths. */
+    line-height: 1.3;
 }
 
 .lines {
-    /* KaTeX scales itself from the text around it, and at the page's 16px it
-     * set a display fraction too tall for four calcs to fit beside the stage.
-     * Sized from the small text the headings are in instead. */
-    font-size: var(--mantine-font-size-sm);
+    /* KaTeX scales itself from the text around it, 1.21 times over, and at the
+     * page's 16px it set a display fraction too tall for four calcs to fit
+     * beside the stage. 13px is 15.7px of maths, still a little larger than
+     * the interface's text, and four calcs of it fit the Maths tab — two
+     * thirds of the column — at 1440×900. The space came from here rather than
+     * from KaTeX's own spacing between lines: with less of that, a fraction's
+     * denominator crowded the numerator of the one under it. */
+    font-size: 13px;
     /* A display formula does not wrap, and the dock is a fixed 320px on
      * purpose. Scroll the maths, not the page. */
     overflow-x: auto;
     /* The scroll box clips at its own edge, and a fraction's bar or a
-     * subscript can sit a pixel or two outside the formula's box. */
-    padding: 2px 0;
+     * subscript can sit a pixel or two outside the formula's box. Above only:
+     * `aligned` leaves 3pt of its own under every line, the last included. */
+    padding: 2px 0 0;
 }
 
 /* Display maths is centred with an em of margin either side, which is right in
