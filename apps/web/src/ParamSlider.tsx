@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Slider } from '@mantine/core';
 import type { ParamInfo } from 'equilibria-engine-js';
 import classes from './ParamSlider.module.css';
@@ -8,7 +9,7 @@ import classes from './ParamSlider.module.css';
  * The contract is two calls — `beginGesture` before the value moves and
  * `endGesture` after — and getting the *order* wrong is invisible: the diagram
  * still moves, the number still updates, and only the ghost and the narration
- * strip are quietly wrong. P9 got it wrong for the keyboard and shipped, and
+ * are quietly wrong. P9 got it wrong for the keyboard and shipped, and
  * P11 found it by needing a keyboard answer path.
  *
  * Two facts about Mantine's `Slider` make the naive wiring wrong, and both are
@@ -24,9 +25,9 @@ import classes from './ParamSlider.module.css';
  * reading of the API suggests — runs *after* the value has already changed.
  * `Model.beginGesture` snapshots the instant it is called, so the "before" it
  * captures is the after: `prev` equals the current value, every ghost hides
- * itself, and the strip reads "drag a curve to see what it changes" about a
+ * itself, and the narration reads "drag a curve to see what it changes" about a
  * curve that has just moved. Worse, the gesture is opened and never closed —
- * `onChangeEnd` has already fired by then — so the strip stays stuck in its
+ * `onChangeEnd` has already fired by then — so the narration stays stuck in its
  * live form for everything the student does afterwards.
  *
  * The fix is one element outward: a wrapper whose capture handlers necessarily
@@ -51,6 +52,12 @@ export interface ParamSliderProps {
      */
     label: string;
 
+    /**
+     * The id of whatever says what the param stands for, read after its name.
+     * On the thumb, for the same reason the label is.
+     */
+    describedBy?: string;
+
     disabled?: boolean;
     onChange(value: number): void;
     beginGesture(): void;
@@ -58,16 +65,37 @@ export interface ParamSliderProps {
 
     /** Enter, where the host has something for it to commit. */
     onEnter?(): void;
+
+    /**
+     * Float the value over the thumb while it moves. On by default; off where
+     * the value is already printed beside the slider's name, which is one
+     * number in two places — and the bubble lands on whatever is above.
+     */
+    valueBubble?: boolean;
 }
 
 export function ParamSlider({
-    param, label, disabled, onChange, beginGesture, endGesture, onEnter
+    param, label, describedBy, disabled, onChange, beginGesture, endGesture, onEnter,
+    valueBubble = true
 }: ParamSliderProps) {
 
     const format = (value: number) => value.toFixed(param.precision);
 
+    // Mantine's thumb takes a fixed list of props and drops the rest — an
+    // `aria-describedby` passed through `thumbProps` never reaches the element
+    // carrying `role="slider"` — so the description is put on that element
+    // once it exists. React leaves an attribute it did not set alone.
+    const wrap = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const thumb = wrap.current ? wrap.current.querySelector('[role="slider"]') : null;
+        if (!thumb) return;
+        if (describedBy) thumb.setAttribute('aria-describedby', describedBy);
+        else thumb.removeAttribute('aria-describedby');
+    }, [describedBy]);
+
     return (
         <div
+            ref={wrap}
             className={classes.wrap}
             onKeyDownCapture={event => {
                 if (disabled) return;
@@ -88,7 +116,7 @@ export function ParamSlider({
                 step={param.round}
                 precision={param.precision}
                 disabled={disabled}
-                label={format}
+                label={valueBubble ? format : null}
                 onChange={onChange}
                 onChangeEnd={endGesture}
                 thumbLabel={label}

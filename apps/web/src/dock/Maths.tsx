@@ -120,7 +120,7 @@ export interface MathsProps extends InstrumentProps {
      * What the lesson calls each calc: its label, unit and decimals, and the
      * symbol and words the formulas use for it.
      *
-     * The decimals are the app's one answer, shared with the strip and the
+     * The decimals are the app's one answer, shared with the narration and the
      * panel captions, because a result that read "= 13.0" beside a caption
      * reading "$13.00" would be two answers to one question. The symbol is the
      * same argument made about letters: the diagram labels the equilibrium P*,
@@ -152,7 +152,7 @@ export function Maths({
     }, [params]);
 
     // A param is printed at the engine's own precision for it, which is what
-    // the strip and the Explore sliders print it at; a calc at the app's.
+    // the narration and the Explore sliders print it at; a calc at the app's.
     const places = useMemo<Places>(() => {
         const declared: Record<string, number> = {};
         params.forEach(p => { declared[p.name] = p.precision });

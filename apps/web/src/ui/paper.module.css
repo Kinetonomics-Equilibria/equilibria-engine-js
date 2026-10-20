@@ -1,0 +1,40 @@
+/* Paper: the one surface everything a student reads or moves sits on.
+ *
+ * The panels' sheets, the lesson card, the instruments and "What changed" are
+ * all this, on a page a shade darker, so the screen reads as a few sheets of
+ * one kind laid on a desk — and a new thing on the screen is a new sheet, not a
+ * new kind of box. See docs/design.md.
+ *
+ * Composed rather than copied (`composes: paper from …`), so the edge, the
+ * corner and the shadow are decided here once. The radius and the shadow are
+ * tokens in index.css, because the stage draws its own tiles over its sheets
+ * and has to agree with them to the pixel. */
+
+.paper {
+    background: var(--mantine-color-body);
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    border-radius: var(--paper-radius);
+    box-shadow: var(--paper-shadow);
+}
+
+/* A card's head: what the card is, small, at the left, and the card's one
+ * action at the right — the lesson's close, "What changed"'s Undo. One line
+ * tall whether or not the action is there, so a card does not jump when it
+ * arrives. */
+.head {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-xs);
+    min-height: 22px;
+}
+
+/* What a card, or a part of one, is: "Lesson", "What changed", "Part 1 of 3".
+ * Small and grey, so it is found when looked for and otherwise not read. */
+.eyebrow {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--mantine-font-size-xs);
+    line-height: 1.4;
+    color: var(--mantine-color-dimmed);
+}

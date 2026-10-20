@@ -9,6 +9,7 @@
  * which is fixed, so switching tabs hands the stage nothing new to re-arrange
  * for. */
 .dock {
+    composes: paper from '../ui/paper.module.css';
     flex: 1 1 0;
     min-height: 10rem;
     display: flex;
@@ -16,10 +17,6 @@
     /* The scroll area runs to the card's edge, so its content is clipped to
      * the card's corners rather than drawn over them. */
     overflow: hidden;
-    background: var(--mantine-color-body);
-    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 .tabs {

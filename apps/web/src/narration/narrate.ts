@@ -1,5 +1,5 @@
 import type { AffectedObject } from 'equilibria-engine-js';
-import { phraseMechanism } from './phrasebook';
+import { phraseMovements } from './phrasebook';
 
 /**
  * What the student just did, and what followed from it — as data.
@@ -25,8 +25,26 @@ export interface Snapshot {
     calcs: Record<string, unknown>;
 }
 
+/**
+ * What a rise and a fall in one quantity mean, in a student's words.
+ *
+ * "The A$ appreciates", not "A$1 = ▲". A chain of numbers shows *that*
+ * something moved; these say what the movement is called, which is the thing
+ * a student is asked to write. They are the lesson's own words — the steps that
+ * teach appreciation are titled with the same phrases — so exploring and the
+ * lesson describe one event one way.
+ *
+ * Present tense and sentence case, each a whole clause: "Demand for A$
+ * increases". Optional throughout: a quantity with none is narrated by its
+ * label, as it always was, so a lesson can add them one at a time.
+ */
+export interface Reading {
+    rise?: string;
+    fall?: string;
+}
+
 /** A param worth narrating: the engine's `ParamInfo`, narrowed to what is used. */
-export interface NarratedParam {
+export interface NarratedParam extends Reading {
     name: string;
     label: string;
     precision: number;
@@ -40,7 +58,7 @@ export interface NarratedParam {
  * *results* is an editorial decision about economics, the same decision that
  * puts a headline number on a panel, and it is made in the same place.
  */
-export interface NarratedCalc {
+export interface NarratedCalc extends Reading {
     name: string;
     label: string;
     /** Prefixed to the value, so the strip and a panel's chip read alike. */
@@ -111,6 +129,11 @@ export interface Clause {
     to: string;
     /** Only when `from` is present, and only when the two differ. */
     direction?: 'up' | 'down';
+    /**
+     * What the move means, where the lesson says: its `rise` or its `fall`.
+     * Only with a `direction`, since a reading mid-drag has none to mean.
+     */
+    words?: string;
 }
 
 export interface NarrationLine {
@@ -130,6 +153,13 @@ export interface NarrationLine {
 
     /** What moved in the diagram, or `null` when the engine could not say. */
     mechanism: string | null;
+
+    /**
+     * The same, one moved object at a time: "demand for A$ shifts to the
+     * right", "supply of US$ shifts to the right". `mechanism` is these joined
+     * into the one clause a line has room for; a card lists them.
+     */
+    movements: string[];
 
     /** Every narrated calc whose displayed value changed. */
     effects: Clause[];
@@ -179,7 +209,7 @@ function numeric(value: unknown): number | null {
 }
 
 function clause(
-    name: string, label: string, unit: string, precision: number,
+    name: string, label: string, unit: string, precision: number, reading: Reading,
     beforeValue: unknown, afterValue: unknown, arrows: boolean
 ): Clause | null {
 
@@ -198,10 +228,18 @@ function clause(
     // event happened and then fails to show one.
     if (fromText === toText) return null;
 
-    return { name, label, unit, from: fromText, to: toText, direction: to > from ? 'up' : 'down' };
+    const direction = to > from ? 'up' : 'down';
+    const words = direction === 'up' ? reading.rise : reading.fall;
+    return {
+        name, label, unit, from: fromText, to: toText, direction,
+        ...(words ? { words } : {})
+    };
 }
 
-const REST: NarrationLine = { kind: 'rest', causes: [], mechanism: null, effects: [], whyTarget: null };
+/** Nothing has moved: no chain, nothing to undo, nothing to ask "why?" about. */
+export const REST: NarrationLine = {
+    kind: 'rest', causes: [], mechanism: null, movements: [], effects: [], whyTarget: null
+};
 
 export function narrate(input: NarrateInput): NarrationLine {
     const { before, after, params, calcs, affected, live } = input;
@@ -211,12 +249,12 @@ export function narrate(input: NarrateInput): NarrationLine {
     if (!before) return REST;
 
     const causes = params
-        .map(p => clause(p.name, p.label, '', p.precision,
+        .map(p => clause(p.name, p.label, '', p.precision, p,
             before.params[p.name], after.params[p.name], true))
         .filter((c): c is Clause => c !== null);
 
     const effects = calcs
-        .map(c => clause(c.name, c.label, c.unit || '', calcPrecision(c),
+        .map(c => clause(c.name, c.label, c.unit || '', calcPrecision(c), c,
             before.calcs[c.name], after.calcs[c.name], true))
         .filter((c): c is Clause => c !== null);
 
@@ -234,18 +272,31 @@ export function narrate(input: NarrateInput): NarrationLine {
             kind: 'live',
             causes: causes.map(reading),
             mechanism: null,
+            movements: [],
             effects: effects.map(reading),
             whyTarget: null
         };
     }
 
+    const movements = affected ? phraseMovements(affected) : [];
+
     return {
         kind: 'settled',
         causes,
-        mechanism: affected ? phraseMechanism(affected) : null,
+        mechanism: movements.length > 0 ? movements.join(' and ') : null,
+        movements,
         effects,
         whyTarget: effects.length > 0 ? effects[0].name : null
     };
+}
+
+/**
+ * Words written to open a sentence, set inside one: "the A$ appreciates".
+ * An acronym keeps its capitals — "A$ …", "RBA …" — which is why this looks at
+ * the second letter before touching the first.
+ */
+function midSentence(words: string): string {
+    return /^[A-Z][a-z]/.test(words) ? words.charAt(0).toLowerCase() + words.slice(1) : words;
 }
 
 /**
@@ -255,19 +306,45 @@ export function narrate(input: NarrateInput): NarrationLine {
  * chain is a dozen fragments — a label, a number, an arrow glyph, another
  * number — and a student hears rubble. One sentence per settled interaction is
  * the whole accessibility requirement, and it is the same information.
+ *
+ * A clause with words is said as what it means — "the A$ appreciates from
+ * US$0.65 to US$0.70" — and one without as what it is called, so a reader
+ * hears what a sighted student reads. The causes are said one way or the other
+ * as a set: "You changed" can only be followed by names.
  */
 export function toSentence(line: NarrationLine): string {
     if (line.kind !== 'settled') return '';
 
-    const moved = (c: Clause) => `${c.label} from ${c.unit}${c.from} to ${c.unit}${c.to}`;
-    const list = (clauses: Clause[]) => clauses.map(moved).join(', ');
+    const span = (c: Clause) => `from ${c.unit}${c.from} to ${c.unit}${c.to}`;
+    const named = (c: Clause) => `${c.label} ${span(c)}`;
+    const meant = (c: Clause) => (c.words ? `${midSentence(c.words)} ${span(c)}` : named(c));
 
     const parts: string[] = [];
-    if (line.causes.length > 0) parts.push('You changed ' + list(line.causes));
+    if (line.causes.length > 0) {
+        parts.push(line.causes.every(c => !!c.words)
+            ? line.causes.map(meant).join(', ')
+            : 'You changed ' + line.causes.map(named).join(', '));
+    }
     if (line.mechanism) parts.push(line.mechanism);
-    if (line.effects.length > 0) parts.push(list(line.effects));
+    if (line.effects.length > 0) parts.push(line.effects.map(meant).join(', '));
 
-    return parts.length > 0 ? parts.join('; ') + '.' : '';
+    if (parts.length === 0) return '';
+    const sentence = parts.join('; ') + '.';
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
+/**
+ * What the live region says for one event: a refusal (P12), then the chain.
+ *
+ * Both, for a screen reader, where the eye may get only one. A sighted student
+ * reads the refusal and can *see* where the curve stopped; there is nothing to
+ * see if you cannot, so the numbers are still the account of what happened.
+ * The strip and the card say the same sentence for the same event, which is
+ * what lets either stand in for the other at any width.
+ */
+export function announcement(line: NarrationLine, refusal?: string | null): string {
+    const chain = toSentence(line);
+    return refusal ? (chain ? refusal + ' ' + chain : refusal) : chain;
 }
 
 /**

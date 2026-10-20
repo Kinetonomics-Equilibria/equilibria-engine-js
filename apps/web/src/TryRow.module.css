@@ -5,38 +5,10 @@
  * the key term's blue, which it sits right under and was mistaken for. */
 
 .row {
+    composes: callout try from './ui/callout.module.css';
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin: 4px 0 8px;
     padding: 10px 12px;
-    border-radius: var(--mantine-radius-sm);
-    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
-}
-
-/* Its name and value on a line, and the slider under them at the card's full
- * width, as the question lays out a choice of curve. */
-.control {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: var(--mantine-spacing-sm);
-    row-gap: 2px;
-}
-
-.name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.value {
-    min-width: 2.5rem;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    color: var(--mantine-color-dimmed);
-}
-
-.slider {
-    grid-column: 1 / -1;
 }

@@ -1,0 +1,46 @@
+/* A callout: something set apart inside a card, tinted by what kind of thing
+ * it is. There are four kinds and each has one colour, everywhere:
+ *
+ *   term  blue    a word to learn
+ *   ask   yellow  a question waiting for the student
+ *   try   grey    controls handed over, asking nothing
+ *   why   teal    the reasoning, once there is something to reason about
+ *
+ * A colour that means one thing can be learned, and then read without
+ * reading: the question's marker on the lesson's progress bar is the same
+ * yellow as the question. A fifth kind is a fifth colour, decided here, so it
+ * cannot quietly borrow one of these. See docs/design.md. */
+
+.callout {
+    padding: 8px 10px;
+    border-radius: var(--mantine-radius-sm);
+}
+
+.term {
+    background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.12));
+}
+
+.ask {
+    background: var(--mantine-color-yellow-light);
+}
+
+.try {
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.why {
+    background: light-dark(var(--mantine-color-teal-0), rgba(18, 184, 134, 0.12));
+}
+
+/* The callout's own name — "Key term", "Why" — in its colour. */
+.label {
+    font-size: var(--mantine-font-size-xs);
+}
+
+.term .label {
+    color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-3));
+}
+
+.why .label {
+    color: light-dark(var(--mantine-color-teal-9), var(--mantine-color-teal-3));
+}

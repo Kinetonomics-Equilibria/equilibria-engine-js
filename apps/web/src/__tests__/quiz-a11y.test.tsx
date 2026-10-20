@@ -155,12 +155,11 @@ describe('the verdict reaches a student who cannot see the diagram', () => {
     });
 
     /**
-     * And announced once. The strip below the stage has a live region of its
-     * own, and a verdict repeated into both is heard twice — which is why the
-     * prompt and the verdict live here and the strip keeps narrating the
-     * diagram.
+     * And announced once. "What changed" has a live region of its own, and a
+     * verdict repeated into both is heard twice — which is why the prompt and
+     * the verdict live here and the narration keeps reporting the diagram.
      */
-    it('does not repeat the verdict into the narration strip', async () => {
+    it('does not repeat the verdict into the narration', async () => {
         const user = await ask();
         const control = slider();
         control.focus();
@@ -171,7 +170,7 @@ describe('the verdict reaches a student who cannot see the diagram', () => {
         const stripSays = (strip.querySelector('[role="status"]') as HTMLElement).textContent || '';
         expect(stripSays).not.toContain('the right direction');
         // It is doing its own job instead: saying what moved and what followed.
-        expect(stripSays).toContain('a from 20.0 to 28.0');
+        expect(stripSays).toContain('Demand increases from 20.0 to 28.0');
     });
 });
 
@@ -306,7 +305,7 @@ describe('choosing a curve by keyboard', () => {
         expect(document.activeElement).toBe(demand);
     });
 
-    it('announces a wrong curve in the question row, and not again in the strip', async () => {
+    it('announces a wrong curve in the question row, and not again in the narration', async () => {
         await askFx();
         const supply = named('Supply of A$');
         supply.focus();

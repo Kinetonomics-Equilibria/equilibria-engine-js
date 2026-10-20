@@ -67,7 +67,7 @@ export function phraseMovement(movement: Movement): string | null {
 }
 
 /**
- * The whole middle clause, from everything the engine says moved.
+ * What moved, one object at a time, from everything the engine says moved.
  *
  * Three decisions live here, all of them ones the plan left open.
  *
@@ -85,10 +85,11 @@ export function phraseMovement(movement: Movement): string | null {
  * directly — the point is the mechanism, because then it is what they touched.
  *
  * **Two named objects at most.** Beyond that the clause stops being a mechanism
- * and becomes a list, and a list of four things moving explains nothing.
+ * and becomes a list, and a list of four things moving explains nothing — so
+ * more than two is none at all, as is an engine that could not phrase any.
  */
-export function phraseMechanism(affected: AffectedObject[]): string | null {
-    if (!affected || affected.length === 0) return null;
+export function phraseMovements(affected: AffectedObject[]): string[] {
+    if (!affected || affected.length === 0) return [];
 
     const byTitle = new Map<string, string | null>();
     const kinds = new Map<string, Movement['kind']>();
@@ -108,8 +109,14 @@ export function phraseMechanism(affected: AffectedObject[]): string | null {
     const moved = named.filter(([title]) => kinds.get(title) !== 'move');
     const chosen = moved.length > 0 ? moved : named;
 
-    if (chosen.length === 0 || chosen.length > 2) return null;
-    return chosen.map(([title, said]) => title + ' ' + said).join(' and ');
+    if (chosen.length === 0 || chosen.length > 2) return [];
+    return chosen.map(([title, said]) => title + ' ' + said);
+}
+
+/** The middle clause as one line has room for it: the movements, joined. */
+export function phraseMechanism(affected: AffectedObject[]): string | null {
+    const said = phraseMovements(affected);
+    return said.length > 0 ? said.join(' and ') : null;
 }
 
 /**

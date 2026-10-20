@@ -1,0 +1,37 @@
+/* A param's name and value on a line, what it stands for under them, and the
+ * slider under that at the full width of whatever holds it — rather than a
+ * name, a track and a number squeezed across a column 300px wide. */
+.control {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: var(--mantine-spacing-sm);
+}
+
+.name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.value {
+    min-width: 2.5rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--mantine-color-dimmed);
+}
+
+/* Under the name, the width of the control: who the curve is, not what the
+ * number counts — the Maths key says that. */
+.about {
+    grid-column: 1 / -1;
+    margin: 2px 0 0;
+    line-height: 1.45;
+    color: var(--mantine-color-dimmed);
+}
+
+.slider {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+}

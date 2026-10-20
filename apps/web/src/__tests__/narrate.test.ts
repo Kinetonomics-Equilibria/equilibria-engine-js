@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { AffectedObject } from 'equilibria-engine-js';
-import { CALC_PRECISION, calcPrecision, formatValue, narrate, toSentence, undoParams } from '../narration/narrate';
-import type { NarratedParam, NarrateInput, Snapshot } from '../narration/narrate';
-import { phraseMechanism, phraseMovement, phraseRefusal } from '../narration/phrasebook';
+import {
+    CALC_PRECISION, announcement, calcPrecision, formatValue, narrate, toSentence, undoParams
+} from '../narration/narrate';
+import type { NarratedCalc, NarratedParam, NarrateInput, Snapshot } from '../narration/narrate';
+import { phraseMechanism, phraseMovement, phraseMovements, phraseRefusal } from '../narration/phrasebook';
 import type { ParamBlockedEvent } from 'equilibria-engine-js';
 
 /**
@@ -257,6 +259,89 @@ describe('the middle clause', () => {
         };
         expect(phraseMechanism([shiftUp, contradiction])).toBeNull();
     });
+
+    // A card lists the moved objects a line at a time; the strip joins them.
+    // One list, read two ways, so the two cannot name different movements.
+    it('is also a list of what moved, one object at a time', () => {
+        const supply: AffectedObject = {
+            name: 'supply_market', title: 'supply',
+            movement: { kind: 'shift', dx: 0, dy: -1, axis: 'y', sign: -1 }
+        };
+        const result = line({ affected: [shiftUp, supply] });
+
+        expect(result.movements).toEqual(['demand shifts up', 'supply shifts down']);
+        expect(result.mechanism).toBe(result.movements.join(' and '));
+        expect(phraseMovements([shiftUp, shiftUp])).toEqual(['demand shifts up']);
+    });
+
+    it('lists nothing where it would say nothing', () => {
+        expect(line().movements).toEqual([]);
+        expect(line({ affected: [shiftUp], live: true }).movements).toEqual([]);
+        expect(phraseMovements([])).toEqual([]);
+    });
+});
+
+/**
+ * What a move means, in the lesson's words: "The price rises", not "P* ▲".
+ *
+ * Words are the lesson's to give and optional everywhere, so each of these is
+ * also a claim about what happens without them — the label, as before.
+ */
+describe('the words', () => {
+    const WORDED: NarratedParam[] = [
+        { name: 'a', label: 'a', precision: 1, rise: 'Demand increases', fall: 'Demand decreases' },
+        { name: 'c', label: 'c', precision: 1 }
+    ];
+    const WORDED_CALCS: NarratedCalc[] = [
+        { name: 'Pe', label: 'P*', unit: '$', rise: 'The price rises', fall: 'The price falls' },
+        { name: 'Qe', label: 'Q*' }
+    ];
+    const worded = (over: Partial<NarrateInput> = {}) =>
+        line({ params: WORDED, calcs: WORDED_CALCS, ...over });
+
+    it('says what a move means, whichever way it went', () => {
+        expect(worded().causes[0].words).toBe('Demand increases');
+        expect(worded().effects[0].words).toBe('The price rises');
+
+        const down = worded({ after: market(16) });
+        expect(down.causes[0].words).toBe('Demand decreases');
+        expect(down.effects[0].words).toBe('The price falls');
+    });
+
+    it('gives a clause no words where the lesson has none', () => {
+        expect(worded().effects[1].name).toBe('Qe');
+        expect(worded().effects[1]).not.toHaveProperty('words');
+    });
+
+    it('has no words mid-gesture, where a reading has no direction to mean', () => {
+        const live = worded({ live: true });
+        expect(live.causes[0]).not.toHaveProperty('words');
+        expect(live.effects[0]).not.toHaveProperty('words');
+    });
+
+    it('is said as what it means, and a clause without words by its name', () => {
+        expect(toSentence(worded({ affected: [shiftUp] }))).toBe(
+            'Demand increases from 20.0 to 24.0; demand shifts up; ' +
+            'the price rises from $11.0 to $13.0, Q* from 9.0 to 11.0.'
+        );
+    });
+
+    // "You changed" can only be followed by names: "You changed demand
+    // increases" is not a sentence. So one cause without words names them all.
+    it('names every cause when any of them has no words', () => {
+        const both = worded({ after: { params: { a: 24, c: 4 }, calcs: market(24, 4).calcs } });
+        expect(toSentence(both)).toMatch(/^You changed a from 20\.0 to 24\.0, c from 2\.0 to 4\.0; /);
+    });
+
+    it('keeps an acronym\'s capitals inside a sentence', () => {
+        const fx = narrate({
+            before: { params: { demand: 50 }, calcs: { rate: 0.65 } },
+            after: { params: { demand: 60 }, calcs: { rate: 0.7 } },
+            params: [{ name: 'demand', label: 'Demand for A$', precision: 0, rise: 'Demand for A$ increases' }],
+            calcs: [{ name: 'rate', label: 'A$1 =', unit: 'US$', precision: 2, rise: 'A$ up' }]
+        });
+        expect(toSentence(fx)).toBe('Demand for A$ increases from 50 to 60; A$ up from US$0.65 to US$0.70.');
+    });
 });
 
 describe('the phrasebook', () => {
@@ -301,6 +386,16 @@ describe('the announcement', () => {
     it('leaves out a clause it does not have, rather than a gap where one goes', () => {
         expect(toSentence(line()))
             .toBe('You changed a from 20.0 to 24.0; P* from $11.0 to $13.0, Q* from 9.0 to 11.0.');
+    });
+
+    // The strip and the card announce through this, so either can stand in for
+    // the other at any width and a screen reader hears the same thing.
+    it('puts a refusal first, and keeps the chain after it', () => {
+        const chain = toSentence(line());
+        expect(announcement(line(), 'a is at the top of its range.')).toBe('a is at the top of its range. ' + chain);
+        expect(announcement(line())).toBe(chain);
+        expect(announcement(narrate({ before: null, after: market(20), params: PARAMS, calcs: CALCS }), 'Stopped.'))
+            .toBe('Stopped.');
     });
 });
 

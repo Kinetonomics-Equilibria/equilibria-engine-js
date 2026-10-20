@@ -22,25 +22,19 @@
      * stage keeps that room inside the canvas now, measured in pixels for the
      * level each panel draws at, so "Q" under a lone panel has its room without
      * this box guessing at it. */
-
-    /* One radius for a sheet and for the tile that lights up over it, which
-     * have to agree to the pixel or the highlight's corners miss the card's. */
-    --sheet-radius: 12px;
 }
 
 /* The card each panel sits on, drawn under the diagram by the stage's backdrop
  * and placed by `sheetOf` from the panel's box, slot and room.
  *
- * The page is a shade darker, so the sheet is what reads as the panel's edge —
- * and the sheet is the white the engine's labels are filled with, so a label
- * never shows as a box. A hairline and a shadow only just there: the tint does
- * the separating, these keep it crisp. */
+ * Paper, like every card on the screen (src/ui/paper.module.css). The page is
+ * a shade darker, so the sheet is what reads as the panel's edge — and the
+ * sheet is the white the engine's labels are filled with, so a label never
+ * shows as a box. A hairline and a shadow only just there: the tint does the
+ * separating, these keep it crisp. */
 .sheet {
+    composes: paper from './ui/paper.module.css';
     position: absolute;
-    background: var(--mantine-color-body);
-    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
-    border-radius: var(--sheet-radius);
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 /* A panel's chrome never sits over the panel itself, where the curves are: it
@@ -146,7 +140,7 @@
 .tile {
     position: absolute;
     border: 1px solid transparent;
-    border-radius: var(--sheet-radius);
+    border-radius: var(--paper-radius);
     transition: border-color 120ms ease;
 }
 
@@ -250,10 +244,13 @@
 }
 
 /* The lesson, or the instruments under a line saying where the lesson was
- * left, at a width that depends on neither.
+ * left — and under either, "What changed" — at a width that depends on none
+ * of them.
  *
- * The lesson takes the height its step needs, up to the whole column, and
- * scrolls inside past that; the instruments take what the line leaves. */
+ * Top to bottom is the order a student works in: where they are, what they
+ * can do, what it did. The lesson takes the height its step needs and scrolls
+ * inside past that; the instruments take what the line above and the card
+ * below leave them, which puts "What changed" at the foot of the column. */
 .side {
     display: flex;
     flex: none;
@@ -270,6 +267,15 @@
 
 .resumeBeside {
     flex: none;
+}
+
+/* Last in the column, as tall as its chain, and never so tall that the card
+ * above it — the lesson's words, or the instruments — is squeezed to nothing:
+ * past this it scrolls inside. It grows away from the controls above it, so a
+ * slider does not move under the pointer that is holding it. */
+.narrationBeside {
+    flex: none;
+    max-height: 45%;
 }
 
 /* Under the stage, at a fixed height: a lesson whose card grew and shrank

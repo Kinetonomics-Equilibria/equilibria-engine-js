@@ -1,5 +1,5 @@
 import type { LessonStep } from '../track/track';
-import type { NarratedCalc } from '../narration/narrate';
+import type { NarratedCalc, Reading } from '../narration/narrate';
 import type { Scenario } from '../dock/Scenarios';
 import type { Direction } from '../quiz/grade';
 
@@ -63,6 +63,25 @@ export interface StudyContent {
      */
     paramMeanings?: Record<string, string>;
 
+    /**
+     * Things to try in Explore, once the lesson is put away: two or three open
+     * questions a student answers by moving something, so free play has a
+     * point. Nothing marks them — the lesson's questions are the marked ones —
+     * and each should be answerable with the controls the diagram offers.
+     */
+    explorePrompts?: string[];
+
+    /**
+     * What each param a student can move stands for, in their words: who it
+     * is, under its control in Explore, and what its rise and fall mean, at
+     * the head of the chain in "What changed".
+     *
+     * The words a student is learning to use, so they are the lesson's own —
+     * "Demand for A$ increases" is a step title as well. Every field is
+     * optional, and a param with none is shown by its label, as it was.
+     */
+    paramWords?: Record<string, ParamWords>;
+
     /** Which params draw a question's start and answer, per askable param. */
     questionApparatus: Record<string, { start: string; answer: string }>;
 
@@ -79,6 +98,17 @@ export interface StudyContent {
      * a sentence about the model's bookkeeping, not about what they did.
      */
     directionWords?: Record<string, Record<Direction, string>>;
+}
+
+/** A param, as a student is told about it. See `StudyContent.paramWords`. */
+export interface ParamWords extends Reading {
+    /**
+     * Who or what the param stands for: one short sentence, under the control
+     * that moves it. Not the number's unit — `paramMeanings` says that, in the
+     * Maths key — but the people behind the curve, so a slider is a thing in
+     * the world and not a number on a track.
+     */
+    about?: string;
 }
 
 export interface PanelSpec {

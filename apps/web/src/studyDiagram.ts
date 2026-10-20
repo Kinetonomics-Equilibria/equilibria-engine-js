@@ -450,10 +450,24 @@ const MONEY = { unit: '$', precision: 2 };
  * entry is what "why?" opens the maths explainer on.
  */
 export const NARRATED_CALCS = [
-    { name: 'Pe', label: 'P*', meaning: 'Equilibrium price', ...MONEY },
-    { name: 'Qe', label: 'Q*', meaning: 'Equilibrium quantity' },
-    { name: 'CS', label: 'CS', meaning: 'Consumer surplus', ...MONEY },
-    { name: 'TR', label: 'TR', meaning: 'Total revenue', ...MONEY }
+    {
+        name: 'Pe', label: 'P*', meaning: 'Equilibrium price', ...MONEY,
+        rise: 'The price rises', fall: 'The price falls'
+    },
+    {
+        name: 'Qe', label: 'Q*', meaning: 'Equilibrium quantity',
+        rise: 'More is bought and sold', fall: 'Less is bought and sold'
+    },
+    // In the words of the steps that bring these panels in: "What buyers gain"
+    // and "What sellers earn".
+    {
+        name: 'CS', label: 'CS', meaning: 'Consumer surplus', ...MONEY,
+        rise: 'Buyers gain more', fall: 'Buyers gain less'
+    },
+    {
+        name: 'TR', label: 'TR', meaning: 'Total revenue', ...MONEY,
+        rise: 'Sellers earn more', fall: 'Sellers earn less'
+    }
 ];
 
 /**
@@ -467,6 +481,41 @@ export const NARRATED_CALCS = [
 export const PARAM_MEANINGS = {
     a: 'where demand meets the P axis',
     c: 'where supply meets the P axis'
+};
+
+/**
+ * Things to try in Explore. With `P = a − Q` and `P = c + Q` the market clears
+ * at `P* = (a + c)/2` and `Q* = (a − c)/2`, which is every answer: costs up
+ * raises the price and cuts the quantity; equal rises in `a` and `c` raise the
+ * price and leave the quantity, and so consumer surplus, where they were; and
+ * raising `c` alone shrinks what buyers gain.
+ */
+export const EXPLORE_PROMPTS = [
+    'Raise sellers\' costs (c). Which way do the price and the quantity sold go?',
+    'Raise a and c by the same amount. What changes, and what stays the same?',
+    'Make buyers gain less without touching demand.'
+];
+
+/**
+ * What `a` and `c` are to a student who is moving them.
+ *
+ * The letters stay on the sliders, as on the formulas; the sentence under each
+ * says which curve it is and which way is which, since "higher a" means nothing
+ * until you know a is demand. Raising `c` lifts the supply curve, which is a
+ * *fall* in supply — the reading says what happened to sellers rather than
+ * leave a student to work out that up is less.
+ */
+export const PARAM_WORDS = {
+    a: {
+        about: 'Where demand meets the price axis. Higher means buyers want more at every price.',
+        rise: 'Demand increases',
+        fall: 'Demand decreases'
+    },
+    c: {
+        about: 'Where supply meets the price axis. Higher means each unit costs sellers more.',
+        rise: 'Sellers\' costs rise',
+        fall: 'Sellers\' costs fall'
+    }
 };
 
 /**

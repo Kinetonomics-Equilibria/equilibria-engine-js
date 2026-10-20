@@ -1,17 +1,22 @@
 import { Anchor, Button, Group, Text } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { NarrationLine } from './narration/narrate';
-import { toSentence } from './narration/narrate';
+import { announcement } from './narration/narrate';
 import classes from './NarrationStrip.module.css';
 
 /**
- * One generated line under the stage, always in the same place.
+ * One generated line under the stage, always in the same place — where there
+ * is no column beside the stage to hold "What changed".
  *
  * The answer to "what did I just do, and what does it mean?" — which is the
  * question the whole product exists to serve. It is fixed in place because
  * dynamic values and changing explanations need *one* home: words that appear
  * sometimes on the chart, sometimes in a sidebar and sometimes in a toast cost
  * a student the attention they should be spending reading them.
+ *
+ * Beside the stage, that home is `NarrationCard`, which has the room to say
+ * the chain in words and in full; this line is what a phone has room for. One
+ * or the other is on screen, never both, and they announce the same sentence.
  *
  * Nothing here decides what to say. `narrate()` produces the chain and this
  * renders it, which is why the phrasing can be argued about, translated or
@@ -90,20 +95,12 @@ export function NarrationStrip({
 }: NarrationStripProps) {
 
     const settled = line.kind === 'settled';
-    const chain = toSentence(line);
 
-    /**
-     * Both, for a screen reader, where the eye gets only one.
-     *
-     * A sighted student reads the refusal and can *see* where the curve
-     * stopped; there is nothing to see if you cannot, so the numbers are still
-     * the account of what happened. Replacing the chain on screen and appending
-     * it here is not an inconsistency — it is the same information reaching two
-     * senses that need different amounts of it.
-     */
-    const sentence = refusal
-        ? (chain ? refusal + ' ' + chain : refusal)
-        : chain;
+    // Both, for a screen reader, where the eye gets only one. Replacing the
+    // chain on screen and appending it here is not an inconsistency — it is
+    // the same information reaching two senses that need different amounts of
+    // it. See `announcement`.
+    const sentence = announcement(line, refusal);
 
     return (
         <div
@@ -116,7 +113,7 @@ export function NarrationStrip({
               * and the same content is announced once, as one sentence, from the
               * live region below. Both are always in the DOM and in the same
               * place, so neither is a second source of truth. */}
-            <div className={classes.chain} aria-hidden="true">
+            <div className={classes.chain} data-chain aria-hidden="true">
                 {/* One of two, never both: a refusal, then the chain. The
                   * refusal displaces the chain rather than joining it, because
                   * the strip is one line and must not grow — it sits under the

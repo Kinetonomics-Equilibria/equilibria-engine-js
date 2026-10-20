@@ -96,6 +96,45 @@ describe('Explore', () => {
 
         expect(beginGesture).toHaveBeenCalled();
     });
+
+    // A slider called "Demand for A$" moves a number until something says who
+    // that is. Said under the name, and read after it, from the slider itself.
+    it('says what each param stands for, under its name and to a screen reader', () => {
+        view(<Explore {...base()} words={{ a: { about: 'Where demand meets the price axis.' } }} />);
+
+        const about = screen.getByText('Where demand meets the price axis.');
+        const slider = screen.getByRole('slider', { name: 'Demand intercept' });
+        expect(slider.getAttribute('aria-describedby')).toBe(about.id);
+    });
+
+    it('says nothing extra for a param the lesson has no words for', () => {
+        view(<Explore {...base()} words={{ c: { about: 'Not this one.' } }} />);
+
+        expect(screen.queryByText('Not this one.')).toBeNull();
+        expect(screen.getByRole('slider', { name: 'Demand intercept' }).hasAttribute('aria-describedby')).toBe(false);
+    });
+
+    // One number in one place: the value is printed beside the name, so the
+    // slider does not float a second copy of it over the words above.
+    it('prints the value once, beside the name', async () => {
+        const user = userEvent.setup();
+        view(<Explore {...base()} />);
+
+        screen.getByRole('slider', { name: 'Demand intercept' }).focus();
+        await user.keyboard('{ArrowRight}');
+        expect(screen.getAllByText('20.0')).toHaveLength(1);
+    });
+
+    it('offers things to try, under the controls, when the lesson has some', () => {
+        const { unmount } = view(<Explore {...base()} prompts={['Raise a. What happens to P*?']} />);
+
+        const tryThis = screen.getByRole('region', { name: 'Try this' });
+        expect(tryThis.textContent).toContain('Raise a. What happens to P*?');
+        unmount();
+
+        view(<Explore {...base()} />);
+        expect(screen.queryByRole('region', { name: 'Try this' })).toBeNull();
+    });
 });
 
 describe('Scenarios', () => {
@@ -125,6 +164,19 @@ describe('Scenarios', () => {
         expect(updateParams.mock.calls[0][0]).toEqual([
             { name: 'a', value: 26 }, { name: 'c', value: 6 }
         ]);
+    });
+
+    // The reasoning is part of what is chosen, so it is inside the row that is
+    // pressed — and read after the name rather than as part of it, so the
+    // button is "Demand shock" to a screen reader, as it is to the eye.
+    it('names each scenario by its name, and describes it by its reasoning', () => {
+        view(<Scenarios {...base({ params: [param(), param({ name: 'c' })] })} scenarios={scenarios} />);
+
+        const shock = screen.getByRole('button', { name: 'Demand shock' });
+        expect(shock.textContent).toContain('Buyers want more.');
+        expect(document.getElementById(shock.getAttribute('aria-describedby')!)!.textContent)
+            .toBe('Buyers want more.');
+        expect(screen.getByRole('button', { name: 'Both' }).hasAttribute('aria-describedby')).toBe(false);
     });
 
     // Applying half a scenario silently is worse than refusing it: the diagram

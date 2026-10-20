@@ -1,4 +1,4 @@
-/* The lesson card: a sheet like the panels' sheets, so the words and the
+/* The lesson card: paper, like the panels' sheets, so the words and the
  * diagram read as two things of the same kind, side by side.
  *
  * Three bands. The head (where the student is) and the foot (the way on) hold
@@ -6,13 +6,10 @@
  * it, so Back and Next never scroll out of reach. */
 
 .card {
+    composes: paper from './ui/paper.module.css';
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: var(--mantine-color-body);
-    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 .head {
@@ -21,16 +18,11 @@
 }
 
 .label {
-    display: flex;
-    align-items: center;
-    gap: var(--mantine-spacing-xs);
-    min-height: 22px;
+    composes: head from './ui/paper.module.css';
 }
 
 .part {
-    flex: 1;
-    min-width: 0;
-    color: var(--mantine-color-dimmed);
+    composes: eyebrow from './ui/paper.module.css';
 }
 
 .leave {
@@ -157,18 +149,15 @@
 
 /* A new word and what it means, set apart so it can be found again. */
 .term {
+    composes: callout term from './ui/callout.module.css';
     display: flex;
     flex-direction: column;
     gap: 1px;
     margin: 4px 0 8px;
-    padding: 8px 10px;
-    border-radius: var(--mantine-radius-sm);
-    background: light-dark(var(--mantine-color-blue-0), rgba(34, 139, 230, 0.12));
 }
 
 .termLabel {
-    font-size: var(--mantine-font-size-xs);
-    color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-3));
+    composes: label from './ui/callout.module.css';
 }
 
 .termWord {

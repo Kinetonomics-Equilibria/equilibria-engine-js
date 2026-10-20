@@ -1,6 +1,5 @@
-import { Text } from '@mantine/core';
 import type { ParamInfo } from 'equilibria-engine-js';
-import { ParamSlider } from './ParamSlider';
+import { ParamControl } from './ParamControl';
 import type { LessonTry } from './track/track';
 import classes from './TryRow.module.css';
 
@@ -10,8 +9,9 @@ import classes from './TryRow.module.css';
  * The card holds no instruments: while a lesson runs it is the whole side
  * column, so a student moves what the step hands them and nothing else. This is
  * how a step hands them something. Each slider writes the param a drag writes,
- * through the same `updateParams` and the same gesture pair, so the strip under
- * the stage narrates it as it narrates any move of theirs.
+ * through the same `updateParams` and the same gesture pair, so "What changed"
+ * narrates it as it narrates any move of theirs — and each is the same control
+ * the Explore instrument hands out, so moving one is learned once.
  *
  * Named by the step, not by the param: the first lesson's params are `a` and
  * `c`, which are the right names in a formula and the wrong ones over a slider
@@ -40,23 +40,14 @@ export function TryRow({ controls, params, onChange, onGestureStart, onGestureEn
     return (
         <section className={classes.row} role="group" aria-label="Try it">
             {offered.map(({ control, param }) => (
-                <div key={param.name} className={classes.control}>
-                    <Text component="span" size="sm" className={classes.name} aria-hidden="true">
-                        {control.label}
-                    </Text>
-                    <Text component="span" size="sm" className={classes.value}>
-                        {param.value.toFixed(param.precision)}
-                    </Text>
-                    <div className={classes.slider}>
-                        <ParamSlider
-                            param={param}
-                            label={control.label}
-                            onChange={value => onChange(param.name, value)}
-                            beginGesture={onGestureStart}
-                            endGesture={onGestureEnd}
-                        />
-                    </div>
-                </div>
+                <ParamControl
+                    key={param.name}
+                    param={param}
+                    label={control.label}
+                    onChange={value => onChange(param.name, value)}
+                    beginGesture={onGestureStart}
+                    endGesture={onGestureEnd}
+                />
             ))}
         </section>
     );

@@ -9,6 +9,15 @@
     box-sizing: border-box;
 }
 
+/* The paper's corner and shadow (src/ui/paper.module.css), here because the
+ * stage's tiles must match its sheets' corners and live in another module. The
+ * paper's edge is a colour that changes with the scheme, and stays with the
+ * paper: `light-dark()` resolves on an element, not on the root. */
+:root {
+    --paper-radius: 12px;
+    --paper-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
 body {
     /* A shade darker than the sheets the diagrams sit on, so each panel reads
      * as a card of its own. The sheets are `--mantine-color-body`, the white

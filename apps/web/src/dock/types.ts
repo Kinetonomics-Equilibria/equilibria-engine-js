@@ -37,7 +37,7 @@ export interface InstrumentProps {
      *
      * Two things happen, and both are needed. The engine takes one snapshot for
      * the whole gesture, so ghosts are drawn against where it started rather
-     * than the previous frame. And the narration strip is told an interaction is
+     * than the previous frame. And the narration is told an interaction is
      * in flight, so it shows live values instead of rewriting its chain sixty
      * times a second — which it cannot work out for itself, because
      * `kg:curve_dragged` is raised only by dragging inside the diagram.
@@ -52,7 +52,7 @@ export interface InstrumentProps {
      * discrete jump — applying a scenario, revealing an answer, starting a
      * lesson step — looks like nothing at all from inside the engine. Without
      * this the diagram's ghosts are drawn against one "before" and the narration
-     * strip against another, which is the incoherence P8 is built to prevent:
+     * against another, which is the incoherence P8 is built to prevent:
      * the curve shows a movement and the sentence under it says nothing
      * happened.
      *
@@ -65,7 +65,7 @@ export interface InstrumentProps {
 }
 
 export interface InstrumentFocus {
-    /** A calc name, from the narration strip's `whyTarget`. */
+    /** A calc name, from the narration's `whyTarget`. */
     calc?: string;
 }
 

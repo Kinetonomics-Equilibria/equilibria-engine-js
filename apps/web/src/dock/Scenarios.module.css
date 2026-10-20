@@ -1,0 +1,76 @@
+/* The scenarios: a list of things that could happen, each a row a student can
+ * press. The name says the event, the line under it the reasoning, and the
+ * arrow that pressing it takes the market somewhere — what it does there is
+ * said in "What changed".
+ *
+ * Rows rather than a stack of outlined buttons with captions under them: the
+ * caption is part of what is being chosen, so it is inside what is pressed. */
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    /* The rows' hover reaches past the text to the card's own margin. */
+    margin: 0 -8px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-sm);
+    padding: 8px;
+    border-radius: var(--mantine-radius-md);
+    transition: background-color 120ms ease;
+}
+
+.row:hover:not(:disabled) {
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+}
+
+.row:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: -2px;
+}
+
+.row:disabled {
+    cursor: not-allowed;
+}
+
+.text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.label {
+    font-weight: 500;
+}
+
+.row:disabled .label {
+    color: var(--mantine-color-dimmed);
+}
+
+.description {
+    line-height: 1.45;
+    color: var(--mantine-color-dimmed);
+}
+
+.go {
+    flex: none;
+    color: var(--mantine-color-dimmed);
+    transition: color 120ms ease, transform 120ms ease;
+}
+
+.row:hover:not(:disabled) .go {
+    color: var(--mantine-primary-color-filled);
+    transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .row,
+    .go {
+        transition: none;
+    }
+}

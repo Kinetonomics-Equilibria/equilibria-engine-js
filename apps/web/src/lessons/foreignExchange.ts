@@ -474,13 +474,21 @@ const PANELS = [
 const NARRATED_CALCS = [
     {
         name: 'rate', label: 'A$1 =', unit: 'US$', precision: 2,
-        tex: 'e^*', meaning: 'Exchange rate: the price of A$1 in US$'
+        tex: 'e^*', meaning: 'Exchange rate: the price of A$1 in US$',
+        rise: 'The A$ appreciates', fall: 'The A$ depreciates'
     },
+    // The reciprocal, so its words are the other way round from the rate's: a
+    // dearer US$1 is a US$ that has appreciated, which happens exactly when the
+    // A$ has depreciated.
     {
         name: 'inverse', label: 'US$1 =', unit: 'A$', precision: 2,
-        tex: '\\frac{1}{e^*}', meaning: 'The price of US$1 in A$'
+        tex: '\\frac{1}{e^*}', meaning: 'The price of US$1 in A$',
+        rise: 'The US$ appreciates', fall: 'The US$ depreciates'
     },
-    { name: 'Qe', label: 'Q*', precision: 0, meaning: 'Quantity of A$ traded' }
+    {
+        name: 'Qe', label: 'Q*', precision: 0, meaning: 'Quantity of A$ traded',
+        rise: 'More A$ change hands', fall: 'Fewer A$ change hands'
+    }
 ];
 
 /**
@@ -562,6 +570,28 @@ export const FOREIGN_EXCHANGE: StudyContent = {
     paramMeanings: {
         demand: 'A$ demanded at US$0.65',
         supply: 'A$ supplied at US$0.65'
+    },
+    // Each answerable with the two sliders: US$0.75 is demand 20 above supply
+    // (70 and 50, or 50 and 30); equal rises leave the rate where it was and
+    // move only the quantity; and demand alone can take the A$ down.
+    explorePrompts: [
+        'Make A$1 worth US$0.75. Which curve did you move, and which way?',
+        'Raise demand and supply by the same amount. What happens to the exchange rate?',
+        'Make the A$ depreciate without touching supply.'
+    ],
+    // Who is behind each curve, as the first two steps introduce them, and the
+    // titles of the steps that move them.
+    paramWords: {
+        demand: {
+            about: 'People overseas paying for Australian exports, holidays and assets.',
+            rise: 'Demand for A$ increases',
+            fall: 'Demand for A$ decreases'
+        },
+        supply: {
+            about: 'Australians paying for imports, trips and assets overseas.',
+            rise: 'Supply of A$ increases',
+            fall: 'Supply of A$ decreases'
+        }
     },
     questionApparatus: {
         demand: { start: 'startDemand', answer: 'answerDemand' },

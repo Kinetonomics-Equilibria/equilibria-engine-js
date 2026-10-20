@@ -658,46 +658,57 @@ test('promotes from the keyboard', async ({ page }) => {
 });
 
 /**
- * The narration strip (P8).
+ * The narration (P8): "What changed" beside the stage, the strip under it on a
+ * phone. At this suite's size it is the card.
  *
  * Two of its claims only exist in a browser. The first is that it narrates on
  * *commit*: a drag fires ~60 param changes a second, and the difference between
- * a line that rewrites per frame and one that rewrites per interaction cannot be
- * seen by a test that calls the reducer twice. The second is that the strip and
- * the diagram's own ghosts agree about what "before" means — two components with
- * two ideas of it is a bug the student experiences as incoherence.
+ * a chain that rewrites per frame and one that rewrites per interaction cannot
+ * be seen by a test that calls the reducer twice. The second is that the
+ * narration and the diagram's own ghosts agree about what "before" means — two
+ * components with two ideas of it is a bug the student experiences as
+ * incoherence.
  */
 const STRIP = '[data-kind]';
 
-/** The strip's chain, with the whitespace the flex gaps supply rather than the markup. */
+/** The chain, with the whitespace the layout supplies rather than the markup. */
 const chainText = (page: Page) =>
-    page.locator(`${STRIP} > div[aria-hidden="true"]`).textContent();
+    page.locator(`${STRIP} [data-chain]`).textContent();
 
-test('the strip is at rest until something moves', async ({ page }) => {
+test('"What changed" is at rest until something moves', async ({ page }) => {
     // At rest. The lesson has just finished and been put away, and says so
-    // over the instruments, not here: the strip is for what the student's
-    // moves do. Nothing has moved, so there is nothing to undo and no chain.
-    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
-    await expect(page.locator(STRIP)).toContainText('Drag a curve to see what it changes.');
+    // over the instruments, not here: this card is for what the student's
+    // moves do. Nothing has moved, so there is nothing to undo and no chain —
+    // and, with the instruments out, every way of moving something is named.
+    const card = page.getByRole('region', { name: 'What changed' });
+    await expect(card).toHaveAttribute('data-kind', 'rest');
+    await expect(card).toContainText('Drag a curve, move a slider or try a scenario to see what it changes.');
     await expect(page.getByRole('region', { name: 'Lesson' })).toContainText('Finished');
     await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
 });
 
-test('before the lesson begins, the strip offers the lesson rather than a curve', async ({ page }) => {
+test('before the lesson begins, nothing offers a curve to drag', async ({ page }) => {
     // The default hint says to drag a curve; at the start of a build-up there
     // is no curve to drag. A fresh load, because `beforeEach` runs the lesson
     // out to its end.
     await page.goto('/');
     await page.locator('.kg-container svg').waitFor();
 
+    // Beside the stage "What changed" waits for something that can change,
+    // rather than repeat the Start button above where it would be.
+    await expect(page.getByRole('button', { name: 'Start lesson' })).toBeVisible();
+    await expect(page.locator(STRIP)).toHaveCount(0);
+
+    // On a phone the strip holds its line under the stage whatever it says,
+    // and says that instead.
+    await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
     await expect(page.getByText('Press Start lesson when you\'re ready.')).toBeVisible();
-
     await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
     expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
 });
 
-test('the strip narrates once per interaction, not once per frame', async ({ page }) => {
+test('the narration narrates once per interaction, not once per frame', async ({ page }) => {
     const dragPath = page.locator('.kg-container path[class^="dragPath"]')
         .nth(await focalDragPathIndex(page));
     const box = (await dragPath.boundingBox())!;
@@ -715,28 +726,28 @@ test('the strip narrates once per interaction, not once per frame', async ({ pag
 
     await page.mouse.up();
 
-    // Let go, and the whole interaction is one chain.
+    // Let go, and the whole interaction is one chain, in the lesson's words.
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
     const chain = (await chainText(page))!;
-    expect(chain).toContain('a20.0→');
+    expect(chain).toContain('Demand increases20.0→');
     expect(chain, 'the middle clause names what the engine said moved').toContain('demand shifts up');
-    expect(chain).toMatch(/P\*\$11\.00→\$\d/);
+    expect(chain).toMatch(/The price rises\$11\.00→\$\d/);
 
     // And one utterance, once.
     expect(await page.locator(`${STRIP} [role="status"]`).textContent())
-        .toMatch(/^You changed a from 20\.0 to .*; demand shifts up; P\* from \$11\.00 to /);
+        .toMatch(/^Demand increases from 20\.0 to .*; demand shifts up; the price rises from \$11\.00 to /);
 });
 
-test('the strip and the panel chips agree about "before"', async ({ page }) => {
+test('the narration and the panel chips agree about "before"', async ({ page }) => {
     await dragDemandDown(page);
 
     // The chip's delta is `calcs.Pe - prev.calcs.Pe`, computed by the engine
-    // from the snapshot the ghosts are drawn from. The strip's arrow is
+    // from the snapshot the ghosts are drawn from. The narration's arrow is
     // computed by the app from `getSnapshot()`. If those were two different
     // "before"s — the failure the plan warns about — these two numbers would
     // disagree.
     const chain = (await chainText(page))!;
-    const prices = chain.match(/P\*\$(\d+\.\d\d)→\$(\d+\.\d\d)/)!;
+    const prices = chain.match(/The price (?:rises|falls)\$(\d+\.\d\d)→\$(\d+\.\d\d)/)!;
     const narrated = Number(prices[2]) - Number(prices[1]);
 
     // The market's chip is the first: "▼ $1.50" is a fall of a dollar fifty.
@@ -744,12 +755,12 @@ test('the strip and the panel chips agree about "before"', async ({ page }) => {
     const charted = (chip.startsWith('▼') ? -1 : 1) * Number(chip.replace(/^[▲▼] \$/, ''));
 
     // A cent, because both sides print to two decimals and they round at
-    // different points: the strip rounds each end of the move and this test
+    // different points: the chain rounds each end of the move and this test
     // subtracts them, while the chip rounds a delta the diagram computed. A
     // true delta of -1.255 is "-1.25" one way and "-1.26" the other, and that is
     // the whole of the disagreement this tolerance admits. Reading a *different*
     // snapshot — the failure the test exists for — is not a cent out.
-    expect(Math.abs(narrated - charted), `strip said ${narrated}, chip said ${chip}`).toBeLessThan(0.011);
+    expect(Math.abs(narrated - charted), `chain said ${narrated}, chip said ${chip}`).toBeLessThan(0.011);
 });
 
 test('undo puts the market back, and the diagram stands down with it', async ({ page }) => {
@@ -766,7 +777,7 @@ test('undo puts the market back, and the diagram stands down with it', async ({ 
     expect(Math.abs(after.y - before.y), 'P* should be back where it started').toBeLessThan(TOLERANCE);
 
     // Nothing told the ghost to hide: the params equal the snapshot again, so
-    // `prev.changed` is false and the strip reads rest for the same reason.
+    // `prev.changed` is false and the narration reads rest for the same reason.
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
     await expect(page.getByText(CHIP)).toHaveCount(0);
@@ -794,11 +805,11 @@ test('says why the curve stopped, when it stops', async ({ page }) => {
     await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
     await expect(page.getByText('a is at the top of its range (28.0) in this diagram.')).toHaveCount(2);
 
-    // The chain is displaced on screen and kept in the announcement: the eye
-    // watched the curve stop, and a screen reader did not.
-    expect(await chainText(page)).toBe('a is at the top of its range (28.0) in this diagram.');
+    // Said above the chain, and the chain stays: the curve did move, as far as
+    // it could. The strip had one line and had to choose; the card has room.
+    expect(await chainText(page)).toContain('Demand increases20.0→28.0');
     expect(await page.locator(`${STRIP} [role="status"]`).textContent())
-        .toMatch(/^a is at the top of its range \(28\.0\) in this diagram\..*P\*/);
+        .toMatch(/^a is at the top of its range \(28\.0\) in this diagram\..*the price rises/);
 
     // And the lesson keeps its words. When it shared the strip, reaching the
     // end of a range took the step's explanation off the screen.
@@ -808,12 +819,12 @@ test('says why the curve stopped, when it stops', async ({ page }) => {
 test('says it once, however long the drag pushes against the end', async ({ page }) => {
     await dragDemandOffTheTop(page);
 
-    // Twice is the eye and the live region; a third would be the strip having
-    // grown a second line, and a hundred would be a refusal per pointer move.
+    // Twice is the eye and the live region; a hundred would be a refusal per
+    // pointer move.
     await expect(page.getByText('a is at the top of its range (28.0) in this diagram.')).toHaveCount(2);
 });
 
-test('gives the strip back the moment something moves again', async ({ page }) => {
+test('drops the refusal the moment something moves again', async ({ page }) => {
     await dragDemandOffTheTop(page);
     await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
 
@@ -829,8 +840,9 @@ test('promoting a panel does not rewrite what the student was told', async ({ pa
     const chain = await chainText(page);
 
     // A promotion is a param change like any other, and it carries no `affected`
-    // — so a strip that narrated it would drop the middle clause from a sentence
-    // that was already correct, and claim the student had moved something.
+    // — so a narration that reported it would drop the middle clause from a
+    // sentence that was already correct, and claim the student had moved
+    // something.
     await page.locator(panel('Consumer surplus')).click();
     await expect(page.locator(panel('Market'))).toBeVisible();
 
@@ -869,9 +881,9 @@ test('a slider scrub is one interaction, not one per frame', async ({ page }) =>
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 10 });
 
-    // Mid-scrub the strip is live: values without arrows, and nothing announced.
-    // Without `beginGesture` every one of those ten moves would have been a
-    // settled chain, and the live region would have read all ten.
+    // Mid-scrub the narration is live: values without arrows, and nothing
+    // announced. Without `beginGesture` every one of those ten moves would have
+    // been a settled chain, and the live region would have read all ten.
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'live');
     expect(await chainText(page)).not.toContain('→');
     expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
@@ -881,7 +893,27 @@ test('a slider scrub is one interaction, not one per frame', async ({ page }) =>
     // And the whole scrub is one chain, measured from where it began — not from
     // the frame before last, which is what a per-change snapshot would give.
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
-    expect(await chainText(page)).toContain('a20.0→');
+    expect(await chainText(page)).toContain('Demand increases20.0→');
+});
+
+/**
+ * Nothing moves under the pointer that is holding it.
+ *
+ * "What changed" is as tall as its chain, so it grows the moment a scrub
+ * settles — and it is last in the column, so it grows away from the slider
+ * that moved it rather than pushing the slider out from under the student.
+ */
+test('"What changed" grows away from the slider that moved it', async ({ page }) => {
+    const slider = page.getByRole('slider', { name: 'a' });
+    const before = (await slider.boundingBox())!;
+
+    await slider.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
+
+    // Vertically. The thumb moves along its track, which is the point of it.
+    const after = (await slider.boundingBox())!;
+    expect(after.y).toBeCloseTo(before.y, 0);
 });
 
 test('the maths instrument shows the calc the strip named', async ({ page }) => {
@@ -985,25 +1017,26 @@ test('a scenario applies every param it names', async ({ page }) => {
     await page.getByRole('tab', { name: 'Scenarios' }).click();
     await page.getByRole('button', { name: 'Boom and cost squeeze' }).click();
 
-    // Both params move, and the strip reports both as causes.
+    // Both params move, and the narration reports both as causes, each in
+    // the lesson's words for it.
     const chain = (await chainText(page))!;
-    expect(chain).toContain('a20.0→26.0');
-    expect(chain).toContain('c2.0→6.0');
+    expect(chain).toContain('Demand increases20.0→26.0');
+    expect(chain).toContain('Sellers\' costs rise2.0→6.0');
 });
 
 /**
- * The longest chain keeps the strip to one line, and the diagram with it.
+ * The longest chain is read whole, and the diagram does not move for it.
  *
  * A scenario moving both params narrates two causes, two shifting curves and
- * four effects, and with money to the cent that is wider than the strip at the
- * suite's own size. The chain used to wrap, and the second line took its height
- * from the stage: the stage's shape changed, the engine was rebuilt, and the
- * chain and every chip were wiped a tenth of a second after they appeared. The
- * test above caught it as a chain reading "Drag a curve to see what it changes".
+ * four effects. On the strip that was wider than its one line, which clipped
+ * it from the end — and the end is the effects, what the student moved
+ * something to find out. Before that, the chain wrapped, the second line took
+ * its height from the stage, and the engine was rebuilt under it. In "What
+ * changed" it is read whole, in a column whose width the stage already gave
+ * up, so the stage neither changes shape nor rebuilds.
  */
-test('the longest chain keeps the strip to one line, and the diagram with it', async ({ page }) => {
-    const strip = page.locator(STRIP);
-    const height = (await strip.boundingBox())!.height;
+test('the longest chain is read whole, and the diagram does not move for it', async ({ page }) => {
+    const stage = await stageBox(page);
     await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
 
     await page.getByRole('tab', { name: 'Scenarios' }).click();
@@ -1013,10 +1046,23 @@ test('the longest chain keeps the strip to one line, and the diagram with it', a
     // A rebuild followed a resize within a frame or two, unthrottled; give it ten.
     await frames(page);
 
-    expect((await strip.boundingBox())!.height).toBe(height);
+    const card = page.locator(STRIP);
+    await expect(card).toHaveAttribute('data-kind', 'settled');
+    await expect(card.locator('[data-part="cause"] > *')).toHaveCount(2);
+    await expect(card.locator('[data-part="movement"] > *')).toHaveCount(2);
+    await expect(card.locator('[data-part="effect"] > *')).toHaveCount(4);
+
+    // With room to spare at this size: nothing scrolls inside the card.
+    const body = await card.locator('[data-chain]').evaluate(el => ({
+        client: el.parentElement!.clientHeight, scroll: el.parentElement!.scrollHeight
+    }));
+    expect(body.scroll, `chain ${body.scroll}px in ${body.client}px`).toBeLessThanOrEqual(body.client);
+
+    const after = await stageBox(page);
+    expect(after.width).toBeCloseTo(stage.width, 0);
+    expect(after.height).toBeCloseTo(stage.height, 0);
     await expect(page.locator('.kg-container svg[data-witness="1"]')).toHaveCount(1);
     await expect(page.getByText(CHIP)).toHaveCount(3);
-    await expect(strip).toHaveAttribute('data-kind', 'settled');
 });
 
 /** Let the page draw a few frames, which is longer than a resize takes to reach the diagram. */

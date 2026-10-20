@@ -1,6 +1,6 @@
 import {
-    studyDiagram, EXPLAINED_CALCS, LESSON, NARRATED_CALCS, PANELS, PARAM_MEANINGS, QUESTION_APPARATUS,
-    SCENARIOS
+    studyDiagram, EXPLAINED_CALCS, EXPLORE_PROMPTS, LESSON, NARRATED_CALCS, PANELS, PARAM_MEANINGS,
+    PARAM_WORDS, QUESTION_APPARATUS, SCENARIOS
 } from '../studyDiagram';
 import type { LessonStep } from '../track/track';
 import type { StudyContent } from './content';
@@ -28,6 +28,8 @@ export const SUPPLY_AND_DEMAND: StudyContent = {
     narratedCalcs: NARRATED_CALCS,
     explainedCalcs: EXPLAINED_CALCS,
     paramMeanings: PARAM_MEANINGS,
+    paramWords: PARAM_WORDS,
+    explorePrompts: EXPLORE_PROMPTS,
     questionApparatus: QUESTION_APPARATUS,
     scenarios: SCENARIOS
 };

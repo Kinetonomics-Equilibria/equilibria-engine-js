@@ -223,9 +223,9 @@ test('demand for A$ is dragged right, and the A$ appreciates', async ({ page, pa
     expect(after.y, 'the A$ should have risen').toBeGreaterThan(before.y + 0.01);
     expect(after.x, 'more A$ should change hands').toBeGreaterThan(before.x);
 
-    // Sideways, said sideways — and the US$ side said with it.
-    await expect(page.getByText('demand for A$ shifts to the right and supply of US$ shifts to the right',
-        { exact: true })).toBeVisible();
+    // Sideways, said sideways — and the US$ side said with it, a line each.
+    const moved = page.getByRole('region', { name: 'What changed' }).locator('[data-part="movement"] > *');
+    await expect(moved).toHaveText(['demand for A$ shifts to the right', 'supply of US$ shifts to the right']);
     await expect(caption(page, 'market')).toContainText('▲');
     await expect(caption(page, 'mirror')).toContainText('▼');
     expect(pageErrors).toEqual([]);
@@ -239,8 +239,11 @@ test('supply of A$ is dragged right, and the A$ depreciates', async ({ page }) =
 
     const after = await focalPointCoordinates(page);
     expect(after.y, 'the A$ should have fallen').toBeLessThan(before.y - 0.01);
-    await expect(page.getByText('supply of A$ shifts to the right and demand for US$ shifts to the right',
-        { exact: true })).toBeVisible();
+    const card = page.getByRole('region', { name: 'What changed' });
+    await expect(card.locator('[data-part="movement"] > *'))
+        .toHaveText(['supply of A$ shifts to the right', 'demand for US$ shifts to the right']);
+    // And what that is called, in the words the lesson taught.
+    await expect(card.locator('[data-part="effect"] > *').first()).toContainText('The A$ depreciates');
     await expect(caption(page, 'market')).toContainText('▼');
 });
 
@@ -341,7 +344,7 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
     const chips = [await caption(page, 'market').innerText(), await caption(page, 'mirror').innerText()];
     expect(chips[0]).toContain('▲');
     expect(chips[1]).toContain('▼');
-    const chain = await strip.locator('> div[aria-hidden="true"]').textContent();
+    const chain = await strip.locator('[data-chain]').textContent();
     expect(chain).toContain('demand for A$ shifts to the right');
     await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
 
@@ -356,7 +359,7 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
         expect([await caption(page, 'market').innerText(), await caption(page, 'mirror').innerText()],
             `${where}: the deltas`).toEqual(chips);
         await expect(strip, `${where}: the strip`).toHaveAttribute('data-kind', 'settled');
-        expect(await strip.locator('> div[aria-hidden="true"]').textContent(), `${where}: the chain`).toBe(chain);
+        expect(await strip.locator('[data-chain]').textContent(), `${where}: the chain`).toBe(chain);
         await expect(page.locator('.kg-container svg[data-witness="1"]'), `${where}: the same diagram`).toHaveCount(1);
     };
 

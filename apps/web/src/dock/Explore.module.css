@@ -1,13 +1,45 @@
-.head {
+/* "Try this", under the controls: a few open questions, set as a list that
+ * reads as suggestions rather than as tasks — no boxes to tick, no numbers to
+ * work through in order. */
+
+.prompts {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--mantine-spacing-xs);
+    flex-direction: column;
+    gap: 6px;
+    padding-top: var(--mantine-spacing-md);
+    border-top: 1px solid var(--mantine-color-default-border);
 }
 
-.value {
-    /* Tabular, or the readout jitters horizontally through a scrub and the eye
-     * follows the movement instead of the number. */
-    font-variant-numeric: tabular-nums;
-    color: var(--mantine-color-dimmed);
+.eyebrow {
+    composes: eyebrow from '../ui/paper.module.css';
+    font-weight: inherit;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--mantine-font-size-sm);
+    line-height: 1.5;
+}
+
+.list li {
+    position: relative;
+    padding-left: 16px;
+}
+
+/* A small hollow mark, the rail's cause marker in miniature: each is a move
+ * waiting to be made. */
+.list li::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: calc((1.5em - 7px) / 2);
+    width: 7px;
+    height: 7px;
+    border: 1.5px solid light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+    border-radius: 50%;
 }

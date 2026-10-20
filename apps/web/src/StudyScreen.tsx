@@ -14,6 +14,7 @@ import type {
 import type { StudyContent } from './lessons/content';
 import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
 import { NarrationStrip } from './NarrationStrip';
+import { NarrationCard } from './NarrationCard';
 import { QuestionRow } from './QuestionRow';
 import { TryRow } from './TryRow';
 import { LessonCard, LessonResume } from './LessonCard';
@@ -30,7 +31,7 @@ import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
 import { Scenarios } from './dock/Scenarios';
 import type { Instrument, InstrumentProps } from './dock/types';
-import { calcPrecision, formatValue, narrate, undoParams } from './narration/narrate';
+import { REST, calcPrecision, formatValue, narrate, undoParams } from './narration/narrate';
 import { phraseRefusal } from './narration/phrasebook';
 import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
 import classes from './StudyScreen.module.css';
@@ -52,15 +53,13 @@ import classes from './StudyScreen.module.css';
  * snapshot the ghosts are drawn from. A screen that did its own arithmetic
  * would eventually disagree with the diagram next to it.
  *
- * The strip's "before" comes from the same place, for the same reason:
+ * The narration's "before" comes from the same place, for the same reason:
  * `getSnapshot()` is what `prev` resolves to, so the sentence and the ghost are
  * describing one event rather than two.
  */
 
 /** Live calc values, refreshed by the engine's `kg:param_changed`. */
 type Readout = Record<string, number>;
-
-const REST: NarrationLine = { kind: 'rest', causes: [], mechanism: null, effects: [], whyTarget: null };
 
 /**
  * What the screen works out from its lesson, once per lesson.
@@ -75,7 +74,7 @@ const REST: NarrationLine = { kind: 'rest', causes: [], mechanism: null, effects
  * `narrated` is each narrated calc by name: what a number on this screen is
  * called, in what unit, to how many places. A panel's caption looks its
  * headline up here rather than carrying a label of its own, and the maths
- * instrument looks up its decimals here too. The strip reads the same list, so
+ * instrument looks up its decimals here too. The narration reads the same list, so
  * a caption, a chip, a clause and a formula's result print one quantity one way.
  */
 function prepare(content: StudyContent) {
@@ -273,8 +272,8 @@ export interface StudyScreenProps {
 
 export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const {
-        diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, scenarios,
-        questionApparatus, directionWords
+        diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, paramWords, explorePrompts,
+        scenarios, questionApparatus, directionWords
     } = content;
     const { steps, panelKeys, narrated } = useMemo(() => prepare(content), [content]);
 
@@ -390,7 +389,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * coming back to the lesson has to put back the market the step was talking
      * about: its words describe that one, not wherever exploring left the
      * curves. Two states, because a step is a move as well as a market —
-     * `before` is what the ghosts and the strip measure from, `after` is where
+     * `before` is what the ghosts and the narration measure from, `after` is where
      * the curves are — and putting back only the second would lose the ghost
      * the step's words point at.
      */
@@ -432,7 +431,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const config = useMemo(() => diagram, [diagram]);
 
     /**
-     * The params the strip is allowed to talk about, and the precision it prints
+     * The params the narration is allowed to talk about, and the precision it prints
      * them at — from the engine, which is the only thing that knows either.
      *
      * Presentation params are dropped here and nowhere else. They are how the
@@ -511,7 +510,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * A drag fires ~60 param changes a second; a line rewritten at that rate is
      * unreadable, and "20.0 → 20.1" is a frame rather than a mechanism. The
      * engine already brackets a drag for its own snapshot, and this is the same
-     * boundary — so what the strip calls one interaction and what the diagram
+     * boundary — so what the narration calls one interaction and what the diagram
      * draws a ghost for are the same interaction by construction.
      */
     /**
@@ -519,7 +518,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      *
      * The same two filters the chain uses, for the same two reasons. A lesson
      * step or a remount restore writing a param is not the student, so it must
-     * not put a sentence on the strip; and a presentation param being clamped is
+     * not put a sentence in the narration; and a presentation param being clamped is
      * the stage's own bookkeeping — a rail panel's focus fraction pinned at 1 is
      * not news anyone should read.
      *
@@ -573,9 +572,17 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const onReady = useCallback((engine: KineticGraph) => {
         engineRef.current = engine;
         setReadout(engine.getCalcs() as Readout);
+        // The engine says what a param is called and to how many places; the
+        // lesson says what its rise and fall mean, where it has words for them.
         setNarratedParams(engine.getParams()
             .filter(p => !p.presentation)
-            .map(p => ({ name: p.name, label: p.label, precision: p.precision })));
+            .map(p => {
+                const words = paramWords ? paramWords[p.name] : undefined;
+                return {
+                    name: p.name, label: p.label, precision: p.precision,
+                    ...(words ? { rise: words.rise, fall: words.fall } : {})
+                };
+            }));
         setDockParams(engine.getParams());
 
         // The instruments draw the diagram as the track's end does, whatever
@@ -638,14 +645,14 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // went with the old one, so a refusal left on screen would be the only
         // party still remembering a boundary.
         setRefusal(null);
-    }, [questionApparatus, steps]);
+    }, [questionApparatus, steps, paramWords]);
 
     /**
      * Put the params back where the snapshot found them.
      *
      * Nothing else has to happen: the engine does not take a new snapshot for a
      * host update, so afterwards the params equal `prev`, every ghost hides
-     * itself, and the next `kg:param_changed` narrates as rest. The strip stands
+     * itself, and the next `kg:param_changed` narrates as rest. The narration stands
      * down because the diagram did, not because it was told to.
      */
     const onUndo = useCallback(() => {
@@ -660,7 +667,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * snapshot, so the ghosts are drawn against where the drag started. That
      * half the engine offers. The other half it cannot: `kg:curve_dragged` is
      * raised only by dragging *inside* the diagram, so as far as the narration
-     * strip is concerned a slider scrub is sixty separate settled interactions —
+     * is concerned a slider scrub is sixty separate settled interactions —
      * a chain rewritten every frame, and a live region that announces each one.
      *
      * P8 solved the strobe for the diagram's own drags and could not have solved
@@ -684,7 +691,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
     // A scrub that ends outside the control — the pointer released over the
     // stage, or off the window entirely — never fires the slider's own
-    // `onChangeEnd`, and a gesture left open holds the strip in its live form
+    // `onChangeEnd`, and a gesture left open holds the narration in its live form
     // indefinitely. Cheap insurance, and it costs nothing when already closed.
     useEffect(() => {
         const close = () => endGesture();
@@ -770,7 +777,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * The order is the whole of it, and it is the reverse of what reads
      * naturally. `snapshot()` comes *after* the step's own `set`, not before,
      * because the "before" a question needs is where the question starts — not
-     * where the lesson was a step ago. Without that the strip narrates the
+     * where the lesson was a step ago. Without that the narration reports the
      * student's first drag against the wrong baseline and the delta chips
      * describe a move the question itself made.
      *
@@ -920,7 +927,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * written the way a lesson step or a remount restore writes one: under the
      * step flag, so the arbitration does not read it as theirs, and then
      * snapshotted — put the state back, *then* snapshot — so no ghost marks a
-     * movement they did not make and the strip comes back at rest. The calcs
+     * movement they did not make and the narration comes back at rest. The calcs
      * are read again after the snapshot, as `onReady` reads them, because the
      * events the write raised were computed against the `prev` before it.
      *
@@ -1012,7 +1019,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      *
      * Then a snapshot, after the move rather than before it: the lesson's last
      * move belongs to the lesson, and exploring starts at rest, with no ghost
-     * and nothing on the strip. `held` keeps what the snapshot is about to
+     * and nothing in "What changed". `held` keeps what the snapshot is about to
      * forget, so the lesson can have it back.
      */
     const leaveLesson = useCallback(() => {
@@ -1059,7 +1066,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * The order is the one every restore in this file uses, run twice: the step
      * and the market its move was measured from, then a snapshot, then the
      * market as the student left it. So the ghost the step left is drawn again
-     * and the strip says again what the step did — the screen as it was, rather
+     * and "What changed" says again what the step did — the screen as it was, rather
      * than a step whose words point at a ghost that is not there.
      *
      * A question is asked afresh, from where it started, as arriving at it is.
@@ -1083,7 +1090,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 params: [{ name: STEP_PARAM, value: track.position }, ...entries(kept.before)]
             });
             engine.snapshot();
-            // Raised as ordinary changes, so the strip narrates the step's move
+            // Raised as ordinary changes, so the narration reports the step's move
             // again from the snapshot just taken.
             const after = entries(kept.after);
             if (after.length > 0) engine.update({ params: after });
@@ -1112,7 +1119,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
     // Deliberately not called for undo, which is the mirror case: undo restores
     // the params to what `prev` already holds, so leaving the snapshot alone is
-    // what lets the ghosts hide themselves and the strip read rest.
+    // what lets the ghosts hide themselves and the narration read rest.
     const snapshot = useCallback(() => {
         engineRef.current?.snapshot();
     }, []);
@@ -1137,7 +1144,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // The caption says what its number *is*. "Market $13.0" left a student
         // to guess that the figure was the clearing price and not, say, the
         // revenue — and on the revenue panel, that "$91.0" was revenue and not
-        // a price. The label is the one the strip uses for the same calc.
+        // a price. The label is the one the narration uses for the same calc.
         const metric = narrated[declared.headline],
             label = metric ? metric.label : declared.headline,
             unit = metric && metric.unit ? metric.unit : '',
@@ -1148,7 +1155,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
         // Shown only once something has moved *as printed*. At rest a chip that
         // says "▲ $0.00" is noise pretending to be news, and a threshold of its
-        // own would be a second rule for "changed" beside the strip's.
+        // own would be a second rule for "changed" beside the narration's.
         const change = typeof delta === 'number' ? formatValue(Math.abs(delta), places) : null,
             moved = change !== null && Number(change) !== 0,
             rose = typeof delta === 'number' && delta > 0;
@@ -1250,14 +1257,21 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     /**
      * The instruments, and what they are all handed.
      *
-     * Scenarios and Maths need a little more than the shared contract, and both
-     * extras are content rather than capability — the scenario list, and what
-     * the lesson calls each number: its symbol, its words, its unit and its
-     * decimals, which are the app's one answer for each. Bound here so
-     * the contract itself stays the narrow thing every instrument gets.
+     * All three need a little more than the shared contract, and every extra is
+     * content rather than capability — what each param stands for, the
+     * scenario list, and what the lesson calls each number: its symbol, its
+     * words, its unit and its decimals, which are the app's one answer for
+     * each. Bound here so the contract itself stays the narrow thing every
+     * instrument gets.
      */
     const instruments: Instrument[] = useMemo(() => [
-        { id: 'explore', label: 'Explore', Component: Explore },
+        {
+            id: 'explore',
+            label: 'Explore',
+            Component: (props: InstrumentProps) => (
+                <Explore {...props} words={paramWords} prompts={explorePrompts} />
+            )
+        },
         {
             id: 'scenarios',
             label: 'Scenarios',
@@ -1275,7 +1289,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 />
             )
         }
-    ], [scenarios, narrated, paramMeanings]);
+    ], [paramWords, explorePrompts, scenarios, narrated, paramMeanings]);
 
     const dockContext = useMemo(() => ({
         params: dockParams,
@@ -1288,10 +1302,10 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     }), [dockParams, readout, explainedCalcs, updateParams, beginGesture, endGesture, snapshot]);
 
     /**
-     * "Why?" — the strip names a calc, and this is where it goes.
+     * "Why?" — the narration names a calc, and this is where it goes.
      *
      * P8 built the affordance and deliberately did not wire it: a control that
-     * opens nothing is worse than no control, so `NarrationStrip` hides it until
+     * opens nothing is worse than no control, so the narration hides it until
      * something can receive the calc. This is that something.
      */
     const onWhy = useCallback((calc: string) => {
@@ -1363,6 +1377,31 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     );
 
     const exploring = pane === 'explore';
+
+    /**
+     * What the student's last move did, said in one of two places.
+     *
+     * Beside the stage it is "What changed", a card at the foot of the side
+     * column, under whichever card the student is working in — the lesson, or
+     * the instruments — and the same card in both. Where there is no column it
+     * is the strip under the stage: one line, which is what a phone has room
+     * for. Never both, and they announce the same sentence.
+     *
+     * Before the lesson has begun nothing is drawn, so nothing can change: the
+     * card waits, rather than repeat the Start button above it. The strip says
+     * so instead of advising a drag, since it holds its line under the stage
+     * whatever it says — a strip that came and went would resize the diagram.
+     *
+     * "Why?" opens the Maths instrument, and while a lesson runs there is none
+     * to open, so neither form offers it then.
+     */
+    const notStarted = !exploring && track.position === 0 && steps.length > 0;
+    const narration = {
+        line,
+        refusal,
+        onUndo,
+        onWhy: exploring ? onWhy : undefined
+    };
 
     // Two columns, and the side one is the screen's whole height: the title is
     // the diagram's, so it heads the stage's column rather than running over
@@ -1436,24 +1475,14 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                     />
                 </div>
 
-                {/* Under the diagram, never moving: what the student's last
-                  * move did, in numbers. `onWhy` opens the maths instrument on
-                  * the calc the chain ended with.
-                  *
-                  * The default hint tells a student to drag a curve, which
-                  * before the lesson has begun is advice about a curve that has
-                  * not been drawn yet, so the strip is told which applies. */}
-                <NarrationStrip
-                    line={line}
-                    refusal={refusal}
-                    restHint={!exploring && track.position === 0 && steps.length > 0
-                        ? 'Press Start lesson when you\'re ready.'
-                        : undefined}
-                    onUndo={onUndo}
-                    // "Why?" opens the Maths instrument, and while a lesson
-                    // runs there is none to open, so the strip offers nothing.
-                    onWhy={exploring ? onWhy : undefined}
-                />
+                {/* Under the diagram, never moving, where there is no column
+                  * beside it for "What changed". */}
+                {stacked ? (
+                    <NarrationStrip
+                        {...narration}
+                        restHint={notStarted ? 'Press Start lesson when you\'re ready.' : undefined}
+                    />
+                ) : null}
 
                 {/* Where there is no room for a column beside the stage, the
                   * lesson goes under it, at a fixed height so that moving from
@@ -1475,6 +1504,15 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                             />
                         </>
                     ) : lesson('beside')}
+                    {notStarted ? null : (
+                        <NarrationCard
+                            {...narration}
+                            className={classes.narrationBeside}
+                            restHint={exploring
+                                ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
+                                : undefined}
+                        />
+                    )}
                 </div>
             ) : null}
 
