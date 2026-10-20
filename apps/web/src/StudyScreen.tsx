@@ -1208,110 +1208,114 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         </LessonCard>
     );
 
+    // Two columns, and the side one is the screen's whole height: the title is
+    // the diagram's, so it heads the stage's column rather than running over
+    // the lesson as well, and the lesson and the instruments get the height it
+    // took. The row is the whole of how the side column affects the stage's
+    // size: it takes its fixed width, the stage's own `ResizeObserver`
+    // notices, and the arrangement re-runs. Nobody passes a width to anybody.
+    // What keeps the stage *still* while a student moves through the lesson or
+    // switches instruments is that the column's width depends on neither — and
+    // the stage's height depends on nothing in it.
     return (
-        <Stack gap="sm" className={classes.screen}>
-            <Group justify="space-between" align="flex-end" wrap="nowrap">
-                <div>
-                    <Title order={2} size="h4">{content.title}</Title>
-                    <Text c="dimmed" size="sm">{content.intro}</Text>
-                </div>
-                <Group gap="xs" wrap="nowrap">
-                    <SegmentedControl
-                        size="xs"
-                        value={mode}
-                        onChange={value => setMode(value as StageMode)}
-                        data={[{ label: 'Focus', value: 'focus' }, { label: 'Grid', value: 'grid' }]}
-                        aria-label="Panel arrangement"
-                    />
-                    {/* Where the dock is a sheet it has no permanent edge to
-                      * grab, so it needs a door. On a wide screen the dock is
-                      * simply there and this would be a button that opens what
-                      * is already open. */}
-                    {narrow ? (
-                        <ActionIcon
-                            variant="default"
-                            size="lg"
-                            aria-label="Open instruments"
-                            onClick={() => setSheetOpen(true)}
-                        >
-                            &#9776;
-                        </ActionIcon>
-                    ) : null}
-                </Group>
-            </Group>
-
-            {/* Two columns: the diagram, with the strip under it, and the
-              * lesson and the instruments beside it. The row is the whole of
-              * how the side column affects the stage's size: it takes its fixed
-              * width, the stage's own `ResizeObserver` notices, and the
-              * arrangement re-runs. Nobody passes a width to anybody. What
-              * keeps the stage *still* while a student moves through the lesson
-              * or switches instruments is that the column's width depends on
-              * neither — and the stage's height depends on nothing in it. */}
-            <div className={classes.stageRow}>
-                <div className={classes.stageColumn}>
-                    <div className={classes.stageBox}>
-                        <Stage
-                            config={config}
-                            focused={focused}
-                            revealed={revealed}
-                            mode={mode}
-                            onPromote={promote}
-                            renderChrome={chrome}
-                            renderBackdrop={sheetBehind}
-                            chromeRoom={CHROME_ROOM}
-                            promoteLabel={key => {
-                                const declared = panels.filter(p => p.key === key)[0];
-                                return `Show ${declared ? declared.name : key}`;
-                            }}
-                            onParamChanged={onParamChanged}
-                            onParamBlocked={onParamBlocked}
-                            onCurveDragged={onCurveDragged}
-                            onReady={onReady}
-                            onError={error => console.error('Equilibria failed to mount:', error)}
-                        />
-                    </div>
-
-                    {/* Under the diagram, never moving: what the student's last
-                      * move did, in numbers. `onWhy` opens the maths instrument
-                      * on the calc the chain ended with.
-                      *
-                      * The default hint tells a student to drag a curve, which
-                      * before the lesson has begun is advice about a curve that
-                      * has not been drawn yet, so the strip is told which
-                      * applies. */}
-                    <NarrationStrip
-                        line={line}
-                        refusal={refusal}
-                        restHint={track.position === 0 && steps.length > 0
-                            ? 'Press Start lesson when you\'re ready.'
-                            : undefined}
-                        onUndo={onUndo}
-                        onWhy={onWhy}
-                    />
-
-                    {/* Where there is no room for a column beside the stage, the
-                      * lesson goes under it, at a fixed height so that moving
-                      * from a short step to a long one does not resize the
-                      * diagram. */}
-                    {stacked ? lesson('below') : null}
-                </div>
-
-                {!stacked ? (
-                    <div className={classes.side}>
-                        {lesson(narrow ? 'alone' : 'beside')}
-                        {!narrow ? (
-                            <Dock
-                                instruments={instruments}
-                                open={instrument}
-                                onOpenChange={setInstrument}
-                                context={dockContext}
-                                focus={focus}
+        <div className={classes.screen}>
+            <div className={classes.stageColumn}>
+                {/* The arrangement toggle is the stage's, so it sits in the
+                  * stage column's top right corner, on the title's line. Over
+                  * the stage itself it would land on the top-right panel's
+                  * caption — its number, or its promote icon — whichever panel
+                  * that is. The intro goes under both, the column's whole
+                  * width: beside the toggle too, it wrapped onto a second line
+                  * that came out of the stage's height. */}
+                <Stack gap={0} mb="sm">
+                    <Group justify="space-between" wrap="nowrap">
+                        <Title order={2} size="h4">{content.title}</Title>
+                        <Group gap="xs" wrap="nowrap">
+                            <SegmentedControl
+                                size="xs"
+                                value={mode}
+                                onChange={value => setMode(value as StageMode)}
+                                data={[{ label: 'Focus', value: 'focus' }, { label: 'Grid', value: 'grid' }]}
+                                aria-label="Panel arrangement"
                             />
-                        ) : null}
-                    </div>
-                ) : null}
+                            {/* Where the dock is a sheet it has no permanent edge
+                              * to grab, so it needs a door. On a wide screen the
+                              * dock is simply there and this would be a button
+                              * that opens what is already open. */}
+                            {narrow ? (
+                                <ActionIcon
+                                    variant="default"
+                                    size="lg"
+                                    aria-label="Open instruments"
+                                    onClick={() => setSheetOpen(true)}
+                                >
+                                    &#9776;
+                                </ActionIcon>
+                            ) : null}
+                        </Group>
+                    </Group>
+                    <Text c="dimmed" size="sm">{content.intro}</Text>
+                </Stack>
+
+                <div className={classes.stageBox}>
+                    <Stage
+                        config={config}
+                        focused={focused}
+                        revealed={revealed}
+                        mode={mode}
+                        onPromote={promote}
+                        renderChrome={chrome}
+                        renderBackdrop={sheetBehind}
+                        chromeRoom={CHROME_ROOM}
+                        promoteLabel={key => {
+                            const declared = panels.filter(p => p.key === key)[0];
+                            return `Show ${declared ? declared.name : key}`;
+                        }}
+                        onParamChanged={onParamChanged}
+                        onParamBlocked={onParamBlocked}
+                        onCurveDragged={onCurveDragged}
+                        onReady={onReady}
+                        onError={error => console.error('Equilibria failed to mount:', error)}
+                    />
+                </div>
+
+                {/* Under the diagram, never moving: what the student's last
+                  * move did, in numbers. `onWhy` opens the maths instrument on
+                  * the calc the chain ended with.
+                  *
+                  * The default hint tells a student to drag a curve, which
+                  * before the lesson has begun is advice about a curve that has
+                  * not been drawn yet, so the strip is told which applies. */}
+                <NarrationStrip
+                    line={line}
+                    refusal={refusal}
+                    restHint={track.position === 0 && steps.length > 0
+                        ? 'Press Start lesson when you\'re ready.'
+                        : undefined}
+                    onUndo={onUndo}
+                    onWhy={onWhy}
+                />
+
+                {/* Where there is no room for a column beside the stage, the
+                  * lesson goes under it, at a fixed height so that moving from
+                  * a short step to a long one does not resize the diagram. */}
+                {stacked ? lesson('below') : null}
             </div>
+
+            {!stacked ? (
+                <div className={classes.side}>
+                    {lesson(narrow ? 'alone' : 'beside')}
+                    {!narrow ? (
+                        <Dock
+                            instruments={instruments}
+                            open={instrument}
+                            onOpenChange={setInstrument}
+                            context={dockContext}
+                            focus={focus}
+                        />
+                    ) : null}
+                </div>
+            ) : null}
 
             {narrow ? (
                 <Dock
@@ -1325,6 +1329,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                     onSheetClose={() => setSheetOpen(false)}
                 />
             ) : null}
-        </Stack>
+        </div>
     );
 }

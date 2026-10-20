@@ -1,7 +1,15 @@
 /* The study screen's own chrome. Anything about where the panels *are* is the
  * stage's arithmetic, not CSS — these rules only style what floats above them. */
 
+/* The stage's column and the side column, side by side, both the screen's
+ * full height.
+ *
+ * The row is the entire mechanism by which the side column affects the stage:
+ * it takes its fixed width, the stage gets what is left, and the stage's own
+ * ResizeObserver does the rest. Nothing here tells the stage anything. */
 .screen {
+    display: flex;
+    gap: var(--mantine-spacing-md);
     /* The stage measures the element it renders, so something above it has to
      * have a height for it to take a share of. This is that something. */
     height: calc(100vh - 2 * var(--mantine-spacing-md));
@@ -213,21 +221,9 @@
     color: var(--mantine-color-dimmed);
 }
 
-/* The diagram and the side column, side by side.
- *
- * The row is the entire mechanism by which the side column affects the stage:
- * it takes its fixed width, the stage gets what is left, and the stage's own
- * ResizeObserver does the rest. Nothing here tells the stage anything. */
-.stageRow {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    gap: var(--mantine-spacing-md);
-}
-
-/* The stage, with the strip under it, and on a narrow screen the lesson under
- * that. The stage takes whatever height the rest leave, and the rest hold
- * still, so it changes shape only when the window does. */
+/* The title, then the stage, with the strip under it, and on a narrow screen
+ * the lesson under that. The stage takes whatever height the rest leave, and
+ * the rest hold still, so it changes shape only when the window does. */
 .stageColumn {
     display: flex;
     flex: 1;
