@@ -128,6 +128,13 @@ export class FakeKineticGraph {
         this.relayouts.push(change);
     }
 
+    /** Every `setPanelOpacity()`, in call order. */
+    readonly opacities: { key: string; opacity: number }[] = [];
+
+    setPanelOpacity(key: string, opacity: number) {
+        this.opacities.push({ key: key, opacity: opacity });
+    }
+
     destroy() {
         this.destroyCount++;
         this.container?.classList.remove(KG_CONTAINER_CLASS);

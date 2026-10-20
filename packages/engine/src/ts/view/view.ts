@@ -744,6 +744,43 @@ export class View implements IView {
     }
 
     /**
+     * Fade one panel: everything drawn in it, at once, and nothing else.
+     *
+     * For a host moving panels past each other. The panels are regions of one
+     * SVG, interleaved through its layers, so two that cross mid-move draw both
+     * diagrams over the same square, and nothing outside the engine can find a
+     * panel's elements to fade it there — an object says which panel it is in
+     * only by its scale.
+     *
+     * A style on each object's root element, which no redraw touches, so it
+     * holds until it is set again; 1 removes it. An object linked into a second
+     * panel fades with the panel it was declared in.
+     */
+    setPanelOpacity(key: string, opacity: number) {
+        const view = this,
+            panels: PanelDefinition[] = (view.parsedData && view.parsedData.panels) || [],
+            panel = panels.filter(p => p.name === key)[0];
+
+        if (!panel) {
+            const known = panels.filter(p => p.name).map(p => `"${p.name}"`).join(', ');
+            console.warn(`setPanelOpacity: no panel "${key}", so nothing was faded. ` +
+                (known ? `Panels: ${known}.` : `A panel is addressed by its key in a CustomLayout.`));
+            return;
+        }
+
+        if (typeof opacity !== 'number' || !isFinite(opacity)) {
+            console.warn(`setPanelOpacity: ${opacity} is not an opacity. Use a number from 0 to 1.`);
+            return;
+        }
+
+        const value = Math.max(0, Math.min(1, opacity));
+        view.viewObjects.forEach(function (vo) {
+            if (vo.inDef || !vo.rootElement || !vo.xScale || vo.xScale.name !== panel.xScaleName) return;
+            vo.rootElement.style('opacity', value === 1 ? null : value);
+        });
+    }
+
+    /**
      * Change how the diagram is laid out — the canvas's shape, and the
      * presentation params that place its panels — without rebuilding it.
      *

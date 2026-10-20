@@ -19,7 +19,13 @@ export default defineConfig({
         // A failed run should leave behind enough to see what the browser saw,
         // which matters most in a headless container where you cannot look.
         screenshot: 'only-on-failure',
-        trace: 'retain-on-failure'
+        trace: 'retain-on-failure',
+        // These checks are about where the panels land, and a promotion now
+        // travels for a third of a second on the way: a test that measured or
+        // dragged straight after the click measured the move. Asking for less
+        // motion is what a student can do too, and the stage cuts for it. The
+        // move itself has a test of its own that asks for motion back.
+        contextOptions: { reducedMotion: 'reduce' }
     },
     projects: [{
         name: 'chromium',

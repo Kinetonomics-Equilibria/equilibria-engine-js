@@ -298,7 +298,21 @@ restrictions, without a snapshot, and without a `kg:param_changed`, because how 
 is not something the student did. A state param named here is refused with a warning — it moves
 through `update({ params })`, as before. Giving `aspectRatio` re-measures the container in the same
 redraw. `Stage` in `packages/react` is built on this: every panel's rect is four presentation params,
-and a promotion, a reveal and a resize are each one `relayout`.
+and a reveal and a resize are each one `relayout`. A promotion is one `relayout` a frame, for the
+300ms it takes to travel — or one in all, for a student who prefers reduced motion.
+
+## Fading one panel
+
+```js
+kg.setPanelOpacity('market', 0.4);   // 0 to 1; 1 clears it
+```
+
+For a host moving panels past each other. The panels are regions of one SVG whose layers interleave
+them, so two that cross draw both diagrams over the same square, and nothing outside the engine can
+find one panel's elements to fade them. This fades everything the panel draws — its curves, its axes
+and the HTML labels over it — and nothing in any other panel. It is a style, not a param: nothing
+redraws, no event fires, and it holds through any later redraw until it is set again. An object linked
+into a second panel fades with the panel it was declared in.
 
 ## Gestures and Snapshots
 

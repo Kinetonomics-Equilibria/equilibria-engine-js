@@ -6,7 +6,9 @@ import type { KineticGraph, KineticGraphOptions } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { UseEquilibriaEventCallbacks } from './useEquilibria';
 import { arrange, layoutParams, pixelBox, revealedCount, toCustomLayout, FURNITURE } from './arrangement';
-import type { Arrangement, PanelRect, PanelRole, Room, RoomByRole, StageMode } from './arrangement';
+import type { Arrangement, PanelRole, Room, RoomByRole, StageMode } from './arrangement';
+import { frameOf, isMove, settle, MOVE_MS } from './motion';
+import type { Frame, Move, PanelFrame } from './motion';
 
 /**
  * One engine, several panels, chrome floating above them.
@@ -19,7 +21,8 @@ import type { Arrangement, PanelRect, PanelRole, Room, RoomByRole, StageMode } f
  * illusion the app maintains by hand.
  *
  * So `Stage` supplies mechanism only: measure the box, mount one engine whose
- * panels' rects are params, lay it out again whenever the arrangement changes,
+ * panels' rects are params, lay it out again whenever the arrangement changes —
+ * a frame at a time, when the change is a promotion or a mode (`motion.ts`) —
  * position an overlay per panel (and, if asked, a backdrop under it), and turn
  * a click or an Enter on a rail panel into a promotion. What a panel is called,
  * what its chip says and which one should be focal are all the application's,
@@ -164,6 +167,18 @@ function panelKeys(config: any): string[] {
     return def.panels.map((p: any, i: number) => p.key || 'panel' + i);
 }
 
+/**
+ * Whether to cut rather than play a move: the student has asked for less
+ * motion, or the environment cannot say, or cannot animate. A test renderer
+ * with neither `matchMedia` nor `requestAnimationFrame` lands every change in
+ * one frame, as the stage always did.
+ */
+function holdStill(): boolean {
+    if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') return true;
+    if (typeof window.matchMedia !== 'function') return true;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 /** Both spellings the engine accepts for a layout: `{ CustomLayout: … }` and `{ type, def }`. */
 function customLayoutDef(layout: any): any {
     if (!layout) return null;
@@ -300,6 +315,71 @@ export function Stage({
         [box && box.width, box && box.height, keysKey, focusIndex, mode, arrived, room]
     );
 
+    /** The arrangement at rest, with the room around each panel in pixels: chrome plus furniture. */
+    const target: Frame | null = useMemo(
+        () => (arrangement
+            ? settle(arrangement, function (panel) {
+                const chrome = room[panel.role] || {},
+                    furniture = FURNITURE[panel.level];
+                return {
+                    top: (chrome.top || 0) + furniture.top,
+                    right: (chrome.right || 0) + furniture.right,
+                    bottom: (chrome.bottom || 0) + furniture.bottom,
+                    left: (chrome.left || 0) + furniture.left
+                };
+            })
+            : null),
+        [arrangement, room]
+    );
+
+    /**
+     * The move under way, if any, and the target it was last asked for.
+     *
+     * A new target is caught here, in render, rather than in an effect: an
+     * effect would commit the new arrangement first and the move's opening
+     * frame second, and the engine would draw the destination once — before
+     * the browser paints, but at the cost of a whole redraw — on the way to
+     * drawing where the panels start. A promotion mid-move starts from the frame
+     * on screen, so the panels turn rather than jump back.
+     *
+     * The box is held beside the target because the arrangement keeps its room
+     * in pixels: a stage that only grew is a different arrangement with the
+     * same shape, and a resize is never played as a move.
+     */
+    const [move, setMove] = useState<Move | null>(null);
+    const [heading, setHeading] = useState<{ frame: Frame | null; width: number; height: number }>(
+        () => ({ frame: target, width: box ? box.width : 0, height: box ? box.height : 0 })
+    );
+    if (target !== heading.frame) {
+        const resized = !box || box.width !== heading.width || box.height !== heading.height;
+        setHeading({ frame: target, width: box ? box.width : 0, height: box ? box.height : 0 });
+        setMove(target && heading.frame && !resized && isMove(heading.frame, target) && !holdStill()
+            ? { from: move ? frameOf(move) : heading.frame, to: target, t: 0 }
+            : null);
+    }
+
+    /** What is drawn now: a frame of the move, or the arrangement at rest. */
+    const frame: Frame | null = move ? frameOf(move) : target;
+
+    // Driven by the clock rather than counted in frames, so a slow frame makes
+    // the move coarser and never longer. Each step is flushed inside the
+    // animation frame that computed it, so the engine and the chrome both
+    // paint it in that frame and not the next.
+    const moveFrom = move ? move.from : null,
+        moveTo = move ? move.to : null;
+    useEffect(() => {
+        if (!moveFrom || !moveTo) return;
+        const begun = performance.now();
+        let pending = requestAnimationFrame(function step(now) {
+            const t = Math.max(0, Math.min(1, (now - begun) / MOVE_MS));
+            flushSync(() => setMove(m => (m && m.from === moveFrom && m.to === moveTo
+                ? (t >= 1 ? null : { ...m, t: t })
+                : m)));
+            if (t < 1) pending = requestAnimationFrame(step);
+        });
+        return () => cancelAnimationFrame(pending);
+    }, [moveFrom, moveTo]);
+
     /**
      * The engine config, built once and laid out from then on.
      *
@@ -404,32 +484,45 @@ export function Stage({
      *
      * A layout effect, so that a resize flushed by the observer above reaches
      * the engine before the browser paints.
+     *
+     * In a move this runs once a frame, with the frame's rects, and fades
+     * whichever panels are stepping aside. An opacity is sent only when it
+     * changes, so a panel at rest is never written to.
      */
     const applied = useRef<{
-        instance: unknown; width: number; height: number; values: { [name: string]: number };
+        instance: unknown; width: number; height: number;
+        values: { [name: string]: number }; opacity: { [key: string]: number };
     } | null>(null);
     useLayoutEffect(() => {
-        if (!isReady || !instance || !arrangement || !built || !box) return;
+        if (!isReady || !instance || !frame || !built || !box) return;
         const last = applied.current && applied.current.instance === instance ? applied.current : null;
-        const held = last ? last.values : built.values;
+        const held = last ? last.values : built.values,
+            faded = last ? last.opacity : {};
 
-        const wanted = layoutParams(keys, arrangement, authoredDensity);
+        const wanted = layoutParams(keys, frame, authoredDensity);
         const pending = wanted.filter(p => held[p.name] !== p.value);
         const reshaped = last
             ? last.width !== box.width || last.height !== box.height
-            : arrangement.aspectRatio !== built.aspectRatio;
+            : frame.aspectRatio !== built.aspectRatio;
 
         const values = { ...held };
         wanted.forEach(p => { values[p.name] = p.value });
-        applied.current = { instance: instance, width: box.width, height: box.height, values: values };
+        const opacity: { [key: string]: number } = {};
+        frame.panels.forEach(p => { opacity[p.key] = p.opacity });
+        applied.current = {
+            instance: instance, width: box.width, height: box.height, values: values, opacity: opacity
+        };
 
         if (pending.length > 0 || reshaped) {
             instance.relayout({
-                aspectRatio: reshaped ? arrangement.aspectRatio : undefined,
+                aspectRatio: reshaped ? frame.aspectRatio : undefined,
                 params: pending
             });
         }
-    }, [isReady, instance, arrangement, built, authoredDensity, keysKey]);
+        frame.panels.forEach(function (p) {
+            if ((p.key in faded ? faded[p.key] : 1) !== p.opacity) instance.setPanelOpacity(p.key, p.opacity);
+        });
+    }, [isReady, instance, frame, built, authoredDensity, keysKey]);
 
     const promote = useCallback((key: string) => { onPromote?.(key) }, [onPromote]);
 
@@ -440,11 +533,9 @@ export function Stage({
      * Positioned against the *measured* width: the arrangement's fractions
      * apply at whatever size the canvas actually came out.
      */
-    const placeOf = function (layout: Arrangement, panel: PanelRect, width: number) {
+    const placeOf = function (layout: Frame, panel: PanelFrame, width: number) {
         const height = width / layout.aspectRatio,
-            pxBox = pixelBox(layout, panel.key, width)!,
-            chrome = room[panel.role] || {},
-            furniture = FURNITURE[panel.level];
+            pxBox = pixelBox(layout, panel.key, width)!;
 
         const info: StagePanel = {
             key: panel.key,
@@ -462,20 +553,16 @@ export function Stage({
                 width: panel.slot.width * width,
                 height: panel.slot.height * height
             },
-            // The same sum `arrange` kept clear, so whatever is drawn to this
-            // room fits exactly the space the panels were moved apart to leave.
-            room: {
-                top: (chrome.top || 0) + furniture.top,
-                right: (chrome.right || 0) + furniture.right,
-                bottom: (chrome.bottom || 0) + furniture.bottom,
-                left: (chrome.left || 0) + furniture.left
-            }
+            // The same sum `arrange` kept clear (see `target`), so whatever is
+            // drawn to this room fits exactly the space the panels were moved
+            // apart to leave — and in a move, the room on the way there.
+            room: panel.room
         };
         const position: CSSProperties = {
             position: 'absolute',
             left: pxBox.x, top: pxBox.y, width: pxBox.width, height: pxBox.height
         };
-        return { info: info, position: position };
+        return { info: info, position: position, opacity: panel.opacity };
     };
 
     return (
@@ -487,15 +574,24 @@ export function Stage({
             className={className}
             style={{ position: 'relative', height: '100%', isolation: 'isolate', ...style }}
         >
-            {arrangement && box && renderBackdrop ? (
+            {frame && box && renderBackdrop ? (
                 <div style={BACKDROP} data-testid="stage-backdrop" aria-hidden="true">
-                    {arrangement.panels.map(function (panel) {
-                        const { info, position } = placeOf(arrangement, panel, box.width);
+                    {frame.panels.map(function (panel) {
+                        const { info, position, opacity } = placeOf(frame, panel, box.width);
                         // `data-backdrop` rather than `data-panel`: this layer
                         // comes first in the document, so a selector written for
                         // a panel's chrome would find its backdrop instead.
+                        //
+                        // A backdrop is not faded with its panel — the sheet
+                        // travelling is what shows where the panel went — but a
+                        // panel stepping aside slides *under* the others, so the
+                        // sheet coming forward is the one on top.
                         return (
-                            <div key={panel.key} style={position} data-backdrop={panel.key}>
+                            <div
+                                key={panel.key}
+                                style={opacity < 1 ? { ...position, zIndex: -1 } : position}
+                                data-backdrop={panel.key}
+                            >
                                 {renderBackdrop(info)}
                             </div>
                         );
@@ -503,10 +599,11 @@ export function Stage({
                 </div>
             ) : null}
             <div ref={containerRef} className={KG_CONTAINER_CLASS} />
-            {arrangement && box ? (
+            {frame && box ? (
                 <div style={OVERLAY} data-testid="stage-chrome">
-                    {arrangement.panels.map(function (panel) {
-                        const { info, position } = placeOf(arrangement, panel, box.width);
+                    {frame.panels.map(function (panel) {
+                        const { info, position: placed, opacity } = placeOf(frame, panel, box.width);
+                        const position = opacity < 1 ? { ...placed, opacity: opacity } : placed;
                         const isFocused = info.focused;
 
                         // The focal panel's overlay must not exist as far as the

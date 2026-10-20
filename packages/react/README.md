@@ -15,8 +15,12 @@ What it is:
 - **`<Stage />`** — several panels, one engine. Measures its own box, mounts one engine whose
   panels' rects are presentation params, lays it out again with the engine's `relayout` whenever
   the arrangement changes, and floats an overlay over each panel. Promotion, a reveal and a
-  resize — a change of shape included — are each one relayout: no remount, no flash, no lost
-  drag, and no lost ghost. Each panel
+  resize — a change of shape included — are each relayouts of the same engine: no remount, no
+  flash, no lost drag, and no lost ghost. A promotion or a change of mode is **played**: for
+  300ms the stage lays the engine out at the rects in between, a frame at a time, and the
+  panel getting smaller fades out of the way of the one coming forward (`motion.ts`). A reveal
+  and a resize land in one relayout, and so does everything for a student who prefers reduced
+  motion. Each panel
   has a **role** — `focal`, `rail`, `strip` or `grid` — which sets the level of detail it draws
   at and tells the app's chrome which side of the panel it may use. `chromeRoom` says how many
   pixels that chrome takes, and the stage keeps it clear along with the room the engine's own

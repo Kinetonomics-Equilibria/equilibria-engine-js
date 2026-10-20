@@ -220,6 +220,48 @@ test('promotes a rail panel without rebuilding the diagram', async ({ page }) =>
     await expect(page.locator('.kg-container svg[data-witness="1"]')).toHaveCount(1);
 });
 
+/**
+ * A promotion travels, where the student has not asked for less motion.
+ *
+ * The rest of this suite asks for less, so every check above and below sees a
+ * promotion land in one frame. This one watches it go: the panel passes
+ * through the sizes between the rail and the stage, ends exactly where the cut
+ * puts it, and leaves nothing faded and the same diagram running.
+ */
+test.describe('with motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('a promotion travels from the rail to the stage, and lands', async ({ page, pageErrors }) => {
+        await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
+        const focal = (await page.locator('[data-panel="market"]').boundingBox())!;
+        const rail = (await page.locator('[data-panel="surplus"]').boundingBox())!;
+
+        // Sampled in the page, a frame at a time, from the click on: anything
+        // read back through Playwright would arrive a few frames late.
+        const widths = await page.evaluate(() => new Promise<number[]>(resolve => {
+            const seen: number[] = [];
+            const begun = performance.now();
+            (document.querySelector('button[data-panel="surplus"]') as HTMLElement).click();
+            requestAnimationFrame(function sample(now) {
+                const el = document.querySelector('[data-panel="surplus"]') as HTMLElement;
+                seen.push(el.getBoundingClientRect().width);
+                if (now - begun < 600) requestAnimationFrame(sample);
+                else resolve(seen);
+            });
+        }));
+
+        const between = widths.filter(w => w > rail.width + 1 && w < focal.width - 1);
+        expect(between.length, `widths: ${widths.map(Math.round)}`).toBeGreaterThan(0);
+        expect(widths[widths.length - 1]).toBeCloseTo(focal.width, 0);
+
+        const faded = await page.locator('.kg-container *').evaluateAll(nodes =>
+            nodes.filter(n => (n as HTMLElement).style && (n as HTMLElement).style.opacity !== '').length);
+        expect(faded).toBe(0);
+        await expect(page.locator('.kg-container svg[data-witness="1"]')).toHaveCount(1);
+        expect(pageErrors).toEqual([]);
+    });
+});
+
 test('the promoted panel gains the detail the demoted one loses', async ({ page }) => {
     await page.locator(panel('Consumer surplus')).click();
 

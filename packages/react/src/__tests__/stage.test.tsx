@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 // Imported for its own sake, and to keep this file loadable. A `vi.mock`
@@ -12,6 +12,7 @@ import { Stage } from '../Stage';
 import {
     arrange, pixelBox, rectParamName, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
 } from '../arrangement';
+import { MOVE_MS } from '../motion';
 import { engineControl, resetEngineMock, latestInstance } from './engineMock';
 
 vi.mock('equilibria-engine-js', async () => {
@@ -772,5 +773,172 @@ describe('resize', () => {
         quiet.mockRestore();
 
         expect(after).toBe(before + 1);
+    });
+});
+
+/**
+ * A promotion is played, not cut to.
+ *
+ * jsdom has neither `matchMedia` nor a clock worth the name, so every test
+ * above lands each change in one frame, as the stage did before it moved.
+ * These give it both — a reduced-motion query that answers, and animation
+ * frames the test hands out itself at the times it chooses — and hold the
+ * stage to what a student sees: the panels start where they were, end where
+ * they are going, and the engine is laid out at every frame between.
+ */
+describe('a move', () => {
+
+    let frames: FrameRequestCallback[] = [];
+    let now = 0;
+
+    /** Let the clock run to `ms` and hand out the frame the stage asked for. */
+    function frameAt(ms: number) {
+        now = ms;
+        const due = frames;
+        frames = [];
+        act(() => { due.forEach(cb => cb(ms)) });
+    }
+
+    function stubMotion(reduce = false) {
+        frames = [];
+        now = 0;
+        vi.spyOn(performance, 'now').mockImplementation(() => now);
+        vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { frames.push(cb); return frames.length });
+        vi.stubGlobal('cancelAnimationFrame', () => { frames = [] });
+        vi.stubGlobal('matchMedia', (query: string) => ({
+            matches: reduce && query.indexOf('prefers-reduced-motion') > -1,
+            media: query, addEventListener() { }, removeEventListener() { }
+        }));
+    }
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
+    /** Promote `firm` on a stage focused on `market`, and return the chrome's boxes before. */
+    function promoteFirm() {
+        const cfg = config();
+        const view = render(<Stage config={cfg} focused="market" />);
+        const before = {
+            market: boxOf(chromeFor(view.container, 'market')),
+            firm: boxOf(chromeFor(view.container, 'firm'))
+        };
+        view.rerender(<Stage config={cfg} focused="firm" />);
+        return { ...view, cfg, before };
+    }
+
+    it('starts the panel where it was, rather than where it is going', () => {
+        stubMotion();
+        const { container, before } = promoteFirm();
+        expect(boxOf(chromeFor(container, 'firm'))).toEqual(before.firm);
+        expect(chromeFor(container, 'firm').dataset.role).toBe('focal');
+    });
+
+    it('passes between the two, and lands on the focal panel\'s box', () => {
+        stubMotion();
+        const { container, before } = promoteFirm();
+
+        frameAt(60);
+        const mid = boxOf(chromeFor(container, 'firm'));
+        expect(mid.width).toBeGreaterThan(before.firm.width);
+        expect(mid.width).toBeLessThan(before.market.width);
+
+        frameAt(MOVE_MS);
+        expect(boxOf(chromeFor(container, 'firm'))).toEqual(before.market);
+        expect(frames).toHaveLength(0);
+    });
+
+    it('lays the engine out at every frame, and last at the arrangement', () => {
+        stubMotion();
+        promoteFirm();
+        const engine = latestInstance();
+
+        [40, 80, 160, MOVE_MS].forEach(frameAt);
+
+        const firmX = engine.relayouts
+            .map(r => (r.params || []).filter(p => p.name === rectParamName(1, 'x'))[0])
+            .filter(Boolean)
+            .map(p => p!.value);
+        expect(firmX.length).toBeGreaterThanOrEqual(4);
+        expect(firmX[firmX.length - 1]).toBeCloseTo(declared(rectParamName(0, 'x')).value, 9);
+        expect(paramUpdates()).toEqual([]);
+    });
+
+    it('fades the panel stepping aside, and only that one, and leaves it whole', () => {
+        stubMotion();
+        const { container } = promoteFirm();
+        const engine = latestInstance();
+
+        frameAt(40);
+        expect(chromeFor(container, 'market').style.opacity).toBe('0');
+        [120, 200, MOVE_MS].forEach(frameAt);
+
+        expect(new Set(engine.opacities.map(o => o.key))).toEqual(new Set(['market']));
+        expect(engine.opacities.some(o => o.opacity === 0)).toBe(true);
+        expect(engine.opacities[engine.opacities.length - 1]).toEqual({ key: 'market', opacity: 1 });
+        expect(chromeFor(container, 'market').style.opacity).toBe('');
+    });
+
+    it('slides the sheet stepping aside under the one coming forward', () => {
+        stubMotion();
+        const cfg = config();
+        const { container, rerender } = render(
+            <Stage config={cfg} focused="market" renderBackdrop={() => <div />} />
+        );
+        rerender(<Stage config={cfg} focused="firm" renderBackdrop={() => <div />} />);
+        frameAt(40);
+
+        const sheet = (key: string) => container.querySelector(`[data-backdrop="${key}"]`) as HTMLElement;
+        expect(sheet('market').style.zIndex).toBe('-1');
+        expect(sheet('firm').style.zIndex).toBe('');
+    });
+
+    // A second click mid-move turns the panels from the frame on screen. A
+    // move that restarted from the last arrangement at rest would jump back.
+    it('turns from wherever it is when asked again mid-move', () => {
+        stubMotion();
+        const { container, rerender, cfg } = promoteFirm();
+
+        frameAt(60);
+        const caught = boxOf(chromeFor(container, 'firm'));
+        rerender(<Stage config={cfg} focused="cost" />);
+        expect(boxOf(chromeFor(container, 'firm'))).toEqual(caught);
+    });
+
+    it('cuts straight to the arrangement for a student who asked for less motion', () => {
+        stubMotion(true);
+        const { container, before } = promoteFirm();
+
+        expect(boxOf(chromeFor(container, 'firm'))).toEqual(before.market);
+        expect(latestInstance().relayouts).toHaveLength(1);
+        expect(latestInstance().opacities).toEqual([]);
+        expect(frames).toHaveLength(0);
+    });
+
+    // The diagram has to keep up with the window, so a resize abandons the
+    // move and lands on the arrangement for the new box in the same frame.
+    it('drops the move for a resize, and lands at the new size', () => {
+        stubMotion();
+        const { container } = promoteFirm();
+        frameAt(60);
+
+        resizeStageTo(1200, 714);
+
+        const expected = pixelBox(
+            arrange({ width: 1200, height: 714, panels: KEYS, focused: 'firm', furniture: FURNITURE }), 'firm', 1200
+        )!;
+        const landed = boxOf(chromeFor(container, 'firm'));
+        expect(landed.x).toBeCloseTo(expected.x, 6);
+        expect(landed.width).toBeCloseTo(expected.width, 6);
+        expect(chromeFor(container, 'market').style.opacity).toBe('');
+    });
+
+    it('stops asking for frames when the stage goes', () => {
+        stubMotion();
+        const { unmount } = promoteFirm();
+        frameAt(40);
+        unmount();
+        expect(frames).toHaveLength(0);
     });
 });

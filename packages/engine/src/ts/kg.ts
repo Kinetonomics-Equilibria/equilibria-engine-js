@@ -239,6 +239,17 @@ export class KineticGraph extends EventEmitter {
     }
 
     /**
+     * Fade one panel, 0 to 1: everything drawn in it, and nothing in any other.
+     *
+     * For a host animating panels past each other, which in one SVG would
+     * otherwise draw two diagrams over the same square. Presentation only — no
+     * param moves, nothing redraws, and it holds until it is set again.
+     */
+    public setPanelOpacity(key: string, opacity: number) {
+        this.view?.setPanelOpacity(key, opacity);
+    }
+
+    /**
      * Lay the diagram out again: a new canvas shape, new values for the params
      * that say how it is shown, or both — in one redraw, with no remount.
      *
