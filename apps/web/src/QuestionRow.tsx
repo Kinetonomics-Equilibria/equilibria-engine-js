@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Badge, Button, Group, Text } from '@mantine/core';
 import type { ParamInfo } from 'equilibria-engine-js';
-import { ParamSlider } from './ParamSlider';
+import { ParamControl } from './ParamControl';
 import type { Attempt } from './quiz/attempt';
 import { isFrozen, isResolved } from './quiz/attempt';
 import { candidatesOf } from './quiz/grade';
@@ -96,13 +96,22 @@ export function QuestionRow({
      * a student answering by keyboard is put back at the top of the page for
      * having answered. So it moves one step, to the first control that replaced
      * it, and no further.
+     *
+     * It is scrolled to by hand. The verdict can take the card past its
+     * height, and Chrome's `focus()` scrolls nothing for a button a pixel past
+     * the edge of the card's body, which leaves its ring, drawn outside it, cut
+     * off there. `scrollIntoView` scrolls, and keeps the margin the CSS asks for.
      */
     const controls = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (attempt.phase !== 'verdict' && attempt.phase !== 'reveal') return;
         const row = controls.current;
         if (!row || row.contains(document.activeElement)) return;
-        (row.querySelector('button') as HTMLButtonElement | null)?.focus();
+        const first = row.querySelector('button') as HTMLButtonElement | null;
+        if (!first) return;
+        first.focus({ preventScroll: true });
+        // Optional because jsdom has no layout to scroll.
+        first.scrollIntoView?.({ block: 'nearest' });
     }, [attempt.phase]);
 
     return (
@@ -120,45 +129,34 @@ export function QuestionRow({
             ) : null}
 
             <div className={classes.answer}>
+                {/* The control the Explore instrument and a step's try-it hand
+                  * out, so answering is moving something the student has moved
+                  * before.
+                  *
+                  * A choice of curve names each slider by its curve: a sighted
+                  * keyboard user has nothing else to tell two sliders apart by,
+                  * where the mouse has the curves' colours and letters. One
+                  * slider is the student's answer, and is called that.
+                  *
+                  * Arrow keys adjust and Enter commits, so a whole answer can
+                  * be given without leaving the control. It is not a lesser
+                  * path: it writes the very param the drag writes, so the two
+                  * answers are the same answer by construction rather than by
+                  * agreement — and with a choice of curve, choosing a slider is
+                  * choosing the curve, as grabbing one is. */}
                 {asked ? params.map(param => (
-                    <div
+                    <ParamControl
                         key={param.name}
-                        className={choice ? `${classes.control} ${classes.choice}` : classes.control}
-                    >
-                        {/* A choice of curve needs each slider named where it
-                          * can be seen: a sighted keyboard user has nothing else
-                          * to tell two sliders apart by, where the mouse has the
-                          * curves' colours and letters. The visible name is the
-                          * accessible one too, so it is hidden from the reader
-                          * here rather than heard twice. One slider needs no
-                          * name on screen, and keeps the one it always had. */}
-                        {choice ? (
-                            <Text component="span" size="sm" className={classes.name} aria-hidden="true">
-                                {param.label}
-                            </Text>
-                        ) : null}
-                        {/* Arrow keys adjust and Enter commits, so a whole
-                          * answer can be given without leaving the control. It
-                          * is not a lesser path: it writes the very param the
-                          * drag writes, so the two answers are the same answer
-                          * by construction rather than by agreement — and with
-                          * a choice of curve, choosing a slider is choosing the
-                          * curve, as grabbing one is. */}
-                        <ParamSlider
-                            param={param}
-                            label={choice ? param.label : 'Your answer'}
-                            disabled={frozen}
-                            onChange={value => onChange(param.name, value)}
-                            beginGesture={onGestureStart}
-                            endGesture={onGestureEnd}
-                            onEnter={onCommit}
-                        />
-                        <Text component="span" size="sm" className={classes.value}>
-                            {param.value.toFixed(param.precision)}
-                        </Text>
-                    </div>
+                        param={param}
+                        label={choice ? param.label : 'Your answer'}
+                        disabled={frozen}
+                        onChange={value => onChange(param.name, value)}
+                        beginGesture={onGestureStart}
+                        endGesture={onGestureEnd}
+                        onEnter={onCommit}
+                    />
                 )) : (
-                    <Text size="sm" c="dimmed" className={classes.control}>
+                    <Text size="sm" c="dimmed">
                         This question is about a value the diagram does not offer.
                     </Text>
                 )}

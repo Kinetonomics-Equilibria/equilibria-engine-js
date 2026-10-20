@@ -34,48 +34,6 @@
     align-self: flex-start;
 }
 
-/* A slider and its value on one line. */
-.control {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: var(--mantine-spacing-sm);
-    row-gap: 2px;
-}
-
-/* One of several: its name and value on a line, and the slider under them at
- * the card's full width, rather than a name, a track and a number squeezed
- * across a column a little under 300px wide. */
-.choice .name {
-    grid-column: 1;
-    grid-row: 1;
-}
-
-.choice .value {
-    grid-column: 2;
-    grid-row: 1;
-}
-
-.choice > :not(.name):not(.value) {
-    grid-column: 1 / -1;
-    grid-row: 2;
-}
-
-.name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Digits that do not move sideways as the value changes: this one is read
- * while it is being changed. */
-.value {
-    min-width: 2.5rem;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    color: var(--mantine-color-dimmed);
-}
-
 /* `.verdict` itself has no rule: it is always in the DOM and empty until there
  * is a verdict, so it takes no room, and it must not be `display: none` while
  * empty — a live region that is not in the accessibility tree when its content
@@ -86,6 +44,13 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+}
+
+/* Where focus lands when the answer is taken, scrolled to with room for its
+ * ring, which is drawn outside the button and is cut off at the edge of the
+ * card's body otherwise. */
+.verdictBody button {
+    scroll-margin-block: 8px;
 }
 
 .sentences {

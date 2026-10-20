@@ -124,7 +124,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close, "What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
-| Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore and a lesson's try-it use it; the gesture wiring is `ParamSlider`'s. |
+| Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. The gesture wiring is `ParamSlider`'s. |
 | The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now. Rendered from `narrate()`; decides nothing. |
 | Action row | `dock/Scenarios.tsx` | Something to press that needs its reason beside it: the name, the reasoning under it, an arrow — all one button. |
 | Prompt list | `dock/Explore.tsx` | Suggestions under a "Try this" eyebrow, with hollow markers: things to do, not tasks to tick. |
@@ -179,7 +179,5 @@ first version of the screen did, so a lesson can gain them one at a time.
 - **The curves' colours on the chain.** A cause row marked in its curve's
   colour would tie "Demand for A$ increases" to the blue line it moved. The
   engine resolves `colors.demand` itself and does not publish the palette yet.
-- **The question's sliders on `ParamControl`.** `QuestionRow` still lays out
-  its own; it needs a disabled state and Enter-to-commit passed through.
 - **Words in the refusal.** "a is at the top of its range" uses the param's
   label; with `paramWords` it could say which curve.

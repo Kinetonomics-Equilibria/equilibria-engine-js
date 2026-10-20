@@ -8,9 +8,10 @@ import classes from './ParamControl.module.css';
  * One thing a student can move: its name and its value on a line, what it
  * stands for under them, and the slider across the card's width.
  *
- * The same control wherever a param is handed over — the Explore instrument,
- * and a lesson step's "try it" — so a student who has used one has used them
- * all. The gesture wiring is `ParamSlider`'s and stays there.
+ * The same control wherever a param is handed over — the Explore instrument, a
+ * lesson step's "try it", and the answer to a lesson's question — so a student
+ * who has used one has used them all. The gesture wiring is `ParamSlider`'s and
+ * stays there.
  *
  * The name on screen is hidden from a screen reader, which hears it once, on
  * the slider, followed by `about`: "Demand for A$, slider, 50. People overseas
@@ -29,12 +30,20 @@ export interface ParamControlProps {
      */
     about?: string;
 
+    /** Held where it is: a question's answer, once it is taken. */
+    disabled?: boolean;
+
     onChange(value: number): void;
     beginGesture(): void;
     endGesture(): void;
+
+    /** Enter, where the host has something for it to commit: a question's answer. */
+    onEnter?(): void;
 }
 
-export function ParamControl({ param, label, about, onChange, beginGesture, endGesture }: ParamControlProps) {
+export function ParamControl({
+    param, label, about, disabled, onChange, beginGesture, endGesture, onEnter
+}: ParamControlProps) {
     const aboutId = useId();
 
     return (
@@ -53,10 +62,12 @@ export function ParamControl({ param, label, about, onChange, beginGesture, endG
                     param={param}
                     label={label}
                     describedBy={about ? aboutId : undefined}
+                    disabled={disabled}
                     valueBubble={false}
                     onChange={onChange}
                     beginGesture={beginGesture}
                     endGesture={endGesture}
+                    onEnter={onEnter}
                 />
             </div>
         </div>
