@@ -1,14 +1,25 @@
 /* The dock. Everything here exists to keep one promise: the stage does not move
  * when the open instrument changes. */
 
+/* A card like the lesson's, under it in the side column, reaching the bottom
+ * of the screen: the same paper as the panels' sheets and the lesson card, so
+ * everything a student reads or moves sits on one kind of thing.
+ *
+ * It takes the height the line above it leaves. Its width is the column's,
+ * which is fixed, so switching tabs hands the stage nothing new to re-arrange
+ * for. */
 .dock {
-    /* In the side column, under the line saying where the lesson was left,
-     * taking the height that leaves. Its width is the column's, which is
-     * fixed, so switching tabs hands the stage nothing new to re-arrange for. */
     flex: 1 1 0;
     min-height: 10rem;
     display: flex;
     flex-direction: column;
+    /* The scroll area runs to the card's edge, so its content is clipped to
+     * the card's corners rather than drawn over them. */
+    overflow: hidden;
+    background: var(--mantine-color-body);
+    border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 .tabs {
@@ -16,6 +27,44 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+}
+
+/* A segmented control: a sunken track, the open tab raised out of it. The
+ * three share the track evenly (`grow`), so the open one does not move the
+ * others when its name is longer. In the card the track's edges are the
+ * instruments' edges, 14px in, as the lesson card's words are. */
+.list {
+    flex: none;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+}
+
+.dock .list {
+    margin: 14px 14px 0;
+}
+
+.tab {
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-weight: 500;
+    color: var(--mantine-color-dimmed);
+    transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.tab:hover {
+    color: var(--mantine-color-text);
+}
+
+/* Doubled, to outweigh the pills variant's own `[data-active][data-active]`
+ * whichever stylesheet loads last. */
+.list .tab[data-active][data-active] {
+    --tab-bg: light-dark(var(--mantine-color-white), var(--mantine-color-dark-4));
+    color: var(--mantine-color-text);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1), 0 0 0 1px light-dark(rgba(16, 24, 40, 0.04), transparent);
 }
 
 .panel {
@@ -32,4 +81,16 @@
 .panelInner {
     padding-top: var(--mantine-spacing-sm);
     padding-right: var(--mantine-spacing-xs);
+}
+
+/* In the card, the instruments keep the card's margin all round, as the
+ * lesson's words keep theirs. */
+.dock .panelInner {
+    padding: 16px 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tab {
+        transition: none;
+    }
 }

@@ -52,13 +52,18 @@ function Instruments({ instruments, open, onOpenChange, context, focus }: {
         // `keepMounted={false}` is the "one at a time" claim made literal: an
         // inactive instrument is not in the DOM, so it cannot be read by a
         // screen reader, tabbed into, or found by a test that believes it.
+        //
+        // `pills` for its geometry only — a rounded tab with no underline — and
+        // the colours are this file's: a track with the open tab raised out of
+        // it, as the stage's Focus/Grid control is, rather than a blue pill.
         <Tabs
             value={open}
             onChange={value => value && onOpenChange(value)}
             keepMounted={false}
-            className={classes.tabs}
+            variant="pills"
+            classNames={{ root: classes.tabs, list: classes.list, tab: classes.tab }}
         >
-            <Tabs.List>
+            <Tabs.List grow>
                 {instruments.map(i => (
                     <Tabs.Tab key={i.id} value={i.id} leftSection={i.icon}>
                         {i.label}
