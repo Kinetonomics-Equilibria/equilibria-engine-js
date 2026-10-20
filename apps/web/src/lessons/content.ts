@@ -116,7 +116,8 @@ export interface ParamWords extends Reading {
      *
      * "What changed" marks the param's clause in that colour, and the curves
      * it moved under it, so "Demand for A$ increases" is tied to the blue line
-     * it shifted. A name and not a value, because the engine is what knows
+     * it shifted; and the param's slider is drawn in it, wherever one is
+     * handed out, so the control is tied to the same line. A name and not a value, because the engine is what knows
      * which blue `demand` is (`getColors()`), and a value written here would
      * be a second palette. The chain says it of every curve the param
      * moves, so every one of them should be drawn in it.

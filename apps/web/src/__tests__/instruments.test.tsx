@@ -135,6 +135,36 @@ describe('Explore', () => {
         view(<Explore {...base()} />);
         expect(screen.queryByRole('region', { name: 'Try this' })).toBeNull();
     });
+
+    /**
+     * A control in the colour of the curve it moves. Read from the variable
+     * Mantine paints the bar and the thumb's ring with, because jsdom applies
+     * no stylesheet — the browser suite checks the colour that lands on screen
+     * against the curve's stroke.
+     */
+    describe('in its curve\'s colour', () => {
+        const BLUE = '#1f77b4';
+        const sliderColour = (name: string) => (screen.getByRole('slider', { name })
+            .closest('.mantine-Slider-root') as HTMLElement).style.getPropertyValue('--slider-color');
+
+        it('draws a slider in the colour of the curve it moves', () => {
+            view(<Explore {...base()} colors={{ a: BLUE }} />);
+            expect(sliderColour('Demand intercept')).toBe(BLUE);
+        });
+
+        it('leaves a slider in the theme\'s colour where the lesson names none', () => {
+            view(<Explore {...base({ params: [param(), param({ name: 'c', label: 'Supply intercept' })] })} colors={{ a: BLUE }} />);
+            expect(sliderColour('Supply intercept')).toBe('');
+        });
+
+        it('draws a switch in it too', () => {
+            view(<Explore {...base({
+                params: [param({ name: 'showGhost', label: 'Show ghost', value: 1, min: 0, max: 100, round: 1, precision: 0, isBoolean: true })]
+            })} colors={{ showGhost: BLUE }} />);
+            const root = screen.getByRole('switch', { name: 'Show ghost' }).closest('.mantine-Switch-root') as HTMLElement;
+            expect(root.style.getPropertyValue('--switch-color')).toBe(BLUE);
+        });
+    });
 });
 
 describe('Scenarios', () => {

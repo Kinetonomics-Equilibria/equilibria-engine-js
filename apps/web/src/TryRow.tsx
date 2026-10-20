@@ -25,12 +25,15 @@ export interface TryRowProps {
     /** Every param, as the engine declares it; the ones offered are looked up here. */
     params: ParamInfo[];
 
+    /** The colour of each param's curve, where the lesson names one. As Explore's. */
+    colors?: Record<string, string>;
+
     onChange(name: string, value: number): void;
     onGestureStart(): void;
     onGestureEnd(): void;
 }
 
-export function TryRow({ controls, params, onChange, onGestureStart, onGestureEnd }: TryRowProps) {
+export function TryRow({ controls, params, colors = {}, onChange, onGestureStart, onGestureEnd }: TryRowProps) {
     const offered = controls
         .map(control => ({ control, param: params.filter(p => p.name === control.param)[0] }))
         .filter((o): o is { control: LessonTry; param: ParamInfo } => !!o.param);
@@ -44,6 +47,7 @@ export function TryRow({ controls, params, onChange, onGestureStart, onGestureEn
                     key={param.name}
                     param={param}
                     label={control.label}
+                    color={colors[param.name]}
                     onChange={value => onChange(param.name, value)}
                     beginGesture={onGestureStart}
                     endGesture={onGestureEnd}

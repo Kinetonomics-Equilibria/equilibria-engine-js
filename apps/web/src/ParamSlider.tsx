@@ -72,11 +72,18 @@ export interface ParamSliderProps {
      * number in two places — and the bubble lands on whatever is above.
      */
     valueBubble?: boolean;
+
+    /**
+     * The colour of the curve the param moves, as a CSS value, where it has
+     * one: the bar and the thumb's ring are drawn in it, so the slider is tied
+     * to the line it shifts. The theme's own colour where it has none.
+     */
+    color?: string;
 }
 
 export function ParamSlider({
     param, label, describedBy, disabled, onChange, beginGesture, endGesture, onEnter,
-    valueBubble = true
+    valueBubble = true, color
 }: ParamSliderProps) {
 
     const format = (value: number) => value.toFixed(param.precision);
@@ -116,6 +123,7 @@ export function ParamSlider({
                 step={param.round}
                 precision={param.precision}
                 disabled={disabled}
+                color={color}
                 label={valueBubble ? format : null}
                 onChange={onChange}
                 onChangeEnd={endGesture}

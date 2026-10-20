@@ -279,6 +279,22 @@ test('the chain is marked in the colour of the curve that moved', async ({ page 
         .not.toBe(await strokeOf(await curveSloping(page, 'up')));
 });
 
+/** The colours a slider is drawn in: its bar's and its thumb's ring. */
+const sliderColours = (slider: Locator) => slider.evaluate((thumb) => [
+    getComputedStyle(thumb.closest('.mantine-Slider-root')!.querySelector('.mantine-Slider-bar')!).backgroundColor,
+    getComputedStyle(thumb).borderTopColor
+]);
+
+// A choice of two sliders, each matched to its line by colour as well as name.
+test('each slider is drawn in the colour of the curve it moves', async ({ page }) => {
+    const question = await toTheFirstQuestion(page);
+
+    const demand = await strokeOf(await curveSloping(page, 'down')),
+        supply = await strokeOf(await curveSloping(page, 'up'));
+    expect(await sliderColours(question.getByRole('slider', { name: 'Demand for A$' }))).toEqual([demand, demand]);
+    expect(await sliderColours(question.getByRole('slider', { name: 'Supply of A$' }))).toEqual([supply, supply]);
+});
+
 test('a question about demand is answered by dragging it, and marked in its own words', async ({ page }) => {
     const question = await toTheFirstQuestion(page);
     // The prompt asks which curve, and does not say.

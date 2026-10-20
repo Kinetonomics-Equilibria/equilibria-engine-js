@@ -451,6 +451,17 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     );
 
     /**
+     * The colour of each param's curve, for the controls that move it: the
+     * same values "What changed" marks a cause in, resolved once above, so a
+     * slider, its line and the clause about the line cannot disagree.
+     */
+    const curveColors = useMemo(() => {
+        const colors: Record<string, string> = {};
+        narratedParams.forEach(p => { if (p.color) colors[p.name] = p.color; });
+        return colors;
+    }, [narratedParams]);
+
+    /**
      * Every param with its live value, for the dock's controls.
      *
      * Kept as state and refreshed from `getParams()` rather than patched from
@@ -1285,7 +1296,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             id: 'explore',
             label: 'Explore',
             Component: (props: InstrumentProps) => (
-                <Explore {...props} words={paramWords} prompts={explorePrompts} />
+                <Explore {...props} words={paramWords} prompts={explorePrompts} colors={curveColors} />
             )
         },
         {
@@ -1305,7 +1316,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 />
             )
         }
-    ], [paramWords, explorePrompts, scenarios, narrated, paramMeanings]);
+    ], [paramWords, explorePrompts, curveColors, scenarios, narrated, paramMeanings]);
 
     const dockContext = useMemo(() => ({
         params: dockParams,
@@ -1363,6 +1374,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                         .map(name => dockParams.filter(p => p.name === name)[0])
                         .filter((p): p is ParamInfo => !!p)}
                     directionWords={directionWords ? directionWords[attempt.question.param] : undefined}
+                    colors={curveColors}
                     onChange={(name, value) => updateParams([{ name, value }])}
                     onGestureStart={beginGesture}
                     onGestureEnd={endGesture}
@@ -1375,6 +1387,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 <TryRow
                     controls={tries}
                     params={dockParams}
+                    colors={curveColors}
                     onChange={(name, value) => updateParams([{ name, value }])}
                     onGestureStart={beginGesture}
                     onGestureEnd={endGesture}

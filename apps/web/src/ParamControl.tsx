@@ -39,10 +39,18 @@ export interface ParamControlProps {
 
     /** Enter, where the host has something for it to commit: a question's answer. */
     onEnter?(): void;
+
+    /**
+     * The colour of the curve the param moves, where the lesson names one
+     * (`ParamWords.curve`). The slider is drawn in it, as "What changed" marks
+     * the param's clause in it, so the control, the line and the sentence about
+     * the line are one colour.
+     */
+    color?: string;
 }
 
 export function ParamControl({
-    param, label, about, disabled, onChange, beginGesture, endGesture, onEnter
+    param, label, about, disabled, onChange, beginGesture, endGesture, onEnter, color
 }: ParamControlProps) {
     const aboutId = useId();
 
@@ -64,6 +72,7 @@ export function ParamControl({
                     describedBy={about ? aboutId : undefined}
                     disabled={disabled}
                     valueBubble={false}
+                    color={color}
                     onChange={onChange}
                     beginGesture={beginGesture}
                     endGesture={endGesture}

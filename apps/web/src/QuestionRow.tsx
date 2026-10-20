@@ -53,6 +53,9 @@ export interface QuestionRowProps {
      */
     directionWords?: DirectionWords;
 
+    /** The colour of each param's curve, where the lesson names one. As Explore's. */
+    colors?: Record<string, string>;
+
     /** Move a param. The same call the dock's sliders make. */
     onChange(name: string, value: number): void;
     onGestureStart(): void;
@@ -76,7 +79,7 @@ export interface QuestionRowProps {
 }
 
 export function QuestionRow({
-    prompt, attempt, params, directionWords, onChange, onGestureStart, onGestureEnd,
+    prompt, attempt, params, directionWords, colors = {}, onChange, onGestureStart, onGestureEnd,
     onCommit, onRetry, onReveal, onContinue
 }: QuestionRowProps) {
 
@@ -133,10 +136,11 @@ export function QuestionRow({
                   * out, so answering is moving something the student has moved
                   * before.
                   *
-                  * A choice of curve names each slider by its curve: a sighted
-                  * keyboard user has nothing else to tell two sliders apart by,
-                  * where the mouse has the curves' colours and letters. One
-                  * slider is the student's answer, and is called that.
+                  * A choice of curve names each slider by its curve, and draws
+                  * it in the curve's colour: the name is what a screen reader
+                  * hears, and the colour is how a sighted student matches the
+                  * slider to the line. One slider is the student's answer, and
+                  * is called that.
                   *
                   * Arrow keys adjust and Enter commits, so a whole answer can
                   * be given without leaving the control. It is not a lesser
@@ -150,6 +154,7 @@ export function QuestionRow({
                         param={param}
                         label={choice ? param.label : 'Your answer'}
                         disabled={frozen}
+                        color={colors[param.name]}
                         onChange={value => onChange(param.name, value)}
                         beginGesture={onGestureStart}
                         endGesture={onGestureEnd}

@@ -34,13 +34,22 @@ export interface ExploreProps extends InstrumentProps {
 
     /** Open questions to answer by moving things. See `StudyContent.explorePrompts`. */
     prompts?: string[];
+
+    /**
+     * The colour of each param's curve, by param name, as the engine draws it.
+     * Only the params whose lesson names a curve are in it; the rest keep the
+     * theme's colour.
+     */
+    colors?: Record<string, string>;
 }
 
 function label(p: ParamInfo) {
     return p.label || p.name;
 }
 
-export function Explore({ params, updateParams, beginGesture, endGesture, words = {}, prompts = [] }: ExploreProps) {
+export function Explore({
+    params, updateParams, beginGesture, endGesture, words = {}, prompts = [], colors = {}
+}: ExploreProps) {
     const shown = params.filter(p => !p.presentation);
     const promptsId = useId();
 
@@ -61,6 +70,7 @@ export function Explore({ params, updateParams, beginGesture, endGesture, words 
                     label={label(p)}
                     description={words[p.name] ? words[p.name].about : undefined}
                     checked={p.value >= 0.5}
+                    color={colors[p.name]}
                     onChange={event => updateParams([{ name: p.name, value: event.currentTarget.checked ? 1 : 0 }])}
                 />
             ) : (
@@ -75,6 +85,7 @@ export function Explore({ params, updateParams, beginGesture, endGesture, words 
                     param={p}
                     label={label(p)}
                     about={words[p.name] ? words[p.name].about : undefined}
+                    color={colors[p.name]}
                     onChange={value => updateParams([{ name: p.name, value }])}
                     beginGesture={beginGesture}
                     endGesture={endGesture}

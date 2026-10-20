@@ -409,4 +409,20 @@ describe('the colour of what changed', () => {
         expect(strokes).toEqual([cause, cause]);
         expect(movement).toBe(cause);
     });
+
+    // The slider that moves a curve is drawn in the curve's colour, so a
+    // student choosing between two can match each to its line.
+    it('draws each slider in the colour of the curves it moves', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(FIRST_QUESTION));
+
+        const colourOf = (curve: Curve) => (sliderFor(curve).closest('.mantine-Slider-root') as HTMLElement)
+            .style.getPropertyValue('--slider-color');
+        (['Demand for A$', 'Supply of A$'] as Curve[]).forEach(curve => {
+            const { strokes } = move(curve);
+            expect(colourOf(curve), curve).toBe(strokes[0]);
+        });
+        expect(colourOf('Demand for A$')).not.toBe(colourOf('Supply of A$'));
+    });
 });
