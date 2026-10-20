@@ -15,9 +15,10 @@ import type { StudyContent } from './lessons/content';
 import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
 import { NarrationStrip } from './NarrationStrip';
 import { QuestionRow } from './QuestionRow';
-import { LessonCard } from './LessonCard';
+import { TryRow } from './TryRow';
+import { LessonCard, LessonResume } from './LessonCard';
 import {
-    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, trackReducer
+    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, trackReducer, tryAt
 } from './track/track';
 import type { LessonQuestion, TrackState } from './track/track';
 import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
@@ -36,8 +37,8 @@ import classes from './StudyScreen.module.css';
 
 /**
  * The study screen: one diagram, several panels, one of them driving, a line
- * underneath saying what the last thing the student did actually did, and the
- * lesson beside it.
+ * underneath saying what the last thing the student did actually did, and
+ * beside it either the lesson or the instruments — never both.
  *
  * The division of labour P7 asks for is visible in what this file contains and
  * what it does not. `Stage` measures the box, arranges the panels and turns a
@@ -99,6 +100,29 @@ const QUESTION_OFF = [
     { name: 'submitted', value: 0 },
     { name: 'revealed', value: 0 }
 ];
+
+/**
+ * What the side column holds: the lesson, or the instruments.
+ *
+ * Either, not both. With both on screen a student could apply a scenario to
+ * curves the lesson had not drawn yet, or drag a slider through a step whose
+ * words describe a market they had just moved away from — and a lesson that
+ * builds a diagram one idea at a time has no use for a full set of controls
+ * beside it. So while a lesson runs, the only controls are the ones a step
+ * hands the student: its question, or what it offers to try. The instruments
+ * are for when there is no lesson running, and get the whole diagram.
+ */
+type Pane = 'lesson' | 'explore';
+
+/** The params a student moves, by name and value: presentation ones left out. */
+function marketOf(params: { name: string; value: number; presentation?: boolean }[]): Record<string, number> {
+    const out: Record<string, number> = {};
+    params.forEach(p => { if (!p.presentation) out[p.name] = p.value });
+    return out;
+}
+
+const entries = (values: Record<string, number>) =>
+    Object.keys(values).map(name => ({ name, value: values[name] }));
 
 /**
  * The white between a sheet's edge and the furthest thing its panel draws.
@@ -247,37 +271,24 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const [readout, setReadout] = useState<Readout>({});
     const [line, setLine] = useState<NarrationLine>(REST);
 
+    // The lesson, or the instruments, beside the stage until there is not room
+    // for a column there; below that the lesson goes under the stage and the
+    // instruments into a bottom sheet. Measured once, here, because the screen
+    // is what owns the decision — a dock that measured the viewport itself
+    // would be a second answer to the same question.
+    const stacked = useMediaQuery('(max-width: 899px)') ?? false;
+
+    /**
+     * Which the side column holds. A lesson opens on its first page, so the
+     * screen starts with the lesson; the student leaves it from the card, and
+     * Finish at the last step does the same.
+     */
+    const [pane, setPane] = useState<Pane>('lesson');
+
     // Which instrument is open, and whether it was opened *at* something. Both
     // live here rather than in the dock because "why?" — which is under the
     // stage, not in the dock — has to be able to set them.
-    // The dock is a column beside the stage until there is not room for both,
-    // and a bottom sheet below that. Measured once, here, because the screen is
-    // what owns the decision — a dock that measured the viewport itself would be
-    // a second answer to the same question.
-    const narrow = useMediaQuery('(max-width: 1100px)') ?? false;
-
-    // The lesson is the other thing a student reads, so it keeps its column
-    // beside the stage for longer than the instruments do: down to a tablet on
-    // its side, where under the stage it would have taken a third of the height
-    // and left the diagram a postage stamp. Below this it goes under the stage.
-    const stacked = useMediaQuery('(max-width: 899px)') ?? false;
-
     const [instrument, setInstrument] = useState('explore');
-
-    /**
-     * Whether the lesson card's words are folded away.
-     *
-     * The card and the instruments share the side column, and a student who has
-     * read the step and wants the instruments' room can fold the card to where
-     * they are and the way on. Moving along the lesson unfolds it, because the
-     * next step has new words to read. Only where the instruments are beside
-     * the card: as a sheet they cover the page and take nothing from it.
-     *
-     * The student's call, never the screen's. Folding it when the Maths
-     * instrument opened — the one instrument that needs the height — moved the
-     * tabs up from under the pointer that had just clicked one.
-     */
-    const [folded, setFolded] = useState(false);
     const [focus, setFocus] = useState<{ calc?: string } | undefined>(undefined);
     const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -355,8 +366,23 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const lastParams = useRef<Record<string, number>>({});
     const trackAt = useRef<TrackState>(AT_START);
     const asking = useRef<Attempt | null>(null);
+    const paneAt = useRef<Pane>(pane);
     trackAt.current = track;
     asking.current = attempt;
+    paneAt.current = pane;
+
+    /**
+     * The lesson's diagram, as the student left it for the instruments.
+     *
+     * The instruments get the whole diagram to do what they like with, so
+     * coming back to the lesson has to put back the market the step was talking
+     * about: its words describe that one, not wherever exploring left the
+     * curves. Two states, because a step is a move as well as a market —
+     * `before` is what the ghosts and the strip measure from, `after` is where
+     * the curves are — and putting back only the second would lose the ghost
+     * the step's words point at.
+     */
+    const held = useRef<{ before: Record<string, number>; after: Record<string, number> } | null>(null);
 
     /**
      * The other params' question apparatus, as the question being asked left it.
@@ -540,8 +566,10 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             .map(p => ({ name: p.name, label: p.label, precision: p.precision })));
         setDockParams(engine.getParams());
 
+        // The instruments draw the diagram as the track's end does, whatever
+        // step the lesson was left at.
         const previous = lastParams.current,
-            position = trackAt.current.position,
+            position = paneAt.current === 'explore' ? steps.length : trackAt.current.position,
             question = asking.current,
             apparatus = question ? questionApparatus[question.question.param] : undefined;
 
@@ -598,7 +626,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // went with the old one, so a refusal left on screen would be the only
         // party still remembering a boundary.
         setRefusal(null);
-    }, [questionApparatus]);
+    }, [questionApparatus, steps]);
 
     /**
      * Put the params back where the snapshot found them.
@@ -828,7 +856,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         if (backwards) retell(false);
 
         setTrack(next);
-        setFolded(false);
         armQuestion(askAt(steps, next.position), next.position - 1);
     }, [track, steps, applyStep, retell, armQuestion]);
 
@@ -962,16 +989,113 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     }, [steps, track.position]);
 
     /**
-     * Which panels the lesson has brought in.
+     * Put the lesson away and hand the student the instruments.
+     *
+     * The instruments get the whole diagram: the step param at the track's end,
+     * so every curve and every panel is there to be moved. A scenario applied to
+     * curves the lesson had not drawn yet moved nothing anyone could see, and
+     * the strip under the empty axes went on announcing new prices. A question
+     * is stood down, since nobody is answering it now; coming back asks it
+     * again, as moving back to it does.
+     *
+     * Then a snapshot, after the move rather than before it: the lesson's last
+     * move belongs to the lesson, and exploring starts at rest, with no ghost
+     * and nothing on the strip. `held` keeps what the snapshot is about to
+     * forget, so the lesson can have it back.
+     */
+    const leaveLesson = useCallback(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+        endGesture();
+
+        const market = marketOf(engine.getParams()),
+            snap = engine.getSnapshot(),
+            measuredFrom: Record<string, number> = {};
+        Object.keys(market).forEach(name => {
+            measuredFrom[name] = snap && name in snap.params ? snap.params[name] : market[name];
+        });
+        held.current = {
+            before: measuredFrom,
+            // A question is put back where it started, not where the student
+            // had got to with it: it is asked again from there.
+            after: { ...market, ...(attempt ? attempt.starts : {}) }
+        };
+
+        asked.current = [];
+        parked.current = [];
+        applyingStep.current = true;
+        try {
+            engine.update({
+                params: [{ name: STEP_PARAM, value: steps.length }, ...(attempt ? QUESTION_OFF : [])]
+            });
+            engine.snapshot();
+        } finally {
+            applyingStep.current = false;
+        }
+
+        setAttempt(null);
+        setReadout(engine.getCalcs() as Readout);
+        latest.current = null;
+        setLine(REST);
+        setRefusal(null);
+        setPane('explore');
+    }, [attempt, steps, endGesture]);
+
+    /**
+     * Back to the lesson, where the student left it.
+     *
+     * The order is the one every restore in this file uses, run twice: the step
+     * and the market its move was measured from, then a snapshot, then the
+     * market as the student left it. So the ghost the step left is drawn again
+     * and the strip says again what the step did — the screen as it was, rather
+     * than a step whose words point at a ghost that is not there.
+     *
+     * A question is asked afresh, from where it started, as arriving at it is.
+     */
+    const resumeLesson = useCallback(() => {
+        const engine = engineRef.current;
+        if (!engine) return;
+        endGesture();
+
+        const authored = paramsAt(steps, track.position),
+            kept = held.current || { before: authored, after: authored };
+        held.current = null;
+        latest.current = null;
+        setLine(REST);
+        setRefusal(null);
+        setPane('lesson');
+
+        applyingStep.current = true;
+        try {
+            engine.update({
+                params: [{ name: STEP_PARAM, value: track.position }, ...entries(kept.before)]
+            });
+            engine.snapshot();
+            // Raised as ordinary changes, so the strip narrates the step's move
+            // again from the snapshot just taken.
+            const after = entries(kept.after);
+            if (after.length > 0) engine.update({ params: after });
+        } finally {
+            applyingStep.current = false;
+        }
+        setReadout(engine.getCalcs() as Readout);
+
+        armQuestion(askAt(steps, track.position), track.position - 1);
+    }, [steps, track.position, armQuestion, endGesture]);
+
+    /**
+     * Which panels are on the stage: what the lesson has brought in, or all of
+     * them while the instruments are out.
      *
      * The same rule the engine applies to the objects inside them, because it
      * has to be: the stage arranges these and the diagram draws them, and a
      * panel the stage made room for but the diagram is hiding is an empty square
      * with a name over it.
      */
+    const shown = pane === 'explore' ? steps.length : track.position;
     const revealed = useMemo(
-        () => revealedPanels(steps, track.position, panelKeys),
-        [steps, panelKeys, track.position]
+        () => revealedPanels(steps, shown, panelKeys),
+        [steps, panelKeys, shown]
     );
 
     // Deliberately not called for undo, which is the mirror case: undo restores
@@ -1161,11 +1285,12 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const onWhy = useCallback((calc: string) => {
         setFocus({ calc });
         setInstrument('maths');
-        if (narrow) setSheetOpen(true);
-    }, [narrow]);
+        if (stacked) setSheetOpen(true);
+    }, [stacked]);
 
     /**
-     * The lesson card, with the question in it at a step that asks one.
+     * The lesson card, with the step's controls in it: the question at a step
+     * that asks one, or the sliders a "see what happens" step offers.
      *
      * The params the question offers are passed in the order it offers them —
      * the author's `among`, the same whichever is asked, so the first slider is
@@ -1177,17 +1302,16 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * a control that moves a curve the diagram is refusing to let the student
      * move.
      */
-    const lesson = (where: 'beside' | 'alone' | 'below') => (
+    const tries = tryAt(steps, track.position);
+    const lesson = (where: 'beside' | 'below') => (
         <LessonCard
-            className={where === 'beside' ? classes.lessonBeside
-                : where === 'alone' ? classes.lessonAlone : classes.lessonBelow}
+            className={where === 'beside' ? classes.lessonBeside : classes.lessonBelow}
             steps={steps}
             state={track}
             goals={content.goals}
             onGoTo={goTo}
             onReset={frozen.length > 0 ? undefined : resetToStep}
-            folded={where === 'beside' && folded}
-            onFold={where === 'beside' ? setFolded : undefined}
+            onLeave={leaveLesson}
         >
             {attempt ? (
                 <QuestionRow
@@ -1204,19 +1328,39 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                     onReveal={onReveal}
                     onContinue={() => goTo(track.position + 1)}
                 />
+            ) : tries.length > 0 ? (
+                <TryRow
+                    controls={tries}
+                    params={dockParams}
+                    onChange={(name, value) => updateParams([{ name, value }])}
+                    onGestureStart={beginGesture}
+                    onGestureEnd={endGesture}
+                />
             ) : null}
         </LessonCard>
     );
 
+    /** The lesson put away, over the instruments: where it was left, and the way back. */
+    const resume = (where: 'beside' | 'below') => (
+        <LessonResume
+            className={where === 'beside' ? classes.resumeBeside : classes.resumeBelow}
+            steps={steps}
+            state={track}
+            onResume={resumeLesson}
+        />
+    );
+
+    const exploring = pane === 'explore';
+
     // Two columns, and the side one is the screen's whole height: the title is
     // the diagram's, so it heads the stage's column rather than running over
-    // the lesson as well, and the lesson and the instruments get the height it
+    // the lesson as well, and the lesson or the instruments get the height it
     // took. The row is the whole of how the side column affects the stage's
     // size: it takes its fixed width, the stage's own `ResizeObserver`
     // notices, and the arrangement re-runs. Nobody passes a width to anybody.
-    // What keeps the stage *still* while a student moves through the lesson or
-    // switches instruments is that the column's width depends on neither — and
-    // the stage's height depends on nothing in it.
+    // What keeps the stage *still* while a student moves through the lesson,
+    // switches instruments, or swaps one for the other is that the column's
+    // width depends on none of them — and the stage's height on nothing in it.
     return (
         <div className={classes.screen}>
             <div className={classes.stageColumn}>
@@ -1241,8 +1385,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                             {/* Where the dock is a sheet it has no permanent edge
                               * to grab, so it needs a door. On a wide screen the
                               * dock is simply there and this would be a button
-                              * that opens what is already open. */}
-                            {narrow ? (
+                              * that opens what is already open — and while a
+                              * lesson runs there are no instruments to open. */}
+                            {stacked && exploring ? (
                                 <ActionIcon
                                     variant="default"
                                     size="lg"
@@ -1289,35 +1434,39 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 <NarrationStrip
                     line={line}
                     refusal={refusal}
-                    restHint={track.position === 0 && steps.length > 0
+                    restHint={!exploring && track.position === 0 && steps.length > 0
                         ? 'Press Start lesson when you\'re ready.'
                         : undefined}
                     onUndo={onUndo}
-                    onWhy={onWhy}
+                    // "Why?" opens the Maths instrument, and while a lesson
+                    // runs there is none to open, so the strip offers nothing.
+                    onWhy={exploring ? onWhy : undefined}
                 />
 
                 {/* Where there is no room for a column beside the stage, the
                   * lesson goes under it, at a fixed height so that moving from
                   * a short step to a long one does not resize the diagram. */}
-                {stacked ? lesson('below') : null}
+                {stacked ? (exploring ? resume('below') : lesson('below')) : null}
             </div>
 
             {!stacked ? (
                 <div className={classes.side}>
-                    {lesson(narrow ? 'alone' : 'beside')}
-                    {!narrow ? (
-                        <Dock
-                            instruments={instruments}
-                            open={instrument}
-                            onOpenChange={setInstrument}
-                            context={dockContext}
-                            focus={focus}
-                        />
-                    ) : null}
+                    {exploring ? (
+                        <>
+                            {resume('beside')}
+                            <Dock
+                                instruments={instruments}
+                                open={instrument}
+                                onOpenChange={setInstrument}
+                                context={dockContext}
+                                focus={focus}
+                            />
+                        </>
+                    ) : lesson('beside')}
                 </div>
             ) : null}
 
-            {narrow ? (
+            {stacked && exploring ? (
                 <Dock
                     instruments={instruments}
                     open={instrument}

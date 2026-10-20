@@ -7,8 +7,9 @@ import type { Question } from '../quiz/grade';
  * Step-by-step drawing is steps within one diagram; a panel arriving is a step
  * that reveals a panel; a lesson is the whole track with sentences attached.
  * Built separately they are three controls and three content formats, so this
- * is one list and one position, and free exploration is that position at its
- * end rather than a mode beside it.
+ * is one list and one position. Free exploration is beside the lesson rather
+ * than in it — the screen shows the instruments or the lesson, never both — and
+ * draws the diagram as the track's end does, with everything revealed.
  *
  * Pure, and returning structure rather than performing anything. What a step
  * *does* to the engine — the snapshot, the param update — is ordered by the
@@ -81,6 +82,23 @@ export interface LessonStep extends StepDefinition {
 
     /** A question that stops the track until it is answered. */
     ask?: LessonQuestion;
+
+    /**
+     * The controls a "see what happens when" step hands the student, on the
+     * lesson card under its words: a slider per param, in this order, named by
+     * `label` because a param's own label is often a letter.
+     *
+     * The lesson card holds no instruments, so this is the only way a step can
+     * put a control in front of the student. A step that asks a question
+     * offers its own controls and does not need these as well.
+     */
+    try?: LessonTry[];
+}
+
+/** One control a step hands the student: which param, and what to call it. */
+export interface LessonTry {
+    param: string;
+    label: string;
 }
 
 export interface TrackState {
@@ -99,7 +117,7 @@ export type TrackAction =
 export const AT_START: TrackState = { position: 0, resolved: [] };
 
 /** What a step does, for the marker that stands for it. */
-export type StepKind = 'reveal' | 'set' | 'say' | 'ask';
+export type StepKind = 'reveal' | 'set' | 'say' | 'try' | 'ask';
 
 /**
  * The kinds a step combines, in the order they are read.
@@ -113,6 +131,7 @@ export function stepKinds(step: LessonStep): StepKind[] {
     if (step.reveal && step.reveal.length > 0) kinds.push('reveal');
     if (step.set && Object.keys(step.set).length > 0) kinds.push('set');
     if (step.say) kinds.push('say');
+    if (step.try && step.try.length > 0) kinds.push('try');
     if (step.ask) kinds.push('ask');
     return kinds;
 }
@@ -246,6 +265,12 @@ export function partAt(parts: LessonPart[], position: number): { part: LessonPar
 export function askAt(steps: LessonStep[], position: number): LessonQuestion | null {
     const step = steps[position - 1];
     return step && step.ask ? step.ask : null;
+}
+
+/** The controls the step at `position` hands the student, or none. */
+export function tryAt(steps: LessonStep[], position: number): LessonTry[] {
+    const step = steps[position - 1];
+    return step && step.try ? step.try : [];
 }
 
 /**

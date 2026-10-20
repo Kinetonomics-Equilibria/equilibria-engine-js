@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
@@ -105,14 +105,16 @@ describe('the lesson speaks on the card, and the strip reports the numbers', () 
     it('keeps the step\'s words when the student moves something', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(marker(MOVES));
+        await user.click(marker(MOVES + 1));
 
-        // A scenario is the student acting through the dock — one `updateParams`
-        // call, exactly like a slider or a drag as far as the screen is concerned.
-        await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
-        await user.click(screen.getByRole('button', { name: 'Back to baseline' }));
+        // The step hands the student demand to move: one `updateParams` call,
+        // exactly like a drag as far as the screen is concerned.
+        const demand = within(screen.getByRole('group', { name: 'Try it' }))
+            .getByRole('slider', { name: 'Demand' });
+        demand.focus();
+        fireEvent.keyDown(demand, { key: 'ArrowDown' });
 
-        expect(words()).toContain(MOVES_TITLE);
+        expect(words()).toContain(NEXT_TITLE);
         expect(within(strip()).getByText('a')).toBeTruthy();
     });
 

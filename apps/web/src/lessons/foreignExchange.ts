@@ -358,7 +358,8 @@ export const FX_LESSON: LessonStep[] = [
         title: 'Over to you',
         say: 'Anything that changes how many A$ the world wants to buy, or how many A$ ' +
             'Australians want to sell, moves the exchange rate.\n\n' +
-            'Try the Scenarios tab for more real-world cases, or drag the curves yourself.'
+            'Press Finish to try more real-world cases in Scenarios, or to drag the curves ' +
+            'yourself.'
     }
 ];
 

@@ -105,15 +105,16 @@ const stepMarker = (page: Page, position: number) =>
     page.getByRole('group', { name: 'Lesson steps' }).getByRole('button').nth(position - 1);
 
 /**
- * Run the lesson out to its end, which is where free exploration lives.
+ * Run the lesson out to its end and finish it, which is where free exploration
+ * lives.
  *
- * P10 claims free exploration is not a mode beside the lesson but the track at
- * its last position — everything revealed, every control still there. This file
- * is the test of that claim, and it makes it in the strongest available way: it
- * is the suite that was written before the track existed, describing a screen
- * with three panels and no lesson, and it passes unchanged from here on. If the
- * end of the track were a different place from "no lesson at all", these would
- * start failing and say so.
+ * The side column holds the lesson or the instruments, never both, and Finish
+ * at the last step swaps one for the other. What the instruments get is the
+ * diagram as the track's end draws it — everything revealed, the market at its
+ * baseline — so this suite, which was written before the track existed and
+ * describes a screen with three panels and no lesson, still describes it from
+ * here on. If the instruments were handed anything other than "no lesson at
+ * all", these would start failing and say so.
  */
 async function toTheEnd(page: Page) {
     const markers = page.locator('button[data-kinds]');
@@ -138,6 +139,14 @@ async function toTheEnd(page: Page) {
     }
 
     await expect(markers.nth(last)).toHaveAttribute('aria-current', 'step');
+    await page.getByRole('button', { name: 'Finish' }).click();
+    await expect(page.getByRole('complementary', { name: 'Instruments' })).toBeVisible();
+}
+
+/** From the instruments back into the finished lesson, at its last step. */
+async function backToTheLesson(page: Page) {
+    await page.getByRole('button', { name: 'Review' }).click();
+    await expect(page.getByRole('group', { name: 'Lesson steps' })).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -515,6 +524,7 @@ test('a narrow grid drops its names before its numbers', async ({ page }) => {
 // Early in the lesson, with the grid on: one panel is the whole stage, and it
 // is where the student works.
 test('a lone panel stays workable in the grid', async ({ page }) => {
+    await backToTheLesson(page);
     await page.getByText('Grid', { exact: true }).click();
     await stepMarker(page, 2).click();
 
@@ -526,6 +536,7 @@ test('a panel arrives without rebuilding the diagram', async ({ page }) => {
     // Back to the step before the surplus panel exists, then forward again.
     // A reveal changes what the stage arranges, which is the one thing that
     // used to mean a new engine and a flash.
+    await backToTheLesson(page);
     await stepMarker(page, 3).click();
     await expect(page.locator(panel('Consumer surplus'))).toHaveCount(0);
 
@@ -580,12 +591,12 @@ const chainText = (page: Page) =>
     page.locator(`${STRIP} > div[aria-hidden="true"]`).textContent();
 
 test('the strip is at rest until something moves', async ({ page }) => {
-    // At rest. The lesson has just finished, and its closing words are on the
-    // lesson card, not here: the strip is for what the student's moves do.
-    // Nothing has moved, so there is nothing to undo and no chain to read.
+    // At rest. The lesson has just finished and been put away, and says so
+    // over the instruments, not here: the strip is for what the student's
+    // moves do. Nothing has moved, so there is nothing to undo and no chain.
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
     await expect(page.locator(STRIP)).toContainText('Drag a curve to see what it changes.');
-    await expect(page.getByRole('region', { name: 'Lesson' })).toContainText('The market is yours now.');
+    await expect(page.getByRole('region', { name: 'Lesson' })).toContainText('Finished');
     await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
 });
 
@@ -692,6 +703,9 @@ test('undo puts the market back, and the diagram stands down with it', async ({ 
  * asks for nothing out of range.
  */
 test('says why the curve stopped, when it stops', async ({ page }) => {
+    // In the lesson, so that there are words on the card for the refusal to
+    // leave alone.
+    await backToTheLesson(page);
     await dragDemandOffTheTop(page);
 
     await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
@@ -828,13 +842,11 @@ test('the maths instrument prints the same numbers as the diagram', async ({ pag
  * at the height of the text beside it. Now they are set in display style, which
  * is taller, and the spacing between calcs is what paid for it.
  *
- * The dock shares its column with the lesson card now, and under a step's
- * words the maths scrolls (with a bar only on hover; see the next test). With
- * the card folded to its progress bar and buttons, it fits as it did.
+ * The instruments share their column with one line saying where the lesson was
+ * left, and nothing else: the lesson card is not beside them while they are out.
  */
-test('the maths instrument fits beside the stage at a laptop\'s height, with the lesson folded', async ({ page }) => {
+test('the maths instrument fits beside the stage at a laptop\'s height', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 833 });
-    await page.getByRole('button', { name: 'Hide this step' }).click();
     await page.getByRole('tab', { name: 'Maths' }).click();
 
     const open = page.getByRole('tabpanel');
@@ -863,9 +875,13 @@ test('the maths instrument fits beside the stage at a laptop\'s height, with the
     expect(fraction.height).toBeGreaterThan(2 * fraction.font);
 });
 
-/** Where the dock is too short for its maths, it scrolls — and says so only when asked. */
+/**
+ * Where the dock is too short for its maths, it scrolls — and says so only when
+ * asked. 600 tall: at 700 the maths now fits to the pixel, since the dock no
+ * longer shares its column with the lesson card.
+ */
 test('the maths instrument scrolls when it must, with a bar only on hover', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 700 });
+    await page.setViewportSize({ width: 1440, height: 600 });
     await page.getByRole('tab', { name: 'Maths' }).click();
 
     const open = page.getByRole('tabpanel');
@@ -1197,6 +1213,7 @@ test('the current step is the one taller, darker marker, whatever kind of step i
     for (const scheme of ['light', 'dark']) {
         await page.evaluate(s => document.documentElement.setAttribute('data-mantine-color-scheme', s), scheme);
 
+        if (scheme === 'light') await backToTheLesson(page);
         for (const position of [1, 7, ASK_MARKER, 9]) {
             const where = `${scheme}, at step ${position}`;
             await stepMarker(page, position).click();
@@ -1255,13 +1272,27 @@ test('moving through the lesson never changes the diagram\'s size', async ({ pag
     expect(after.width).toBeCloseTo(before.width, 0);
 });
 
-test('the lesson sits beside the diagram, above the instruments', async ({ page }) => {
-    const card = (await page.getByRole('region', { name: 'Lesson' }).boundingBox())!;
+/**
+ * The lesson and the instruments take turns in one column, so swapping them is
+ * as still as moving through either: the column's width is the same whichever
+ * is in it. At the end of the lesson the two draw the same diagram, so the
+ * stage has nothing at all to rearrange.
+ */
+test('the lesson sits beside the diagram in place of the instruments, and the swap moves nothing', async ({ page }) => {
+    const resting = (await page.getByRole('region', { name: 'Lesson' }).boundingBox())!;
     const stage = await stageBox(page);
     const tabs = (await page.getByRole('tab', { name: 'Explore' }).boundingBox())!;
+    expect(resting.x).toBeGreaterThan(stage.x + stage.width);
+    expect(tabs.y).toBeGreaterThan(resting.y + resting.height);
 
-    expect(card.x).toBeGreaterThan(stage.x + stage.width);
-    expect(tabs.y).toBeGreaterThan(card.y + card.height);
+    await backToTheLesson(page);
+    const card = (await page.getByRole('region', { name: 'Lesson' }).boundingBox())!;
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    expect(card.x).toBeCloseTo(resting.x, 0);
+
+    const after = await stageBox(page);
+    expect(after.width).toBeCloseTo(stage.width, 0);
+    expect(after.height).toBeCloseTo(stage.height, 0);
 });
 
 test('on a phone the lesson goes under the diagram, at a height that does not change', async ({ page }) => {

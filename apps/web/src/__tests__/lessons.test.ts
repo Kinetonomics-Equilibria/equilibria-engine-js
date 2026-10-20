@@ -111,6 +111,19 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
         });
     });
 
+    // The card holds no instruments, so what a step hands the student is all
+    // they can move from it: it has to be a param the diagram has, named in
+    // words, and not a second set of controls beside a question's own.
+    it('hands the student only params it declares, and never beside a question', () => {
+        lesson.lesson.forEach((step, i) => {
+            (step.try || []).forEach(offered => {
+                expect(paramNamed(lesson, offered.param), `step ${i + 1} offers "${offered.param}"`).toBeDefined();
+                expect(offered.label, `step ${i + 1} offers "${offered.param}" unnamed`).toBeTruthy();
+            });
+            expect(!!step.ask && !!step.try, `step ${i + 1} asks and offers controls too`).toBe(false);
+        });
+    });
+
     it('gives every step a short title', () => {
         lesson.lesson.forEach((step, i) => {
             expect(step.title, `step ${i + 1} has no title`).toBeTruthy();

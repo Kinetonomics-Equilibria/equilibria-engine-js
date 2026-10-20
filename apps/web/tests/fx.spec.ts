@@ -21,7 +21,11 @@ const EQUILIBRIUM = { Q: 50, rate: 0.65 };
 // still far tighter than any defect worth catching here.
 const TOLERANCE = { Q: 0.5, rate: 0.005 };
 
-/** Every question is direction only, so the shortest way past one is to be shown. */
+/**
+ * Through the lesson and out of it, into the instruments and the whole diagram.
+ *
+ * Every question is direction only, so the shortest way past one is to be shown.
+ */
 async function toTheEnd(page: Page) {
     const markers = page.locator('button[data-kinds]');
     const last = (await markers.count()) - 1;
@@ -34,6 +38,8 @@ async function toTheEnd(page: Page) {
         await question.getByRole('button', { name: 'Show me' }).click();
     }
     await expect(markers.nth(last)).toHaveAttribute('aria-current', 'step');
+    await page.getByRole('button', { name: 'Finish' }).click();
+    await expect(page.getByRole('complementary', { name: 'Instruments' })).toBeVisible();
 }
 
 /**

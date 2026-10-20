@@ -6,17 +6,17 @@ import { StudyScreen } from '../StudyScreen';
 import { theme } from '../theme';
 
 /**
- * The shipped lesson, held to what it says.
+ * The shipped lesson, held to what it says — and to the rule that the side
+ * column holds the lesson or the instruments, never both.
  *
- * "Back where we started" was false for a while, and nothing could have caught
- * it but a student: the lesson's own steps only ever move demand, so walking
- * through it as written never left supply anywhere but its start. Move supply
- * on the way — the dock offers that at every step — and the sentence went on
- * claiming a baseline the diagram was not at.
+ * With both on screen a student could apply a scenario before the lesson had
+ * drawn a curve, and watch the strip announce new prices over empty axes; or
+ * move supply halfway through, and read a step claiming a baseline the diagram
+ * was not at. So while the lesson runs, the only controls are the ones a step
+ * hands the student, and the instruments get the whole diagram when they leave.
  *
- * So these move supply first and then ask the lesson to keep its word, with a
- * real engine underneath: the claim is about the numbers the diagram solves to,
- * and a fixture lesson would only be testing itself.
+ * A real engine underneath: every claim here is about the numbers the diagram
+ * solves to, and a fixture lesson would only be testing itself.
  */
 
 /** jsdom performs no layout, so the stage would measure 0x0 and mount nothing. */
@@ -42,6 +42,8 @@ const next = () => screen.getByRole('button', { name: /^(Next|Start lesson)$/ })
 
 /** "Incomes rise": the step that moves demand up. */
 const MOVES = 5;
+/** "What sellers earn": the step that hands the student demand to try. */
+const TRIES = 6;
 /** "Back where we started". */
 const BACK = 7;
 /** The question: "move demand to where it belongs". */
@@ -51,7 +53,16 @@ const ASK = 8;
 const marketCaption = () =>
     document.querySelector('[data-testid="stage-chrome"] [data-panel="market"]')!.textContent || '';
 
-/** Supply up, the way a student would do it from the dock. */
+/** The panels the stage offers to promote: every one on it but the focal one. */
+const promotable = () => document.querySelectorAll('button[data-panel]');
+
+const instruments = () => screen.queryByRole('complementary', { name: 'Instruments' });
+const words = () =>
+    (screen.getByRole('region', { name: 'Lesson' }).querySelector('[aria-live="polite"]') as HTMLElement)
+        .textContent || '';
+const strip = () => document.querySelector('[data-kind]') as HTMLElement;
+
+/** Supply up, the way a student would do it from the instruments. */
 async function inputCostsRise(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
     await user.click(screen.getByRole('button', { name: 'Input costs rise' }));
@@ -63,49 +74,191 @@ async function valueOf(user: ReturnType<typeof userEvent.setup>, name: string) {
     return Number(screen.getByRole('slider', { name }).getAttribute('aria-valuenow'));
 }
 
-describe('where the lesson says the market is', () => {
+/** Past the question the shortest way: commit without moving, then ask to be shown. */
+async function pastTheQuestion(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(marker(ASK));
+    await user.click(screen.getByRole('button', { name: 'Check' }));
+    await user.click(screen.getByRole('button', { name: 'Show me' }));
+}
 
-    it('is back where it started when it says so, supply included', async () => {
+describe('the lesson or the instruments', () => {
+
+    it('opens on the lesson, with no instruments beside it', () => {
+        mount();
+        expect(screen.getByRole('region', { name: 'Lesson' })).toBeTruthy();
+        expect(instruments()).toBeNull();
+        expect(screen.queryByRole('tab')).toBeNull();
+    });
+
+    // Not the lesson's half-built diagram: a scenario applied to curves the
+    // lesson had not drawn moved nothing anyone could see.
+    it('hands over the instruments and the whole diagram when the lesson is skipped', async () => {
+        const user = userEvent.setup();
+        mount();
+        expect(promotable()).toHaveLength(0);
+
+        await user.click(screen.getByRole('button', { name: 'Skip lesson' }));
+
+        expect(instruments()).toBeTruthy();
+        expect(promotable()).toHaveLength(2);
+        expect(marketCaption()).toContain('P* $11.00');
+        expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
+    });
+
+    it('puts the instruments away again when the lesson starts', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(screen.getByRole('button', { name: 'Skip lesson' }));
+        await user.click(screen.getByRole('button', { name: 'Start lesson' }));
+
+        expect(instruments()).toBeNull();
+        expect(words()).toContain('In this lesson');
+        // The lesson's own diagram again: nothing drawn before its first step.
+        expect(promotable()).toHaveLength(0);
+    });
+
+    it('finishes into the instruments, with the market back at its baseline', async () => {
+        const user = userEvent.setup();
+        mount();
+        await pastTheQuestion(user);
+        await user.click(next());
+        await user.click(screen.getByRole('button', { name: 'Finish' }));
+
+        expect(instruments()).toBeTruthy();
+        expect(marketCaption()).toContain('P* $11.00');
+        expect(await valueOf(user, 'a')).toBe(20);
+        expect(await valueOf(user, 'c')).toBe(2);
+        expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
+    });
+
+    // Exploring starts at rest: the lesson's last move is the lesson's, and a
+    // ghost of it under the instruments would be a movement nobody made there.
+    it('starts the instruments at rest', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(MOVES));
-        await inputCostsRise(user);
+        expect(strip().getAttribute('data-kind')).toBe('settled');
 
-        // a = 26 and c = 6: P* = 16. The caption is the witness a student sees.
-        expect(marketCaption()).toContain('P* $16.00');
-
-        await user.click(marker(BACK));
-
-        // a = 20 and c = 2 again: P* = 11. With `a` alone it read 13.00 here.
-        expect(marketCaption()).toContain('P* $11.00');
-        expect(await valueOf(user, 'c')).toBe(2);
-        expect(await valueOf(user, 'a')).toBe(20);
-    });
-
-    it('hands the student back the baseline at the end, too', async () => {
-        const user = userEvent.setup();
-        mount();
-        await user.click(marker(ASK));
-        // Past the question the shortest way: commit without moving, then ask
-        // to be shown, which resolves it.
-        await user.click(screen.getByRole('button', { name: 'Check' }));
-        await user.click(screen.getByRole('button', { name: 'Show me' }));
-        await inputCostsRise(user);
-        await user.click(next());
-
-        expect(marketCaption()).toContain('P* $11.00');
-        expect(await valueOf(user, 'c')).toBe(2);
+        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
+        expect(strip().getAttribute('data-kind')).toBe('rest');
     });
 });
 
-describe('the question, after supply has been moved', () => {
+describe('coming back to the lesson', () => {
 
-    /** Arrive at the question with supply raised on the way. */
-    const askAfterMovingSupply = async () => {
+    it('finds the market where the step left it, whatever was done meanwhile', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(MOVES));
+        // a = 26 and c = 2: P* = 14.
+        expect(marketCaption()).toContain('P* $14.00');
+
+        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
         await inputCostsRise(user);
+        expect(marketCaption()).toContain('P* $16.00');
+
+        await user.click(screen.getByRole('button', { name: 'Resume' }));
+
+        expect(instruments()).toBeNull();
+        expect(words()).toContain('Incomes rise');
+        expect(marketCaption()).toContain('P* $14.00');
+    });
+
+    // The step's words point at its move — "watch the price change" — so the
+    // move comes back too: its ghost, and the strip saying what it did.
+    it('says again what the step did', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(MOVES));
+        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
+        await inputCostsRise(user);
+        await user.click(screen.getByRole('button', { name: 'Resume' }));
+
+        expect(strip().getAttribute('data-kind')).toBe('settled');
+        // Demand's move, 20 → 26, and not supply's 2 → 6 from the detour.
+        expect(strip().textContent).toContain('20.0→26.0');
+        expect(strip().textContent).not.toContain('2.0→6.0');
+    });
+
+    it('asks a question again from where it started', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(ASK));
+        const control = screen.getByRole('slider', { name: /Your answer/ });
+        control.focus();
+        fireEvent.keyDown(control, { key: 'End' });
+
+        await user.click(screen.getByRole('button', { name: 'Leave lesson' }));
+        expect(screen.queryByRole('group', { name: 'Question' })).toBeNull();
+
+        await user.click(screen.getByRole('button', { name: 'Resume' }));
+        const row = screen.getByRole('group', { name: 'Question' });
+        expect(row.getAttribute('data-phase')).toBe('prompt');
+        expect(within(row).getByRole('slider', { name: /Your answer/ }).getAttribute('aria-valuenow')).toBe('20');
+        expect(marketCaption()).toContain('P* $11.00');
+    });
+});
+
+describe('what a step hands the student', () => {
+
+    const tryIt = () => screen.queryByRole('group', { name: 'Try it' });
+
+    it('is on the card at the step that offers it, and nowhere else', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(MOVES));
+        expect(tryIt()).toBeNull();
+        expect(screen.queryByRole('slider')).toBeNull();
+
+        await user.click(next());
+        expect(within(tryIt()!).getAllByRole('slider')).toHaveLength(1);
+        expect(screen.getAllByRole('slider')).toHaveLength(1);
+
+        await user.click(next());
+        expect(tryIt()).toBeNull();
+    });
+
+    it('moves the curve it names', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(TRIES));
+        expect(marketCaption()).toContain('P* $14.00');
+
+        const demand = within(tryIt()!).getByRole('slider', { name: 'Demand' });
+        demand.focus();
+        fireEvent.keyDown(demand, { key: 'End' });
+
+        // a = 28 and c = 2: P* = 15.
+        expect(marketCaption()).toContain('P* $15.00');
+    });
+});
+
+describe('where the lesson says the market is', () => {
+
+    // The step after the one that hands demand over sets both params, so the
+    // student can leave demand anywhere and "back to the start" still is.
+    it('is back where it started when it says so, wherever the student left demand', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(TRIES));
+        const demand = within(screen.getByRole('group', { name: 'Try it' })).getByRole('slider', { name: 'Demand' });
+        demand.focus();
+        fireEvent.keyDown(demand, { key: 'Home' });
+
+        await user.click(marker(BACK));
+
+        // a = 20 and c = 2 again: P* = 11.
+        expect(marketCaption()).toContain('P* $11.00');
+    });
+});
+
+describe('the question, after demand has been moved', () => {
+
+    /** Arrive at the question from the step that raised demand. */
+    const askAfterMovingDemand = async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(MOVES));
         await user.click(marker(ASK));
         return user;
     };
@@ -113,26 +266,24 @@ describe('the question, after supply has been moved', () => {
     const row = () => screen.getByRole('group', { name: 'Question' });
     const verdict = () => row().querySelector('[role="status"]')!.textContent || '';
 
-    it('starts from the baseline, with supply back where it was', async () => {
-        const user = await askAfterMovingSupply();
-
+    it('starts from the baseline', async () => {
+        await askAfterMovingDemand();
         expect(marketCaption()).toContain('P* $11.00');
-        expect(await valueOf(user, 'c')).toBe(2);
     });
 
-    // The step put `c` back while the screen was arriving at the question. Had
+    // The step put `a` back while the screen was arriving at the question. Had
     // that been read as the student's move, the attempt would have begun before
     // they touched anything — and "did not move" is the verdict that says it was
     // not.
-    it('does not count the step putting supply back as an attempt', async () => {
-        const user = await askAfterMovingSupply();
+    it('does not count the step putting demand back as an attempt', async () => {
+        const user = await askAfterMovingDemand();
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(verdict()).toContain('haven\'t moved');
     });
 
-    it('marks the answer on demand alone', async () => {
-        const user = await askAfterMovingSupply();
+    it('marks the answer', async () => {
+        const user = await askAfterMovingDemand();
 
         // From the top of `a`'s range down to the target, by the keyboard —
         // the only way to move a curve in jsdom.
@@ -143,35 +294,5 @@ describe('the question, after supply has been moved', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(verdict()).toContain('Correct');
-    });
-});
-
-/**
- * The lesson card and the instruments share the side column. A student who has
- * read a step can fold its words away for the instruments' room; the next step
- * brings them back, since it has new words to read. Opening an instrument does
- * not fold it: that moved the tabs from under the pointer that clicked one.
- */
-describe('folding the lesson card', () => {
-
-    const heading = (name: string) => screen.queryByRole('heading', { name });
-
-    it('folds when the student asks, and unfolds at the next step', async () => {
-        const user = userEvent.setup();
-        mount();
-        await user.click(marker(1));
-        await user.click(screen.getByRole('button', { name: 'Hide this step' }));
-        expect(heading('Demand: what buyers want')).toBeNull();
-
-        await user.click(next());
-        expect(heading('Supply: what sellers offer')).toBeTruthy();
-    });
-
-    it('stays as it is when an instrument opens', async () => {
-        const user = userEvent.setup();
-        mount();
-        await user.click(marker(1));
-        await user.click(screen.getByRole('tab', { name: 'Maths' }));
-        expect(heading('Demand: what buyers want')).toBeTruthy();
     });
 });

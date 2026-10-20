@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { LessonCard } from '../LessonCard';
+import { LessonCard, LessonResume } from '../LessonCard';
 import type { LessonStep, TrackState } from '../track/track';
 import { partsOf } from '../track/track';
 import { theme } from '../theme';
@@ -298,35 +298,76 @@ describe('resetting the diagram to this step', () => {
     });
 });
 
-describe('folding the step\'s words away', () => {
+/**
+ * While a lesson runs the card is the whole side column, and the instruments
+ * come back when the student leaves it. The card only asks; what leaving does
+ * to the diagram is the screen's.
+ */
+describe('leaving the lesson', () => {
 
-    function folding(folded: boolean) {
-        const onFold = vi.fn();
-        view(<LessonCard steps={STEPS} state={at(1)} goals={GOALS} onGoTo={vi.fn()}
-            folded={folded} onFold={onFold} />);
-        return onFold;
+    function leaving(state: TrackState) {
+        const onLeave = vi.fn(), onGoTo = vi.fn();
+        view(<LessonCard steps={STEPS} state={state} goals={GOALS} onGoTo={onGoTo} onLeave={onLeave} />);
+        return { onLeave, onGoTo };
     }
 
-    // Folded, the card keeps where the student is and the way on: the part,
-    // the progress bar, Back and Next.
-    it('hides the words and keeps the way on', () => {
-        folding(true);
-        expect(screen.queryByRole('heading', { name: 'Demand' })).toBeNull();
-        expect(markers()).toHaveLength(STEPS.length);
-        expect(next()).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Show this step' }).getAttribute('aria-expanded')).toBe('false');
+    it('is offered at every step, and asks the screen', async () => {
+        const { onLeave } = leaving(at(2));
+        await userEvent.setup().click(screen.getByRole('button', { name: 'Leave lesson' }));
+        expect(onLeave).toHaveBeenCalled();
     });
 
-    it('asks the screen to fold or unfold, which is the screen\'s to decide', async () => {
-        const user = userEvent.setup();
-        const onFold = folding(false);
-        await user.click(screen.getByRole('button', { name: 'Hide this step' }));
-        expect(onFold).toHaveBeenCalledWith(true);
+    it('is a skip before the lesson has started', () => {
+        leaving(at(0));
+        expect(screen.getByRole('button', { name: 'Skip lesson' })).toBeTruthy();
     });
 
-    it('offers no toggle, and never folds, without a handler', () => {
-        view(<LessonCard steps={STEPS} state={at(1)} goals={GOALS} onGoTo={vi.fn()} folded />);
-        expect(screen.queryByRole('button', { name: /this step$/ })).toBeNull();
-        expect(screen.getByRole('heading', { name: 'Demand' })).toBeTruthy();
+    // The last step's way on is out of the lesson: Next would have nowhere to go.
+    it('finishes at the last step, in place of Next', async () => {
+        const { onLeave, onGoTo } = leaving(at(STEPS.length, [3]));
+        const finish = screen.getByRole('button', { name: 'Finish' });
+        expect(finish.hasAttribute('disabled')).toBe(false);
+        await userEvent.setup().click(finish);
+        expect(onLeave).toHaveBeenCalled();
+        expect(onGoTo).not.toHaveBeenCalled();
+    });
+
+    it('does not finish past a last question still waiting for its answer', () => {
+        leaving(at(STEPS.length));
+        expect(screen.getByRole('button', { name: 'Finish' }).hasAttribute('disabled')).toBe(true);
+    });
+
+    it('offers neither without a handler', () => {
+        mount({ state: at(STEPS.length, [3]) });
+        expect(screen.queryByRole('button', { name: /lesson$/ })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+    });
+});
+
+describe('the lesson put away', () => {
+
+    function resting(state: TrackState) {
+        const onResume = vi.fn();
+        view(<LessonResume steps={STEPS} state={state} onResume={onResume} />);
+        return onResume;
+    }
+
+    it('says where the student left it, and takes them back', async () => {
+        const onResume = resting(at(3));
+        expect(within(card()).getByText('Step 3 of 4: Incomes rise')).toBeTruthy();
+        await userEvent.setup().click(screen.getByRole('button', { name: 'Resume' }));
+        expect(onResume).toHaveBeenCalled();
+    });
+
+    it('offers to start a lesson not yet begun', () => {
+        resting(at(0));
+        expect(within(card()).getByText('Not started')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
+    });
+
+    it('offers a finished lesson for review', () => {
+        resting(at(STEPS.length, [3]));
+        expect(within(card()).getByText('Finished')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
     });
 });

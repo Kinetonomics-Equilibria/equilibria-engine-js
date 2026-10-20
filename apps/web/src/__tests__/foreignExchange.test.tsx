@@ -58,8 +58,9 @@ type Curve = 'Demand for A$' | 'Supply of A$';
 /**
  * A curve's slider in the question row, by its name.
  *
- * In the row, because the dock's Explore sliders carry the same names: the
- * question's are the ones inside the group called "Question".
+ * In the row, because the Explore instrument's sliders carry the same names
+ * once the lesson is put away: the question's are the ones inside the group
+ * called "Question".
  */
 const sliderFor = (curve: Curve) => within(row()).getByRole('slider', { name: curve });
 
@@ -240,7 +241,9 @@ describe('choosing the curve', () => {
         expect(screen.getByText('Answer the question to unlock the next step.')).toBeTruthy();
     });
 
-    it('freezes both curves once the answer is taken, from the question and from the dock', async () => {
+    // The question's sliders are the only controls on screen for either curve:
+    // the instruments are put away while a lesson runs.
+    it('freezes both curves once the answer is taken, with nothing else on screen to move them', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
@@ -248,13 +251,11 @@ describe('choosing the curve', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         (['Demand for A$', 'Supply of A$'] as Curve[]).forEach(curve => {
-            const inRow = sliderFor(curve);
-            const inDock = screen.getAllByRole('slider', { name: curve }).filter(s => s !== inRow)[0];
-            [inRow, inDock].forEach(control => {
-                const before = control.getAttribute('aria-valuetext');
-                fireEvent.keyDown(control, { key: 'End' });
-                expect(control.getAttribute('aria-valuetext'), curve).toBe(before);
-            });
+            const control = sliderFor(curve);
+            const before = control.getAttribute('aria-valuetext');
+            fireEvent.keyDown(control, { key: 'End' });
+            expect(control.getAttribute('aria-valuetext'), curve).toBe(before);
+            expect(screen.getAllByRole('slider', { name: curve }), curve).toEqual([control]);
         });
         expect(caption('market')).toContain('A$1 = US$0.64');
     });

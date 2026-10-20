@@ -218,7 +218,13 @@ export const LESSON = [
         title: 'What sellers earn',
         say: 'The new panel shows the money that changes hands: the price times the quantity ' +
             'sold.\n\n' +
-            'When demand rises, sellers sell more, at a higher price, so their revenue goes up.',
+            'When demand rises, sellers sell more, at a higher price, so their revenue goes up. ' +
+            'Move demand yourself and watch revenue follow it.',
+        // The one "see what happens" step: a slider on the card, since the
+        // lesson has no instruments beside it. Safe to hand over here because
+        // the step after it sets both params, so wherever the student leaves
+        // demand, "back to the start" is where the market goes.
+        try: [{ param: 'a', label: 'Demand' }],
         term: {
             word: 'Total revenue',
             meaning: 'Price × quantity: everything buyers spend, and sellers receive.'
@@ -275,16 +281,16 @@ export const LESSON = [
                 'takes the price to $14.00.'
         }
     },
-    // The lesson hands the market back where it found it, which is what makes
-    // "free exploration is the track at its last position" true rather than
-    // nearly true: the end of the build-up is the diagram as the config
-    // declares it, with everything drawn and nothing left mid-demonstration.
+    // The lesson hands the market back where it found it, so Finish hands the
+    // instruments the diagram as the config declares it, with everything drawn
+    // and nothing left mid-demonstration.
     {
         set: { a: 20, c: 2 },
         title: 'Over to you',
         say: 'One shift in demand moved the price, the quantity, consumer surplus and revenue, ' +
             'all at once.\n\n' +
-            'The market is yours now. Drag the demand curve, or try the Scenarios tab.'
+            'Press Finish and the market is yours: drag the demand curve, try a scenario, or ' +
+            'see the maths behind each number.'
     }
 ];
 

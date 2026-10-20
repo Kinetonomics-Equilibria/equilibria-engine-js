@@ -33,7 +33,7 @@
     color: var(--mantine-color-dimmed);
 }
 
-.fold {
+.leave {
     flex: none;
     color: var(--mantine-color-dimmed);
 }
@@ -211,6 +211,27 @@
     text-align: center;
     color: var(--mantine-color-dimmed);
     font-variant-numeric: tabular-nums;
+}
+
+/* The lesson put away, over the instruments: where the student left it on one
+ * side, the way back on the other. */
+.resume {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-sm);
+    padding: 10px 14px;
+}
+
+.resumeText {
+    flex: 1;
+    min-width: 0;
+}
+
+.where {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (prefers-reduced-motion: reduce) {

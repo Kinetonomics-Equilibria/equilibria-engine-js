@@ -232,11 +232,11 @@
     min-height: 0;
 }
 
-/* The lesson, then the instruments, at a width that depends on neither.
+/* The lesson, or the instruments under a line saying where the lesson was
+ * left, at a width that depends on neither.
  *
- * The lesson takes the height its step needs, up to most of the column, and
- * scrolls inside past that; the instruments take the rest, with a floor so the
- * sliders are never squeezed out by a long question. */
+ * The lesson takes the height its step needs, up to the whole column, and
+ * scrolls inside past that; the instruments take what the line leaves. */
 .side {
     display: flex;
     flex: none;
@@ -248,14 +248,11 @@
 
 .lessonBeside {
     flex: 0 1 auto;
-    max-height: 70%;
+    max-height: 100%;
 }
 
-/* The column's only occupant, where the instruments are a sheet: as tall as
- * its step needs, and the whole column if it needs that. */
-.lessonAlone {
-    flex: 0 1 auto;
-    max-height: 100%;
+.resumeBeside {
+    flex: none;
 }
 
 /* Under the stage, at a fixed height: a lesson whose card grew and shrank
@@ -265,5 +262,12 @@
 .lessonBelow {
     flex: none;
     height: clamp(11rem, 34vh, 18rem);
+    margin-top: var(--mantine-spacing-sm);
+}
+
+/* Its place there while the instruments are out, which on a phone are a sheet
+ * of their own: one line, so the diagram gets the height back. */
+.resumeBelow {
+    flex: none;
     margin-top: var(--mantine-spacing-sm);
 }
