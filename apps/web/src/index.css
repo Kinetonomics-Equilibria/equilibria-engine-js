@@ -24,8 +24,14 @@ body {
      * the engine fills its labels with, and they hold everything a panel
      * draws — so no label lands on this grey and shows as a white box, which
      * is what happened when the page was grey and there were no sheets.
+     * Only just a shade, though: Mantine's lightest grey, halfway to white —
+     * `gray-0` itself made the screen drab, and the sheets' hairline and
+     * shadow keep them apart from a paler page.
      * `light-dark()` is provided by postcss-preset-mantine. */
-    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+    background: light-dark(
+        color-mix(in srgb, var(--mantine-color-gray-0), var(--mantine-color-white)),
+        var(--mantine-color-dark-8)
+    );
     /* No padding here: AppShell's sections are position: fixed and offset the
      * main area themselves, so page-level padding would push the shell out of
      * alignment. The content's breathing room is AppShell's `padding` prop. */
