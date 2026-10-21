@@ -37,6 +37,38 @@ const SLIDE_REFINEMENTS = 16;
 /** Pixels kept between a label and the one it gives way to. */
 const LABEL_GAP = 2;
 
+/**
+ * A label's letters are ringed in the canvas colour, not set on a box of it.
+ *
+ * Labels are HTML laid over the SVG — KaTeX typesets HTML — so a label is in
+ * front of every curve, point and fill, and so is anything behind its text. It
+ * used to be a box in the canvas colour, white unless an author said otherwise:
+ * nothing on a bare canvas, and a white card everywhere else. On the PPC it sat
+ * over the shaded region as a white tile behind `A` and `B`, and cut a corner
+ * off the point beside `+20 toasties`. `bgcolor: null`, which the point, circle
+ * and rectangle labels ask for, did not turn it off either: the default was
+ * taken with `??`, which treats null as missing.
+ *
+ * What the box was for is still needed. A curve's label sits on its curve, and a
+ * line running through `D` makes it hard to read. A halo clears the line where
+ * the letters are and nowhere else. One a pixel wide left the line running
+ * through the bowl of the `D`. A blur alone faded the line but did not cut it.
+ * Eight offset copies, two pixels out and slightly blurred, cut it. A wider blur
+ * over them softens the outside edge, so over a fill the halo reads as a faint
+ * glow, not as a sticker's outline.
+ *
+ * A halo follows glyphs only, so the rules KaTeX draws as borders, such as
+ * fraction bars, get none. An author who sets `bgcolor` gets a box in that
+ * colour, and no halo.
+ */
+const HALO_OFFSETS = [[-2, 0], [2, 0], [0, -2], [0, 2], [-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4]];
+
+function haloOf(color: string): string {
+    return HALO_OFFSETS.map(([x, y]) => `${x}px ${y}px 1px ${color}`)
+        .concat(`0 0 4px ${color}`)
+        .join(', ');
+}
+
 /** A label's box in its panel's pixels — the coordinates `left` and `top` are written in. */
 export interface LabelBox { left: number; top: number; width: number; height: number; }
 
@@ -73,6 +105,8 @@ export class Label extends ViewObject {
     private rotate: number;
     private color: string;
     private bgcolor: string;
+    /** The canvas colour, which the halo is drawn in. See `haloOf`. */
+    private halo: string;
     private along: UnivariateFunction;
     private size = { width: 0, height: 0 };
     /** Placed on an axis rather than in the plot; read by `AxisMarks`. */
@@ -160,9 +194,7 @@ export class Label extends ViewObject {
         this.labelId = (def as any).labelId;
         this.yieldsTo = (def as any).yieldsTo;
 
-        // Default to the view's clearColor so labels visually blend with the chart background.
-        // Schema authors can override this via the schema's clearColor property.
-        this.bgcolor = def.bgcolor ?? def.model.clearColor;
+        this.halo = def.model.clearColor;
 
     }
 
@@ -372,9 +404,14 @@ export class Label extends ViewObject {
     redraw() {
         let label = this;
 
+        // A box only in a colour an author gave; `null` and `'none'` are both
+        // the halo. See `haloOf`.
+        const boxed = label.bgcolor != undefined && label.bgcolor !== 'none';
+
         label.rootElement
             .style('color', label.color)
-            .style('background-color', label.bgcolor)
+            .style('background-color', boxed ? label.bgcolor : null)
+            .style('text-shadow', boxed ? null : haloOf(label.halo))
             // Applied here as well as in draw(): the size can now change after
             // the div exists, and the measurements below (clientWidth/Height,
             // which the alignment offsets are computed from) have to be taken

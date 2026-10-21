@@ -192,7 +192,7 @@ A drag also opens a *gesture*, which is when the engine snapshots the state that
 | Property | Type | Description |
 |-----------|------|-------------|
 | `aspectRatio` | number | Width-to-height ratio of the canvas (default: `1`). |
-| `clearColor` | string | Background color of the canvas (default: `"#FFFFFF"`). |
+| `clearColor` | string | Background color of the canvas (default: `"#FFFFFF"`). Label text is ringed in it, which keeps a line from running through the letters. A label's own `bgcolor` gives it a box in that color instead. |
 | `custom` | string | Custom CSS to inject into the rendering context. |
 | `idioms` | object | Custom reusable definitions or macros for the schema. |
 | `snapshotOn` | string | When the engine captures the state expressions read as `prev`: `"gesture"` (default), `"change"` or `"never"`. See [Remembering the Previous State](./schema/02-parameters-and-interactions.md#remembering-the-previous-state-prev). |
