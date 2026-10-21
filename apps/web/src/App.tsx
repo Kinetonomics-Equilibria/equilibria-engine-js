@@ -79,6 +79,7 @@ export function App() {
         // fixed section, so nothing offsets it and it runs from the top of the
         // viewport to the bottom.
         <AppShell
+            className={classes.shell}
             padding="md"
             navbar={{
                 // Below `breakpoint` the width is 100% regardless, so this value
@@ -94,7 +95,9 @@ export function App() {
               * the navbar's z-index so it stays clickable once the navbar is
               * open and covering the viewport, and in the *right* corner
               * because both things it would otherwise overlap — the page
-              * heading, and the panel's title — are left-aligned. */}
+              * heading, and the panel's title — are left-aligned. The page's
+              * controls on the heading's line are right-aligned, so that line
+              * stops short of it by `--app-burger-room` (App.module.css). */}
             <Burger
                 opened={mobileOpened}
                 onClick={toggleMobile}

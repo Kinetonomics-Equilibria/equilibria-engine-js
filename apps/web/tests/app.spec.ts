@@ -1495,3 +1495,35 @@ test('on a phone the lesson goes under the diagram, at a height that does not ch
     // And it stays on the page.
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+/**
+ * On a phone the burger floats in the top right corner, and the title's line
+ * ends with the arrangement toggle and the instruments' door. Drawn in the same
+ * corner, the burger sat on the door and half of "Grid", and took their taps.
+ */
+test('on a phone the burger leaves the title row its controls', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const burger = (await page.getByRole('button', { name: 'Toggle navigation' }).boundingBox())!;
+    const toggle = page.getByRole('radiogroup', { name: 'Panel arrangement' });
+    const door = page.getByRole('button', { name: 'Open instruments' });
+
+    for (const [name, control] of [['the toggle', toggle], ['the door', door]] as const) {
+        const box = (await control.boundingBox())!;
+        expect(box.x + box.width, `${name} ends before the burger`).toBeLessThanOrEqual(burger.x);
+    }
+
+    // Each takes its own tap, which Playwright makes only once nothing else is
+    // over the point it taps.
+    await page.getByText('Grid', { exact: true }).click();
+    await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
+    await door.click();
+    await expect(page.getByRole('dialog', { name: 'Instruments' })).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // And the burger still opens the navbar, with the Lessons panel out on the
+    // open lesson's topic.
+    await page.getByRole('button', { name: 'Toggle navigation' }).click();
+    await expect(page.getByRole('link', { name: 'Supply and demand' })).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('button', { name: 'Toggle navigation' }).click();
+    await expect(page.getByRole('link', { name: 'Supply and demand' })).toBeHidden();
+});

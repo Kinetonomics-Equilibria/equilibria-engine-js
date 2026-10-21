@@ -1612,7 +1612,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                   * width: beside the toggle too, it wrapped onto a second line
                   * that came out of the stage's height. */}
                 <Stack gap={0} mb="sm">
-                    <Group justify="space-between" wrap="nowrap">
+                    <Group justify="space-between" wrap="nowrap" className={classes.titleRow}>
                         <Title order={2} size="h4">{content.title}</Title>
                         <Group gap="xs" wrap="nowrap">
                             {/* Disabled under a sheet, where there is nothing to

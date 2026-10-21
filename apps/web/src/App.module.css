@@ -1,6 +1,20 @@
 /* Styles owned by the app shell itself. Anything about the *contents* of the
  * navbar lives in components/DoubleNavbar.module.css instead. */
 
+/* The room the burger takes out of the page's top right corner, for a page's
+ * top row to leave free at its end. Nothing above `sm`, where the burger is
+ * hidden; below it, the burger's box — `size="sm"` is 18px of lines in `xs`
+ * of padding — and `xs` again to keep what comes before it clear. It sits `md`
+ * in from the corner, which is where AppShell.Main's padding puts the row's
+ * end too, so the two line up without either measuring the other. */
+.shell {
+    --app-burger-room: 0px;
+
+    @mixin smaller-than $mantine-breakpoint-sm {
+        --app-burger-room: calc(18px + 2 * var(--mantine-spacing-xs));
+    }
+}
+
 .navbarToggle {
     position: fixed;
     top: var(--mantine-spacing-md);
