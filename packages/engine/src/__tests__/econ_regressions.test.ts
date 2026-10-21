@@ -124,9 +124,10 @@ describe('semantic colors', () => {
 
         expect(error).toBeNull();
         const strokes = strokesOf(container);
-        // blue for demand, orange for supply, straight off d3.schemeCategory10
+        // blue for demand, straight off d3.schemeCategory10, and orange for
+        // supply, darkened from d3's to be seen against white (schema.ts)
         expect(strokes).toContain('#1f77b4');
-        expect(strokes).toContain('#ff7f0e');
+        expect(strokes).toContain('#e56a00');
         expect(strokes).not.toContain(null);
         kg.destroy();
     });

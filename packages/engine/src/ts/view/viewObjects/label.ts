@@ -4,6 +4,7 @@ import { UnivariateFunction, UnivariateFunctionDefinition } from "../../math/uni
 import { AXIS_TITLE } from "../../KGAuthor/graphObjects/axis";
 import * as katex from "katex";
 import * as d3 from "d3";
+import { readableOn } from "../readable";
 
 
 
@@ -414,7 +415,9 @@ export class Label extends ViewObject {
         const boxed = label.bgcolor != undefined && label.bgcolor !== 'none';
 
         label.rootElement
-            .style('color', label.color)
+            // Readable against what is behind the letters: the box an author
+            // asked for, or the canvas the halo is drawn in. See `readableOn`.
+            .style('color', readableOn(label.color, boxed ? label.bgcolor : label.halo))
             .style('background-color', boxed ? label.bgcolor : null)
             .style('text-shadow', boxed ? null : haloOf(label.halo))
             // Applied here as well as in draw(): the size can now change after

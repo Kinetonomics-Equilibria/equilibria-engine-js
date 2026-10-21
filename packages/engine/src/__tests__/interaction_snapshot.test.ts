@@ -529,7 +529,7 @@ describe('the host surface', () => {
         const colors = r.kg.getColors();
 
         expect(colors.demand).toBe('#1f77b4');
-        expect(colors.supply).toBe('#ff7f0e');
+        expect(colors.supply).toBe('#e56a00');
         expect(colors.equilibriumPrice).toBe('#2ca02c');
         // The same two values the curves were stroked with, which is the claim
         // a host is relying on when it matches one.
@@ -556,7 +556,7 @@ describe('the host surface', () => {
         expect(r.kg.getColors().demand).toBe('#9467bd');
         expect(strokesOf(r.container)[0]).toBe('#9467bd');
         // Only the one it named: supply is still the schema's.
-        expect(r.kg.getColors().supply).toBe('#ff7f0e');
+        expect(r.kg.getColors().supply).toBe('#e56a00');
 
         r.destroy();
     });

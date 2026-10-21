@@ -20,7 +20,11 @@ export class Schema extends AuthoringObject {
 
         const palette = {
             blue: 'd3.schemeCategory10[1]',     //#1f77b4
-            orange: 'd3.schemeCategory10[2]',   //#ff7f0e
+            // Not d3's #ff7f0e, which is 2.5:1 on white: under the 3:1 a line
+            // needs to be seen at all, and supply is drawn in it. This is the
+            // same hue, darkened in HCL until it clears 3:1 (3.3:1). A label
+            // in it is darkened further, to 4.5:1, by `readableOn`.
+            orange: "'#e56a00'",
             green: 'd3.schemeCategory10[3]',    //#2ca02c
             red: 'd3.schemeCategory10[4]',      //#d62728
             purple: 'd3.schemeCategory10[5]',   //#9467bd
