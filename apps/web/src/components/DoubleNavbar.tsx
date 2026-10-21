@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import {
-    IconChartHistogram,
     IconChartPpf,
     IconChevronRight,
     IconHome2,
@@ -12,6 +11,7 @@ import { ActionIcon, Collapse, Text, Tooltip, Transition, UnstyledButton, useMan
 import { useClickOutside, useMediaQuery, useWindowEvent } from '@mantine/hooks';
 import type { LessonStrand, LessonTopic } from '../lessons';
 import classes from './DoubleNavbar.module.css';
+import logo from './kinetonomics-logo.svg';
 
 // A narrow rail of section icons, and beside it a panel listing what is inside
 // the section pressed. The panel is out only while it is wanted: pressing a
@@ -23,11 +23,12 @@ import classes from './DoubleNavbar.module.css';
 export type NavPanel = 'lessons';
 
 // Home and Settings have no pages behind them yet. They are here so the rail
-// has its shape, and pressing one only puts away a panel that is out.
-const RAIL: { icon: typeof IconHome2; label: string; panel?: NavPanel }[] = [
+// has its shape, and pressing one only puts away a panel that is out. `foot`
+// sends Settings to the bottom of the rail, apart from the places to go.
+const RAIL: { icon: typeof IconHome2; label: string; panel?: NavPanel; foot?: boolean }[] = [
     { icon: IconHome2, label: 'Home' },
     { icon: IconChartPpf, label: 'Lessons', panel: 'lessons' },
-    { icon: IconSettings, label: 'Settings' }
+    { icon: IconSettings, label: 'Settings', foot: true }
 ];
 
 // The section the open page belongs to, which the rail keeps lit. Every page is
@@ -97,6 +98,7 @@ export function DoubleNavbar({
                     onClick={() => onPanelChange(link.panel && !isOut ? link.panel : null)}
                     className={classes.mainLink}
                     data-active={link.label === PAGE_SECTION || isOut || undefined}
+                    data-foot={link.foot || undefined}
                     aria-label={link.label}
                     aria-expanded={link.panel ? isOut : undefined}
                     aria-controls={link.panel ? PANEL_ID : undefined}
@@ -110,9 +112,7 @@ export function DoubleNavbar({
     return (
         <nav className={classes.navbar} ref={navRef}>
             <div className={classes.aside}>
-                <div className={classes.logo}>
-                    <IconChartHistogram size={30} stroke={1.5} />
-                </div>
+                <img className={classes.logo} src={logo} alt="Kinetonomics" />
                 {rail}
             </div>
 

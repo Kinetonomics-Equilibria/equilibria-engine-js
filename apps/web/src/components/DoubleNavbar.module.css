@@ -1,39 +1,51 @@
 /* Styles for the DoubleNavbar: the icon rail, and the panel that comes out
  * beside it.
  *
- * The rail is ported from the Mantine UI recipe of the same name
- * (ui.mantine.dev/component/double-navbar), less its fixed width and height —
- * AppShell owns the navbar's box, and its width comes from App.tsx — and less
- * its outer `border-right`, which `AppShell.Navbar` already draws.
+ * The rail began as the Mantine UI recipe of the same name
+ * (ui.mantine.dev/component/double-navbar), and is now a card of its own: a
+ * sheet of paper standing a little in from the window's left, top and bottom
+ * edges, with the logo at its head and Settings at its foot. AppShell owns the
+ * navbar's box, which is the card and the margin to its left, so its width in
+ * App.tsx is `--rail-width` plus `--rail-inset`.
  */
 
 .navbar {
+    /* Kept tight to the window's edge, so the card takes as little as it can
+     * from the stage. */
+    --rail-width: 64px;
+    --rail-inset: 8px;
+    /* Rounder than the paper's 12px: the rail is not a sheet a student reads,
+     * and its corners are what set it apart from the window's edge. The panel
+     * that comes out beside it takes the same corner. */
+    --rail-radius: 20px;
+
     height: 100%;
     display: flex;
-    background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
 }
 
 .aside {
-    flex: 0 0 60px;
-    background-color: var(--mantine-color-body);
+    composes: paper from '../ui/paper.module.css';
+    flex: 0 0 var(--rail-width);
+    /* The paper's corner is read from this, rather than overridden: which of
+     * two one-class rules wins is down to the order the stylesheets land in. */
+    --paper-radius: var(--rail-radius);
+    margin: var(--rail-inset) 0 var(--rail-inset) var(--rail-inset);
+    padding: var(--mantine-spacing-md) 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
+    gap: 6px;
 }
 
 .logo {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 60px;
-    color: var(--mantine-color-blue-filled);
-    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
-    margin-bottom: var(--mantine-spacing-xl);
+    display: block;
+    height: 34px;
+    width: auto;
+    margin-bottom: var(--mantine-spacing-lg);
 }
 
 .mainLink {
+    flex: none;
     width: 44px;
     height: 44px;
     border-radius: var(--mantine-radius-md);
@@ -52,6 +64,11 @@
             background-color: var(--mantine-color-blue-light);
             color: var(--mantine-color-blue-light-color);
         }
+    }
+
+    /* Settings, alone at the rail's foot. */
+    &[data-foot] {
+        margin-top: auto;
     }
 }
 
@@ -73,7 +90,8 @@
  * because it is a way to leave the page, not a dialog about it.
  *
  * Absolute against `AppShell.Navbar`, which is fixed, so `100%` is the rail's
- * right edge.
+ * right edge, and it stands as far off the rail, and in from the top and the
+ * bottom, as the rail does from the window.
  *
  * `$mantine-breakpoint-sm` is supplied by postcss-simple-vars (see
  * postcss.config.js), and must name the breakpoint the `floats` query in
@@ -81,12 +99,12 @@
 @media (min-width: $mantine-breakpoint-sm) {
     .panel {
         position: absolute;
-        left: calc(100% + var(--mantine-spacing-xs));
-        top: var(--mantine-spacing-xs);
-        bottom: var(--mantine-spacing-xs);
+        left: calc(100% + var(--rail-inset));
+        top: var(--rail-inset);
+        bottom: var(--rail-inset);
         width: 300px;
         border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
-        border-radius: var(--mantine-radius-lg);
+        border-radius: var(--rail-radius);
         box-shadow: light-dark(0 4px 20px rgba(0, 0, 0, 0.12), 0 4px 20px rgba(0, 0, 0, 0.5));
     }
 }

@@ -13,10 +13,10 @@ function lessonInUrl(): string | null {
 }
 
 // The navbar's width above `sm`, in a rem-free number because AppShell converts
-// it. It is the icon rail and nothing else — the panel beside the rail floats
-// over the page rather than widening the navbar — so it must match
-// `flex: 0 0 60px` on `.aside` in DoubleNavbar.module.css.
-const RAIL_WIDTH = 60;
+// it. It is the icon rail and the margin to its left, and nothing else — the
+// panel beside the rail floats over the page rather than widening the navbar —
+// so it must be `--rail-width` plus `--rail-inset` in DoubleNavbar.module.css.
+const NAVBAR_WIDTH = 64 + 8;
 
 export function App() {
     // Below the `sm` breakpoint the navbar is a full-width overlay toggled by
@@ -84,7 +84,7 @@ export function App() {
             navbar={{
                 // Below `breakpoint` the width is 100% regardless, so this value
                 // only bites on desktop.
-                width: RAIL_WIDTH,
+                width: NAVBAR_WIDTH,
                 breakpoint: 'sm',
                 collapsed: { mobile: !mobileOpened }
             }}
@@ -107,7 +107,8 @@ export function App() {
                 className={classes.navbarToggle}
             />
 
-            <AppShell.Navbar>
+            {/* No border: the rail inside is a card with an edge of its own. */}
+            <AppShell.Navbar withBorder={false} className={classes.navbar}>
                 <DoubleNavbar
                     panel={panel}
                     onPanelChange={changePanel}

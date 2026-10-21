@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 48 1452 1845" role="img" aria-label="Kinetonomics">
+  <!-- Redrawn from the brand artwork, less its drop shadow, which at the
+       rail's size is only a grey smudge round the letter. -->
+  <defs>
+    <linearGradient id="k-stem" x1="0" y1="150" x2="0" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff00cc"/>
+      <stop offset="1" stop-color="#4a1d8b"/>
+    </linearGradient>
+    <linearGradient id="k-foot" x1="60" y1="1880" x2="436" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#05010f"/>
+      <stop offset="1" stop-color="#541d8c"/>
+    </linearGradient>
+    <linearGradient id="k-pill" x1="650" y1="460" x2="80" y2="1120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#bb3bd4"/>
+      <stop offset="1" stop-color="#2ec0f4"/>
+    </linearGradient>
+    <linearGradient id="k-arrow" x1="1500" y1="60" x2="60" y2="1880" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff00c8"/>
+      <stop offset="0.5" stop-color="#a24fdc"/>
+      <stop offset="1" stop-color="#00e5ff"/>
+    </linearGradient>
+    <linearGradient id="k-leg" x1="900" y1="1100" x2="1150" y2="1893" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a94fdf"/>
+      <stop offset="0.55" stop-color="#55a0ee"/>
+      <stop offset="1" stop-color="#00e5ff"/>
+    </linearGradient>
+  </defs>
+  <!-- Back to front: the stem's two ends, the short stroke, the arrow, the leg. -->
+  <path fill="url(#k-stem)" d="M50 1000V241a193 193 0 0 1 386 0v359z"/>
+  <path fill="url(#k-foot)" d="M50 1300h386v593H50z"/>
+  <path fill="url(#k-pill)" d="M50 795 425 380a150 150 0 0 1 220 204L50 1230z"/>
+  <path fill="url(#k-arrow)" d="M930 48h572v522l-172-157-1200 1322c-45 50-72 95-80 158v-528l1054-1162z"/>
+  <path fill="url(#k-leg)" d="m853 1068 649 825h-449L660 1418c-28-40-30-120 40-190z"/>
+</svg>

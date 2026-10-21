@@ -15,6 +15,16 @@
     }
 }
 
+/* Above `sm` the navbar's box is the rail's card and the margin round it, and
+ * that margin is the page's: Mantine fills the box with the body's white, which
+ * would draw a white strip down the window's edge behind the card. Below `sm`
+ * the box is the burger's overlay, and stays opaque. */
+.navbar {
+    @mixin larger-than $mantine-breakpoint-sm {
+        background-color: transparent;
+    }
+}
+
 .navbarToggle {
     position: fixed;
     top: var(--mantine-spacing-md);
