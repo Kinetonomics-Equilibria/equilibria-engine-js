@@ -19,12 +19,14 @@ import { QuestionRow } from './QuestionRow';
 import { TryRow } from './TryRow';
 import { LessonCard, LessonResume } from './LessonCard';
 import { LessonCover } from './LessonCover';
+import { LessonRecap } from './LessonRecap';
+import type { RecapCase } from './LessonRecap';
 import { PictureSheet } from './PictureSheet';
 import { StageSheet } from './StageSheet';
 import {
     AT_START, askAt, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer, tryAt
 } from './track/track';
-import type { LessonQuestion, TrackState } from './track/track';
+import type { LessonQuestion, Outcome, TrackState } from './track/track';
 import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
 import type { Attempt } from './quiz/attempt';
 import { candidatesOf, gradeChoice, validateChoice, validateQuestion } from './quiz/grade';
@@ -88,6 +90,34 @@ function prepare(content: StudyContent) {
         panelKeys: content.panels.map(p => p.key),
         narrated
     };
+}
+
+/**
+ * The recap's cases: every question before the recap step, in the words the
+ * chain uses for its cause and in its curve's colour, with how it went.
+ *
+ * The clause is the param's rise or fall as the question asks it — a question
+ * whose answer is demand moving up is about "Demand for A$ increases" — and
+ * falls back to the param's label, as the chain does, where the lesson gives
+ * no words.
+ */
+function recapCases(
+    steps: StudyContent['lesson'], position: number, track: TrackState, params: NarratedParam[]
+): RecapCase[] {
+    const cases: RecapCase[] = [];
+    steps.slice(0, Math.max(0, position - 1)).forEach(function (step, i) {
+        if (!step.ask) return;
+        const param = params.filter(p => p.name === step.ask!.param)[0];
+        const words = param ? (step.ask.direction === 'up' ? param.rise : param.fall) : undefined;
+        cases.push({
+            title: step.title || '',
+            clause: words || (param ? param.label : step.ask.param),
+            color: param ? param.color : undefined,
+            explain: step.ask.explain,
+            outcome: track.outcomes[i]
+        });
+    });
+    return cases;
 }
 
 /**
@@ -954,9 +984,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             ]
         });
 
+        // Resolved means right, here: "shown" is resolved by the reveal below.
+        // The number of commits is the number of goes, the first included.
         if (isResolved(next)) {
+            const outcome: Outcome = next.attempts <= 1
+                ? { how: 'first' } : { how: 'retry', goes: next.attempts };
             setTrack(current => trackReducer(
-                current, { type: 'resolve', index: Number(attempt.questionId) }, steps
+                current, { type: 'resolve', index: Number(attempt.questionId), outcome }, steps
             ));
         }
     }, [attempt, steps, questionApparatus]);
@@ -1022,7 +1056,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             engineRef.current?.update({ params: [{ name: 'revealed', value: 1 }] });
         }
         setTrack(current => trackReducer(
-            current, { type: 'resolve', index: Number(attempt.questionId) }, steps
+            current, { type: 'resolve', index: Number(attempt.questionId), outcome: { how: 'shown' } }, steps
         ));
     }, [attempt, steps, questionApparatus]);
 
@@ -1428,7 +1462,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
     /**
      * What covers the stage, if anything: the lesson's cover before the first
-     * step, or the picture a step shows.
+     * step, the picture a step shows, or the recap.
      *
      * Never while exploring, where the diagram is the whole point. The stage
      * stays mounted under it, made inert so that neither the keyboard nor the
@@ -1446,6 +1480,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         </StageSheet>
     ) : pictured ? (
         <PictureSheet key={pictured.src} picture={pictured} />
+    ) : slide && slide.kind === 'recap' ? (
+        <StageSheet label="How you went" eyebrow="How you went">
+            <LessonRecap
+                cases={recapCases(steps, track.position, track, narratedParams)}
+                takeaway={slide.takeaway}
+            />
+        </StageSheet>
     ) : null;
 
     /**
@@ -1484,7 +1525,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     // Under a sheet there is no diagram to have changed, so both forms rest —
     // a step's own `set` would otherwise be narrated over a picture of
     // something else — and say what they are waiting for.
-    const pictureStep = !!sheet && !notStarted;
+    const under = sheet && !notStarted && slide ? slide.kind : null;
     const narration = {
         line: sheet ? REST : line,
         refusal: sheet ? null : refusal,
@@ -1579,7 +1620,8 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                         {...narration}
                         restHint={notStarted
                             ? 'Press Start lesson when you\'re ready.'
-                            : pictureStep ? 'The diagram is back at the next step.' : undefined}
+                            : under === 'picture' ? 'The diagram is back at the next step.'
+                                : under === 'recap' ? 'Press Finish to explore the diagram.' : undefined}
                     />
                 ) : null}
 
@@ -1608,12 +1650,15 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                         className={classes.narrationBeside}
                         restHint={notStarted
                             ? 'Start the lesson, and what each step changes will show here.'
-                            : pictureStep
+                            : under === 'picture'
                                 ? 'This step is a picture, so nothing on the diagram changes. ' +
                                     'The diagram is back at the next step.'
-                                : exploring
-                                ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
-                                : undefined}
+                                : under === 'recap'
+                                    ? 'This step looks back, so nothing on the diagram changes. ' +
+                                        'Finish, and the diagram is yours to explore.'
+                                    : exploring
+                                        ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
+                                        : undefined}
                     />
                 </div>
             ) : null}

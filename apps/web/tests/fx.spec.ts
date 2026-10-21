@@ -209,6 +209,51 @@ test.describe('with motion', () => {
     });
 });
 
+/**
+ * The recap (P15): each question, and how it went.
+ *
+ * The first question answered right and the rest shown, so both kinds of
+ * outcome are on the sheet: a right answer in the teal the screen gives right
+ * answers, a shown one in grey, which is no verdict. Under the recap the
+ * diagram is inert, so Tab passes over it — the rail's promote button for the
+ * US$ market included.
+ */
+test('the last step looks back over the questions, and says how each went', async ({ page }) => {
+    const markers = page.locator('button[data-kinds]');
+    const kinds = await markers.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-kinds') || ''));
+    await markers.nth(kinds.findIndex((k) => k.includes('ask'))).click();
+
+    const question = page.getByRole('group', { name: 'Question' });
+    const demand = question.getByRole('slider', { name: 'Demand for A$' });
+    await demand.focus();
+    for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
+    await question.getByRole('button', { name: 'Check' }).click();
+    await question.getByRole('button', { name: 'Continue' }).click();
+    for (let guard = 0; guard < 10 && (await question.isVisible()); guard++) {
+        await question.getByRole('button', { name: 'Check' }).click();
+        await question.getByRole('button', { name: 'Show me' }).click();
+        await question.getByRole('button', { name: 'Continue' }).click();
+    }
+
+    const recap = page.getByRole('region', { name: 'How you went' });
+    await expect(recap).toBeVisible();
+    const outcomes = recap.locator('[data-how]');
+    await expect(outcomes).toHaveText([
+        'Right first time', 'You used Show me', 'You used Show me', 'You used Show me'
+    ]);
+    const colour = (n: number) => outcomes.nth(n).evaluate(el => getComputedStyle(el).backgroundColor);
+    expect(await colour(0)).not.toBe(await colour(1));
+    await expect(recap.getByText(/the A\$ appreciates, the reverse and it depreciates/)).toBeVisible();
+
+    await page.locator('body').click({ position: { x: 1, y: 1 } });
+    const inStage: boolean[] = [];
+    for (let i = 0; i < 30; i++) {
+        await page.keyboard.press('Tab');
+        inStage.push(await page.evaluate(() => !!document.activeElement?.closest('[inert]')));
+    }
+    expect(inStage.filter(Boolean)).toHaveLength(0);
+});
+
 test('draws both currencies in one engine', async ({ page, pageErrors }) => {
     await toTheEnd(page);
 

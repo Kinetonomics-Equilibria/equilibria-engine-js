@@ -3,8 +3,8 @@
 **Lane:** app + bindings ·
 **Depends on:** P7 (the stage), P10 (one timeline), P11 (the attempt loop), P14 (which curve moves) ·
 **Unblocks:** lessons that teach with a picture as well as a diagram ·
-**Status:** 🚧 **In progress** — phases 1 (the cover) and 2 (the picture step) landed 2026-10-21;
-phases 3–4 to follow, each its own commit.
+**Status:** 🚧 **In progress** — phases 1 (the cover), 2 (the picture step) and 3 (the recap) landed
+2026-10-21; phase 4 to follow, its own commit.
 
 ## Goal
 
@@ -103,11 +103,26 @@ is what survived that:
   old first step keeps the demand curve and its key term, retitled "Demand for A$ slopes down", and
   says its second paragraph — the slope — on its own.
 
-### Phase 3 — the recap
+### Phase 3 — the recap ✅
 
-`TrackState.outcomes` records how each question went (right first time, right after N goes, or
-shown), first write wins. A step marked `recap: { takeaway }` shows each question's title, the
-cause in its curve's colour, its explanation and the outcome, then the takeaway.
+- `track.ts`: `TrackState.outcomes`, by step index — `{ how: 'first' }`, `{ how: 'retry', goes }`
+  or `{ how: 'shown' }` — written by `resolve`, which now carries one, at the early return that
+  already kept a question from being resolved twice; so the first outcome is the one kept, and a
+  student who was shown an answer and went back to get it right was still shown it.
+  `LessonStep.recap: { takeaway }`; `slideAt` returns `{ kind: 'recap' }` at that step.
+- `StudyScreen`: `onCommit` resolves with `first` at one commit and `retry` with the count after
+  more; `onReveal` with `shown`. `recapCases` builds a case per question before the recap: its step
+  title, its cause in the chain's words (`rise` for a question answered up, `fall` down, the label
+  where the lesson has none), its curve's colour, its explanation, its outcome. For this session
+  only, like the attempt it is read from.
+- `LessonRecap` (new, presentational): a card per case, two to a line where the sheet is 600px or
+  more; the cause marked as "What changed" marks it, a ring in the curve's colour beside words in
+  the text's (orange words on white would not be read); the outcome in teal for right — "Right
+  first time", "Right on the second go", "Right after 4 goes" — and grey for "You used Show me";
+  the takeaway in the `why` callout, "In short". The sheet is "How you went".
+- Content: the A$ lesson's "Over to you" recaps the four cases. Its first paragraph was the rule,
+  so the rule became the takeaway — said once, under the cases — and the card says "Here's how you
+  went on the four cases." The supply and demand lesson has no recap yet.
 
 ### Phase 4 — the picture beside the diagram
 
@@ -131,7 +146,12 @@ interface Picture { name: string; src: string; alt: string; still?: string } // 
 
 // apps/web — track/track.ts
 interface LessonStep { picture?: string }                          // NEW (phase 2)
-type Slide = { kind: 'cover' } | { kind: 'picture'; picture: string };  // NEW; grows a kind per phase
+interface LessonStep { recap?: { takeaway: string } }              // NEW (phase 3)
+interface TrackState { outcomes: Record<number, Outcome> }         // NEW (phase 3)
+type Outcome = { how: 'first' } | { how: 'retry'; goes: number } | { how: 'shown' };  // NEW
+// TrackAction 'resolve' now carries `outcome: Outcome`             // CHANGED (phase 3)
+type Slide = { kind: 'cover' } | { kind: 'picture'; picture: string }
+    | { kind: 'recap'; takeaway: string };                         // NEW; a kind per phase
 function slideAt(steps, position, hasCover): Slide | null;         // NEW
 function partCounts(steps, part): { steps; questions; kinds };     // NEW
 ```
@@ -167,6 +187,18 @@ Phase 2:
   on request, and the diagram's box is the same at the cover, the picture and the next step; with
   motion it moves, and pauses on its still.
 
+Phase 3:
+
+- `track.test.ts` — the recap at a step that looks back; how a question went is recorded, and the
+  first outcome is kept when it is answered again.
+- `lessons.test.ts` — a recap comes after a question, its takeaway is a paragraph, and it asks
+  nothing of the diagram.
+- `foreignExchange.test.tsx` — the four questions answered right, wrong then right, shown, and
+  right: the recap says each as it went, with the chain's clauses and the takeaway; going back to
+  the shown one and getting it right leaves it shown.
+- `fx.spec.ts` — the outcomes on the sheet, right and shown in different colours, the takeaway, and
+  Tab never stopping in the inert stage under the recap.
+
 ## Risks and unknowns
 
 - A phone's stage is short; the cover drops its picture below 460px of sheet height and shrinks its
@@ -177,7 +209,7 @@ Phase 2:
 
 - [x] Phase 1: the cover, both lessons — unit, screen and browser tests above, all green.
 - [x] Phase 2: the picture step — tests above, all green.
-- [ ] Phase 3: the recap.
+- [x] Phase 3: the recap — tests above, all green.
 - [ ] Phase 4: the picture beside the diagram.
 
 ## Out of scope

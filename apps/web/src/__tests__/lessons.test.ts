@@ -169,6 +169,20 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
         });
     });
 
+    // A recap looks back over questions, so it comes after one; its rule is a
+    // paragraph, like a step's; and the diagram is under it, so it asks
+    // nothing of the diagram either.
+    it('recaps only after a question, in a paragraph, asking nothing of the diagram', () => {
+        lesson.lesson.forEach((step, i) => {
+            if (!step.recap) return;
+            expect(lesson.lesson.slice(0, i).some(earlier => !!earlier.ask), `step ${i + 1} recaps nothing`)
+                .toBe(true);
+            expect(step.recap.takeaway.length, `step ${i + 1}'s takeaway`).toBeLessThanOrEqual(PARAGRAPH_CHARACTERS);
+            expect(step.ask || step.try || step.picture || step.reveal, `step ${i + 1} recaps and more`)
+                .toBeFalsy();
+        });
+    });
+
     it('says what the student will learn, before the first step', () => {
         expect(lesson.goals.length).toBeGreaterThanOrEqual(2);
         expect(lesson.goals.length).toBeLessThanOrEqual(4);

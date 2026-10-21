@@ -37,7 +37,7 @@ const STEPS: LessonStep[] = [
 
 const GOALS = ['How a price is set', 'What moves it'];
 
-const at = (position: number, resolved: number[] = []): TrackState => ({ position, resolved });
+const at = (position: number, resolved: number[] = []): TrackState => ({ position, resolved, outcomes: {} });
 
 function mount(over: { state?: TrackState; steps?: LessonStep[]; onReset?: () => void } = {}) {
     const onGoTo = vi.fn();

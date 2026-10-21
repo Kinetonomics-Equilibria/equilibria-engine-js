@@ -364,13 +364,19 @@ export const FX_LESSON: LessonStep[] = [
                 'the A$ appreciates.'
         }
     },
+    // The rule the four cases were instances of, said once, on the stage under
+    // the cases themselves — and so not on the card as well.
     {
         set: { ...BASELINE },
         title: 'Over to you',
-        say: 'Anything that changes how many A$ the world wants to buy, or how many A$ ' +
-            'Australians want to sell, moves the exchange rate.\n\n' +
+        say: 'Here\'s how you went on the four cases.\n\n' +
             'Press Finish to try more real-world cases in Scenarios, or to drag the curves ' +
-            'yourself.'
+            'yourself.',
+        recap: {
+            takeaway: 'Anything that changes how many A$ the world wants to buy, or how many A$ ' +
+                'Australians want to sell, moves the exchange rate: more demand or less supply ' +
+                'and the A$ appreciates, the reverse and it depreciates.'
+        }
     }
 ];
 

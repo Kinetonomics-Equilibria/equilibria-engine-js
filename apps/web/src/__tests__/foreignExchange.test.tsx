@@ -200,6 +200,71 @@ describe('the picture step', () => {
     });
 });
 
+describe('the recap', () => {
+
+    const recap = () => screen.queryByRole('region', { name: 'How you went' });
+    const cases = () => within(within(recap()!).getByRole('list', { name: 'The questions' }))
+        .getAllByRole('listitem');
+
+    /**
+     * The four questions answered four ways: right, wrong and then right,
+     * shown, and right. The recap says each as it went, in the chain's words
+     * for its cause — and a question answered again after it was shown is
+     * still one the student was shown.
+     */
+    it('says how each question went, in the words the chain uses', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(FIRST_QUESTION));
+
+        // Interest rates rise: demand right, first time.
+        press('Demand for A$', 'ArrowRight', 5);
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+        // Prices rise faster here: supply left (wrong), then right.
+        press('Supply of A$', 'ArrowLeft', 3);
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Try again' }));
+        press('Supply of A$', 'ArrowRight', 8);
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+        // China buys less ore: shown.
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Show me' }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+        // Australians spend less overseas: supply left, first time.
+        press('Supply of A$', 'ArrowLeft', 5);
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+        expect(recap()).toBeTruthy();
+        const read = () => cases().map(item => [
+            item.querySelector('h4')!.textContent,
+            item.querySelector('[data-how]')!.textContent
+        ]);
+        expect(read()).toEqual([
+            ['Interest rates rise', 'Right first time'],
+            ['Prices rise faster in Australia', 'Right on the second go'],
+            ['China buys less iron ore', 'You used Show me'],
+            ['Australians spend less overseas', 'Right first time']
+        ]);
+        expect(cases()[0].textContent).toContain('Demand for A$ increases');
+        expect(cases()[3].textContent).toContain('Supply of A$ decreases');
+        expect(within(recap()!).getByText(/more demand or less supply and the A\$ appreciates/)).toBeTruthy();
+
+        // Back to the question that was shown, and right this time.
+        const shown = FX_LESSON.findIndex(step => step.title === 'China buys less iron ore') + 1;
+        await user.click(marker(shown));
+        press('Demand for A$', 'ArrowLeft', 5);
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(marker(FX_LESSON.length));
+        expect(read()[2]).toEqual(['China buys less iron ore', 'You used Show me']);
+    });
+});
+
 describe('what the lesson says the A$ is worth', () => {
 
     it('opens at A$1 = US$0.65, with the US$ side still to come', () => {

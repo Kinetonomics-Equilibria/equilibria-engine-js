@@ -26,7 +26,9 @@ const STEPS: LessonStep[] = [
 /** The narrowest question P11 will grade: a param and a direction. */
 const ASK = { param: 'a', direction: 'up' } as const;
 
-const at = (position: number, resolved: number[] = []): TrackState => ({ position, resolved });
+const at = (position: number, resolved: number[] = []): TrackState => ({ position, resolved, outcomes: {} });
+
+const FIRST = { how: 'first' } as const;
 
 describe('where the position may go', () => {
 
@@ -125,14 +127,27 @@ describe('a question stops the track', () => {
     });
 
     it('releases the track once the question is answered', () => {
-        const answered = trackReducer(at(2), { type: 'resolve', index: 1 }, QUIZ);
+        const answered = trackReducer(at(2), { type: 'resolve', index: 1, outcome: FIRST }, QUIZ);
         expect(answered.resolved).toEqual([1]);
         expect(trackReducer(answered, { type: 'next' }, QUIZ).position).toBe(3);
     });
 
     it('does not record an answer twice', () => {
-        const once = trackReducer(at(2), { type: 'resolve', index: 1 }, QUIZ);
-        expect(trackReducer(once, { type: 'resolve', index: 1 }, QUIZ)).toBe(once);
+        const once = trackReducer(at(2), { type: 'resolve', index: 1, outcome: FIRST }, QUIZ);
+        expect(trackReducer(once, { type: 'resolve', index: 1, outcome: FIRST }, QUIZ)).toBe(once);
+    });
+
+    it('records how the question went', () => {
+        const shown = trackReducer(at(2), { type: 'resolve', index: 1, outcome: { how: 'shown' } }, QUIZ);
+        expect(shown.outcomes[1]).toEqual({ how: 'shown' });
+    });
+
+    // A student who was shown the answer, went back and then got it right was
+    // still shown it: the recap says how the question first went.
+    it('keeps the first outcome when a question is answered again', () => {
+        const shown = trackReducer(at(2), { type: 'resolve', index: 1, outcome: { how: 'shown' } }, QUIZ);
+        const again = trackReducer(shown, { type: 'resolve', index: 1, outcome: FIRST }, QUIZ);
+        expect(again.outcomes[1]).toEqual({ how: 'shown' });
     });
 
     // A track with no questions never stops, which is what makes free
@@ -195,6 +210,11 @@ describe('what covers the stage', () => {
 
     it('is the cover before the first step, when the lesson has one', () => {
         expect(slideAt(STEPS, 0, true)).toEqual({ kind: 'cover' });
+    });
+
+    it('is the recap at a step that looks back', () => {
+        const steps: LessonStep[] = [{ ask: ASK }, { recap: { takeaway: 'The rule.' } }];
+        expect(slideAt(steps, 2, true)).toEqual({ kind: 'recap', takeaway: 'The rule.' });
     });
 
     it('is the picture at a step that shows one, and nothing at a step that does not', () => {

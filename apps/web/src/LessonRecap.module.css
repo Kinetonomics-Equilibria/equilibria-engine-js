@@ -1,0 +1,114 @@
+/* The recap: one card per question, two to a line where the sheet is wide
+ * enough to read two, and the rule they add up to under them. */
+
+.recap {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 10px 16px 20px;
+}
+
+.cases {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+}
+
+@container (min-width: 600px) {
+    .cases {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* Each question on a card of its own inside the sheet: a hairline, no shadow,
+ * because the sheet is already the paper and these are only its sections. */
+.case {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--mantine-color-default-border);
+    border-radius: 8px;
+}
+
+.title {
+    margin: 0;
+    font-size: var(--mantine-font-size-md);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+/* The cause, marked as "What changed" marks it: a ring in the colour of the
+ * curve it moved, the words beside it in the text's colour — a curve's colour
+ * is a line's colour, and orange words on white would not be read. */
+.clause {
+    --marker: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: var(--mantine-font-size-sm);
+    font-weight: 600;
+}
+
+.clause::before {
+    content: '';
+    flex: none;
+    width: var(--marker);
+    height: var(--marker);
+    border: 2px solid var(--curve, light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2)));
+    border-radius: 50%;
+    background: var(--mantine-color-body);
+}
+
+.explain {
+    margin: 0;
+    font-size: var(--mantine-font-size-sm);
+    line-height: 1.5;
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+/* How it went. A right answer in the teal right answers have on this screen;
+ * a shown one in grey, which is no verdict at all — the student asked to see
+ * it, and saw it. */
+.outcome {
+    align-self: flex-start;
+    margin-top: auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: var(--mantine-font-size-xs);
+    font-weight: 600;
+}
+
+.outcome[data-how='first'],
+.outcome[data-how='retry'] {
+    background: light-dark(var(--mantine-color-teal-0), rgba(18, 184, 134, 0.12));
+    color: light-dark(var(--mantine-color-teal-9), var(--mantine-color-teal-3));
+}
+
+.outcome[data-how='shown'] {
+    background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+/* The rule, as the reasoning callout: what every case above was an instance of. */
+.takeaway {
+    composes: callout why from './ui/callout.module.css';
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.takeawayLabel {
+    composes: label from './ui/callout.module.css';
+}
+
+.takeawayText {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+}

@@ -27,8 +27,8 @@ attention on finding things.
    piece of information goes on the card whose question it answers. If it
    answers none of them, it is a new card — or it is not needed. Before the
    first step the stage answers *what is this lesson about?*, on a cover over
-   the diagram (P15); the words of a step are never on the stage, which shows
-   what the diagram would have.
+   the diagram, and at the end *how did I go?*, on a recap (P15); the words of
+   a step are never on the stage, which shows what the diagram would have.
 
 2. **Cause above effect, everywhere.** The side column reads top to bottom in
    the order a student works: where they are, what they can move, what moving
@@ -66,8 +66,8 @@ attention on finding things.
    | Blue (primary) | You can act here; where you are | buttons, links, the current step |
    | Light blue | A word to learn | key-term callouts |
    | Yellow | A question waiting for you | the question callout, its progress marker, the cover's bars for a question |
-   | Teal | The reasoning | "Why" after a question; a right answer |
-   | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts |
+   | Teal | The reasoning | "Why" after a question; a right answer, in a verdict and in the recap; the recap's takeaway |
+   | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts; an answer the student was shown, in the recap |
    | The curves' colours | The market itself | the diagram, the slider that moves each curve, and the chain's markers for what moved and the curves it moved |
 
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
@@ -145,6 +145,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Prompt list | `dock/Explore.tsx` | Suggestions under a "Try this" eyebrow, with hollow markers: things to do, not tasks to tick. |
 | Stage sheet | `StageSheet.tsx` | A sheet over the whole stage, for a moment with no diagram to show: paper, inset by the stage's own margin (`STAGE_PAD`), with the card head and a body that scrolls. The stage stays mounted under it, inert and at its size. |
 | Picture sheet | `PictureSheet.tsx` | A step's picture on a stage sheet, as large as the sheet allows and never cropped, with Pause/Play in the head when it moves. Pausing shows its still; reduced motion starts there. |
+| Recap | `LessonRecap.tsx` | The lesson's questions looked back over: a card each with its title, its cause marked in its curve's colour, its explanation and how it went; then the takeaway in the `why` callout. Presentational — the screen builds the cases. |
 | Track bars | `ui/track.module.css` `.bar` | A step drawn as a bar, yellow when it asks a question. The cover's parts use it; the lesson card's markers restate it, because a `::before` cannot compose. |
 
 Compose rather than copy: `composes: paper from './ui/paper.module.css';` at the
@@ -167,6 +168,7 @@ change:
 | step `term` | The lesson card | A word, and what it means, the first time it is used. |
 | `cover` | The stage, before the first step | A question the lesson answers, one line ending "?", and a hook of one short paragraph. Not the lesson's title over again. |
 | step `picture` | The stage, at that step | A key in `pictures`. The step's words stay on the card and say what the picture is for; the step draws nothing on the diagram under it. |
+| step `recap.takeaway` | The recap, under the cases | The rule every question was an instance of, in one paragraph. Said here and not on the card as well. |
 | `pictures` | The cover, and steps that show one | An imported image file, its name in a few words, and alt text that says what it shows. Anything that moves has a `still`. |
 
 Every field is optional. Without words a clause is shown by its label, as the

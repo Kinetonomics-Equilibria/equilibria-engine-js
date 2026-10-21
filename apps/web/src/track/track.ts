@@ -109,6 +109,16 @@ export interface LessonStep extends StepDefinition {
      * checks the names in `reveal`.
      */
     picture?: string;
+
+    /**
+     * This step looks back over the lesson's questions, on the stage: each
+     * one, what it turned on, and how the student did — then `takeaway`, the
+     * rule the questions were all instances of, said once.
+     *
+     * For the step that ends a lesson's questions, so it comes after them, and
+     * like a picture step it asks nothing of the diagram under it.
+     */
+    recap?: { takeaway: string };
 }
 
 /** One control a step hands the student: which param, and what to call it. */
@@ -122,15 +132,33 @@ export interface TrackState {
     position: number;
     /** Indices of `ask` steps that have been answered. */
     resolved: number[];
+    /**
+     * How each answered question went, by its step's index, for the recap.
+     *
+     * The first answer, kept: a student who goes back to a question they were
+     * shown and answers it is not recorded as having got it right first time.
+     * For this session only, like the attempt it is read from — there is still
+     * no progress model to keep it in.
+     */
+    outcomes: Record<number, Outcome>;
 }
+
+/**
+ * How a question was finished: right at the first commit, right after `goes`
+ * commits, or shown the answer.
+ */
+export type Outcome =
+    | { how: 'first' }
+    | { how: 'retry'; goes: number }
+    | { how: 'shown' };
 
 export type TrackAction =
     | { type: 'goTo'; position: number }
     | { type: 'next' }
     | { type: 'back' }
-    | { type: 'resolve'; index: number };
+    | { type: 'resolve'; index: number; outcome: Outcome };
 
-export const AT_START: TrackState = { position: 0, resolved: [] };
+export const AT_START: TrackState = { position: 0, resolved: [], outcomes: {} };
 
 /** What a step does, for the marker that stands for it. */
 export type StepKind = 'reveal' | 'set' | 'say' | 'try' | 'ask';
@@ -186,7 +214,11 @@ export function trackReducer(state: TrackState, action: TrackAction, steps: Less
 
         case 'resolve':
             if (state.resolved.indexOf(action.index) > -1) return state;
-            return { ...state, resolved: state.resolved.concat(action.index).sort((a, b) => a - b) };
+            return {
+                ...state,
+                resolved: state.resolved.concat(action.index).sort((a, b) => a - b),
+                outcomes: { ...state.outcomes, [action.index]: action.outcome }
+            };
 
         default:
             return state;
@@ -305,19 +337,21 @@ export function partCounts(steps: LessonStep[], part: LessonPart): {
  * the diagram waits under it, mounted and exactly the size it was. Before the
  * first step that is the lesson's cover — the axes the stage would otherwise
  * show there are an empty frame, which says nothing about what is coming. At a
- * step that names a picture, it is the picture.
+ * step that names a picture, it is the picture; at a recap, the recap.
  *
  * Null while the student is exploring is the caller's business, not this
  * function's: it knows the track, not which tab is open.
  */
 export type Slide =
     | { kind: 'cover' }
-    | { kind: 'picture'; picture: string };
+    | { kind: 'picture'; picture: string }
+    | { kind: 'recap'; takeaway: string };
 
 export function slideAt(steps: LessonStep[], position: number, hasCover: boolean): Slide | null {
     if (position === 0) return hasCover && steps.length > 0 ? { kind: 'cover' } : null;
     const step = steps[position - 1];
     if (step && step.picture) return { kind: 'picture', picture: step.picture };
+    if (step && step.recap) return { kind: 'recap', takeaway: step.recap.takeaway };
     return null;
 }
 
