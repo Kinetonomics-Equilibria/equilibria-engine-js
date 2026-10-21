@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     AT_START, trackReducer, maxPosition, isBlocked, stepKinds,
-    paramsAt, paramsBetween, sayAt, revealedPanels
+    paramsAt, paramsBetween, sayAt, revealedPanels, partsOf, partCounts, slideAt
 } from '../track/track';
 import type { LessonStep, TrackState } from '../track/track';
 
@@ -188,5 +188,40 @@ describe('what a step is', () => {
         expect(sayAt(STEPS, 0)).toBeNull();
         expect(sayAt(STEPS, 1)).toBe('Demand slopes down.');
         expect(sayAt(STEPS, 2)).toBeNull();
+    });
+});
+
+describe('what covers the stage', () => {
+
+    it('is the cover before the first step, when the lesson has one', () => {
+        expect(slideAt(STEPS, 0, true)).toEqual({ kind: 'cover' });
+    });
+
+    it('is nothing once the lesson has started, or when there is no cover', () => {
+        expect(slideAt(STEPS, 1, true)).toBeNull();
+        expect(slideAt(STEPS, 0, false)).toBeNull();
+        expect(slideAt([], 0, true)).toBeNull();
+    });
+});
+
+describe('how long a part is', () => {
+
+    const PARTED: LessonStep[] = [
+        { part: 'Meet it', say: 'One.' },
+        { say: 'Two.' },
+        { part: 'Your turn', ask: ASK },
+        { ask: ASK },
+        { say: 'Off you go.' }
+    ];
+
+    it('counts a part in steps, and one that asks in questions', () => {
+        const [first, second] = partsOf(PARTED);
+        expect(partCounts(PARTED, first)).toMatchObject({ steps: 2, questions: 0 });
+        expect(partCounts(PARTED, second)).toMatchObject({ steps: 3, questions: 2 });
+    });
+
+    it("gives each step's kinds, so the cover draws the part as the track will", () => {
+        const second = partsOf(PARTED)[1];
+        expect(partCounts(PARTED, second).kinds).toEqual([['ask'], ['ask'], ['say']]);
     });
 });

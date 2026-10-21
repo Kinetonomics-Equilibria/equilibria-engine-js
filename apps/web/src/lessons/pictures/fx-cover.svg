@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1012" height="400" viewBox="0 0 1012 400">
+  <!-- The exchange-rate lesson's cover: an ore carrier leaving an Australian
+       port, a plane overhead. Exports and travel, the two things the lesson's
+       first steps say the world buys A$ for. Flat shapes in the screen's
+       slate and a muted terracotta for the ore, so nothing here borrows a
+       curve's colour (docs/design.md: colour means one thing). -->
+  <rect width="1012" height="400" fill="#eef4fb"/>
+  <circle cx="812" cy="112" r="56" fill="#ffe8cc"/>
+  <path d="M600 284 C 690 252, 770 262, 850 240 C 920 222, 975 232, 1012 226 L1012 300 L600 300 Z" fill="#dbe7f3"/>
+  <line x1="246" y1="96" x2="560" y2="126" stroke="#c9d8e8" stroke-width="3" stroke-dasharray="12 10" stroke-linecap="round"/>
+  <g fill="#334e68">
+    <path d="M176 92 L236 92 Q246 92 246 98 Q246 104 236 104 L176 104 Q168 98 176 92 Z"/>
+    <path d="M204 98 L222 76 L231 76 L220 98 Z"/>
+    <path d="M206 100 L224 120 L233 120 L222 100 Z"/>
+    <path d="M234 93 L242 80 L249 80 L245 95 Z"/>
+  </g>
+  <rect y="292" width="1012" height="108" fill="#cfe0f1"/>
+  <g stroke="#334e68" stroke-linecap="round">
+    <line x1="872" y1="300" x2="872" y2="166" stroke-width="6"/>
+    <line x1="846" y1="172" x2="980" y2="172" stroke-width="6"/>
+    <line x1="944" y1="172" x2="944" y2="226" stroke-width="2"/>
+  </g>
+  <rect x="934" y="226" width="20" height="10" rx="2" fill="#334e68"/>
+  <path d="M890 292 Q 940 236 1000 292 Z" fill="#c8693b"/>
+  <rect x="840" y="290" width="172" height="12" fill="#334e68"/>
+  <path d="M244 278 L640 278 L612 322 L282 322 Z" fill="#243b53"/>
+  <rect x="270" y="300" width="356" height="5" fill="#9fb3c8"/>
+  <g fill="#c8693b">
+    <path d="M300 278 Q 336 244 372 278 Z"/>
+    <path d="M384 278 Q 420 240 456 278 Z"/>
+    <path d="M468 278 Q 500 248 532 278 Z"/>
+  </g>
+  <rect x="548" y="218" width="68" height="60" rx="3" fill="#f8f9fa" stroke="#243b53" stroke-width="3"/>
+  <rect x="556" y="230" width="52" height="10" rx="2" fill="#243b53"/>
+  <rect x="574" y="192" width="18" height="26" fill="#243b53"/>
+  <g fill="none" stroke="#b6cfe8" stroke-width="3" stroke-linecap="round">
+    <path d="M120 340 q 14 -8 28 0 t 28 0"/>
+    <path d="M700 352 q 14 -8 28 0 t 28 0"/>
+    <path d="M430 372 q 14 -8 28 0 t 28 0"/>
+    <path d="M240 330 L654 330"/>
+  </g>
+</svg>

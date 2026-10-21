@@ -1,0 +1,162 @@
+# P15 — The stage, when it isn't a chart
+
+**Lane:** app + bindings ·
+**Depends on:** P7 (the stage), P10 (one timeline), P11 (the attempt loop), P14 (which curve moves) ·
+**Unblocks:** lessons that teach with a picture as well as a diagram ·
+**Status:** 🚧 **In progress** — phase 1 (the cover) landed 2026-10-21; phases 2–4 to follow, each
+its own commit.
+
+## Goal
+
+Let a lesson put something other than a diagram on the stage, in four places and no more:
+
+1. **A cover**, before the first step, in place of the empty axes the stage showed there.
+2. **A picture step**: one step shows a picture or an animation across the whole stage. Its words
+   stay on the lesson card.
+3. **A recap**, at the last step: each question the lesson asked, and how the student did.
+4. **A picture beside the diagram**: during a question, a news clipping joins the stage's
+   arrangement as a panel of its own — on the rail, promotable, travelling like the US$ panel —
+   while the diagram stays workable.
+
+## Why this shape
+
+Before this, everything on the stage was a panel the engine drew, so a lesson could only teach by
+moving curves, and before "Start lesson" it showed a pair of labelled axes with nothing in them —
+the first thing a student saw of a lesson said nothing about it. The mockups ("Stage beyond
+charts") tried the four ideas against the screen's own rules (docs/design.md), and the shape here
+is what survived that:
+
+- **The words keep their home.** A step's words are on the lesson card; the stage gets the picture.
+  Nothing a step says is said twice. The cover is the one place with prose on the stage, because
+  before the first step there is no step to say it.
+- **Covers, pictures and recaps lie *over* the stage, not instead of it.** At those moments there
+  is no diagram worth arranging, and the engine's always-present panels (the market's frame) cannot
+  be "un-arrived". So a sheet lies over the stage while the stage stays mounted, inert and at its
+  size: the step after finds the engine, its `prev` snapshot and its box exactly as they were, and
+  nothing on the screen resizes.
+- **The clipping is a real panel.** It answers a different question from the diagram (*what
+  happened?*) and has to be read beside it while the student works, which is what the rail is for.
+  Being a panel gets it the arrangement, promotion, the 300ms travel and the phone's shelf for free
+  — but the stage could only arrange engine panels, so this is the one phase that changes
+  `packages/react`.
+
+## Read against the code (2026-10-21)
+
+- **Hiding the stage with `visibility: hidden` would have broken seven Playwright waits** —
+  `page.locator('.kg-container svg').waitFor()` waits for *visible*, at `fx.spec.ts:148`,
+  `app.spec.ts:154`, `:636`, `:693` and more, and `scripts/screenshot.mjs:71`, all at the start
+  where the cover is up. An opaque sheet laid over the stage, with the stage `inert`, breaks none
+  of them: Playwright's visibility is about boxes, not occlusion.
+- **New step fields are safe on the engine's step objects.** The engine only checks `reveal` names
+  (`packages/engine/src/ts/KGAuthor/parsers/steps.ts:133`) and ignores keys it does not know, so
+  `picture`, `aside` and `recap` ride on `LessonStep` beside `say` and `ask`. They must never go in
+  `reveal`, which would warn and fail `lessons.test.ts`'s "reveals only things that exist".
+- **The stage's panel list comes only from the config's `CustomLayout`** (`Stage.tsx:166`), and
+  every entry becomes an engine `Graph` that needs axes. `stageConfig` is rebuilt whenever that list
+  changes — a rebuild is a new model, which forgets `prev`. So a panel the app draws has to be
+  arranged without ever being part of the engine's key list (phase 4).
+- **Nothing records how a question went.** `TrackState.resolved` holds indices only, and the one
+  `attempt` is deliberately not persisted (`StudyScreen.tsx:332-341`). The recap needs an outcome
+  per question, recorded where `resolve` is dispatched (phase 3).
+- **The stage's margin is a fraction of its width** (`PAD = 0.018`, `arrangement.ts:170`), which a
+  CSS padding in percent is too, on every side. Exported as `STAGE_PAD` so the cover's sheet sits
+  where a lone panel's sheet would.
+
+## Approach
+
+### Phase 1 — the cover ✅
+
+- `track.ts`: `slideAt(steps, position, hasCover)` says what covers the stage (the cover at
+  position 0, when the lesson has one); `partCounts(steps, part)` counts a part the way a student
+  would — in questions if it asks any, in steps otherwise — and gives each step's kinds.
+- `StageSheet` (new): the sheet over the stage — the page's colour round a paper sheet inset by
+  `STAGE_PAD`, the paper's head, a body that scrolls. `container-type: size`, so what it holds can
+  answer to its height.
+- `LessonCover` (new): the picture (its still, if it moves), the question as a heading, the hook,
+  and the parts as an ordered list with bars drawn like the track's (`ui/track.module.css`, which
+  `LessonCard`'s markers restate because a `::before` cannot compose). No Start button: the card
+  keeps it, and tests expect one.
+- `StudyScreen`: the stage inside `.stageLayer` (`height: 100%`, `inert` under a sheet); the sheet
+  beside it in `.stageBox` (`position: relative`); the Focus/Grid control disabled, not hidden, so
+  the title's line keeps its height. Never over the instruments.
+- Content: a cover for both lessons. The A$ one has a picture (`lessons/pictures/fx-cover.svg`, an
+  ore carrier leaving port, flat shapes in slate and a terracotta that is no curve's colour).
+
+### Phase 2 — the picture step
+
+A step names a picture; at that step the whole stage shows it, with Pause/Play when it has a still
+and reduced motion starting on the still. The A$ lesson gains a first step, "Who wants Australian
+dollars?", whose picture shows exports leaving Australia and A$ coming back.
+
+### Phase 3 — the recap
+
+`TrackState.outcomes` records how each question went (right first time, right after N goes, or
+shown), first write wins. A step marked `recap: { takeaway }` shows each question's title, the
+cause in its curve's colour, its explanation and the outcome, then the takeaway.
+
+### Phase 4 — the picture beside the diagram
+
+`Stage` gains `hostPanels` and `renderPanel`: panels the app draws, arranged after the diagram's,
+given no engine params, and drawn in a layer between the canvas and the chrome. The A$ lesson's
+first question shows its news report there.
+
+## API / schema surface
+
+```ts
+// packages/react — arrangement.ts / index.ts
+export const STAGE_PAD = PAD;                                      // NEW (phase 1)
+
+// apps/web — lessons/content.ts
+interface StudyContent {
+    cover?: LessonCover;                                           // NEW (phase 1)
+    pictures?: Record<string, Picture>;                            // NEW (phase 1)
+}
+interface LessonCover { question: string; hook: string; picture?: string }   // NEW
+interface Picture { name: string; src: string; alt: string; still?: string } // NEW
+
+// apps/web — track/track.ts
+type Slide = { kind: 'cover' };                                    // NEW; grows a kind per phase
+function slideAt(steps, position, hasCover): Slide | null;         // NEW
+function partCounts(steps, part): { steps; questions; kinds };     // NEW
+```
+
+## Tests
+
+Phase 1:
+
+- `track.test.ts` — what covers the stage, and how a part is counted.
+- `lessons.test.ts` — every lesson's cover asks its question in a line ending "?", at most 60
+  characters, not containing the lesson's title; its hook is one paragraph of at most 220; every
+  picture named exists, and has a name and alt text.
+- `lesson.test.tsx` — the cover stands in for the empty diagram, with the stage inert and Grid
+  disabled; it lays out three parts, the last counted in questions; it gives way at the first step
+  and comes back before it; it is never over the instruments.
+- `foreignExchange.test.tsx` — the A$ cover's picture, question, and parts as the track will draw
+  them.
+- `app.spec.ts` — the cover is up at the start; Tab never stops inside the stage under it; the
+  diagram's box is the same before and after Start.
+- `fx.spec.ts` — the cover's parts row, with its question bars the very yellow of the track's
+  question markers.
+
+## Risks and unknowns
+
+- A phone's stage is short; the cover drops its picture below 460px of sheet height and shrinks its
+  type below 480px of width, rather than scrolling the question away.
+- `inert` is not enforced by jsdom, so the keyboard claims are Playwright's.
+
+## Done when
+
+- [x] Phase 1: the cover, both lessons — unit, screen and browser tests above, all green.
+- [ ] Phase 2: the picture step.
+- [ ] Phase 3: the recap.
+- [ ] Phase 4: the picture beside the diagram.
+
+## Out of scope
+
+- A cover or picture that plays sound, or video. A picture is an image file.
+- Mini charts and before→after numbers in the recap (the mockup drew both).
+- Remembering outcomes across sessions: there is still no progress model.
+
+## Findings
+
+Filled in as each phase lands.

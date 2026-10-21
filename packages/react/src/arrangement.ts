@@ -170,6 +170,18 @@ export const FILMSTRIP_BELOW_PX = 900;
 const PAD = 0.018;
 const GAP = 0.018;
 
+/**
+ * The margin between the stage's edge and its panels, as a fraction of the
+ * stage's width.
+ *
+ * Exported for a host that lays something of its own over the whole stage —
+ * a sheet that stands in for the diagram while there is no diagram to show —
+ * and wants its edges where a lone panel's sheet would be. A CSS padding in
+ * percent is a fraction of the width on every side, which is exactly what this
+ * is, so `calc(STAGE_PAD * 100%)` is the stage's own margin.
+ */
+export const STAGE_PAD = PAD;
+
 /** The rail's share of the stage width. */
 const RAIL_FRACTION = 0.2;
 

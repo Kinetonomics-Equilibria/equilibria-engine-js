@@ -37,6 +37,7 @@ describe('public API', () => {
             'MODE_PARAM',
             'MODE_VALUE',
             'REVEALED_PARAM',
+            'STAGE_PAD',
             'Stage',
             'arrange',
             'layoutParams',

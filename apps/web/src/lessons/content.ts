@@ -30,6 +30,24 @@ export interface StudyContent {
     intro: string;
 
     /**
+     * What the stage shows before the first step, in place of an empty frame.
+     *
+     * The lesson card says what the student will be able to do (`goals`); the
+     * cover says why they would want to — a question the lesson answers, and a
+     * sentence or two that makes it a real one. Optional: without it the stage
+     * shows the diagram's frame, as it always did.
+     */
+    cover?: LessonCover;
+
+    /**
+     * The lesson's pictures, by name, for the cover and the steps that show one.
+     *
+     * Image files imported by the lesson, so a missing one fails the build
+     * rather than showing a broken image to a class.
+     */
+    pictures?: Record<string, Picture>;
+
+    /**
      * What the student will be able to do by the end, for the lesson card's
      * first page: three short lines, said before the first step, so the steps
      * that follow have somewhere to go.
@@ -123,6 +141,35 @@ export interface ParamWords extends Reading {
      * moves, so every one of them should be drawn in it.
      */
     curve?: string;
+}
+
+/** The stage before the lesson starts. See `StudyContent.cover`. */
+export interface LessonCover {
+    /** The question the lesson answers, as its headline: one line, ending in "?". */
+    question: string;
+    /** Why it is worth asking: one short paragraph, in the lesson's own voice. */
+    hook: string;
+    /** A key in `StudyContent.pictures`, drawn across the top of the cover. */
+    picture?: string;
+}
+
+/**
+ * A picture a lesson shows: an image file, and what it shows in words.
+ *
+ * `alt` is not optional. A picture on the stage stands where the diagram would
+ * be, and a student who cannot see it is owed what it says.
+ *
+ * `still` is a frame of a picture that moves — an animated SVG or GIF, which
+ * an `<img>` cannot pause. Pause swaps it in, and a student who has asked for
+ * less motion sees it first, so anything that moves for more than a few
+ * seconds has a way to stop.
+ */
+export interface Picture {
+    /** What it is, in a few words: the head of the sheet it is shown on. */
+    name: string;
+    src: string;
+    alt: string;
+    still?: string;
 }
 
 export interface PanelSpec {

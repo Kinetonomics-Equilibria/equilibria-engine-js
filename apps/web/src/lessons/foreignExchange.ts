@@ -2,6 +2,7 @@ import type { LessonStep } from '../track/track';
 import type { Scenario } from '../dock/Scenarios';
 import { explainable } from './content';
 import type { StudyContent } from './content';
+import coverPicture from './pictures/fx-cover.svg';
 
 /**
  * The market for the Australian dollar, for Australian students.
@@ -560,6 +561,21 @@ export const FOREIGN_EXCHANGE: StudyContent = {
         'Why the A$ rises and falls against the US$',
         'Four real-world cases to work out yourself'
     ],
+    cover: {
+        question: 'Why does the Australian dollar rise and fall?',
+        hook: 'Every time the world buys Australian iron ore, a degree or a week on the Gold ' +
+            'Coast, someone has to buy A$ to pay for it. Follow those trades and you can work ' +
+            'out which way the A$ moves when the news changes.',
+        picture: 'cover'
+    },
+    pictures: {
+        cover: {
+            name: 'An ore carrier leaving port',
+            src: coverPicture,
+            alt: 'An ore carrier loaded with iron ore leaving an Australian port, with a ' +
+                'plane flying overhead.'
+        }
+    },
     diagram: fxDiagram,
     lesson: FX_LESSON,
     panels: PANELS,

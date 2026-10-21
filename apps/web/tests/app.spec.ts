@@ -636,7 +636,8 @@ test('a panel that has not arrived is neither drawn nor reachable', async ({ pag
     await page.locator('.kg-container svg').waitFor();
 
     // Nothing to promote, because nothing else is on the stage; and the market
-    // panel is drawn as a frame with nothing in it yet.
+    // panel is drawn as a frame with nothing in it yet — under the lesson's
+    // cover, which is over the stage until the first step.
     await expect(page.locator('[aria-label^="Show "]')).toHaveCount(0);
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(0);
 
@@ -705,6 +706,38 @@ test('before the lesson begins, nothing offers a curve to drag', async ({ page }
     await expect(page.getByText('Press Start lesson when you\'re ready.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
     expect(await page.locator(`${STRIP} [role="status"]`).textContent()).toBe('');
+});
+
+/**
+ * The cover, over the diagram rather than instead of it (P15).
+ *
+ * The diagram stays mounted under the cover at its size, so the first step
+ * finds the stage exactly as big as it was: a cover that took the stage's place
+ * would make Start lesson resize the diagram the student is about to work on.
+ * And what is under the cover is unreachable, by the pointer and by Tab — a
+ * promote button nobody can see is a trap for a keyboard.
+ */
+test('before the lesson begins, a cover stands in for the empty diagram', async ({ page }) => {
+    await page.goto('/');
+    const svg = page.locator('.kg-container svg');
+    await svg.waitFor();
+
+    const cover = page.getByRole('region', { name: 'About this lesson' });
+    await expect(cover).toBeVisible();
+    await expect(cover.getByRole('heading', { name: 'Why do prices go up and down?' })).toBeVisible();
+    const under = (await svg.boundingBox())!;
+
+    // Every stop Tab makes from the top of the page is outside the stage.
+    const inStage: boolean[] = [];
+    for (let i = 0; i < 25; i++) {
+        await page.keyboard.press('Tab');
+        inStage.push(await page.evaluate(() => !!document.activeElement?.closest('[inert]')));
+    }
+    expect(inStage.filter(Boolean)).toHaveLength(0);
+
+    await page.getByRole('button', { name: 'Start lesson' }).click();
+    await expect(cover).toHaveCount(0);
+    expect(await svg.boundingBox()).toEqual(under);
 });
 
 test('the narration narrates once per interaction, not once per frame', async ({ page }) => {

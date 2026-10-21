@@ -83,6 +83,8 @@ const PARAGRAPHS = 2;
 const PARAGRAPH_CHARACTERS = 220;
 /** An explanation is shown under a verdict, in a smaller box than the step's words. */
 const EXPLAIN_CHARACTERS = 200;
+/** A cover's question is its headline: one line at a laptop's stage width. */
+const COVER_QUESTION_CHARACTERS = 60;
 
 describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" lesson', (_id, lesson) => {
 
@@ -168,6 +170,30 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     it('says what the student will learn, before the first step', () => {
         expect(lesson.goals.length).toBeGreaterThanOrEqual(2);
         expect(lesson.goals.length).toBeLessThanOrEqual(4);
+    });
+
+    // The cover is read once, by someone deciding whether to start: a question
+    // on a line, and a paragraph no longer than one of a step's. It must not
+    // say the lesson's title over again — the title is over the stage already,
+    // and a heading containing it is a second heading by that name.
+    it('asks its question on the cover in a line, and says why in a paragraph', () => {
+        if (!lesson.cover) return;
+        const { question, hook } = lesson.cover;
+        expect(question.endsWith('?'), question).toBe(true);
+        expect(question.length, question).toBeLessThanOrEqual(COVER_QUESTION_CHARACTERS);
+        expect(question.indexOf(lesson.title), question).toBe(-1);
+        expect(hook.split(/\n\s*\n/).length, hook).toBe(1);
+        expect(hook.length, hook).toBeLessThanOrEqual(PARAGRAPH_CHARACTERS);
+    });
+
+    it('shows only pictures it has, and says what each one shows', () => {
+        const pictures = lesson.pictures || {};
+        const named = lesson.cover && lesson.cover.picture ? [lesson.cover.picture] : [];
+        named.forEach(key => expect(pictures[key], `the cover shows "${key}"`).toBeDefined());
+        Object.keys(pictures).forEach(key => {
+            expect(pictures[key].alt.trim(), `"${key}" has no alt text`).toBeTruthy();
+            expect(pictures[key].name.trim(), `"${key}" has no name`).toBeTruthy();
+        });
     });
 
     it('asks only questions a student can answer, about params it can draw', () => {

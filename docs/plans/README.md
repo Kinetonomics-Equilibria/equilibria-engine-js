@@ -43,6 +43,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P12](P12-refusals-that-speak.md) | Refusals that speak ✅ **done** | engine | P5, P6 |
 | [P13](P13-ghost-authoring-shorthand.md) | `ghost:` authoring shorthand ✅ **done** | bindings | P5, P6 |
 | [P14](P14-which-curve-moves.md) | Which curve moves, and showing a direction-only answer ✅ **done** | app | P11, the A$ lesson |
+| [P15](P15-the-stage-beyond-charts.md) | The stage, when it isn't a chart: a cover, pictures, a recap 🚧 **in progress** | app + bindings | P7, P10, P11, P14 |
 
 Both of the plans that were only outlines inside P5 have now been written out and landed: P12, and
 P13, which was the last of them.

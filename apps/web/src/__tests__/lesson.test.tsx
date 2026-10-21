@@ -87,6 +87,50 @@ async function pastTheQuestion(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole('button', { name: 'Show me' }));
 }
 
+/** The sheet over the stage before the first step, if it is up. */
+const cover = () => screen.queryByRole('region', { name: 'About this lesson' });
+
+describe('the cover', () => {
+
+    // Before the first step the diagram is an empty frame, which says nothing
+    // about what is coming; the cover says what the lesson asks, and how long
+    // it is. The diagram is still there under it, inert, at its size.
+    it('stands in for the empty diagram until the lesson starts', () => {
+        mount();
+        const sheet = cover()!;
+        expect(within(sheet).getByRole('heading', { name: 'Why do prices go up and down?' })).toBeTruthy();
+        expect(document.querySelector('.kg-container')!.closest('[inert]')).toBeTruthy();
+        expect(screen.getByRole('radio', { name: 'Grid' })).toHaveProperty('disabled', true);
+    });
+
+    it("lays out the lesson's parts the way the track will", () => {
+        mount();
+        const parts = within(within(cover()!).getByRole('list', { name: "The lesson's parts" }))
+            .getAllByRole('listitem').map(item => item.textContent);
+        expect(parts).toHaveLength(3);
+        expect(parts[parts.length - 1]).toMatch(/1 question$/);
+    });
+
+    it('gives way to the diagram at the first step, and comes back before it', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(next());
+        expect(cover()).toBeNull();
+        expect(document.querySelector('[inert]')).toBeNull();
+
+        await user.click(screen.getByRole('button', { name: 'Back' }));
+        expect(cover()).toBeTruthy();
+    });
+
+    it('is never over the instruments', async () => {
+        const user = userEvent.setup();
+        mount();
+        await open(user, 'Explore');
+        expect(cover()).toBeNull();
+        expect(document.querySelector('[inert]')).toBeNull();
+    });
+});
+
 describe('the lesson or the instruments', () => {
 
     it('opens on the lesson, with no instruments beside it', () => {

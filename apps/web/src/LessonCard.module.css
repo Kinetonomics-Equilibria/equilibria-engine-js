@@ -92,6 +92,10 @@
     background: light-dark(var(--mantine-color-yellow-4), var(--mantine-color-yellow-8));
 }
 
+/* The bar and the question's yellow above are `.bar` in ui/track.module.css,
+ * restated because a pseudo-element cannot compose: the cover draws the same
+ * bars, and the two should be changed together. */
+
 /* A step already passed: a pale blue on white, a dim one on the dark page —
  * either way well short of the current step's. */
 .marker:where([data-reached='true'])::before {

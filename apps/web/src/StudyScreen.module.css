@@ -18,10 +18,19 @@
 .stageBox {
     flex: 1;
     min-height: 0;
+    /* What a sheet over the stage (StageSheet) is placed against. */
+    position: relative;
     /* No padding for the furniture the engine draws outside the panels: the
      * stage keeps that room inside the canvas now, measured in pixels for the
      * level each panel draws at, so "Q" under a lone panel has its room without
      * this box guessing at it. */
+}
+
+/* The stage, the box's whole height, whether or not a sheet is over it: the
+ * stage measures what it renders, and it has to measure the same box under a
+ * sheet as without one, or the step after a cover would resize the diagram. */
+.stageLayer {
+    height: 100%;
 }
 
 /* The card each panel sits on, drawn under the diagram by the stage's backdrop

@@ -18,8 +18,10 @@ import { NarrationCard } from './NarrationCard';
 import { QuestionRow } from './QuestionRow';
 import { TryRow } from './TryRow';
 import { LessonCard, LessonResume } from './LessonCard';
+import { LessonCover } from './LessonCover';
+import { StageSheet } from './StageSheet';
 import {
-    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, trackReducer, tryAt
+    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer, tryAt
 } from './track/track';
 import type { LessonQuestion, TrackState } from './track/track';
 import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
@@ -1412,6 +1414,27 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const exploring = pane === 'explore';
 
     /**
+     * What covers the stage, if anything: the lesson's cover, before the first
+     * step.
+     *
+     * Never while exploring, where the diagram is the whole point. The stage
+     * stays mounted under it, made inert so that neither the keyboard nor the
+     * pointer can reach a diagram nobody can see — its promote buttons included
+     * — and kept at its size, so the step after finds the engine as it left it.
+     */
+    const slide = exploring ? null : slideAt(steps, track.position, !!content.cover);
+    const sheet = slide && slide.kind === 'cover' && content.cover ? (
+        <StageSheet label="About this lesson" eyebrow={`${content.label} · ${steps.length} steps`}>
+            <LessonCover
+                cover={content.cover}
+                picture={content.cover.picture && content.pictures
+                    ? content.pictures[content.cover.picture] : undefined}
+                steps={steps}
+            />
+        </StageSheet>
+    ) : null;
+
+    /**
      * A tab pressed beside the stage. Between two instruments it changes only
      * which is open. Into the lesson's or out of it, it is the lesson taken up
      * again or put away — the same moves as Resume and Finish, so the diagram
@@ -1475,8 +1498,12 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                     <Group justify="space-between" wrap="nowrap">
                         <Title order={2} size="h4">{content.title}</Title>
                         <Group gap="xs" wrap="nowrap">
+                            {/* Disabled under a sheet, where there is nothing to
+                              * arrange — and not hidden, so the title's line
+                              * keeps its height and the stage its size. */}
                             <SegmentedControl
                                 size="xs"
+                                disabled={!!sheet}
                                 value={mode}
                                 onChange={value => setMode(value as StageMode)}
                                 data={[{ label: 'Focus', value: 'focus' }, { label: 'Grid', value: 'grid' }]}
@@ -1503,25 +1530,28 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 </Stack>
 
                 <div className={classes.stageBox}>
-                    <Stage
-                        config={config}
-                        focused={focused}
-                        revealed={revealed}
-                        mode={mode}
-                        onPromote={promote}
-                        renderChrome={chrome}
-                        renderBackdrop={sheetBehind}
-                        chromeRoom={CHROME_ROOM}
-                        promoteLabel={key => {
-                            const declared = panels.filter(p => p.key === key)[0];
-                            return `Show ${declared ? declared.name : key}`;
-                        }}
-                        onParamChanged={onParamChanged}
-                        onParamBlocked={onParamBlocked}
-                        onCurveDragged={onCurveDragged}
-                        onReady={onReady}
-                        onError={error => console.error('Equilibria failed to mount:', error)}
-                    />
+                    <div className={classes.stageLayer} inert={!!sheet}>
+                        <Stage
+                            config={config}
+                            focused={focused}
+                            revealed={revealed}
+                            mode={mode}
+                            onPromote={promote}
+                            renderChrome={chrome}
+                            renderBackdrop={sheetBehind}
+                            chromeRoom={CHROME_ROOM}
+                            promoteLabel={key => {
+                                const declared = panels.filter(p => p.key === key)[0];
+                                return `Show ${declared ? declared.name : key}`;
+                            }}
+                            onParamChanged={onParamChanged}
+                            onParamBlocked={onParamBlocked}
+                            onCurveDragged={onCurveDragged}
+                            onReady={onReady}
+                            onError={error => console.error('Equilibria failed to mount:', error)}
+                        />
+                    </div>
+                    {sheet}
                 </div>
 
                 {/* Under the diagram, never moving, where there is no column

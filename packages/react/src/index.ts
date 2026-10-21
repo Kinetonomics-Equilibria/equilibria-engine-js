@@ -14,7 +14,7 @@ export { KG_EVENTS, KG_CONTAINER_CLASS } from 'equilibria-engine-js';
 // an app can compute a panel's box without rendering one.
 export {
     arrange, layoutParams, rectParamName, toCustomLayout, pixelBox, revealedCount,
-    FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
+    FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM, STAGE_PAD
 } from './arrangement';
 
 // Types

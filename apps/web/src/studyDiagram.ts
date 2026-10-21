@@ -150,7 +150,9 @@ const axes = () => ({
  *
  * The market panel's frame is not revealed by any step, so it is there from the
  * start: the lesson draws *into* a pair of labelled axes rather than beginning
- * with a blank rectangle. The other two panels are revealed by their key, which
+ * with a blank rectangle. Before the first step those axes are under the
+ * lesson's cover (`SUPPLY_AND_DEMAND.cover`), so the first thing a student sees
+ * of the diagram is the frame the first step draws into. The other two panels are revealed by their key, which
  * takes their axes and axis titles with them — the whole point being that the
  * second panel arrives as an event with a sentence attached, rather than
  * sitting there from the first frame waiting to be explained.

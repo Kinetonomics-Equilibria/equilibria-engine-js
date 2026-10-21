@@ -153,6 +153,23 @@ test('opens the A$ lesson from its address', async ({ page }) => {
     await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toHaveAttribute('aria-current', 'page');
 });
 
+// The cover's parts are the track's parts, drawn the same way: a student who
+// has read "3 · Your turn" in yellow knows what the yellow markers are.
+test('opens on a cover that lays out the lesson', async ({ page }) => {
+    const cover = page.getByRole('region', { name: 'About this lesson' });
+    await expect(cover).toBeVisible();
+    await expect(cover.getByRole('img')).toBeVisible();
+    const parts = cover.getByRole('list', { name: "The lesson's parts" }).getByRole('listitem');
+    await expect(parts).toHaveCount(3);
+    await expect(parts.last()).toContainText('4 questions');
+
+    const yellow = await parts.last().locator('[data-kinds~="ask"]').first()
+        .evaluate(el => getComputedStyle(el).backgroundColor);
+    const marker = await page.locator('button[data-kinds~="ask"]').first()
+        .evaluate(el => getComputedStyle(el, '::before').backgroundColor);
+    expect(yellow).toBe(marker);
+});
+
 test('draws both currencies in one engine', async ({ page, pageErrors }) => {
     await toTheEnd(page);
 

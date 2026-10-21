@@ -261,6 +261,45 @@ export function partAt(parts: LessonPart[], position: number): { part: LessonPar
     return null;
 }
 
+/**
+ * How long a part is, said the way a student would count it.
+ *
+ * A part that asks questions is counted in questions, because that is what it
+ * will ask of them — "Your turn" is four cases to work out, and the step after
+ * them that sends the student on is not a fifth. Every other part is counted in
+ * steps. `kinds` is each step's, for a cover that draws the part the way the
+ * lesson card's track will.
+ */
+export function partCounts(steps: LessonStep[], part: LessonPart): {
+    steps: number; questions: number; kinds: StepKind[][];
+} {
+    const inPart = steps.slice(part.first - 1, part.last);
+    return {
+        steps: inPart.length,
+        questions: inPart.filter(step => !!step.ask).length,
+        kinds: inPart.map(stepKinds)
+    };
+}
+
+/**
+ * What covers the stage, when something does.
+ *
+ * Most of a lesson is the diagram, and this is the exception: a moment when
+ * there is no diagram worth looking at, so the stage shows something else and
+ * the diagram waits under it, mounted and exactly the size it was. Before the
+ * first step that is the lesson's cover — the axes the stage would otherwise
+ * show there are an empty frame, which says nothing about what is coming.
+ *
+ * Null while the student is exploring is the caller's business, not this
+ * function's: it knows the track, not which tab is open.
+ */
+export type Slide = { kind: 'cover' };
+
+export function slideAt(steps: LessonStep[], position: number, hasCover: boolean): Slide | null {
+    if (position === 0 && hasCover && steps.length > 0) return { kind: 'cover' };
+    return null;
+}
+
 /** The question the track is stopped on, or null. */
 export function askAt(steps: LessonStep[], position: number): LessonQuestion | null {
     const step = steps[position - 1];

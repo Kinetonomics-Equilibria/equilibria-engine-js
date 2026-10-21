@@ -25,7 +25,10 @@ attention on finding things.
    saying?*; the instruments, *what can I change?*; "What changed", *what did
    that do?*; each panel's sheet, *what does this market look like now?* A new
    piece of information goes on the card whose question it answers. If it
-   answers none of them, it is a new card — or it is not needed.
+   answers none of them, it is a new card — or it is not needed. Before the
+   first step the stage answers *what is this lesson about?*, on a cover over
+   the diagram (P15); the words of a step are never on the stage, which shows
+   what the diagram would have.
 
 2. **Cause above effect, everywhere.** The side column reads top to bottom in
    the order a student works: where they are, what they can move, what moving
@@ -62,7 +65,7 @@ attention on finding things.
    | --- | --- | --- |
    | Blue (primary) | You can act here; where you are | buttons, links, the current step |
    | Light blue | A word to learn | key-term callouts |
-   | Yellow | A question waiting for you | the question callout, its progress marker |
+   | Yellow | A question waiting for you | the question callout, its progress marker, the cover's bars for a question |
    | Teal | The reasoning | "Why" after a question; a right answer |
    | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts |
    | The curves' colours | The market itself | the diagram, the slider that moves each curve, and the chain's markers for what moved and the curves it moved |
@@ -140,6 +143,8 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine. Rendered from `narrate()`; decides nothing. |
 | Action row | `dock/Scenarios.tsx` | Something to press that needs its reason beside it: the name, the reasoning under it, an arrow — all one button. |
 | Prompt list | `dock/Explore.tsx` | Suggestions under a "Try this" eyebrow, with hollow markers: things to do, not tasks to tick. |
+| Stage sheet | `StageSheet.tsx` | A sheet over the whole stage, for a moment with no diagram to show: paper, inset by the stage's own margin (`STAGE_PAD`), with the card head and a body that scrolls. The stage stays mounted under it, inert and at its size. |
+| Track bars | `ui/track.module.css` `.bar` | A step drawn as a bar, yellow when it asks a question. The cover's parts use it; the lesson card's markers restate it, because a `::before` cannot compose. |
 
 Compose rather than copy: `composes: paper from './ui/paper.module.css';` at the
 top of a card's class, then only what is particular to that card.
@@ -159,6 +164,8 @@ change:
 | `explorePrompts` | "Try this" | Two or three open questions, each answerable with the controls on screen. |
 | `scenarios[].description` | Scenarios | The reasoning: who needs A$ or sells them, so which curve, which way. |
 | step `term` | The lesson card | A word, and what it means, the first time it is used. |
+| `cover` | The stage, before the first step | A question the lesson answers, one line ending "?", and a hook of one short paragraph. Not the lesson's title over again. |
+| `pictures` | The cover, and steps that show one | An imported image file, its name in a few words, and alt text that says what it shows. Anything that moves has a `still`. |
 
 Every field is optional. Without words a clause is shown by its label, as the
 first version of the screen did, so a lesson can gain them one at a time.

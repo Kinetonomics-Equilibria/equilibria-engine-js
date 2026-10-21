@@ -1,0 +1,23 @@
+/* A step of the lesson, drawn as a bar: the lesson card's progress track, and
+ * anything else that draws the lesson's shape — the cover's parts row.
+ *
+ * One look for both, so a student who has read the cover's bars recognises the
+ * track they are about to move along: the same grey, the same height, and the
+ * same yellow for a question, which is the colour questions have everywhere on
+ * this screen (docs/design.md).
+ *
+ * The lesson card's markers draw this bar as a `::before` on a button, which
+ * cannot `compose` a class, so LessonCard.module.css restates the two rules
+ * below. Change one, change both. */
+
+.bar {
+    flex: 1 1 0;
+    min-width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.bar:where([data-kinds~='ask']) {
+    background: light-dark(var(--mantine-color-yellow-4), var(--mantine-color-yellow-8));
+}

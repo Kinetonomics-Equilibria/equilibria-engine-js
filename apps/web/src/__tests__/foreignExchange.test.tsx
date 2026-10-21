@@ -42,6 +42,13 @@ const caption = (panel: 'market' | 'mirror') => {
     return node ? node.textContent || '' : '';
 };
 
+/** The cover's parts row: each part's name and how it is counted. */
+const FX_PARTS = [
+    ['1 · Meet the market', '4 steps'],
+    ['2 · When the A$ moves', '5 steps'],
+    ['3 · Your turn', '4 questions']
+];
+
 /** The first question: the RBA, and demand for A$. */
 const FIRST_QUESTION = FX_LESSON.findIndex(step => !!step.ask) + 1;
 
@@ -102,6 +109,24 @@ function drawnCurves() {
             };
         });
 }
+
+describe('the cover', () => {
+
+    // The parts are counted the way a student will meet them: the last part
+    // asks four questions, and the step after them that sends the student on
+    // is not counted as a fifth.
+    it('shows its picture, its question, and its parts as the track will draw them', () => {
+        mount();
+        const sheet = screen.getByRole('region', { name: 'About this lesson' });
+        expect(within(sheet).getByRole('img').getAttribute('alt')).toMatch(/ore carrier/);
+        expect(within(sheet).getByRole('heading', { name: /rise and fall\?$/ })).toBeTruthy();
+        const parts = within(within(sheet).getByRole('list')).getAllByRole('listitem');
+        expect(parts.map(part => part.textContent)).toEqual(
+            FX_PARTS.map(([name, count]) => name + count)
+        );
+        expect(parts[parts.length - 1].querySelectorAll('[data-kinds~="ask"]')).toHaveLength(4);
+    });
+});
 
 describe('what the lesson says the A$ is worth', () => {
 

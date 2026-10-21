@@ -22,6 +22,11 @@ export const SUPPLY_AND_DEMAND: StudyContent = {
         'What changes when demand rises',
         'One change to work out yourself'
     ],
+    cover: {
+        question: 'Why do prices go up and down?',
+        hook: 'Nobody sets most prices. They settle where what buyers want meets what sellers ' +
+            'will sell, and when either side changes the price moves, and with it who gains.'
+    },
     diagram: studyDiagram,
     lesson: LESSON as LessonStep[],
     panels: PANELS,
