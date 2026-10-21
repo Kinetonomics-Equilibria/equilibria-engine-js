@@ -18,6 +18,8 @@ export interface LabelDefinition extends GraphObjectDefinition {
     position?: string;
     /** What kind of chrome this label is; see `AXIS_TITLE` in graphObjects/axis.ts. */
     furniture?: string;
+    /** Drawn on the other side of its anchor when this side runs off the plot. */
+    flipToFit?: boolean;
 }
 
 export class Label extends GraphObject {

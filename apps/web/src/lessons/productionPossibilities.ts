@@ -514,6 +514,10 @@ const legLabel = (
     type: 'Label',
     def: {
         name, title: '', x, y, text, plainText: true, ...place,
+        // To the other side of its anchor when this side runs off the plot:
+        // the coffees label to the right of its leg when B is at the coffees
+        // axis, or a label at the far end of the toasties axis to its left.
+        flipToFit: true,
         color: 'colors.choice',
         show: `(${SHOW_CHOICES}) and calcs.gain ${rightwards ? '>' : '<'} 0`
     }

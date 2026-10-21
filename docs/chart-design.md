@@ -315,7 +315,10 @@ For all three:
 - One idea each, and no more than three at once on top of the curve and point
   labels. A lesson brings each one in at the step that explains it.
 - Never over the point or curve the student is dragging, and never off the
-  plot, at any position the sliders allow.
+  plot, at any position the sliders allow. A label beside its anchor
+  (`position: 'l'` or `'r'`, or aligned left or right) that could be pushed off
+  the plot takes `flipToFit: true`: the engine draws it on the other side of
+  its anchor whenever this side would run off.
 - The only arrow is the engine's shift arrow, which a point's `ghost: true`
   draws from where it was to where it is. Don't draw decorative arrows.
 
@@ -419,8 +422,5 @@ Currency codes (A$, US$) are fine: that is how money is written.
 Each line is a place where a chart in the repo breaks a rule above. Fix it, or
 write down in the config why it stays, then delete the line here.
 
-**Production possibilities** (`apps/web/src/lessons/productionPossibilities.ts`)
-
-- With B left of A and near the coffees axis, the "+40 coffees" label on the
-  step's upright leg runs off the left of the plot, over the axis title. It is
-  placed to the left of the leg for every position of B (`costLeft`).
+None at the moment. When a chart has to break a rule, add a line here naming
+the chart, the rule, and where the reason is written down.

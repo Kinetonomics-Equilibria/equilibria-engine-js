@@ -32,6 +32,11 @@ export interface LabelDefinition extends ViewObjectDefinition {
     yieldsTo?: string;
     /** What kind of chrome this label is; see `AXIS_TITLE` in KGAuthor/graphObjects/axis.ts. */
     furniture?: string;
+    /**
+     * For a label beside its anchor, left- or right-aligned: drawn on the
+     * other side of it when this side would take it off the plot. See `position`.
+     */
+    flipToFit?: boolean;
 }
 
 /** How finely `slide` looks along a curve before narrowing down on the edge. */
@@ -101,6 +106,7 @@ export class Label extends ViewObject {
     private y: number;
     private text: string;
     private plainText: boolean;
+    private flipToFit: boolean;
     private fontSize: any;
     private xPixelOffset: number;
     private yPixelOffset: number;
@@ -184,7 +190,7 @@ export class Label extends ViewObject {
         // length. The browser discarded the declaration and the label rendered
         // at whatever size it inherited, with nothing anywhere saying so. As an
         // updatable it evaluates, and `redraw()` applies it.
-        setProperties(def, 'constants', ['xPixelOffset', 'yPixelOffset', 'plainText']);
+        setProperties(def, 'constants', ['xPixelOffset', 'yPixelOffset', 'plainText', 'flipToFit']);
         setProperties(def, 'updatables', ['x', 'y', 'text', 'align', 'valign', 'rotate', 'color', 'bgcolor', 'fontSize']);
 
         // Built before `super`, as `Curve` builds its own, so it registers with
@@ -497,7 +503,18 @@ export class Label extends ViewObject {
         return label.position(x, y, width, height);
     }
 
-    /** Put the box at an anchor, honouring the alignment. */
+    /**
+     * Put the box at an anchor, honouring the alignment.
+     *
+     * A `flipToFit` label that is beside its anchor, and would run off the plot
+     * on that side, is drawn on the other: alignment and offset mirrored about
+     * the anchor. On the café's PPC the coffees label beside the step's upright
+     * leg stood to the left of it, which with B at the coffees axis put it
+     * across the axis and its title. Whether it fits is a matter of pixels, so
+     * it is decided here, where the label's width is known, and not by the
+     * author in units of the diagram. Where neither side fits, the side that
+     * runs off by less.
+     */
     private position(x: number, y: number, width: number, height: number) {
         const label = this;
         // Set left pixel margin; default to centered on x coordinate
@@ -508,7 +525,14 @@ export class Label extends ViewObject {
             // move left by half the width of the div if right aligned
             alignDelta = width;
         }
-        label.rootElement.style('left', (x - alignDelta) + 'px');
+        let left = x - alignDelta;
+        if (label.flipToFit && (label.align == 'left' || label.align == 'right')) {
+            const [x0, x1] = label.xScale.scale.range(),
+                over = (l: number) => Math.max(0, Math.min(x0, x1) - l) + Math.max(0, l + width - Math.max(x0, x1)),
+                mirrored = x - 2 * (+label.xPixelOffset) - (label.align == 'left' ? width : 0);
+            if (over(mirrored) < over(left)) left = mirrored;
+        }
+        label.rootElement.style('left', left + 'px');
 
         // Set top pixel margin; default to centered on y coordinate
         let vAlignDelta = height * 0.5;
