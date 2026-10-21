@@ -1,29 +1,16 @@
-/* Styles for the DoubleNavbar, ported from the Mantine UI recipe of the same
- * name (ui.mantine.dev/component/double-navbar).
+/* Styles for the DoubleNavbar: the icon rail, and the panel that comes out
+ * beside it.
  *
- * Two changes from the original, both because the navbar now lives inside an
- * `AppShell.Navbar` rather than standing on its own:
- *
- *  - the fixed `width: 300px` / `height: 750px` are gone. AppShell owns the
- *    navbar's box — its width comes from the `navbar.width` config in App.tsx,
- *    which is what lets the second column collapse.
- *  - the outer `border-right` is gone too: `AppShell.Navbar` already draws one
- *    (its `withBorder` default), and two would render as a double line.
+ * The rail is ported from the Mantine UI recipe of the same name
+ * (ui.mantine.dev/component/double-navbar), less its fixed width and height —
+ * AppShell owns the navbar's box, and its width comes from App.tsx — and less
+ * its outer `border-right`, which `AppShell.Navbar` already draws.
  */
 
 .navbar {
     height: 100%;
+    display: flex;
     background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
-    display: flex;
-    flex-direction: column;
-}
-
-.wrapper {
-    display: flex;
-    flex: 1;
-    /* Without this a tall link list stretches the flex item instead of
-     * scrolling inside `.main`. */
-    min-height: 0;
 }
 
 .aside {
@@ -35,26 +22,15 @@
     border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
 }
 
-.main {
-    flex: 1;
-    min-width: 0;
-    overflow-y: auto;
-    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
-}
-
-/* The collapse. Below `sm` the whole navbar is a full-width overlay driven by
- * the header's burger, so hiding the second column there would leave a 60px
- * rail stranded across the viewport — the collapse is a desktop affordance
- * only, and the button that drives it is `visibleFrom="sm"` to match.
- *
- * `$mantine-breakpoint-sm` is supplied by postcss-simple-vars (see
- * postcss.config.js) and is Mantine's default `sm`, the same value passed as
- * `navbar.breakpoint` in App.tsx. Both must name the same breakpoint: the
- * media query hides this column, and AppShell narrows the navbar around it. */
-@media (min-width: $mantine-breakpoint-sm) {
-    .wrapper[data-collapsed] .main {
-        display: none;
-    }
+.logo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px;
+    color: var(--mantine-color-blue-filled);
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
+    margin-bottom: var(--mantine-spacing-xl);
 }
 
 .mainLink {
@@ -79,60 +55,151 @@
     }
 }
 
-/* Applied alongside `.mainLink`, so the toggle looks like the icons above it.
- * `margin-top: auto` pushes it to the foot of the rail, where it sits in the
- * same place whether the second column is open or shut. */
-.collapseLink {
-    margin-top: auto;
-    margin-bottom: var(--mantine-spacing-md);
-}
+/* ---- The panel ---------------------------------------------------------- */
 
-.title {
-    margin-bottom: var(--mantine-spacing-xl);
+/* Below `sm` the navbar is the burger's full-width overlay, and the panel
+ * simply fills it beside the rail. */
+.panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     background-color: var(--mantine-color-body);
-    padding: var(--mantine-spacing-md);
-    font-weight: 500;
-    padding-top: 18px;
-    height: 60px;
-    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
 }
 
-.logo {
-    width: 100%;
+/* Above it the navbar is the rail alone, and the panel floats over the page
+ * beside it: lifted off the stage rather than narrowing it, so bringing it out
+ * does not lay the diagram out again. Not modal — no overlay, no focus trap —
+ * because it is a way to leave the page, not a dialog about it.
+ *
+ * Absolute against `AppShell.Navbar`, which is fixed, so `100%` is the rail's
+ * right edge.
+ *
+ * `$mantine-breakpoint-sm` is supplied by postcss-simple-vars (see
+ * postcss.config.js), and must name the breakpoint the `floats` query in
+ * DoubleNavbar.tsx and `navbar.breakpoint` in App.tsx both name. */
+@media (min-width: $mantine-breakpoint-sm) {
+    .panel {
+        position: absolute;
+        left: calc(100% + var(--mantine-spacing-xs));
+        top: var(--mantine-spacing-xs);
+        bottom: var(--mantine-spacing-xs);
+        width: 300px;
+        border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+        border-radius: var(--mantine-radius-lg);
+        box-shadow: light-dark(0 4px 20px rgba(0, 0, 0, 0.12), 0 4px 20px rgba(0, 0, 0, 0.5));
+    }
+}
+
+.header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 60px;
-    color: var(--mantine-color-blue-filled);
-    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-7));
-    margin-bottom: var(--mantine-spacing-xl);
+    justify-content: space-between;
+    gap: var(--mantine-spacing-xs);
+    padding: var(--mantine-spacing-sm) var(--mantine-spacing-sm) var(--mantine-spacing-xs);
 }
 
-.link {
-    display: block;
-    text-decoration: none;
-    border-top-right-radius: var(--mantine-radius-md);
-    border-bottom-right-radius: var(--mantine-radius-md);
-    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
-    padding: 0 var(--mantine-spacing-md);
-    font-size: var(--mantine-font-size-sm);
-    margin-right: var(--mantine-spacing-md);
-    font-weight: 500;
-    height: 44px;
-    line-height: 44px;
-    white-space: nowrap;
+/* The only part that scrolls; the header stays put.
+ *
+ * `scrollbar-gutter: stable` because opening a topic is what tips the list into
+ * overflowing, and without a gutter kept for it the scrollbar arrives at that
+ * moment and every row jumps inward. */
+.body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding: 0 var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+}
+
+/* The heading over a strand's topics. */
+.groupLabel {
+    padding: var(--mantine-spacing-sm) var(--mantine-spacing-xs) 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ---- Rows --------------------------------------------------------------- */
+
+/* A topic. The whole row is its button: a topic has no page of its own, so
+ * there is nothing for the label to do but drop the lessons down.
+ *
+ * `--topic-*` are set on the wrapper round the row and its lessons, from the
+ * topic's colour. */
+.topic {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px var(--mantine-spacing-xs);
+    border-radius: var(--mantine-radius-md);
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
 
     &:hover {
         background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
-        color: light-dark(var(--mantine-color-dark), var(--mantine-color-light));
+    }
+
+    /* The topic the open lesson is in, lit whether it is open or shut, so the
+     * panel says where the student is before anything is dropped down. */
+    &[data-active] {
+        &,
+        &:hover {
+            background-color: var(--topic-tint);
+            color: var(--topic-ink);
+        }
+    }
+}
+
+.dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--topic-color);
+}
+
+.topicLabel {
+    flex: 1;
+    min-width: 0;
+}
+
+.chevron {
+    flex: none;
+    color: var(--mantine-color-dimmed);
+    transition: transform 150ms ease;
+
+    &[data-opened] {
+        transform: rotate(90deg);
+    }
+}
+
+.lessons {
+    padding: 2px 0 4px;
+}
+
+/* A lesson, its text lined up with its topic's name past the dot: the row's
+ * padding, the dot, and the gap after it. */
+.link {
+    display: block;
+    text-decoration: none;
+    padding: 5px var(--mantine-spacing-xs) 5px calc(var(--mantine-spacing-xs) + 16px);
+    border-radius: var(--mantine-radius-md);
+    font-size: var(--mantine-font-size-sm);
+    color: var(--mantine-color-dimmed);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+        color: var(--mantine-color-text);
     }
 
     &[data-active] {
         &,
         &:hover {
-            border-left-color: var(--mantine-color-blue-filled);
-            background-color: var(--mantine-color-blue-filled);
-            color: var(--mantine-color-white);
+            color: var(--topic-ink);
+            font-weight: 600;
         }
     }
 }

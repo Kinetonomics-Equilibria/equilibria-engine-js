@@ -155,6 +155,7 @@ test.beforeEach(async ({ page }) => {
 
 test('opens the A$ lesson from its address', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();
+    await page.getByRole('button', { name: 'Lessons' }).click();
     await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toHaveAttribute('aria-current', 'page');
 });
 
@@ -484,6 +485,9 @@ test('"Show me" draws demand for A$ shifted ten to the right', async ({ page, pa
  * name for the history.
  */
 test('a change of shape keeps the last move: its ghost, its deltas and its chain', async ({ page }) => {
+    // Narrower than the suite's own size, which puts the stage under the
+    // filmstrip breakpoint.
+    await page.setViewportSize({ width: 1200, height: 900 });
     await toTheEnd(page);
     await expect(page.locator('[data-role="strip"]')).toHaveCount(1);
     const curves = await page.locator(RENDERED.visibleCurve).count();
@@ -517,10 +521,10 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
         await expect(page.locator('.kg-container svg[data-witness="1"]'), `${where}: the same diagram`).toHaveCount(1);
     };
 
-    // Across the filmstrip breakpoint, as the navbar's second column folds away.
-    await page.getByRole('button', { name: 'Hide links' }).click();
+    // Across the filmstrip breakpoint, as the window widens.
+    await page.setViewportSize({ width: 1440, height: 900 });
     await expect(page.locator('[data-role="rail"]')).toHaveCount(1);
-    await remembered('navbar folded, rail');
+    await remembered('a wider window, rail');
 
     // And a change of proportions that crosses nothing.
     await page.setViewportSize({ width: 1440, height: 760 });
@@ -611,16 +615,36 @@ test('on a phone the report is captioned by its headline, and read once brought 
     await expect.poll(() => textCollisions(page)).toEqual([]);
 });
 
-test('the navbar moves between lessons, and the back button returns', async ({ page }) => {
-    await page.getByRole('link', { name: 'Supply and demand' }).click();
+test('the Lessons panel moves between lessons, and the back button returns', async ({ page }) => {
+    const lessons = page.getByRole('button', { name: 'Lessons' });
+    const market = page.getByRole('link', { name: 'Supply and demand' });
+
+    // Put away until the rail brings it out, and out on the open lesson's topic.
+    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toHaveCount(0);
+    await lessons.click();
+    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toBeVisible();
+    await expect(market).toHaveCount(0);
+
+    // Another topic drops down to its own lessons.
+    await page.getByRole('button', { name: 'Markets', exact: true }).click();
+    await market.click();
     await expect(page.getByRole('heading', { name: 'A market, and what it does to everything else' }))
         .toBeVisible();
     expect(new URL(page.url()).searchParams.get('lesson')).toBe('market');
 
-    // Choosing a lesson puts the list away, and the rail's toggle brings it back.
-    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toBeHidden();
-    await page.getByRole('button', { name: 'Show links' }).click();
-    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toBeVisible();
+    // Choosing a lesson puts the panel away, and the rail brings it back, out
+    // on the topic of the lesson just chosen.
+    await expect(market).toBeHidden();
+    await lessons.click();
+    await expect(market).toHaveAttribute('aria-current', 'page');
+
+    // A click anywhere else puts it away, and so does Escape.
+    await page.mouse.click(720, 8);
+    await expect(market).toBeHidden();
+    await lessons.click();
+    await expect(market).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(market).toBeHidden();
 
     await page.goBack();
     await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();

@@ -411,7 +411,9 @@ async function noTextCollides(page: Page, arrangement: string) {
 test('no text on the stage lands on other text, in any arrangement', async ({ page }) => {
     await page.getByRole('tab', { name: 'Scenarios' }).click();
 
-    // At the suite's own size the stage is under the filmstrip breakpoint.
+    // Narrower than the suite's own size, which puts the stage under the
+    // filmstrip breakpoint.
+    await page.setViewportSize({ width: 1200, height: 900 });
     await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
     await noTextCollides(page, 'focus, with a strip');
 
@@ -484,16 +486,20 @@ async function smallPanelProblems(page: Page): Promise<string[]> {
 /**
  * The small panels on a stage too narrow for a caption beside each.
  *
- * At 1024×768 with the navbar open the stage is 356px across, and the strip's
- * caption column took the whole of each slot: a sheet 30px tall holding the
- * equilibrium dot and the promote icon, with "Consumer surplus / CS $40.50"
- * across its top edge. The panels are a shelf there, captioned above their
- * glyphs, and this asks every small panel what was wrong with it — in the
- * instruments and in the lesson, with a chip and without, and with the navbar
- * folded, where there is room for a strip again.
+ * On a phone the stage is under 360px across, and the strip's caption column
+ * took the whole of each slot: a sheet 30px tall holding the equilibrium dot
+ * and the promote icon, with "Consumer surplus / CS $40.50" across its top
+ * edge. The panels are a shelf there, captioned above their glyphs, and this
+ * asks every small panel what was wrong with it — with a chip and without, and
+ * on a small laptop, where there is room for a strip again.
+ *
+ * Exploring rather than in the lesson. On a phone the lesson card goes under
+ * the diagram and leaves the stage too short for a shelf to beat a strip, and
+ * the strip's 30px sheets are back; a narrow stage with the lesson *beside* it
+ * was the navbar's open column on a small laptop, which floats now.
  */
 test('a narrow stage captions its small panels inside their sheets', async ({ page }) => {
-    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator('[data-role="shelf"]')).toHaveCount(2);
 
     const fits = async (where: string) => {
@@ -502,21 +508,20 @@ test('a narrow stage captions its small panels inside their sheets', async ({ pa
     };
     await fits('a shelf, at rest');
 
-    // The widest numbers the lesson has, each with its chip under it.
+    // The widest numbers the lesson has, each with its chip under it — chosen
+    // on a small laptop, where the instruments are beside the stage rather
+    // than a sheet over it.
+    await page.setViewportSize({ width: 1024, height: 768 });
     await page.getByRole('tab', { name: 'Scenarios' }).click();
     await page.getByRole('button', { name: 'Boom and cost squeeze' }).click();
     await expect(page.getByText(CHIP)).toHaveCount(3);
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+    await fits('a small laptop, a strip');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('[data-role="shelf"]')).toHaveCount(2);
     await fits('a shelf, with chips');
     await expect(page.locator(panel('Consumer surplus'))).toContainText('Consumer surplus');
-
-    await page.getByRole('button', { name: 'Hide links' }).click();
-    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
-    await fits('the navbar folded, a strip');
-
-    await page.getByRole('button', { name: 'Show links' }).click();
-    await backToTheLesson(page);
-    await expect(page.locator('[data-role="shelf"]')).toHaveCount(2);
-    await fits('a shelf, in the lesson');
 });
 
 /**
@@ -594,7 +599,7 @@ test('a narrow grid drops its names before its numbers', async ({ page }) => {
     // At the suite's size every grid caption has room for both.
     await expect(page.locator(panel('Consumer surplus'))).toContainText('Consumer surplus');
 
-    await page.setViewportSize({ width: 1101, height: 800 });
+    await page.setViewportSize({ width: 900, height: 800 });
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
 
     await expect(page.locator(panel('Market'))).toHaveText('P* $11.00');
@@ -630,6 +635,11 @@ test('a panel arrives without rebuilding the diagram', async ({ page }) => {
 });
 
 test('a panel that has not arrived is neither drawn nor reachable', async ({ page }) => {
+    // Under the filmstrip breakpoint, where a focal panel shares the stage's
+    // height with the strip under it. Above it the focal square is as tall as
+    // the stage either way, and alone or not it comes out the same width.
+    await page.setViewportSize({ width: 1200, height: 900 });
+
     // Before the first step, which is where a fresh load starts.
     await page.goto('/');
     await page.locator('.kg-container svg').waitFor();
@@ -1102,8 +1112,9 @@ async function frames(page: Page, count = 10) {
  * makes an ordinary change of proportions, and asks after all three every time.
  */
 test('a change of shape keeps the last move: its ghost, its deltas and its chain', async ({ page }) => {
-    // At the suite's own size, with the navbar open, the stage is under the
+    // Narrower than the suite's own size, which puts the stage under the
     // filmstrip breakpoint.
+    await page.setViewportSize({ width: 1200, height: 900 });
     await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
 
     await dragDemandDown(page);
@@ -1127,18 +1138,18 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
         await expect(page.locator('.kg-container svg[data-witness="1"]'), `${where}: the same diagram`).toHaveCount(1);
     };
 
-    // The navbar's second column folds away, the stage passes 900px, and the
-    // strip stands up beside the focal panel as a rail.
-    await page.getByRole('button', { name: 'Hide links' }).click();
+    // The window widens, the stage passes 900px, and the strip stands up beside
+    // the focal panel as a rail.
+    await page.setViewportSize({ width: 1440, height: 900 });
     await expect(page.locator('[data-role="rail"]')).toHaveCount(2);
-    await remembered('navbar folded, rail');
+    await remembered('a wider window, rail');
 
-    await page.getByRole('button', { name: 'Show links' }).click();
+    await page.setViewportSize({ width: 1200, height: 900 });
     await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
-    await remembered('navbar back, filmstrip');
+    await remembered('narrower again, filmstrip');
 
     // A shorter window: new proportions, and no breakpoint anywhere near.
-    await page.setViewportSize({ width: 1440, height: 760 });
+    await page.setViewportSize({ width: 1200, height: 760 });
     await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
     await remembered('a shorter window');
 
@@ -1161,10 +1172,13 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
  * in the stage's own resize callback lands before the browser paints.
  *
  * Read from an observer registered after the stage's and the engine's, so each
- * sample is the state the next paint shows, through every frame of the navbar
- * sliding shut.
+ * sample is the state the next paint shows, through every step of a window
+ * dragged wider across the filmstrip breakpoint.
  */
 test('the diagram and its captions change shape in the same frame', async ({ page }) => {
+    await page.setViewportSize({ width: 1200, height: 900 });
+    await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
+
     await page.evaluate(() => {
         const outer = document.querySelector('[data-testid="stage-chrome"]')!.parentElement!;
         const samples: { stage: number; canvas: number; caption: number; axis: number }[] = [];
@@ -1186,14 +1200,17 @@ test('the diagram and its captions change shape in the same frame', async ({ pag
         }).observe(outer);
     });
 
-    await page.getByRole('button', { name: 'Hide links' }).click();
+    for (let width = 1230; width <= 1440; width += 30) {
+        await page.setViewportSize({ width, height: 900 });
+        await frames(page, 2);
+    }
     await expect(page.locator('[data-role="rail"]')).toHaveCount(2);
     await frames(page);
 
     const samples = await page.evaluate(() =>
         (window as unknown as { samples: { stage: number; canvas: number; caption: number; axis: number }[] }).samples);
-    // The first is the observer's own first look; the rest are the slide.
-    expect(samples.length, 'frames of the navbar sliding shut').toBeGreaterThan(3);
+    // The first is the observer's own first look; the rest are the drag.
+    expect(samples.length, 'steps of the window widening').toBeGreaterThan(3);
     samples.forEach((s, i) => {
         expect(Math.abs(s.canvas - s.stage), `frame ${i}: canvas ${s.canvas}px in a ${s.stage}px stage`)
             .toBeLessThan(1.5);
