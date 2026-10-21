@@ -18,6 +18,13 @@
     --paper-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
+/* A word in a diagram's label (`\text{PPC}`) in the theme's font, which the
+ * engine cannot know; see kgjs-theme.css. On the container rather than :root,
+ * so it wins over the engine's default whichever stylesheet loads last. */
+.kg-container {
+    --kg-font-family: var(--mantine-font-family);
+}
+
 body {
     /* A shade darker than the sheets the diagrams sit on, so each panel reads
      * as a card of its own. The sheets are `--mantine-color-body`, the white

@@ -76,13 +76,17 @@ export type RoomByRole = Partial<Record<PanelRole, Partial<Room>>>;
  *
  * Measured on the default theme rather than derived, and rounded up a couple of
  * pixels. `full` is dominated by the axis titles, which the engine places 40px
- * past each axis (`KGAuthor/graphObjects/axis.ts`); `compact` by the tick labels
- * and a dropline's `P*`/`Q*`, which are wider than a tick; `indicator` draws no
- * text at all, only the axis line's end caps.
+ * below the x axis and 48px left of the y axis (`KGAuthor/graphObjects/axis.ts`);
+ * `compact` by the tick labels and a dropline's `P*`/`Q*`, which are wider than
+ * a tick; `indicator` draws no text at all, only the axis line's end caps.
+ *
+ * Tick numbers are 12px (`kgjs-theme.css`), and a four-character one — the A$
+ * market's "0.70" — reaches 35px out from its axis, which is what `compact`'s
+ * left is kept for.
  */
 export const FURNITURE: Record<DensityLevel, Room> = {
-    full: { top: 8, right: 8, bottom: 52, left: 52 },
-    compact: { top: 8, right: 8, bottom: 24, left: 26 },
+    full: { top: 8, right: 8, bottom: 52, left: 60 },
+    compact: { top: 8, right: 8, bottom: 26, left: 38 },
     indicator: { top: 0, right: 0, bottom: 6, left: 6 }
 };
 

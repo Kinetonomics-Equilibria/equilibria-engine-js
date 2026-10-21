@@ -13,6 +13,9 @@
     --kg-color-olive: #bcbd22;
     --kg-color-cyan: #17becf;
 
+    /* The face a word inside a label is set in. See `.katex .text` below. */
+    --kg-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+
     /* Theme layout colors */
     --kg-bg-color: transparent;
     --kg-text-color: inherit;
@@ -51,14 +54,33 @@
  * numbers lines up digit for digit. For a title only text mode moves: `.katex` is where
  * KaTeX_Main comes from, and maths inside a title keeps its own fonts, which
  * KaTeX sets by class lower down.
+ *
+ * Ticks are 12px, not the 10px d3 writes beside them: the smallest text on the
+ * chart, and the numbers a student reads every value against
+ * (docs/chart-design.md).
  */
 .kg-container g.axis {
     font-family: inherit;
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
 }
 
 .kg-axis-title .katex {
     font-family: inherit;
+}
+
+/*
+ * A word inside any other label — `\text{PPC}` on a curve — is set in the page's
+ * font as well, and its maths is not.
+ *
+ * The axis title's rule above can't do this for a curve's label: it moves
+ * everything set in KaTeX_Main, which in `\text{PPC}_0` is the subscript's 0
+ * as well, and in `P^*` the star. `.text` is the span KaTeX wraps text mode in,
+ * and only that. `inherit` there would only reach `.katex`'s own serif, so the
+ * page's font comes from a property a host sets to its own.
+ */
+.kg-container .katex .text {
+    font-family: var(--kg-font-family);
 }
 /*
  * A dragged curve takes focus, and the browser's default ring outlines the
