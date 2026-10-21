@@ -179,6 +179,27 @@ test('draws every panel in one engine', async ({ page, pageErrors }) => {
     expect(pageErrors).toEqual([]);
 });
 
+test("sets the axes in the page's font, not d3's or KaTeX's", async ({ page }) => {
+    // d3 writes font-family="sans-serif" onto every axis, and KaTeX sets an axis
+    // title's text mode in KaTeX_Main, so the tick numbers were in Helvetica and
+    // the titles in Computer Modern beside an app in system-ui. kgjs-theme.css
+    // hands both back to the page; jsdom cannot say whether that worked.
+    const fonts = await page.evaluate(() => {
+        const container = document.querySelector('.kg-container')!;
+        const tick = container.querySelector('g.axis g.tick text')!;
+        const title = container.querySelector('.kg-axis-title .mord.text')!;
+        return {
+            page: getComputedStyle(container).fontFamily,
+            tick: getComputedStyle(tick).fontFamily,
+            title: getComputedStyle(title).fontFamily,
+            figures: getComputedStyle(tick).fontVariantNumeric
+        };
+    });
+    expect(fonts.tick).toBe(fonts.page);
+    expect(fonts.title).toBe(fonts.page);
+    expect(fonts.figures).toBe('tabular-nums');
+});
+
 test('draws the focal panel in full and the rail panels as indicators', async ({ page }) => {
     // Density, seen from outside. Every panel's labels are in the DOM — hidden
     // rather than absent, which is what lets a promotion reveal them without a

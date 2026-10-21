@@ -34,6 +34,32 @@
 .kg-axis path {
     stroke: var(--kg-axis-color);
 }
+
+/*
+ * Axis text is set in the page's font.
+ *
+ * It was in two others, and neither was chosen. d3's axis writes
+ * `font-family="sans-serif"` onto every axis it draws, so the tick numbers were
+ * in the browser's generic sans — Helvetica on a Mac — beside an app in
+ * system-ui. An axis title is a KaTeX label, `\text{Coffees}`, and KaTeX sets
+ * text mode in its own `KaTeX_Main`, so `Coffees` and `Toasties` were in
+ * Computer Modern: a maths textbook's serif under a diagram whose every other
+ * word is sans.
+ *
+ * An attribute loses to any rule, so `inherit` here is enough for the ticks.
+ * Tabular figures give every digit the same width, so the y axis's column of
+ * numbers lines up digit for digit. For a title only text mode moves: `.katex` is where
+ * KaTeX_Main comes from, and maths inside a title keeps its own fonts, which
+ * KaTeX sets by class lower down.
+ */
+.kg-container g.axis {
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+}
+
+.kg-axis-title .katex {
+    font-family: inherit;
+}
 /*
  * A dragged curve takes focus, and the browser's default ring outlines the
  * element's *unclipped* bounding box.

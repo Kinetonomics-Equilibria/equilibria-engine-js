@@ -1,6 +1,7 @@
 import { setDefaults, setProperties } from "../../util";
 import { ViewObjectDefinition, ViewObject } from "./viewObject";
 import { UnivariateFunction, UnivariateFunctionDefinition } from "../../math/univariateFunction";
+import { AXIS_TITLE } from "../../KGAuthor/graphObjects/axis";
 import * as katex from "katex";
 import * as d3 from "d3";
 
@@ -28,6 +29,8 @@ export interface LabelDefinition extends ViewObjectDefinition {
     /** See `Label.labelId` and `Label.yieldsTo`. */
     labelId?: string;
     yieldsTo?: string;
+    /** What kind of chrome this label is; see `AXIS_TITLE` in KGAuthor/graphObjects/axis.ts. */
+    furniture?: string;
 }
 
 /** How finely `slide` looks along a curve before narrowing down on the edge. */
@@ -390,6 +393,8 @@ export class Label extends ViewObject {
 
         label.rootElement = container.selectAll('div.rootElement-' + label.id).data([1]).join('div')
             .attr('class', 'rootElement-' + label.id + ' draggable')
+            // Set in the page's font rather than KaTeX's; see kgjs-theme.css.
+            .classed('kg-axis-title', (label.def as LabelDefinition).furniture === AXIS_TITLE)
             .style('position', 'absolute')
             // No font-size here: it is an updatable now, and draw() runs before
             // the first update, so this would write "undefinedpt". redraw() sets it.
