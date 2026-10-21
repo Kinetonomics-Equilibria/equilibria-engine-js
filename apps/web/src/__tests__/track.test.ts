@@ -197,6 +197,12 @@ describe('what covers the stage', () => {
         expect(slideAt(STEPS, 0, true)).toEqual({ kind: 'cover' });
     });
 
+    it('is the picture at a step that shows one, and nothing at a step that does not', () => {
+        const steps: LessonStep[] = [{ picture: 'trade', say: 'Who buys.' }, { reveal: ['demand'] }];
+        expect(slideAt(steps, 1, true)).toEqual({ kind: 'picture', picture: 'trade' });
+        expect(slideAt(steps, 2, true)).toBeNull();
+    });
+
     it('is nothing once the lesson has started, or when there is no cover', () => {
         expect(slideAt(STEPS, 1, true)).toBeNull();
         expect(slideAt(STEPS, 0, false)).toBeNull();

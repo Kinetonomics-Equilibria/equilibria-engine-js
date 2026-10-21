@@ -83,6 +83,8 @@ const PARAGRAPHS = 2;
 const PARAGRAPH_CHARACTERS = 220;
 /** An explanation is shown under a verdict, in a smaller box than the step's words. */
 const EXPLAIN_CHARACTERS = 200;
+/** Alt text is read in one breath by a screen reader: what the picture shows, not all of it. */
+const ALT_CHARACTERS = 250;
 /** A cover's question is its headline: one line at a laptop's stage width. */
 const COVER_QUESTION_CHARACTERS = 60;
 
@@ -188,11 +190,38 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
 
     it('shows only pictures it has, and says what each one shows', () => {
         const pictures = lesson.pictures || {};
-        const named = lesson.cover && lesson.cover.picture ? [lesson.cover.picture] : [];
-        named.forEach(key => expect(pictures[key], `the cover shows "${key}"`).toBeDefined());
+        const named = (lesson.cover && lesson.cover.picture ? [lesson.cover.picture] : [])
+            .concat(lesson.lesson.filter(step => step.picture).map(step => step.picture!));
+        named.forEach(key => expect(pictures[key], `the lesson shows "${key}"`).toBeDefined());
         Object.keys(pictures).forEach(key => {
             expect(pictures[key].alt.trim(), `"${key}" has no alt text`).toBeTruthy();
+            expect(pictures[key].alt.length, `"${key}"'s alt text`).toBeLessThanOrEqual(ALT_CHARACTERS);
             expect(pictures[key].name.trim(), `"${key}" has no name`).toBeTruthy();
+        });
+    });
+
+    // An animated SVG or GIF cannot be paused in an <img>, so a step's picture
+    // in either format without a still may be one that moves with no way to
+    // stop it (WCAG 2.2.2). The cover shows its picture's still if it has one,
+    // and is not held to this: a cover is read, not watched.
+    it('gives every step picture that could move a still to pause on', () => {
+        const pictures = lesson.pictures || {};
+        lesson.lesson.forEach((step, i) => {
+            const picture = step.picture ? pictures[step.picture] : undefined;
+            if (picture && /\.(svg|gif)(\?|$)/i.test(picture.src)) {
+                expect(picture.still, `step ${i + 1}'s picture has no still`).toBeTruthy();
+            }
+        });
+    });
+
+    // The diagram is under the picture, so a step that shows one has nothing
+    // on the stage to draw, try or answer.
+    it('shows a picture only at a step that asks nothing of the diagram', () => {
+        lesson.lesson.forEach((step, i) => {
+            if (!step.picture) return;
+            expect(step.reveal, `step ${i + 1} reveals under its picture`).toBeUndefined();
+            expect(step.try, `step ${i + 1} offers controls under its picture`).toBeUndefined();
+            expect(step.ask, `step ${i + 1} asks under its picture`).toBeUndefined();
         });
     });
 

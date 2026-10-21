@@ -19,6 +19,7 @@ import { QuestionRow } from './QuestionRow';
 import { TryRow } from './TryRow';
 import { LessonCard, LessonResume } from './LessonCard';
 import { LessonCover } from './LessonCover';
+import { PictureSheet } from './PictureSheet';
 import { StageSheet } from './StageSheet';
 import {
     AT_START, askAt, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer, tryAt
@@ -436,6 +437,18 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     // changes, and rebuilding the diagram on every keystroke elsewhere in the
     // app would undo everything P7 does to avoid a remount.
     const config = useMemo(() => diagram, [diagram]);
+
+    // The lesson's pictures, fetched while the student reads the cover, so a
+    // picture step opens on its picture rather than on an empty sheet that
+    // fills in. Both frames of one that moves: Pause swaps to the still.
+    const pictures = content.pictures;
+    useEffect(() => {
+        Object.keys(pictures || {}).forEach(key => {
+            [pictures![key].src, pictures![key].still].forEach(src => {
+                if (src) new Image().src = src;
+            });
+        });
+    }, [pictures]);
 
     /**
      * The params the narration is allowed to talk about, and the precision it prints
@@ -1366,7 +1379,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             state={track}
             goals={content.goals}
             onGoTo={goTo}
-            onReset={frozen.length > 0 ? undefined : resetToStep}
+            onReset={frozen.length > 0 || sheet ? undefined : resetToStep}
             onLeave={leaveLesson}
         >
             {attempt ? (
@@ -1414,24 +1427,25 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const exploring = pane === 'explore';
 
     /**
-     * What covers the stage, if anything: the lesson's cover, before the first
-     * step.
+     * What covers the stage, if anything: the lesson's cover before the first
+     * step, or the picture a step shows.
      *
      * Never while exploring, where the diagram is the whole point. The stage
      * stays mounted under it, made inert so that neither the keyboard nor the
      * pointer can reach a diagram nobody can see — its promote buttons included
      * — and kept at its size, so the step after finds the engine as it left it.
+     * Unmounted rather than hidden when it goes, so a picture that moves stops.
      */
     const slide = exploring ? null : slideAt(steps, track.position, !!content.cover);
+    const pictureOf = (key: string | undefined) =>
+        key && content.pictures ? content.pictures[key] : undefined;
+    const pictured = slide && slide.kind === 'picture' ? pictureOf(slide.picture) : undefined;
     const sheet = slide && slide.kind === 'cover' && content.cover ? (
         <StageSheet label="About this lesson" eyebrow={`${content.label} · ${steps.length} steps`}>
-            <LessonCover
-                cover={content.cover}
-                picture={content.cover.picture && content.pictures
-                    ? content.pictures[content.cover.picture] : undefined}
-                steps={steps}
-            />
+            <LessonCover cover={content.cover} picture={pictureOf(content.cover.picture)} steps={steps} />
         </StageSheet>
+    ) : pictured ? (
+        <PictureSheet key={pictured.src} picture={pictured} />
     ) : null;
 
     /**
@@ -1467,9 +1481,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * to open, so neither form offers it then.
      */
     const notStarted = !exploring && track.position === 0 && steps.length > 0;
+    // Under a sheet there is no diagram to have changed, so both forms rest —
+    // a step's own `set` would otherwise be narrated over a picture of
+    // something else — and say what they are waiting for.
+    const pictureStep = !!sheet && !notStarted;
     const narration = {
-        line,
-        refusal,
+        line: sheet ? REST : line,
+        refusal: sheet ? null : refusal,
         onUndo,
         onWhy: exploring ? onWhy : undefined
     };
@@ -1559,7 +1577,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 {stacked ? (
                     <NarrationStrip
                         {...narration}
-                        restHint={notStarted ? 'Press Start lesson when you\'re ready.' : undefined}
+                        restHint={notStarted
+                            ? 'Press Start lesson when you\'re ready.'
+                            : pictureStep ? 'The diagram is back at the next step.' : undefined}
                     />
                 ) : null}
 
@@ -1588,7 +1608,10 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                         className={classes.narrationBeside}
                         restHint={notStarted
                             ? 'Start the lesson, and what each step changes will show here.'
-                            : exploring
+                            : pictureStep
+                                ? 'This step is a picture, so nothing on the diagram changes. ' +
+                                    'The diagram is back at the next step.'
+                                : exploring
                                 ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
                                 : undefined}
                     />

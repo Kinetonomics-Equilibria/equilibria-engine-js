@@ -44,7 +44,7 @@ const caption = (panel: 'market' | 'mirror') => {
 
 /** The cover's parts row: each part's name and how it is counted. */
 const FX_PARTS = [
-    ['1 · Meet the market', '4 steps'],
+    ['1 · Meet the market', '5 steps'],
     ['2 · When the A$ moves', '5 steps'],
     ['3 · Your turn', '4 questions']
 ];
@@ -125,6 +125,78 @@ describe('the cover', () => {
             FX_PARTS.map(([name, count]) => name + count)
         );
         expect(parts[parts.length - 1].querySelectorAll('[data-kinds~="ask"]')).toHaveLength(4);
+    });
+});
+
+describe('the picture step', () => {
+
+    /** A matchMedia that says the student has asked for less motion, or has not. */
+    function motion(reduced: boolean) {
+        const original = window.matchMedia;
+        window.matchMedia = ((query: string) => ({
+            matches: reduced && query.indexOf('prefers-reduced-motion') > -1,
+            media: query, onchange: null,
+            addListener: () => { }, removeListener: () => { },
+            addEventListener: () => { }, removeEventListener: () => { },
+            dispatchEvent: () => false
+        })) as unknown as typeof window.matchMedia;
+        return () => { window.matchMedia = original };
+    }
+
+    const picture = () => screen.queryByRole('region', { name: 'Who needs A$' });
+
+    it('shows who needs A$ across the stage, with the diagram under it', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(next());
+
+        const sheet = picture()!;
+        expect(within(sheet).getByRole('img').getAttribute('alt')).toMatch(/demand for A\$/);
+        expect(document.querySelector('.kg-container')!.closest('[inert]')).toBeTruthy();
+        // The step's words are the card's, and only the card's.
+        expect(words()).toContain('Who wants Australian dollars?');
+        expect(sheet.textContent).not.toContain('People overseas need A$');
+    });
+
+    it('pauses on its still, and plays again', async () => {
+        const restore = motion(false);
+        try {
+            const user = userEvent.setup();
+            mount();
+            await user.click(next());
+            const image = () => within(picture()!).getByRole('img').getAttribute('src') || '';
+
+            expect(image()).not.toMatch(/still/);
+            await user.click(screen.getByRole('button', { name: 'Pause the animation' }));
+            expect(image()).toMatch(/still/);
+            await user.click(screen.getByRole('button', { name: 'Play the animation' }));
+            expect(image()).not.toMatch(/still/);
+        } finally {
+            restore();
+        }
+    });
+
+    it('starts on its still for a student who has asked for less motion', async () => {
+        const restore = motion(true);
+        try {
+            const user = userEvent.setup();
+            mount();
+            await user.click(next());
+            expect(within(picture()!).getByRole('img').getAttribute('src')).toMatch(/still/);
+            expect(screen.getByRole('button', { name: 'Play the animation' })).toBeTruthy();
+        } finally {
+            restore();
+        }
+    });
+
+    it('gives way to the demand curve at the next step', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(next());
+        await user.click(next());
+        expect(picture()).toBeNull();
+        expect(document.querySelector('[inert]')).toBeNull();
+        expect(words()).toContain('Demand for A$ slopes down');
     });
 });
 

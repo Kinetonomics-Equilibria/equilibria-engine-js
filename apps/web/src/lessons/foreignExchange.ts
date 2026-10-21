@@ -3,6 +3,8 @@ import type { Scenario } from '../dock/Scenarios';
 import { explainable } from './content';
 import type { StudyContent } from './content';
 import coverPicture from './pictures/fx-cover.svg';
+import tradePicture from './pictures/fx-trade.svg';
+import tradeStill from './pictures/fx-trade-still.svg';
 
 /**
  * The market for the Australian dollar, for Australian students.
@@ -190,14 +192,22 @@ const BASELINE = { demand: 50, supply: 50 };
  * rate now.
  */
 export const FX_LESSON: LessonStep[] = [
+    // Who the buyers are, as a picture before they are a curve: the trades are
+    // the idea, and a line on a pair of axes is a summary of trades nobody has
+    // been shown yet. The diagram waits under the picture, and the next step
+    // draws the demand curve on it.
     {
         part: 'Meet the market',
-        reveal: ['demand_market'],
+        picture: 'trade',
         title: 'Who wants Australian dollars?',
         say: 'People overseas need A$ to pay for what Australia sells: iron ore, beef, wine, a ' +
             'degree at an Australian university, a holiday on the Gold Coast. Investors need A$ ' +
-            'to buy Australian shares and property.\n\n' +
-            'The dearer the A$, the more all of that costs them, so the fewer A$ they want. ' +
+            'to buy Australian shares and property.'
+    },
+    {
+        reveal: ['demand_market'],
+        title: 'Demand for A$ slopes down',
+        say: 'The dearer the A$, the more all of that costs them, so the fewer A$ they want. ' +
             'That\'s why the demand curve slopes down.',
         term: {
             word: 'Demand for A$',
@@ -574,6 +584,14 @@ export const FOREIGN_EXCHANGE: StudyContent = {
             src: coverPicture,
             alt: 'An ore carrier loaded with iron ore leaving an Australian port, with a ' +
                 'plane flying overhead.'
+        },
+        trade: {
+            name: 'Who needs A$',
+            src: tradePicture,
+            still: tradeStill,
+            alt: 'Iron ore, beef, wine, degrees, holidays and shares leave Australia for buyers ' +
+                'overseas, who swap US$ for A$ to pay for them. Every A$ they need is part of ' +
+                'the demand for A$.'
         }
     },
     diagram: fxDiagram,

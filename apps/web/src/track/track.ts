@@ -93,6 +93,22 @@ export interface LessonStep extends StepDefinition {
      * offers its own controls and does not need these as well.
      */
     try?: LessonTry[];
+
+    /**
+     * A picture this step shows across the whole stage, by its key in the
+     * lesson's `pictures`.
+     *
+     * For an idea a diagram cannot show — who the buyers of a currency are,
+     * and what they are buying — said in a picture while the step's words say
+     * it on the lesson card, as every step's do. The diagram waits under it,
+     * so a picture step draws nothing on it: no `reveal`, and nothing for the
+     * student to try or answer, because there is nothing on the stage to do it
+     * with.
+     *
+     * The app's, like `say`: the engine ignores keys it does not know, and only
+     * checks the names in `reveal`.
+     */
+    picture?: string;
 }
 
 /** One control a step hands the student: which param, and what to call it. */
@@ -288,15 +304,20 @@ export function partCounts(steps: LessonStep[], part: LessonPart): {
  * there is no diagram worth looking at, so the stage shows something else and
  * the diagram waits under it, mounted and exactly the size it was. Before the
  * first step that is the lesson's cover — the axes the stage would otherwise
- * show there are an empty frame, which says nothing about what is coming.
+ * show there are an empty frame, which says nothing about what is coming. At a
+ * step that names a picture, it is the picture.
  *
  * Null while the student is exploring is the caller's business, not this
  * function's: it knows the track, not which tab is open.
  */
-export type Slide = { kind: 'cover' };
+export type Slide =
+    | { kind: 'cover' }
+    | { kind: 'picture'; picture: string };
 
 export function slideAt(steps: LessonStep[], position: number, hasCover: boolean): Slide | null {
-    if (position === 0 && hasCover && steps.length > 0) return { kind: 'cover' };
+    if (position === 0) return hasCover && steps.length > 0 ? { kind: 'cover' } : null;
+    const step = steps[position - 1];
+    if (step && step.picture) return { kind: 'picture', picture: step.picture };
     return null;
 }
 

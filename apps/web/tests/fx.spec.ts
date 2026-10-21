@@ -170,6 +170,45 @@ test('opens on a cover that lays out the lesson', async ({ page }) => {
     expect(yellow).toBe(marker);
 });
 
+/**
+ * The first step's picture (P15), which moves.
+ *
+ * This suite asks for less motion (playwright.config.ts), so here the picture
+ * opens on its still with Play beside it, which is what a student who asked for
+ * that sees. Under the picture the diagram keeps its box from the cover to the
+ * curve the next step draws.
+ */
+test('the picture step starts still, for a student who asked for less motion', async ({ page }) => {
+    const svg = page.locator('.kg-container svg');
+    const under = (await svg.boundingBox())!;
+
+    await page.getByRole('button', { name: 'Start lesson' }).click();
+    const sheet = page.getByRole('region', { name: 'Who needs A$' });
+    await expect(sheet.locator('img')).toHaveAttribute('src', /still/);
+    expect(await svg.boundingBox()).toEqual(under);
+
+    await sheet.getByRole('button', { name: 'Play the animation' }).click();
+    await expect(sheet.locator('img')).not.toHaveAttribute('src', /still/);
+    await expect(sheet.getByRole('button', { name: 'Pause the animation' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(sheet).toHaveCount(0);
+    expect(await svg.boundingBox()).toEqual(under);
+});
+
+test.describe('with motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('the picture step moves, and pauses on its still', async ({ page }) => {
+        await page.getByRole('button', { name: 'Start lesson' }).click();
+        const sheet = page.getByRole('region', { name: 'Who needs A$' });
+        await expect(sheet.locator('img')).not.toHaveAttribute('src', /still/);
+
+        await sheet.getByRole('button', { name: 'Pause the animation' }).click();
+        await expect(sheet.locator('img')).toHaveAttribute('src', /still/);
+    });
+});
+
 test('draws both currencies in one engine', async ({ page, pageErrors }) => {
     await toTheEnd(page);
 

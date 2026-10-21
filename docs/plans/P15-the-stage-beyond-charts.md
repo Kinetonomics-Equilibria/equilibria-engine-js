@@ -3,8 +3,8 @@
 **Lane:** app + bindings ·
 **Depends on:** P7 (the stage), P10 (one timeline), P11 (the attempt loop), P14 (which curve moves) ·
 **Unblocks:** lessons that teach with a picture as well as a diagram ·
-**Status:** 🚧 **In progress** — phase 1 (the cover) landed 2026-10-21; phases 2–4 to follow, each
-its own commit.
+**Status:** 🚧 **In progress** — phases 1 (the cover) and 2 (the picture step) landed 2026-10-21;
+phases 3–4 to follow, each its own commit.
 
 ## Goal
 
@@ -82,11 +82,26 @@ is what survived that:
 - Content: a cover for both lessons. The A$ one has a picture (`lessons/pictures/fx-cover.svg`, an
   ore carrier leaving port, flat shapes in slate and a terracotta that is no curve's colour).
 
-### Phase 2 — the picture step
+### Phase 2 — the picture step ✅
 
-A step names a picture; at that step the whole stage shows it, with Pause/Play when it has a still
-and reduced motion starting on the still. The A$ lesson gains a first step, "Who wants Australian
-dollars?", whose picture shows exports leaving Australia and A$ coming back.
+- `LessonStep.picture` names a key in `pictures`; `slideAt` returns `{ kind: 'picture' }` at that
+  step. A picture step draws nothing on the diagram under it — no `reveal`, `try` or `ask`.
+- `PictureSheet` (new): the `StageSheet` with the picture's name as its eyebrow and, for a picture
+  with a `still`, Pause/Play in the head's action slot. Pausing is showing the still, because an
+  animated image in an `<img>` cannot be paused; playing remounts the moving one (`key`), so it
+  starts again rather than resuming wherever the browser's clock had it. Reduced motion is read
+  before the first paint (`useReducedMotion(false, { getInitialValueInEffect: false })`), so a
+  student who asked for less sees the still with not one frame moving first.
+- `StudyScreen`: the picture sheet when the slide is a picture; every picture fetched while the
+  cover is read, both frames; "What changed" rests under any sheet (`line = REST`, no refusal) —
+  the step after the picture's own `set`s would otherwise be narrated over a picture of something
+  else — and says the diagram is back at the next step; "Reset the diagram to this step" is not
+  offered under a sheet.
+- Content: the A$ lesson's first step is now "Who wants Australian dollars?" with the picture
+  `trade` (`fx-trade.svg`, and `fx-trade-still.svg`, the same drawing with the motion off): what
+  Australia sells leaving for buyers overseas, and A$ coming back in the demand curve's blue. The
+  old first step keeps the demand curve and its key term, retitled "Demand for A$ slopes down", and
+  says its second paragraph — the slope — on its own.
 
 ### Phase 3 — the recap
 
@@ -115,7 +130,8 @@ interface LessonCover { question: string; hook: string; picture?: string }   // 
 interface Picture { name: string; src: string; alt: string; still?: string } // NEW
 
 // apps/web — track/track.ts
-type Slide = { kind: 'cover' };                                    // NEW; grows a kind per phase
+interface LessonStep { picture?: string }                          // NEW (phase 2)
+type Slide = { kind: 'cover' } | { kind: 'picture'; picture: string };  // NEW; grows a kind per phase
 function slideAt(steps, position, hasCover): Slide | null;         // NEW
 function partCounts(steps, part): { steps; questions; kinds };     // NEW
 ```
@@ -138,6 +154,19 @@ Phase 1:
 - `fx.spec.ts` — the cover's parts row, with its question bars the very yellow of the track's
   question markers.
 
+Phase 2:
+
+- `track.test.ts` — the picture at a step that shows one, and nothing at a step that does not.
+- `lessons.test.ts` — every picture a step names exists, its alt text is at most 250 characters, a
+  step's SVG or GIF has a still, and a picture step reveals, offers and asks nothing.
+- `foreignExchange.test.tsx` — step 1 shows who needs A$ across the stage, the diagram inert under
+  it and the step's words only on the card; Pause shows the still and Play the animation; a
+  student who has asked for less motion starts on the still; the next step's demand curve takes
+  over.
+- `fx.spec.ts` — under the suite's reduced motion the picture opens on its still with Play, plays
+  on request, and the diagram's box is the same at the cover, the picture and the next step; with
+  motion it moves, and pauses on its still.
+
 ## Risks and unknowns
 
 - A phone's stage is short; the cover drops its picture below 460px of sheet height and shrinks its
@@ -147,7 +176,7 @@ Phase 1:
 ## Done when
 
 - [x] Phase 1: the cover, both lessons — unit, screen and browser tests above, all green.
-- [ ] Phase 2: the picture step.
+- [x] Phase 2: the picture step — tests above, all green.
 - [ ] Phase 3: the recap.
 - [ ] Phase 4: the picture beside the diagram.
 
@@ -159,4 +188,11 @@ Phase 1:
 
 ## Findings
 
-Filled in as each phase lands.
+- **A picture's own canvas decides its type size.** The first drawing of the A$ trade picture was
+  960 wide, and `object-fit: contain` drew it at three quarters of that on a laptop's stage — its
+  13px labels came out at 10. Redrawn at 760 wide, about the stage's width, it is drawn at nearly
+  its own size. On a phone it is still drawn at under half, and its labels are small; the alt text
+  says everything it shows. A picture meant for a phone as well would want a narrower drawing.
+- **Playwright finds a button's icon as an image.** A Tabler icon is an `<svg>`, which the
+  accessibility tree reports with the `img` role, so `getByRole('img')` inside the picture's sheet
+  found the picture and the Pause icon. The browser tests find the picture by its `<img>` element.

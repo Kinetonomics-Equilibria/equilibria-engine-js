@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="760" height="420" viewBox="0 100 760 420">
+  <!-- fx-trade.svg with the motion off: what the screen shows when the
+       student pauses the picture, or has asked for less motion. The same
+       drawing, so swapping one for the other moves nothing but the goods and
+       the coins — change both together.
+
+       760 wide, about the width of a laptop's stage, so the screen draws it
+       at nearly its own size and a 13px label stays 13px.
+
+       The coins are the demand curve's blue (the engine's `colors.demand`),
+       because every A$ they stand for is demand for A$. Nothing else here
+       borrows a curve's colour. -->
+  <style>
+    text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  </style>
+  <defs>
+    <linearGradient id="edge" x1="0" x2="1">
+      <stop offset="0" stop-color="#000"/>
+      <stop offset="0.14" stop-color="#fff"/>
+      <stop offset="0.86" stop-color="#fff"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <mask id="lane" maskUnits="userSpaceOnUse" x="245" y="100" width="270" height="420">
+      <rect x="245" y="100" width="270" height="420" fill="url(#edge)"/>
+    </mask>
+    <path id="star" d="M0 -10 l3.5 7.6 8.3 .9 -6.2 5.6 1.8 8.2 -7.4 -4.2 -7.4 4.2 1.8 -8.2 -6.2 -5.6 8.3 -.9 z"/>
+    <g id="goodsSet" font-size="13" fill="#343a40">
+      <g>
+        <rect x="0" y="0" width="94" height="30" rx="15" fill="#fff" stroke="#dee2e6"/>
+        <path transform="translate(10 8) scale(0.583)" d="M3 20l6 -10l4 6l3 -4l5 8z" fill="none" stroke="#495057" stroke-width="2.6" stroke-linejoin="round"/>
+        <text x="30" y="20">Iron ore</text>
+      </g>
+      <g>
+        <rect x="106" y="0" width="70" height="30" rx="15" fill="#fff" stroke="#dee2e6"/>
+        <path transform="translate(116 8) scale(0.583)" d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9z M12 12l8 -4.5 M12 12v9 M12 12l-8 -4.5" fill="none" stroke="#495057" stroke-width="2.6" stroke-linejoin="round"/>
+        <text x="136" y="20">Beef</text>
+      </g>
+      <g>
+        <rect x="188" y="0" width="72" height="30" rx="15" fill="#fff" stroke="#dee2e6"/>
+        <path transform="translate(198 8) scale(0.583)" d="M8 21h8 M12 15v6 M17 3l1 7c0 3 -2.7 5 -6 5s-6 -2 -6 -5l1 -7z" fill="none" stroke="#495057" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="218" y="20">Wine</text>
+      </g>
+      <g>
+        <rect x="272" y="0" width="94" height="30" rx="15" fill="#fff" stroke="#dee2e6"/>
+        <path transform="translate(282 8) scale(0.583)" d="M22 9l-10 -4l-10 4l10 4l10 -4v6 M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" fill="none" stroke="#495057" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="302" y="20">A degree</text>
+      </g>
+      <g>
+        <rect x="378" y="0" width="102" height="30" rx="15" fill="#fff" stroke="#dee2e6"/>
+        <g transform="translate(388 8) scale(0.583)" fill="none" stroke="#495057" stroke-width="2.6" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/>
+        </g>
+        <text x="408" y="20">A holiday</text>
+      </g>
+      <g>
+        <rect x="492" y="0" width="82" height="30" rx="15" fill="#fff" stroke="#dee2e6"/>
+        <path transform="translate(502 8) scale(0.583)" d="M3 17l6 -6l4 4l8 -8 M14 7l7 0l0 7" fill="none" stroke="#495057" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="522" y="20">Shares</text>
+      </g>
+    </g>
+    <g id="coinSet" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">
+      <circle cx="15" cy="15" r="15" fill="#1f77b4"/><text x="15" y="19">A$</text>
+      <circle cx="67" cy="15" r="15" fill="#1f77b4"/><text x="67" y="19">A$</text>
+      <circle cx="119" cy="15" r="15" fill="#1f77b4"/><text x="119" y="19">A$</text>
+      <circle cx="171" cy="15" r="15" fill="#1f77b4"/><text x="171" y="19">A$</text>
+      <circle cx="223" cy="15" r="15" fill="#1f77b4"/><text x="223" y="19">A$</text>
+      <circle cx="275" cy="15" r="15" fill="#1f77b4"/><text x="275" y="19">A$</text>
+      <circle cx="327" cy="15" r="15" fill="#1f77b4"/><text x="327" y="19">A$</text>
+      <circle cx="379" cy="15" r="15" fill="#1f77b4"/><text x="379" y="19">A$</text>
+    </g>
+  </defs>
+
+  <rect x="0" y="100" width="760" height="420" fill="#fff"/>
+
+  <!-- Overseas buyers, and the swap they make first. -->
+  <circle cx="135" cy="225" r="95" fill="#f1f3f5"/>
+  <g fill="#868e96">
+    <circle cx="97" cy="193" r="12"/><path d="M75 233 a22 20 0 0 1 44 0 z"/>
+    <circle cx="173" cy="193" r="12"/><path d="M151 233 a22 20 0 0 1 44 0 z"/>
+  </g>
+  <g fill="#495057">
+    <circle cx="135" cy="180" r="14"/><path d="M109 226 a26 24 0 0 1 52 0 z"/>
+  </g>
+  <rect x="97" y="252" width="76" height="24" rx="12" fill="#fff" stroke="#dee2e6"/>
+  <text x="135" y="268.5" font-size="12" font-weight="600" fill="#495057" text-anchor="middle">US$ → A$</text>
+
+  <!-- Australia, under the Southern Cross. -->
+  <circle cx="625" cy="225" r="95" fill="#f1f3f5"/>
+  <g fill="#334e68">
+    <use xlink:href="#star" href="#star" transform="translate(625 165)"/>
+    <use xlink:href="#star" href="#star" transform="translate(629 282)"/>
+    <use xlink:href="#star" href="#star" transform="translate(588 216)"/>
+    <use xlink:href="#star" href="#star" transform="translate(661 204) scale(0.85)"/>
+    <use xlink:href="#star" href="#star" transform="translate(643 246) scale(0.55)"/>
+  </g>
+
+  <!-- What leaves, right to left. -->
+  <text x="380" y="152" font-size="13" fill="#868e96" text-anchor="middle">What Australia sells</text>
+  <line x1="251" y1="185" x2="509" y2="185" stroke="#ced4da" stroke-width="2" stroke-dasharray="6 6"/>
+  <path d="M237 185 l12 -7 v14 z" fill="#ced4da"/>
+  <g mask="url(#lane)">
+    <g transform="translate(245 170)">
+      <g class="goods">
+        <use xlink:href="#goodsSet" href="#goodsSet"/>
+        <use xlink:href="#goodsSet" href="#goodsSet" x="586"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- What comes back, left to right: A$. -->
+  <line x1="251" y1="265" x2="509" y2="265" stroke="#a5c8e4" stroke-width="2" stroke-dasharray="6 6"/>
+  <path d="M523 265 l-12 -7 v14 z" fill="#a5c8e4"/>
+  <g mask="url(#lane)">
+    <g transform="translate(245 250)">
+      <g class="coins">
+        <use xlink:href="#coinSet" href="#coinSet"/>
+        <use xlink:href="#coinSet" href="#coinSet" x="416"/>
+      </g>
+    </g>
+  </g>
+  <text x="380" y="308" font-size="13" font-weight="600" fill="#1f77b4" text-anchor="middle">Paid for in A$</text>
+
+  <g text-anchor="middle">
+    <text x="135" y="356" font-size="19" font-weight="600" fill="#000">Overseas buyers</text>
+    <text x="135" y="380" font-size="14" fill="#868e96">Steel mills, students,</text>
+    <text x="135" y="398" font-size="14" fill="#868e96">tourists, investors</text>
+    <text x="625" y="356" font-size="19" font-weight="600" fill="#000">Australia</text>
+    <text x="625" y="380" font-size="14" fill="#868e96">Miners, farmers,</text>
+    <text x="625" y="398" font-size="14" fill="#868e96">universities, hotels</text>
+  </g>
+
+  <text x="380" y="470" font-size="17" font-weight="600" fill="#1f77b4" text-anchor="middle">Every A$ they need is part of the demand for A$</text>
+  <line x1="350" y1="488" x2="410" y2="488" stroke="#1f77b4" stroke-width="3" stroke-linecap="round"/>
+</svg>
