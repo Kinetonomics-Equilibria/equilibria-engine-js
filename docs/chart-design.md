@@ -1,0 +1,437 @@
+# The chart's design language
+
+How a diagram is drawn — everything inside a panel's sheet: the caption across
+its top, the plot, its axes, and every curve, point, area and word on it.
+[`design.md`](./design.md) covers the cards around the stage; this covers what
+is on it.
+
+Written down so the next chart is drawn the way the last one was. A student who
+has learnt to read one chart in the app should be able to read the next without
+being taught again: demand is the same blue, "before" is the same dashed line,
+the price is read off the axis the same way, and the words mean the same thing.
+
+These are defaults, not laws. Charts differ, and some will need to break a rule.
+When one does, say so in a comment beside the config with the reason, the way
+the lesson files already explain their choices. Places where a chart in the
+repo breaks a rule today are listed at the end, under
+[Where today's charts differ](#where-todays-charts-differ). Don't copy them.
+When one is fixed, delete its line.
+
+## The idea in one line
+
+> **The same thing is drawn the same way, called by the same name, in the same
+> place, on every chart.**
+
+## Principles
+
+1. **Label it where it is.** Every curve, point and area is named on the chart,
+   beside the thing it names. No legend box: a key makes a student look away
+   from the chart to match colours, and a student who can't tell orange from
+   green can't match them at all.
+
+2. **Words before symbols, and symbols from one list.** Titles, axis titles and
+   annotations are in words, in full. A symbol (D, P\*, PPC) goes only where
+   space is tight, on the plot itself. It must come from the
+   [symbol list](#symbols), and the lesson must say it in words before a student
+   needs it.
+
+3. **Weight follows attention.** The thing a student is reading is the heaviest
+   mark on the chart, and the frame is the lightest: curves are 2px, axes 1px,
+   and a shaded area has no outline at all.
+
+4. **A line's style says when it is.** Solid is now. Dashed and faint is where
+   it was. Dotted is something to read the chart against: a dropline to an
+   axis, a measured step, or the answer to a question. A student who has learnt
+   this once can read any before-and-after in the app.
+
+5. **The chart holds still.** The axes cover the whole range a lesson's sliders
+   can reach, so nothing rescales while a student is dragging. This is
+   `design.md`'s "nothing moves under the pointer", inside the plot.
+
+6. **Hide, don't shrink.** In a small panel the engine's density levels drop
+   axis titles, then ticks and labels. Nothing is drawn smaller to fit. A chart
+   is written once, at its focal size, and the same config serves every size.
+
+## Anatomy
+
+| Part | Where | Drawn by |
+| --- | --- | --- |
+| Chart title | Caption row across the top of the sheet, left end | The app, from the panel's `name` in `PANELS` |
+| Headline number and change chip | Caption row, right end | The app, from the panel's `headline` and `delta` calcs |
+| Plot | Under the caption | The engine |
+| Axis titles | Under the x axis, centred; left of the y axis, rotated, centred | The engine, from `xAxis.title` and `yAxis.title` |
+| Tick numbers | Outside each axis | The engine (d3) |
+| Dropline labels | On the axis, among the tick numbers | The engine, from `droplines` on a point |
+| Curve, point and area labels | On the plot, beside what they name | The engine, from `label` on the object |
+| Readouts | Top-right corner of the plot | The engine, as `Label` objects |
+
+The chart's title is never drawn inside the plot, and the engine draws no title
+of its own.
+
+## Type
+
+There is one typeface: the app's (`fontFamily` in `apps/web/src/theme.ts`), for
+every word and every number. KaTeX's maths italic is used for one thing only,
+symbols — D, S, P\*, Q\*, e\* — so a symbol always looks like maths and a word
+never does. A word in a label is plain text (`plainText: true`), not `\text{}`.
+
+A label's `fontSize` is in **points**, not pixels: `fontSize: 10` is 13.3px.
+
+| What | Size | Style | Colour |
+| --- | --- | --- | --- |
+| Chart title | 16px | semibold | text |
+| Headline number and chip | 14px | regular, tabular figures | dimmed grey |
+| Curve label (a symbol) | `fontSize: 12` (16px) | maths italic | the curve's |
+| Axis title | `fontSize: 10` (13.3px) | regular | text |
+| Dropline label | `fontSize: 10` | maths italic | the point's |
+| Point letter, area label, annotation | `fontSize: 10` | regular, plain text | the thing's |
+| Tick numbers | 12px | regular, tabular figures | axis grey |
+
+Apart from the tick numbers (see the end of this file), these are the engine's
+defaults for each kind of label, so a config normally sets no `fontSize` at
+all. Nothing a student has to read is smaller than 12px, and there are no sizes
+in between: no 9, no 11.
+
+## Lines
+
+| Role | Weight | Style | Colour | Opacity |
+| --- | --- | --- | --- | --- |
+| Axis line and ticks | 1px | solid | `--kg-axis-color` (#333) | 100% |
+| A curve, now | 2px | solid | its own | 100% |
+| Where it was (the ghost) | 2px | dashed, 10 on 10 off | the curve's | 35% |
+| Where it should go (the answer, after Check) | 2px | dotted | the curve's | 100% |
+| Dropline | 2px | dotted, 1 on 2 off | the point's | 100% |
+| Measured step ("+20 toasties") | 2px | dotted | the thing measured | 100% |
+| Gridline | 1px | dotted | light grey | 100% |
+
+- Every curve is 2px, the one a student can drag included. Don't thicken the
+  curve a lesson is about: the lesson's words and the caption already say what
+  it is about.
+- A ghost comes from `ghost:` on the object, never from a hand-drawn dashed
+  copy. The engine builds it from the same definition, so the two can't
+  disagree about slope or colour. With `ghost: { label: '_0' }` it is named D₀
+  while the live curve stays D, and on a point it also draws the shift arrow.
+  The one hand-drawn "before" is a question's starting line, which is set from
+  params when the question is asked. It is drawn exactly like a ghost: dashed,
+  35%.
+- The answer line appears only once a question has been marked. It is dotted at
+  full weight so it can't be mistaken for the faint, dashed start.
+- No gridlines by default. Droplines do the reading. A chart where students read
+  many values off the axes, such as a data plot, may turn them on.
+
+## Points and areas
+
+| Role | Size | Fill |
+| --- | --- | --- |
+| A point the chart is about: equilibrium, a chosen combination | radius 6 (the default) | solid, its colour |
+| A handle: a curve's end that can be dragged | radius 5 | solid, the curve's colour |
+| A ghost point | radius 6 | 35%, from `ghost:` |
+| An area the lesson names: consumer surplus, revenue, profit | — | 20% (the default), no outline |
+| A region that is context: the attainable set under a PPC | — | 8%, no outline |
+
+An area takes the colour of what it belongs to. Consumer surplus is under
+demand, so it is demand's blue; producer surplus is supply's orange; revenue,
+price times quantity, is the equilibrium's green.
+
+## Colour
+
+Colour carries meaning on the chart in the same way as on the cards (see
+`design.md`, principle 6).
+
+- **Name colours by what they mean**: `colors.demand`, not `colors.blue`. The
+  palette is in `EconSchema` (`packages/engine/src/ts/KGAuthor/econ/schemas/econSchema.ts`).
+  A concept with no name yet gets one, added there and to the table below,
+  rather than borrowing a raw colour.
+- **A concept is the same colour on every chart.** Where the same people stand
+  behind a curve in two panels, the curve keeps its colour even when its name
+  changes, as the US$ market does with the A$ market's.
+- **No more than four hues on one chart**, plus grey.
+- **Colour is never the only difference.** Every curve has a label. A ghost is
+  dashed as well as faint. Never use red against green to mean opposites.
+- **No verdicts.** A falling price is good news for someone. Direction is shown
+  with ▲ ▼ and → in grey.
+- **Contrast against the white sheet**: at least 3:1 for a line, point or area
+  edge, and 4.5:1 for text. Text drawn "in a curve's colour" uses a darker shade
+  of it wherever the curve's own colour falls short.
+
+| Name | Colour | Means |
+| --- | --- | --- |
+| `demand` | blue | Demand, and the buyers behind it |
+| `supply` | orange | Supply, and the sellers behind it |
+| `equilibriumPrice` | green | Where the market clears: the point, its droplines, its arrow, the revenue it makes |
+
+Contrast of the engine's palette on white today:
+
+| Colour | Hex | Ratio | Line (3:1) | Text (4.5:1) |
+| --- | --- | --- | --- | --- |
+| red | #d62728 | 5.0 | yes | yes |
+| blue | #1f77b4 | 4.8 | yes | yes |
+| purple | #9467bd | 4.3 | yes | no |
+| grey | #7f7f7f | 4.0 | yes | no |
+| green | #2ca02c | 3.4 | yes | no |
+| orange | #ff7f0e | 2.5 | **no** | no |
+| olive | #bcbd22 | 2.0 | **no** | no |
+
+## Axes
+
+- **Every axis has a title in words, with its unit:** "Price ($)", "Quantity
+  (coffees a day)", "US$ per A$". Never a lone letter like "P" or "Q". Use
+  sentence case. `$` inside a title is written `'\\$'` in the TypeScript
+  string, because the engine typesets titles and a bare `$` would start maths.
+- **`$` on its own means Australian dollars.** Write A$ only when another
+  currency is on the same screen.
+- **The unit is in the title, so tick numbers are bare**: 0, 5, 10, not $0, $5,
+  $10.
+- **About five ticks** (the engine's default) at round steps of 1, 2 or 5 times a
+  power of ten, with the same number of decimals on every tick (`tickPrecision`).
+- **Both axes start at zero**, unless the quantity never comes near zero, like an
+  exchange rate. Then the axis starts at a round number and its first tick is
+  labelled, so nobody reads the corner as zero.
+- **Size the axes to the sliders, not to the start.** Take the furthest any curve
+  can reach across the lesson's param ranges and leave a little room past it.
+  The empty space this leaves at the start is the cost of a chart that never
+  rescales. The PPC's axes run to 160 and 320 for a curve that starts at 100
+  and 200 because the lesson can grow it that far.
+- **Axis titles are placed by the engine.** Don't hand-place one with a `Label`.
+
+## The chart's title
+
+Every chart has one, in the caption row across the top of its sheet, directly
+above the plot.
+
+- **At the left, the name.** One to three words, a noun phrase, sentence case,
+  in words: "Market", "Consumer surplus", "A$ market", "Café". It names what
+  the chart is about, in a student's words. A grid caption is one line, and a
+  longer name is cut to "Marke…".
+- **At the right, the headline number**, labelled in words with its unit:
+  "Price $7.60", not "P\* $7.60". The label is the narrated calc's `label`, the
+  same one the chain under the stage uses, so the words have to make sense
+  there too. When the chart's name already says what the number is
+  ("Consumer surplus"), it is said once, not twice.
+- **Then the change chip**, ▲ or ▼ and the amount, in grey, and only once
+  something has moved as printed.
+- No subtitle, and nothing about the chart's title inside the plot.
+
+## Labels on the plot
+
+### Curves
+
+- **Every curve is labelled**, on the plot, in its own colour, just beside its
+  line. The engine's halo keeps the line from running through the letters.
+  Never set a `bgcolor` box.
+- **Demand and supply are labelled at their right-hand ends**: D near the bottom
+  right, S near the top right. That is where students' textbooks put them, and
+  it keeps the labels clear of the price axis, where P\* and the surplus areas
+  are. Other curves are labelled at the end with the most open space, and at
+  the same end every time that curve is drawn.
+- **A label stays on the plot across the whole slider range.** If the end of a
+  curve moves, position the label with a calc, not a constant.
+- **The label is the curve's symbol** from the [list](#symbols). The live curve
+  keeps its plain name always: D, never D′ or D₁. Its ghost adds ₀
+  (`ghost: { label: '_0' }`), and the answer after a question adds ₁. The engine
+  moves the ghost's label clear of the live one.
+- **The same curve is called the same thing in every panel** it is drawn in.
+
+### Points
+
+- **A point the student has to find by name gets a capital letter**: A, B, C…,
+  in the order the lesson brings them in, skipping any letter on the symbol
+  list (never P, Q, D, S or E).
+- **The letter sits beside its point**, on the side with open space, in the
+  point's colour, as plain text at `fontSize: 10`.
+- **The equilibrium is not lettered.** Its droplines name it.
+- **A point's coordinates are not written beside it.** If the numbers matter,
+  they are read off the axes with droplines, or stated in a readout.
+- A word about the point's state follows its letter after a middle dot:
+  "C · inefficient".
+
+### Areas
+
+- **An area the lesson names is labelled in words inside it**, centred, when
+  there is room: "Consumer surplus". Where there isn't room, the chart's title
+  can name it, but only if it is the chart's one area. Two areas on one chart
+  need a label each. An `Area` has no `label` of its own, so place a `Label` at
+  its centre.
+
+## Droplines
+
+For a point whose values a student is meant to read off the axes: the
+equilibrium price and quantity, or the quantity traded under a price ceiling.
+
+- **From the point to both axes**, unless only one value matters. Dotted, 2px,
+  in the point's colour. Set with `droplines: { vertical: 'Q^*', horizontal:
+  'P^*' }` on the point.
+- **Labelled on the axis**, among the tick numbers, with the symbol. A tick
+  number the label would cover is hidden while it does: the engine does this,
+  and the tick mark stays.
+- **Only the point as it is now has droplines.** A ghost point gets none, and
+  the engine won't give it any. Two P\*s at two heights would contradict each
+  other. The old value is in the caption's chip and in "What changed".
+- **Not for points that aren't read off the axes**, such as A and B on a PPC,
+  whose story is the step between them.
+
+## Annotations
+
+Anything else written on the plot. There are three kinds.
+
+1. **A measured step**: how far a move goes along one axis. "+20 toasties",
+   "−40 coffees". It sits at the middle of its leg, outside the shape the legs
+   make. It is signed with + or a true minus (−, not a hyphen) and has its unit
+   in words, counted properly: "1 coffee", "2 coffees".
+2. **A readout**: a line or two about what is drawn. "A (60, 160) → B (80,
+   120)", "1 more toastie costs 2.0 coffees". It goes in the top-right corner
+   of the plot, right-aligned, with lines 16px apart, in the corner no curve
+   reaches across the lesson's ranges. If no corner is clear all the way
+   through, the readout belongs in the caption or in "What changed", not on the
+   plot.
+3. **A state**: a word after a point's letter ("C · inefficient"), as above.
+
+For all three:
+
+- Plain text (`plainText: true`), at `fontSize: 10`, in the colour of the thing
+  it is about, using the darker text shade where the colour needs one. No box.
+- Words in full, in sentence case. Numbers at the same precision as the
+  caption, so a number reads the same on the plot as beside it.
+- One idea each, and no more than three at once on top of the curve and point
+  labels. A lesson brings each one in at the step that explains it.
+- Never over the point or curve the student is dragging.
+- The only arrow is the engine's shift arrow, which a point's `ghost: true`
+  draws from where it was to where it is. Don't draw decorative arrows.
+
+## Keys and legends
+
+- **No legend box.** Everything is labelled where it is (principle 1).
+- **Line styles are explained by the lesson** the first time they appear. The
+  step that first draws a ghost says, in its words or in a term box, that the
+  dashed line is where the curve was.
+- **The one exception, when it comes**: a chart with more lines than can be
+  labelled at their ends, such as several countries over time. Its key is one
+  row under the caption and above the plot. It lists the lines in the order
+  they end, top to bottom, with names in full, each beside a short sample of
+  its colour and line style. Label the line ends as well wherever there is
+  room.
+
+## Symbols
+
+On a chart, a student reads three kinds of text:
+
+- **Words**: titles, axis titles, annotations. Always in full.
+- **Symbols**: on curves, droplines and points. Only from this list.
+- **Numbers**: formatted as everywhere else.
+
+A symbol is allowed only because it sits on the plot, where space is tight.
+Each one means one thing across the whole app. The lesson says each one in
+words before a student needs it, usually in the step that first draws it: "That
+point gives one price, P\*, and one quantity, Q\*."
+
+| Symbol | Means | Drawn on |
+| --- | --- | --- |
+| D | The demand curve | A market's demand curve |
+| S | The supply curve | A market's supply curve |
+| PPC | The production possibility curve | The PPC |
+| D₀, S₀, PPC₀ | Where that curve was | Its ghost |
+| D₁, S₁, PPC₁ | Where that curve goes | The answer, after a question |
+| P\* | The equilibrium price | The price axis, at the end of a dropline |
+| Q\* | The equilibrium quantity | The quantity axis, at the end of a dropline |
+| e\* | The equilibrium exchange rate, US$ per A$ | The A$ market's rate axis |
+| 1/e\* | Its reciprocal, A$ per US$ | The US$ market's rate axis |
+| A, B, C… | Points the lesson names | Beside the point |
+
+A new symbol is added here first, and only if a word won't fit where it has to
+go.
+
+Never put any of these in front of a student:
+
+- Abbreviations made for the code: CS, TR, Qe, oc, maxC.
+- Unexplained Greek letters (Δ) or shorthand: w/, &, approx., qty, eq'm.
+- Shortened units: write "thousands of tonnes", not "'000 t"; "a day", not "/d".
+
+Currency codes (A$, US$) are fine: that is how money is written.
+
+## Numbers
+
+- Tick numbers are bare. The unit is in the axis title.
+- Every other number goes through the same formatter and precision as the
+  caption: `formatValue` with the narrated calc's `precision`.
+- A price is in dollars and cents ($7.60). A quantity is a whole number, or has
+  one decimal where a fraction matters.
+- A change is written was → now. A direction is ▲ or ▼, in grey. Negatives use a
+  true minus (−).
+
+## Accessibility
+
+- Every object a student is meant to find has an `srTitle` in words:
+  "Equilibrium", "Point A", "Most coffees".
+- Colour is never the only difference (see [Colour](#colour)), and the contrast
+  ratios above apply.
+- Nothing a student has to read is smaller than 12px.
+- Don't shrink a drag target. The engine gives curves and points an invisible
+  grip 20px across or more, so a student on a trackpad doesn't have to land on
+  a 2px line.
+
+## Adding a chart
+
+1. **Caption.** A name of one to three words, and a headline calc whose `label`
+   is in words.
+2. **Axes.** Titles in words with units. Ranges that cover the sliders' full
+   reach. Round ticks.
+3. **Curves.** A semantic colour, the default 2px, and a label from the symbol
+   list at the conventional end.
+4. **Points.** The default radius. A letter if the lesson names the point.
+   Droplines only if it is read off the axes.
+5. **Areas.** 20%, or 8% for context, and labelled in words.
+6. **Before and after.** Use `ghost:` for before and a dotted answer line for a
+   question. Never two P\*s.
+7. **Annotations.** Plain text at `fontSize: 10` in the thing's colour, readouts
+   at the top right, no more than three at a time.
+8. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
+   hand-set `strokeWidth`.
+9. **Words.** Every symbol is in the list above, and the lesson says it in words
+   first.
+10. **Contrast.** Any new colour clears 3:1 as a line and 4.5:1 as text.
+11. **Look at it.** Check it in focus and in the grid, at 1440×900 and on a phone.
+    The defects in `NOTES.md` that no test caught were found by looking at a
+    screenshot.
+
+## Where today's charts differ
+
+Each line is a place where a chart in the repo breaks a rule above. Fix it, or
+write down in the config why it stays, then delete the line here.
+
+**The engine** (`packages/engine`)
+
+- Tick numbers are 10px, d3's default. They should be 12px (`css/kgjs-theme.css`).
+- Orange (#ff7f0e, supply's colour) is 2.5:1 on white, under the 3:1 a line
+  needs. Green, purple and grey are fine as lines but short of 4.5:1 as text,
+  and green is the colour of P\* and Q\*. There are no darker text shades yet.
+- `\text{}` in a curve label (`\text{PPC}`) is set in KaTeX's serif. The fix
+  that put axis titles in the page's font (`.kg-axis-title .katex`) doesn't
+  reach other labels.
+
+**Supply and demand** (`apps/web/src/studyDiagram.ts`)
+
+- The axes are titled "P" and "Q" (`axes()`). They should be "Price ($)" and
+  "Quantity".
+- Caption and chain labels are symbols and abbreviations: "P\*", "Q\*", "CS",
+  "TR" (`NARRATED_CALCS`). They should be in words.
+- D is labelled at `x: 4`, its upper-left end. In the consumer surplus panel
+  that puts it inside the shaded area. It should be at the right-hand end.
+- The consumer surplus panel also shades producer surplus, and neither area is
+  labelled. Producer surplus is not named anywhere on screen.
+- No step says that D and S stand for demand and supply.
+
+**Foreign exchange** (`apps/web/src/lessons/foreignExchange.ts`)
+
+- "Q\*" labels a caption and chain number (`NARRATED_CALCS`). It should be in
+  words. "A$1 =" and "US$1 =" are how a rate is quoted and are fine.
+
+**Production possibilities** (`apps/web/src/lessons/productionPossibilities.ts`)
+
+- The PPC is drawn at `strokeWidth: 2.5`. It should be the default 2.
+- Point letters are at `fontSize: 11` and the step labels at 9. Both should be 10.
+- The legs of the step from A to B are dashed. They are a measurement, so they
+  should be dotted.
+- The free point is called P, which means price everywhere else. It should be
+  another letter.
+- Colours are raw names (`colors.blue`, `colors.orange`, `colors.purple`), not
+  names for what they mean.

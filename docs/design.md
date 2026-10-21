@@ -2,7 +2,9 @@
 
 How the study app (`apps/web`) decides what goes on screen, where, and how it
 looks — written down so that the next panel, card or lesson is built the same
-way as the last one, rather than each being argued from scratch.
+way as the last one, rather than each being argued from scratch. What is drawn
+inside a panel — its caption, axes, curves, labels and annotations — has a file
+of its own, [`chart-design.md`](./chart-design.md).
 
 The people it is for are Year 10 to first-year students, mostly in Australia,
 mostly on a school laptop, learning to reason about a market. What they are

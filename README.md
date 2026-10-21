@@ -127,7 +127,10 @@ There is also a schema reference under [`docs/schema/`](./docs/schema).
 The study app's own design language — what goes on which card, the shared
 paper, callouts and controls, and how a lesson's words reach the screen — is in
 [`docs/design.md`](./docs/design.md). Read it before adding anything a student
-will see.
+will see. How a diagram itself is drawn — type, line weights, axes, labels,
+droplines and annotations — is in
+[`docs/chart-design.md`](./docs/chart-design.md). Read it before drawing or
+changing a chart.
 
 Vendored third-party reference docs — currently the full Mantine documentation,
 pinned to the installed version — live under
