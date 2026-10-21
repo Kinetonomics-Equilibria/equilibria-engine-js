@@ -961,14 +961,22 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // answering the question they are about to be asked.
         asked.current = [];
 
-        const backwards = next.position < track.position;
-        applyStep(paramsBetween(steps, track.position, next.position), next.position, backwards);
+        const backwards = next.position < track.position,
+            established = paramsBetween(steps, track.position, next.position);
+        applyStep(established, next.position, backwards);
 
         // The step param is presentation, so its own change is not narrated and
         // the chain would otherwise still be describing the move we just
         // re-based away from. Recomputed rather than blanked: it reads the
         // engine, which now agrees with itself, and comes back as rest.
-        if (backwards) retell(false);
+        //
+        // Forward too, whenever the step established params and so re-based.
+        // A step whose params were already where it puts them raises no change
+        // to narrate, and the chain stayed on the step before's move — which
+        // the snapshot had just forgotten, about a point the new step may have
+        // put away. Where the params did move, this retells what their own
+        // events already told.
+        if (backwards || established.length > 0) retell(false);
 
         setTrack(next);
         armQuestion(askAt(steps, next.position), next.position - 1);
@@ -1277,8 +1285,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             unit = metric && metric.unit ? metric.unit : '',
             places = calcPrecision(metric);
 
-        const level = declared ? readout[declared.headline] : undefined,
-            delta = declared ? readout[declared.delta] : undefined;
+        // A calc that is not a number has nothing to headline: the cost of a
+        // move between two points that are one point is 0/0, and a caption
+        // reading "NaN" would say the diagram had broken rather than that
+        // nothing has moved.
+        const finite = (value: unknown) => typeof value === 'number' && isFinite(value) ? value : undefined;
+        const level = declared ? finite(readout[declared.headline]) : undefined,
+            delta = declared ? finite(readout[declared.delta]) : undefined;
 
         // Shown only once something has moved *as printed*. At rest a chip that
         // says "▲ $0.00" is noise pretending to be news, and a threshold of its
