@@ -82,9 +82,8 @@ async function dragDemandDown(page: Page) {
  *
  * `a` is declared `min: 12, max: 28` against a panel drawn 0..20, so the top of
  * the range is above the top of the panel and the curve visibly refuses to
- * follow the pointer. This is the only route to a refusal in the whole app: the
- * dock's sliders take their own ends from the param, so a control can never
- * *ask* for a value out of range — only a drag can.
+ * follow the pointer. Only a drag can get here: the dock's sliders take their
+ * own ends from the param, so a control can never *ask* for a value out of range.
  */
 async function dragDemandOffTheTop(page: Page) {
     const dragPath = page.locator('.kg-container path[class^="dragPath"]')
@@ -816,55 +815,32 @@ test('undo puts the market back, and the diagram stands down with it', async ({ 
 });
 
 /**
- * A move the diagram would not make, said out loud (P12).
+ * A curve dragged past the end of its range stops there, and nothing is said
+ * about it.
  *
- * Before this, dragging a curve past the end of its range stopped it dead and
- * the app was told nothing at all: the first tick past the end reported that the
- * curve had *moved* (as far as it could), and every tick after it reported
- * nothing. A student pushing against an invisible ceiling could not tell a limit
- * from a broken diagram.
+ * It used to be: "a is at the top of its range (28.0) in this diagram." The
+ * curve stopping is the news, and the sentence told the student nothing the
+ * diagram and the slider had not.
  *
  * In a browser rather than in jsdom because a drag is the only way to reach it —
  * jsdom performs no layout, so a synthesised drag moves the pointer nowhere and
  * asks for nothing out of range.
  */
-test('says why the curve stopped, when it stops', async ({ page }) => {
-    // In the lesson, so that there are words on the card for the refusal to
-    // leave alone.
+test('says nothing about the end of a range when a curve reaches it', async ({ page }) => {
+    // In the lesson, so that there are words on the card to keep.
     await backToTheLesson(page);
     await dragDemandOffTheTop(page);
 
-    await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
-    await expect(page.getByText('a is at the top of its range (28.0) in this diagram.')).toHaveCount(2);
+    await expect(page.locator(STRIP)).not.toHaveAttribute('data-refusal', 'true');
+    await expect(page.getByText(/of its range/)).toHaveCount(0);
 
-    // Said above the chain, and the chain stays: the curve did move, as far as
-    // it could. The strip had one line and had to choose; the card has room.
+    // The chain reports the move as far as it went, and the live region says
+    // the chain and nothing before it.
     expect(await chainText(page)).toContain('Demand increases20.0→28.0');
     expect(await page.locator(`${STRIP} [role="status"]`).textContent())
-        .toMatch(/^a is at the top of its range \(28\.0\) in this diagram\..*the price rises/);
+        .toMatch(/^Demand increases from 20\.0 to 28\.0;/);
 
-    // And the lesson keeps its words. When it shared the strip, reaching the
-    // end of a range took the step's explanation off the screen.
     await expect(page.getByRole('region', { name: 'Lesson' })).toContainText('Over to you');
-});
-
-test('says it once, however long the drag pushes against the end', async ({ page }) => {
-    await dragDemandOffTheTop(page);
-
-    // Twice is the eye and the live region; a hundred would be a refusal per
-    // pointer move.
-    await expect(page.getByText('a is at the top of its range (28.0) in this diagram.')).toHaveCount(2);
-});
-
-test('drops the refusal the moment something moves again', async ({ page }) => {
-    await dragDemandOffTheTop(page);
-    await expect(page.locator(STRIP)).toHaveAttribute('data-refusal', 'true');
-
-    await dragDemandDown(page);
-
-    await expect(page.locator(STRIP)).not.toHaveAttribute('data-refusal', 'true');
-    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
-    expect(await chainText(page)).toContain('demand shifts down');
 });
 
 test('promoting a panel does not rewrite what the student was told', async ({ page }) => {

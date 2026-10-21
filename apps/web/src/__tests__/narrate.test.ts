@@ -436,7 +436,7 @@ describe('the announcement', () => {
     // the other at any width and a screen reader hears the same thing.
     it('puts a refusal first, and keeps the chain after it', () => {
         const chain = toSentence(line());
-        expect(announcement(line(), 'a is at the top of its range.')).toBe('a is at the top of its range. ' + chain);
+        expect(announcement(line(), 'At these costs nothing would trade.')).toBe('At these costs nothing would trade. ' + chain);
         expect(announcement(line())).toBe(chain);
         expect(announcement(narrate({ before: null, after: market(20), params: PARAMS, calcs: CALCS }), 'Stopped.'))
             .toBe('Stopped.');
@@ -495,9 +495,9 @@ describe('formatValue', () => {
 
 
 /**
- * The three sentences a refusal can be, and who each is addressed to (P12).
+ * The sentences a refusal can be, and who each is addressed to (P12).
  *
- * The one that matters is the third. A restriction whose expression did not
+ * The one that matters is the last. A restriction whose expression did not
  * resolve refuses everything the student tries, and telling them "that isn't
  * allowed" would be a lie landing as their mistake — so the copy has to name
  * whose fault it is instead.
@@ -510,26 +510,11 @@ describe('a refusal', () => {
         ...over
     });
 
-    const format = (v: number) => formatValue(v, 1);
-
-    it('names the end the param stopped at', () => {
-        expect(phraseRefusal(bounds(), format)).toBe('a is at the top of its range (28.0) in this diagram.');
-        expect(phraseRefusal(bounds({ limit: 'min', value: 12 }), format))
-            .toBe('a is at the bottom of its range (12.0) in this diagram.');
-    });
-
-    it('reads with a label as readily as with a symbol', () => {
-        expect(phraseRefusal(bounds({ label: 'Demand for A$' }), format))
-            .toBe('Demand for A$ is at the top of its range (28.0) in this diagram.');
-    });
-
-    // The one sentence that answers something the student tried and could not
-    // do. "Will not" made the diagram sound like it was refusing them; the end
-    // of a range is a fact about the diagram, said as one.
-    it('says where the range ends, not that the student was refused', () => {
-        [bounds(), bounds({ limit: 'min', value: 12 })].forEach(event => {
-            expect(phraseRefusal(event, format)).not.toMatch(/will not|won't|can't|not allowed/i);
-        });
+    // The curve stopping at the edge of the range is the news, and the slider
+    // already shows the number it stopped at.
+    it('says nothing when a param reaches the end of its range', () => {
+        expect(phraseRefusal(bounds())).toBeNull();
+        expect(phraseRefusal(bounds({ limit: 'min', value: 12 }))).toBeNull();
     });
 
     // The author wrote the economics, so the author writes the sentence. An app
@@ -541,7 +526,7 @@ describe('a refusal', () => {
                 name: 'trades', message: 'At these costs nothing would trade.',
                 expression: 'calcs.Qe', value: 0.5, min: 1
             }]
-        }), format);
+        }));
 
         expect(said).toBe('At these costs nothing would trade.');
     });
@@ -550,7 +535,7 @@ describe('a refusal', () => {
         const said = phraseRefusal(bounds({
             reason: 'restriction',
             restrictions: [{ expression: 'calcs.Qe', value: 0.5, min: 1 }]
-        }), format);
+        }));
 
         expect(said).toBe('This diagram can\'t show that combination.');
     });
@@ -561,7 +546,7 @@ describe('a refusal', () => {
             restrictions: [{
                 expression: 'calcs.Qee', value: undefined, min: 1, unresolved: 'expression'
             }]
-        }), format);
+        }));
 
         expect(said).toContain('a problem with the diagram');
         expect(said).toContain('not with anything you did');

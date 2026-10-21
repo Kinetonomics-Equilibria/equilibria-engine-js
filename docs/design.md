@@ -73,8 +73,8 @@ attention on finding things.
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
    the depth one press away: "Why? See the maths" opens the formula behind the
    first effect; a scenario carries its reasoning in one line; "Try this" offers
-   questions and marks nothing. A curve that reaches the end of its range gets a
-   note with an information mark, never an error.
+   questions and marks nothing. A curve that reaches the end of its range just
+   stops there: the slider already shows the number, so nothing is said.
 
 ## The side column
 
@@ -183,8 +183,9 @@ first version of the screen did, so a lesson can gain them one at a time.
   imports" says more than "Supply of A$".
 - Numbers as the diagram prints them: `formatValue`, the narrated label and
   unit, tabular digits, was → now. Never a colour for a direction.
-- Nothing scolds. A limit is "at the top of its range in this diagram"; a wrong
-  answer gets a reason and a way to try again.
+- Nothing scolds. A rule the diagram can't break gets a note with an
+  information mark, never an error; a wrong answer gets a reason and a way to
+  try again.
 - A picture says in its alt text what it shows, in a sentence or two, because a
   student who cannot see it is owed what it says. Anything that moves has a
   still to pause on, and is drawn about as wide as the stage, so its labels are
@@ -206,8 +207,3 @@ first version of the screen did, so a lesson can gain them one at a time.
    and unit, so it agrees with every other place that number appears.
 6. **Does it say anything?** Write the words in the lesson's content, in the
    lesson's vocabulary, not in the component.
-
-## Next
-
-- **Words in the refusal.** "a is at the top of its range" uses the param's
-  label; with `paramWords` it could say which curve.

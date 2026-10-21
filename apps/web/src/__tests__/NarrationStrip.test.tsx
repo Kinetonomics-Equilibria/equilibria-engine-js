@@ -147,7 +147,7 @@ describe('the controls', () => {
  * card, where a refusal cannot displace them.
  */
 describe('a refusal on the strip', () => {
-    const REFUSAL = 'a is at the top of its range (28.0) in this diagram.';
+    const REFUSAL = 'At these costs nothing would trade.';
 
     it('takes the line from the chain', () => {
         view(<NarrationStrip line={chain()} refusal={REFUSAL} />);
@@ -156,9 +156,9 @@ describe('a refusal on the strip', () => {
         expect(visibleChain()).not.toContain('20.0');
     });
 
-    // A note, not a warning: nothing went wrong, a curve reached the end of
-    // the range the diagram draws. It wears an information mark, and its words
-    // are the strip's own grey rather than orange.
+    // A note, not a warning: the student did nothing wrong, the market just
+    // can't be in that state. It wears an information mark, and its words are
+    // the strip's own grey rather than orange.
     it('is said as a note, with an information mark', () => {
         view(<NarrationStrip line={REST} refusal={REFUSAL} />);
 

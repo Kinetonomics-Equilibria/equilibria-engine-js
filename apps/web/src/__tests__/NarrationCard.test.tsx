@@ -187,7 +187,7 @@ describe('the live region', () => {
 
     // Either can be on screen, at different widths, for the same event.
     it('says what the strip says for the same event', () => {
-        const refusal = 'a is at the top of its range (28.0) in this diagram.';
+        const refusal = 'At these costs nothing would trade.';
         const { unmount } = view(<NarrationStrip line={chain()} refusal={refusal} />);
         const strip = document.querySelector('[role="status"]')!.textContent;
         unmount();
@@ -230,10 +230,10 @@ describe('the controls', () => {
 });
 
 describe('a refusal on the card', () => {
-    const refusal = 'a is at the top of its range (28.0) in this diagram.';
+    const refusal = 'At these costs nothing would trade.';
 
     // The strip has one line, so a refusal takes it from the chain. The card
-    // has room for both, and the curve did move as far as it could.
+    // has room for both, and the chain still describes the last move that landed.
     it('is said above the chain, and the chain stays', () => {
         view(<NarrationCard line={chain()} refusal={refusal} />);
 

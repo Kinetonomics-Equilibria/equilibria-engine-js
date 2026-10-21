@@ -607,18 +607,18 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * the stage's own bookkeeping — a rail panel's focus fraction pinned at 1 is
      * not news anyone should read.
      *
-     * The engine has already coalesced this: a curve held against the top of its
-     * range announces itself once rather than once per pointer move, so nothing
-     * here has to debounce.
+     * A curve held against the end of its range is refused too, and the
+     * phrasebook has nothing to say about it: the curve stopping is the news.
+     * Whatever was on screen stays there.
      */
     const onParamBlocked = useCallback((data: unknown) => {
         const event = data as ParamBlockedEvent;
         if (applyingStep.current) return;
         if (!isNarrated(event.name)) return;
 
-        const declared = narratedParams.filter(p => p.name === event.name)[0];
-        setRefusal(phraseRefusal(event, v => formatValue(v, declared ? declared.precision : 1)));
-    }, [isNarrated, narratedParams]);
+        const said = phraseRefusal(event);
+        if (said !== null) setRefusal(said);
+    }, [isNarrated]);
 
     const onCurveDragged = useCallback((data: unknown) => {
         const isDragging = !!(data as { dragging: boolean }).dragging;
