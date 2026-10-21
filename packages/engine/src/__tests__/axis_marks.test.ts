@@ -58,7 +58,7 @@ function box(left: number, top: number, width: number, height: number) {
     return { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON() { return this; } };
 }
 
-function build(q: number, p: number, show: any = true) {
+function build(q: number, p: number, show: any = true, axes: any = {}) {
     return mountConfig({
         params: [
             { name: 'q', value: q, min: 0, max: 20, round: 0.1 },
@@ -68,8 +68,8 @@ function build(q: number, p: number, show: any = true) {
         layout: {
             OneGraph: {
                 graph: {
-                    xAxis: { title: 'Q', min: 0, max: 20 },
-                    yAxis: { title: 'P', min: 0, max: 20 },
+                    xAxis: { title: 'Q', min: 0, max: 20, ...axes.x },
+                    yAxis: { title: 'P', min: 0, max: 20, ...axes.y },
                     objects: [{
                         type: 'Point',
                         def: {
@@ -129,6 +129,16 @@ describe('a tick label under a dropline label', () => {
         expect(ticks(r).y).toContain('10');
 
         r.kg.update({ params: [{ name: 'on', value: 1 }] });
+        expect(ticks(r).x).not.toContain('10');
+        r.destroy();
+    });
+
+    // The A$ market's x axis is at a rate of 0.40, not 0. `Q^*` was put at the
+    // height the *y* axis crosses at, which is 0 there, so it was drawn under
+    // the panel and nothing on the quantity axis said where the market was.
+    it('lands on an x axis that crosses above zero', () => {
+        const r = build(10, 10, true, { x: { intercept: 5 }, y: { min: 5 } });
+        expect(r.error).toBe(null);
         expect(ticks(r).x).not.toContain('10');
         r.destroy();
     });

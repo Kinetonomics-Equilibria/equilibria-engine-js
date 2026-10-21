@@ -148,8 +148,13 @@ export class Label extends ViewObject {
             def.xPixelOffset = -xOffset;
         }
 
+        // The x axis is drawn at the x scale's intercept, which is a height,
+        // just as the y axis is drawn at the y scale's, which is a distance
+        // across. This read the y scale's for both, and the two only agree
+        // when both axes cross at 0. The A$ market's x axis is at a rate of
+        // 0.40, so its `Q^*` was placed at 0, under the panel, and never seen.
         if (def.y == 'AXIS') {
-            def.y = def.yScale.intercept;
+            def.y = def.xScale.intercept;
             def.yPixelOffset = yOffset;
         }
 
