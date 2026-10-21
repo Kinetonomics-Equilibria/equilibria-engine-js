@@ -420,7 +420,13 @@ export class Label extends ViewObject {
                 }
             }
         }
-        label.rootElement.style('left', x + 'px');
+        // Measured at the container's left edge, not at the anchor. An absolute
+        // box shrinks to the room between its left edge and the container's
+        // right, so a label measured at its anchor near the right of the
+        // canvas was given a sliver and wrapped — and a right-aligned label,
+        // which then stands to the left of its anchor, wrapped for no reason
+        // anyone could see. Its size is its text's, wherever it is going.
+        label.rootElement.style('left', '0px');
         label.rootElement.style('top', y + 'px');
         const width = label.rootElement.node().clientWidth,
             height = label.rootElement.node().clientHeight;
