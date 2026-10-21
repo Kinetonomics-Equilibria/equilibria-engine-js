@@ -59,7 +59,7 @@ When one is fixed, delete its line.
 | Chart title | Caption row across the top of the sheet, left end | The app, from the panel's `name` in `PANELS` |
 | Headline number and change chip | Caption row, right end | The app, from the panel's `headline` and `delta` calcs |
 | Plot | Under the caption | The engine |
-| Axis titles | Under the x axis, centred; left of the y axis, rotated, centred | The engine, from `xAxis.title` and `yAxis.title` |
+| Axis titles | 40px under the x axis, centred; 48px left of the y axis, rotated, centred | The engine, from `xAxis.title` and `yAxis.title` |
 | Tick numbers | Outside each axis | The engine (d3) |
 | Dropline labels | On the axis, among the tick numbers | The engine, from `droplines` on a point |
 | Curve, point and area labels | On the plot, beside what they name | The engine, from `label` on the object |
@@ -87,9 +87,8 @@ A label's `fontSize` is in **points**, not pixels: `fontSize: 10` is 13.3px.
 | Point letter, area label, annotation | `fontSize: 10` | regular, plain text | the thing's |
 | Tick numbers | 12px | regular, tabular figures | axis grey |
 
-Apart from the tick numbers (see the end of this file), these are the engine's
-defaults for each kind of label, so a config normally sets no `fontSize` at
-all. Nothing a student has to read is smaller than 12px, and there are no sizes
+These are the engine's defaults for each kind of label, so a config normally
+sets no `fontSize` at all. Nothing a student has to read is smaller than 12px, and there are no sizes
 in between: no 9, no 11.
 
 ## Lines
@@ -152,25 +151,37 @@ Colour carries meaning on the chart in the same way as on the cards (see
   with ▲ ▼ and → in grey.
 - **Contrast against the white sheet**: at least 3:1 for a line, point or area
   edge, and 4.5:1 for text. Text drawn "in a curve's colour" uses a darker shade
-  of it wherever the curve's own colour falls short.
+  of it wherever the curve's own colour falls short. The engine does this for
+  every label (`readableOn` in `packages/engine/src/ts/view/readable.ts`), so a
+  label is given the curve's colour and nothing else.
+
+A new colour must clear 3:1 as a line, because nothing darkens a line for you.
 
 | Name | Colour | Means |
 | --- | --- | --- |
 | `demand` | blue | Demand, and the buyers behind it |
 | `supply` | orange | Supply, and the sellers behind it |
 | `equilibriumPrice` | green | Where the market clears: the point, its droplines, its arrow, the revenue it makes |
+| `ppf` | blue | The production possibility curve, and the resources it is built from |
+| `choice` | orange | Points chosen on the curve (A, B), and the step between them |
+| `combination` | purple | A combination anywhere: inside, on or outside the curve |
 
-Contrast of the engine's palette on white today:
+Contrast of the engine's palette on white. "Text" is what a label in that
+colour is drawn in:
 
-| Colour | Hex | Ratio | Line (3:1) | Text (4.5:1) |
-| --- | --- | --- | --- | --- |
-| red | #d62728 | 5.0 | yes | yes |
-| blue | #1f77b4 | 4.8 | yes | yes |
-| purple | #9467bd | 4.3 | yes | no |
-| grey | #7f7f7f | 4.0 | yes | no |
-| green | #2ca02c | 3.4 | yes | no |
-| orange | #ff7f0e | 2.5 | **no** | no |
-| olive | #bcbd22 | 2.0 | **no** | no |
+| Colour | Line | Ratio | Text |
+| --- | --- | --- | --- |
+| red | #d62728 | 5.0 | as the line |
+| blue | #1f77b4 | 4.8 | as the line |
+| purple | #9467bd | 4.3 | darkened to 4.5 |
+| grey | #7f7f7f | 4.0 | darkened to 4.5 |
+| green | #2ca02c | 3.4 | darkened to 4.5 |
+| orange | #e56a00 | 3.3 | darkened to 4.5 |
+| olive | #bcbd22 | 2.0, **too light for a line** | darkened to 4.5 |
+
+Orange is not d3's #ff7f0e, which was 2.5:1: too light for the supply curve
+to be seen against white. It is the same hue, darkened. Olive is still d3's, and
+no chart draws in it; darken it the same way before one does.
 
 ## Axes
 
@@ -207,7 +218,9 @@ above the plot.
   "Price $7.60", not "P\* $7.60". The label is the narrated calc's `label`, the
   same one the chain under the stage uses, so the words have to make sense
   there too. When the chart's name already says what the number is
-  ("Consumer surplus"), it is said once, not twice.
+  ("Consumer surplus"), it is said once, not twice: give the calc the panel's
+  name as its label, and the caption shows the name and an unlabelled number,
+  keeping the name even in a narrow grid panel.
 - **Then the change chip**, ▲ or ▼ and the amount, in grey, and only once
   something has moved as printed.
 - No subtitle, and nothing about the chart's title inside the plot.
@@ -226,6 +239,10 @@ above the plot.
   the same end every time that curve is drawn.
 - **A label stays on the plot across the whole slider range.** If the end of a
   curve moves, position the label with a calc, not a constant.
+- **A label never sits on the equilibrium.** Where the point can reach the end
+  of the curve its label is at, the label moves to the other end while the point
+  is there. Supply does this at the top of the market lesson's ranges
+  (`studyDiagram.ts`).
 - **The label is the curve's symbol** from the [list](#symbols). The live curve
   keeps its plain name always: D, never D′ or D₁. Its ghost adds ₀
   (`ghost: { label: '_0' }`), and the answer after a question adds ₁. The engine
@@ -235,8 +252,10 @@ above the plot.
 ### Points
 
 - **A point the student has to find by name gets a capital letter**: A, B, C…,
-  in the order the lesson brings them in, skipping any letter on the symbol
-  list (never P, Q, D, S or E).
+  usually in the order the lesson brings them in, skipping any letter on the
+  symbol list (never P, Q, D, S or E) and any letter the Maths tab already uses
+  for a param. The café's free point is Z for both reasons: P is price, and C
+  is coffees an hour.
 - **The letter sits beside its point**, on the side with open space, in the
   point's colour, as plain text at `fontSize: 10`.
 - **The equilibrium is not lettered.** Its droplines name it.
@@ -275,8 +294,9 @@ equilibrium price and quantity, or the quantity traded under a price ceiling.
 Anything else written on the plot. There are three kinds.
 
 1. **A measured step**: how far a move goes along one axis. "+20 toasties",
-   "−40 coffees". It sits at the middle of its leg, outside the shape the legs
-   make. It is signed with + or a true minus (−, not a hyphen) and has its unit
+   "−40 coffees". It sits beside its leg, outside the shape the legs make, and
+   clear of the points at either end: a label wider than its leg starts just
+   past the point the move starts from and runs along the leg away from it. It is signed with + or a true minus (−, not a hyphen) and has its unit
    in words, counted properly: "1 coffee", "2 coffees".
 2. **A readout**: a line or two about what is drawn. "A (60, 160) → B (80,
    120)", "1 more toastie costs 2.0 coffees". It goes in the top-right corner
@@ -294,7 +314,8 @@ For all three:
   caption, so a number reads the same on the plot as beside it.
 - One idea each, and no more than three at once on top of the curve and point
   labels. A lesson brings each one in at the step that explains it.
-- Never over the point or curve the student is dragging.
+- Never over the point or curve the student is dragging, and never off the
+  plot, at any position the sliders allow.
 - The only arrow is the engine's shift arrow, which a point's `ghost: true`
   draws from where it was to where it is. Don't draw decorative arrows.
 
@@ -398,40 +419,8 @@ Currency codes (A$, US$) are fine: that is how money is written.
 Each line is a place where a chart in the repo breaks a rule above. Fix it, or
 write down in the config why it stays, then delete the line here.
 
-**The engine** (`packages/engine`)
-
-- Tick numbers are 10px, d3's default. They should be 12px (`css/kgjs-theme.css`).
-- Orange (#ff7f0e, supply's colour) is 2.5:1 on white, under the 3:1 a line
-  needs. Green, purple and grey are fine as lines but short of 4.5:1 as text,
-  and green is the colour of P\* and Q\*. There are no darker text shades yet.
-- `\text{}` in a curve label (`\text{PPC}`) is set in KaTeX's serif. The fix
-  that put axis titles in the page's font (`.kg-axis-title .katex`) doesn't
-  reach other labels.
-
-**Supply and demand** (`apps/web/src/studyDiagram.ts`)
-
-- The axes are titled "P" and "Q" (`axes()`). They should be "Price ($)" and
-  "Quantity".
-- Caption and chain labels are symbols and abbreviations: "P\*", "Q\*", "CS",
-  "TR" (`NARRATED_CALCS`). They should be in words.
-- D is labelled at `x: 4`, its upper-left end. In the consumer surplus panel
-  that puts it inside the shaded area. It should be at the right-hand end.
-- The consumer surplus panel also shades producer surplus, and neither area is
-  labelled. Producer surplus is not named anywhere on screen.
-- No step says that D and S stand for demand and supply.
-
-**Foreign exchange** (`apps/web/src/lessons/foreignExchange.ts`)
-
-- "Q\*" labels a caption and chain number (`NARRATED_CALCS`). It should be in
-  words. "A$1 =" and "US$1 =" are how a rate is quoted and are fine.
-
 **Production possibilities** (`apps/web/src/lessons/productionPossibilities.ts`)
 
-- The PPC is drawn at `strokeWidth: 2.5`. It should be the default 2.
-- Point letters are at `fontSize: 11` and the step labels at 9. Both should be 10.
-- The legs of the step from A to B are dashed. They are a measurement, so they
-  should be dotted.
-- The free point is called P, which means price everywhere else. It should be
-  another letter.
-- Colours are raw names (`colors.blue`, `colors.orange`, `colors.purple`), not
-  names for what they mean.
+- With B left of A and near the coffees axis, the "+40 coffees" label on the
+  step's upright leg runs off the left of the plot, over the axis title. It is
+  placed to the left of the leg for every position of B (`costLeft`).
