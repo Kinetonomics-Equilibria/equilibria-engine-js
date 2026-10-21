@@ -342,19 +342,25 @@ test('a drag leaves a ghost of where the curve was', async ({ page }) => {
 /**
  * NOTES issue D, closed by looking at a screenshot of P13's work.
  *
- * A dragged curve takes focus, and the browser's default ring outlines the
+ * A dragged curve took focus, and the browser's default ring outlines the
  * element's *unclipped* bounding box — the curve's `d` spans the whole domain
  * and is cropped by a clip path, not by geometry — so the ring is a rectangle
  * the size of the panel and whichever edge falls inside is drawn as a flat line
  * right across the diagram. It was recorded at two unrelated heights and never
  * matched to any element, because it is an outline rather than a shape.
+ *
+ * It took focus only because the engine listened for focus on it: Chrome
+ * makes an SVG element with a focus listener focusable by the pointer. The
+ * listener painted the curve's hit area yellow, which a bowed curve showed as
+ * a solid yellow segment, and went with that; a drag now leaves focus where it
+ * was. Either way there is no ring across the panel, which is the claim.
  */
 test('a dragged curve does not draw a line across the panel', async ({ page }) => {
     await dragDemandDown(page);
 
     const ring = await page.evaluate(() => {
         const focused = document.activeElement;
-        if (!focused || !focused.closest('.kg-container')) return 'nothing in the diagram has focus';
+        if (!focused || !focused.closest('.kg-container')) return 'none';
         return getComputedStyle(focused).outlineStyle;
     });
 

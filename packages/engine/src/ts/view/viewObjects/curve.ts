@@ -71,8 +71,16 @@ export class Curve extends ViewObject {
         curve.dragPath = curve.rootElement.selectAll('path.dragPath-' + curve.id).data([1]).join('path').attr('class', 'dragPath-' + curve.id).attr('stroke-width', '20px').style('stroke', 'yellow').style('stroke-opacity', 0).style('fill', 'none');
         curve.path = curve.rootElement.selectAll('path.path-' + curve.id).data([1]).join('path').attr('class', 'path-' + curve.id).style('fill', 'none');
         curve.addScreenReaderDescriptions(curve.path);
-        curve.path.on("focus", function () { curve.dragPath.style('fill', 'yellow') });
-        curve.path.on("blur", function () { curve.dragPath.style('fill', 'none') });
+        // The hit area is never filled, focused or not. Focus used to fill it
+        // yellow, which a straight line has no area to show — so it never drew
+        // anything on a demand or supply curve — and which closes a bowed curve
+        // into a solid yellow segment from end to end: a PPC, the moment a
+        // student clicked to drag it. A focus ring is the theme's job, and one
+        // that traces the curve is still owed (kgjs-theme.css).
+        //
+        // The listeners were also the only reason a curve took focus at all:
+        // Chrome makes an SVG element with a focus listener focusable by the
+        // pointer. Without them a drag leaves focus where it was.
         return curve.addClipPathAndArrows().addInteraction();
     }
 
