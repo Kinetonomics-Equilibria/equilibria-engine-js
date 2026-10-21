@@ -546,6 +546,14 @@ export interface StageParamValue {
  * svg is deliberately `overflow: visible`. Parking it under the focal panel
  * keeps every scale sane and every fraction inside 0–1. Its level is left
  * where it was, since nothing it draws is on screen.
+ *
+ * `keys` are the engine's panels, and only theirs. An arrangement may hold
+ * panels the host draws itself (`hosted` in `ArrangeInput`'s callers — a
+ * picture beside the diagram), which take a place on the stage and have no
+ * rect, level or count in the engine: they are left out of every param here.
+ * When one of them is focal, the focus param says so by naming no engine
+ * panel — it is `keys.length`, one past the last — rather than claiming that
+ * the first engine panel is.
  */
 export function layoutParams(
     keys: string[], arrangement: Arrangement, authoredDensity: string[] = []
@@ -555,11 +563,15 @@ export function layoutParams(
     const byKey: { [key: string]: PanelRect } = {};
     arrangement.panels.forEach(function (p) { byKey[p.key] = p });
     const focal = byKey[arrangement.focused] || arrangement.panels[0];
+    const drawn = arrangement.panels.filter(p => keys.indexOf(p.key) > -1);
+    const focusIndex = keys.indexOf(arrangement.focused) > -1
+        ? keys.indexOf(arrangement.focused)
+        : byKey[arrangement.focused] ? keys.length : 0;
 
     const out: StageParamValue[] = [
-        { name: FOCUS_PARAM, value: Math.max(0, keys.indexOf(arrangement.focused)) },
+        { name: FOCUS_PARAM, value: focusIndex },
         { name: MODE_PARAM, value: MODE_VALUE[arrangement.mode] },
-        { name: REVEALED_PARAM, value: Math.max(1, arrangement.panels.length) }
+        { name: REVEALED_PARAM, value: Math.max(1, drawn.length) }
     ];
 
     keys.forEach(function (key, i) {
@@ -569,7 +581,7 @@ export function layoutParams(
         });
     });
 
-    arrangement.panels.forEach(function (p) {
+    drawn.forEach(function (p) {
         if (authoredDensity.indexOf(p.key) > -1) return;
         out.push({ name: densityParamName(p.key), value: densityIndex(p.level) });
     });
@@ -601,6 +613,11 @@ export interface StageLayout {
 export interface LayoutInput extends ArrangeInput {
     /** How many panels have arrived, from the front of `panels`. Every one, by default. */
     arrived?: number;
+    /**
+     * Panels the host draws itself, arranged after the arrived ones and given
+     * no params: the engine has no panel by their names. See `layoutParams`.
+     */
+    hosted?: string[];
 }
 
 /**
@@ -632,7 +649,7 @@ export interface LayoutInput extends ArrangeInput {
 export function toCustomLayout(input: LayoutInput): StageLayout {
     const keys = input.panels || [],
         arrived = Math.min(keys.length, Math.max(1, input.arrived === undefined ? keys.length : input.arrived)),
-        arrangement = arrange({ ...input, panels: keys.slice(0, arrived) });
+        arrangement = arrange({ ...input, panels: keys.slice(0, arrived).concat(input.hosted || []) });
 
     const values: { [name: string]: number } = {};
     layoutParams(keys, arrangement).forEach(function (p) { values[p.name] = p.value });
@@ -649,9 +666,12 @@ export function toCustomLayout(input: LayoutInput): StageLayout {
     // diagram nobody had touched. It is also what `relayout` insists on before
     // it will write a param at all.
     const params: StageLayout['params'] = keys.length === 0 ? [] : [
+        // Up to one past the last engine panel, which is how the param says
+        // a panel the host draws is focal. Declared now, because the config
+        // is built once and a panel the host draws can arrive at any time.
         {
             name: FOCUS_PARAM, value: values[FOCUS_PARAM],
-            min: 0, max: Math.max(0, keys.length - 1), round: 1, presentation: true
+            min: 0, max: keys.length, round: 1, presentation: true
         },
         { name: MODE_PARAM, value: values[MODE_PARAM], min: 0, max: 1, round: 1, presentation: true },
         {

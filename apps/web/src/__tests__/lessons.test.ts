@@ -284,11 +284,27 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     it('keeps the choice out of the prompt of a question that offers one', () => {
         lesson.lesson.forEach((step, i) => {
             if (!step.ask || candidatesOf(step.ask).length < 2) return;
+            // A report beside the question is part of its prompt.
+            const told = step.aside && lesson.asides ? lesson.asides[step.aside] : undefined;
+            const prompt = [step.say, told && told.headline, told && told.body].filter(Boolean).join(' ');
             candidatesOf(step.ask).forEach(name => {
                 const def = paramNamed(lesson, name);
                 const label = (def && def.label ? def.label : name).toLowerCase();
-                expect((step.say || '').toLowerCase(), `step ${i + 1} names "${label}"`).not.toContain(label);
+                expect(prompt.toLowerCase(), `step ${i + 1} names "${label}"`).not.toContain(label);
             });
+        });
+    });
+
+    it('shows beside a step only reports it has', () => {
+        lesson.lesson.forEach((step, i) => {
+            if (!step.aside) return;
+            const told = (lesson.asides || {})[step.aside];
+            expect(told, `step ${i + 1} shows "${step.aside}"`).toBeDefined();
+            expect(told.headline.trim() && told.body.trim(), `"${step.aside}" says nothing`).toBeTruthy();
+            if (told.picture) expect((lesson.pictures || {})[told.picture], `"${step.aside}"'s picture`).toBeDefined();
+            // A report is a panel's name on the stage beside the diagram's own:
+            // it cannot share a key with one.
+            expect(lesson.panels.some(p => p.key === step.aside), `"${step.aside}" is a panel's key`).toBe(false);
         });
     });
 

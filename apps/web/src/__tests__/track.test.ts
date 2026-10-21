@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     AT_START, trackReducer, maxPosition, isBlocked, stepKinds,
-    paramsAt, paramsBetween, sayAt, revealedPanels, partsOf, partCounts, slideAt
+    paramsAt, paramsBetween, sayAt, revealedPanels, partsOf, partCounts, slideAt, asideAt
 } from '../track/track';
 import type { LessonStep, TrackState } from '../track/track';
 
@@ -227,6 +227,22 @@ describe('what covers the stage', () => {
         expect(slideAt(STEPS, 1, true)).toBeNull();
         expect(slideAt(STEPS, 0, false)).toBeNull();
         expect(slideAt([], 0, true)).toBeNull();
+    });
+});
+
+describe('what is beside the diagram', () => {
+
+    it('is the report at the step that shows one, and only there', () => {
+        const steps: LessonStep[] = [{ say: 'Before.' }, { aside: 'report', ask: ASK }, { say: 'After.' }];
+        expect(asideAt(steps, 2)).toBe('report');
+        expect(asideAt(steps, 1)).toBeNull();
+        expect(asideAt(steps, 3)).toBeNull();
+        expect(asideAt(steps, 0)).toBeNull();
+    });
+
+    // Under a sheet there is no diagram to be beside.
+    it('is never a picture or a recap', () => {
+        expect(slideAt([{ aside: 'report', ask: ASK }], 1, true)).toBeNull();
     });
 });
 

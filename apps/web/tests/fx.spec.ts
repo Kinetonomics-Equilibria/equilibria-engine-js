@@ -103,14 +103,19 @@ const caption = (page: Page, key: string) => page.locator(`[data-testid="stage-c
 const lessonWords = (page: Page) =>
     page.getByRole('region', { name: 'Lesson' }).locator('[aria-live="polite"]').first();
 
-/** The first question — the RBA, which moves demand for A$ — from a fresh load. */
+/**
+ * The first question — the RBA, which moves demand for A$ — from a fresh load.
+ *
+ * The RBA is in the news report beside the diagram (P15), not on the card: the
+ * card asks the question, and the report tells the story.
+ */
 async function toTheFirstQuestion(page: Page) {
     const markers = page.locator('button[data-kinds]');
     const kinds = await markers.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-kinds') || ''));
     await markers.nth(kinds.findIndex((k) => k.includes('ask'))).click();
     const question = page.getByRole('group', { name: 'Question' });
     await expect(question).toBeVisible();
-    await expect(lessonWords(page)).toContainText('RBA');
+    await expect(page.locator('[data-host-panel="rbaReport"]')).toContainText('RBA');
     return question;
 }
 
@@ -536,6 +541,74 @@ test('no text on the stage lands on other text', async ({ page }) => {
             await expect.poll(() => textCollisions(page), { message: `${arrangement}, ${scenario}` }).toEqual([]);
         }
     }
+});
+
+/**
+ * The news report beside the first question (P15): a panel of the stage's, as
+ * the US$ market is, drawn by the app rather than the engine.
+ *
+ * Promoted from the keyboard it travels to the front, the diagram steps aside
+ * for it, and it is read there; once the question is done it goes, and the
+ * market is at the front again.
+ */
+test('the first question has its news report beside it, as a panel of the stage', async ({ page }) => {
+    const question = await toTheFirstQuestion(page);
+    const report = page.locator('[data-host-panel="rbaReport"]');
+    await expect(report).toBeVisible();
+    const small = (await report.boundingBox())!;
+
+    await page.getByRole('button', { name: 'Show the news report' }).focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(async () => (await report.boundingBox())!.width).toBeGreaterThan(small.width * 1.5);
+    await expect(report).toContainText('A made-up report, for this question');
+    await expect(page.getByRole('button', { name: 'Show A$ market' })).toBeVisible();
+
+    await question.getByRole('button', { name: 'Check' }).click();
+    await question.getByRole('button', { name: 'Show me' }).click();
+    await question.getByRole('button', { name: 'Continue' }).click();
+    await expect(report).toHaveCount(0);
+    await expect(page.locator('[data-testid="stage-chrome"] [data-panel="market"]'))
+        .toHaveAttribute('data-role', 'focal');
+});
+
+// The report's words, the captions and the diagram's labels, at the widths a
+// class has: a laptop, a big screen and a small laptop, in Focus and in the
+// grid, where every panel is read at once.
+test('no text lands on other text with the report beside the diagram', async ({ page }) => {
+    for (const [width, height] of [[1440, 900], [1800, 1000], [1024, 768]]) {
+        await page.setViewportSize({ width, height });
+        await page.goto('/?lesson=fx');
+        await page.locator('.kg-container svg').waitFor();
+        await toTheFirstQuestion(page);
+        for (const arrangement of ['Focus', 'Grid']) {
+            await page.getByText(arrangement, { exact: true }).click();
+            await expect(page.locator('[data-host-panel="rbaReport"]')).toBeVisible();
+            await expect.poll(() => textCollisions(page), { message: `${width}x${height}, ${arrangement}` })
+                .toEqual([]);
+        }
+    }
+});
+
+// On a phone the panels beside the diagram are little more than captions
+// under it, and the report's says its headline; brought to the front, it is
+// read whole.
+test('on a phone the report is captioned by its headline, and read once brought forward', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?lesson=fx');
+    await page.locator('.kg-container svg').waitFor();
+    await toTheFirstQuestion(page);
+
+    const small = page.locator('[data-testid="stage-chrome"] [data-panel="rbaReport"]');
+    await expect(small).toContainText('The RBA lifts the cash rate');
+
+    // Its card is the target, as every small panel's is: the tile reaches the
+    // whole sheet, round a glyph that has next to no height of its own.
+    const card = (await small.locator('div').first().boundingBox())!;
+    await page.mouse.click(card.x + card.width / 2, card.y + card.height / 2);
+    const report = page.locator('[data-host-panel="rbaReport"]');
+    await expect(report).toBeVisible();
+    await expect(report).toContainText('Investors overseas buy Australian bonds');
+    await expect.poll(() => textCollisions(page)).toEqual([]);
 });
 
 test('the navbar moves between lessons, and the back button returns', async ({ page }) => {

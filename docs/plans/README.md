@@ -13,6 +13,10 @@ P14 came later and from somewhere else: the [A$ lesson](FX-lesson-findings.md), 
 screen against a topic it was not written for, found the question loop could not ask which curve moves.
 It follows the same headings and has landed too.
 
+P15 came from the screen rather than from a defect: what the stage could show besides a diagram — a
+cover before the first step, a picture at a step, a recap at the end, and a report beside a question
+as a panel of its own. It is the first plan since P7 to change `Stage`'s surface.
+
 ## Settle these first
 
 Three forks decide which lane several items belong to. Answer them differently and parts of these
@@ -43,7 +47,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P12](P12-refusals-that-speak.md) | Refusals that speak ✅ **done** | engine | P5, P6 |
 | [P13](P13-ghost-authoring-shorthand.md) | `ghost:` authoring shorthand ✅ **done** | bindings | P5, P6 |
 | [P14](P14-which-curve-moves.md) | Which curve moves, and showing a direction-only answer ✅ **done** | app | P11, the A$ lesson |
-| [P15](P15-the-stage-beyond-charts.md) | The stage, when it isn't a chart: a cover, pictures, a recap 🚧 **in progress** | app + bindings | P7, P10, P11, P14 |
+| [P15](P15-the-stage-beyond-charts.md) | The stage, when it isn't a chart: a cover, pictures, a recap ✅ **done** | app + bindings | P7, P10, P11, P14 |
 
 Both of the plans that were only outlines inside P5 have now been written out and landed: P12, and
 P13, which was the last of them.
@@ -90,6 +94,9 @@ itself rather than a second copy of it.
   clause — a refusal is the student's own action, in which nothing moved. ~~**P13**~~ (done) is the
   last, and the only one that adds no behaviour at all: it collapses the hand-written ghost into a
   flag on the object it is a ghost of.
+- Putting more than a diagram on the stage: ~~**P15**~~ (done). A sheet laid over the stage for a
+  moment with no diagram — the cover, a picture, the recap — and `hostPanels` for a panel the app
+  draws itself, arranged with the diagram's. Read its "Why this shape" before adding a fifth kind.
 
 ## Findings that cut across the set
 

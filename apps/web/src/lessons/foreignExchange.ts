@@ -5,6 +5,7 @@ import type { StudyContent } from './content';
 import coverPicture from './pictures/fx-cover.svg';
 import tradePicture from './pictures/fx-trade.svg';
 import tradeStill from './pictures/fx-trade-still.svg';
+import rbaPicture from './pictures/fx-rba.svg';
 
 /**
  * The market for the Australian dollar, for Australian students.
@@ -320,8 +321,10 @@ export const FX_LESSON: LessonStep[] = [
         part: 'Your turn',
         set: { ...BASELINE },
         title: 'Interest rates rise',
-        say: 'The RBA lifts the cash rate above US interest rates. Investors overseas buy ' +
-            'Australian bonds to earn the higher return.\n\n' +
+        // The event is the report's, beside the diagram, so the card asks the
+        // question and nothing else: one home for the news.
+        aside: 'rbaReport',
+        say: 'Read the news report next to the diagram.\n\n' +
             'Which curve moves, and which way? Move it, then press Check.',
         ask: {
             param: 'demand', direction: 'up', among: ['demand', 'supply'], illustrate: 10,
@@ -598,6 +601,20 @@ export const FOREIGN_EXCHANGE: StudyContent = {
             alt: 'Iron ore, beef, wine, degrees, holidays and shares leave Australia for buyers ' +
                 'overseas, who swap US$ for A$ to pay for them. Every A$ they need is part of ' +
                 'the demand for A$.'
+        },
+        rba: {
+            name: 'A central bank announcement',
+            src: rbaPicture,
+            alt: 'An office tower in a city centre, with a percentage sign and an arrow pointing up.'
+        }
+    },
+    asides: {
+        rbaReport: {
+            name: 'News report',
+            headline: 'The RBA lifts the cash rate above US interest rates',
+            body: 'Investors overseas buy Australian bonds to earn the higher return.',
+            note: 'A made-up report, for this question',
+            picture: 'rba'
         }
     },
     diagram: fxDiagram,

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">
+  <!-- The picture with the A$ lesson's made-up report on the RBA: an office
+       tower and a rate going up. Generic on purpose — no building anyone could
+       name, no logo — in the cover's slate and blue-greys, so nothing here
+       borrows a curve's colour. -->
+  <rect width="320" height="200" fill="#e3eaf2"/>
+  <rect x="58" y="96" width="56" height="104" fill="#bcccdc"/>
+  <rect x="206" y="72" width="54" height="128" fill="#bcccdc"/>
+  <rect x="114" y="34" width="92" height="166" fill="#829ab1"/>
+  <g fill="#d9e2ec">
+    <rect x="126" y="46" width="16" height="10"/><rect x="152" y="46" width="16" height="10"/><rect x="178" y="46" width="16" height="10"/>
+    <rect x="126" y="68" width="16" height="10"/><rect x="152" y="68" width="16" height="10"/><rect x="178" y="68" width="16" height="10"/>
+    <rect x="126" y="90" width="16" height="10"/><rect x="152" y="90" width="16" height="10"/><rect x="178" y="90" width="16" height="10"/>
+    <rect x="126" y="112" width="16" height="10"/><rect x="152" y="112" width="16" height="10"/><rect x="178" y="112" width="16" height="10"/>
+    <rect x="126" y="134" width="16" height="10"/><rect x="152" y="134" width="16" height="10"/><rect x="178" y="134" width="16" height="10"/>
+    <rect x="126" y="156" width="16" height="10"/><rect x="152" y="156" width="16" height="10"/><rect x="178" y="156" width="16" height="10"/>
+  </g>
+  <rect y="186" width="320" height="14" fill="#9fb3c8"/>
+  <circle cx="262" cy="46" r="28" fill="#fff" stroke="#334e68" stroke-width="3"/>
+  <text x="255" y="56" text-anchor="middle" font-size="26" font-weight="700" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" fill="#334e68">%</text>
+  <path d="M276 54 v-16 m-6 6 l6 -6 l6 6" fill="none" stroke="#334e68" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

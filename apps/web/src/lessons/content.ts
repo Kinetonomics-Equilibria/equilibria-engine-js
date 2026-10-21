@@ -48,6 +48,16 @@ export interface StudyContent {
     pictures?: Record<string, Picture>;
 
     /**
+     * What a step shows beside the diagram, by name: a report a question is
+     * about, read while the student works on the diagram.
+     *
+     * Not a `PanelSpec`. It has no number to headline and is not drawn by the
+     * engine; the stage arranges it as a panel of its own (`hostPanels`) while
+     * its step is on screen, and the screen draws it there.
+     */
+    asides?: Record<string, Aside>;
+
+    /**
      * What the student will be able to do by the end, for the lesson card's
      * first page: three short lines, said before the first step, so the steps
      * that follow have somewhere to go.
@@ -170,6 +180,26 @@ export interface Picture {
     src: string;
     alt: string;
     still?: string;
+}
+
+/**
+ * A report beside the diagram: the event a question turns on, said as the
+ * news would say it, so the step's words on the card can be the question alone.
+ *
+ * Made up, and it says so (`note`): a lesson's numbers are its own, and a real
+ * report quoted at a class would be quoted out of its time.
+ */
+export interface Aside {
+    /** What it is, in a few words: the caption over its panel, "In the news". */
+    name: string;
+    /** What happened, as a headline. */
+    headline: string;
+    /** One sentence more: who does what because of it. */
+    body: string;
+    /** A line under it, smaller: "A made-up report, for this question". */
+    note?: string;
+    /** A key in `StudyContent.pictures`, drawn with it where there is room. */
+    picture?: string;
 }
 
 export interface PanelSpec {

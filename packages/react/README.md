@@ -27,7 +27,10 @@ What it is:
   engine's own axes need. A `shelf` is a filmstrip too narrow for its captions beside its
   glyphs, captioned above them instead, and only an app that gives it room gets one. Only the
   rail, the strip and the shelf lay a promote button across a panel; a grid panel is dragged
-  like the focal one, and its chrome is handed `promote` instead.
+  like the focal one, and its chrome is handed `promote` instead. **`hostPanels`** are panels the
+  app draws itself — a picture or a report beside the diagram — arranged after the config's
+  arrived panels and promoted like them, with no rect, level or count in the engine; one arriving
+  or leaving is a relayout. `renderPanel` draws each in a layer between the canvas and the chrome.
 - **`arrange` / `toCustomLayout` / `layoutParams` / `pixelBox`** — the arrangement arithmetic,
   exported on its own because it is a pure function of a box and a list of keys and an app may
   want the numbers without rendering anything. `toCustomLayout` declares the rect params and

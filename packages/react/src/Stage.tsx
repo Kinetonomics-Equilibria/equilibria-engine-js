@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { CSSProperties, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { KG_CONTAINER_CLASS, densityIndex, densityParamName } from 'equilibria-engine-js';
-import type { KineticGraph, KineticGraphOptions } from 'equilibria-engine-js';
+import type { DensityLevel, KineticGraph, KineticGraphOptions } from 'equilibria-engine-js';
 import { useEquilibria } from './useEquilibria';
 import type { UseEquilibriaEventCallbacks } from './useEquilibria';
 import { arrange, layoutParams, pixelBox, revealedCount, toCustomLayout, FURNITURE } from './arrangement';
@@ -19,6 +19,11 @@ import type { Frame, Move, PanelFrame } from './motion';
  * and a component that tried to own a panel would need its own engine — which
  * is the design this replaced, and which makes linkage between panels an
  * illusion the app maintains by hand.
+ *
+ * The one panel the tree does own is one that is not a diagram at all — a
+ * picture or a report beside it (`hostPanels`). It shares no state with the
+ * diagram, so there is no linkage to fake, and it needs no engine: the stage
+ * gives it a place in the arrangement and the host draws it there.
  *
  * So `Stage` supplies mechanism only: measure the box, mount one engine whose
  * panels' rects are params, lay it out again whenever the arrangement changes —
@@ -58,6 +63,13 @@ export interface StagePanel {
      * the panel, which is what a backdrop has to cover.
      */
     room: Room;
+    /**
+     * The level of detail the panel is drawn at: `full` and `compact` are read,
+     * `indicator` is a glyph. The engine's panels draw their own detail from
+     * it; a panel the host draws (`hostPanels`) should do the same, so that it
+     * turns from glyph to read in the frame the engine's panels do.
+     */
+    level: DensityLevel;
     /**
      * Promote this panel. Set only where the stage puts no control of its own
      * over the panel — in the grid, where the panel is being read and dragged
@@ -106,6 +118,35 @@ export interface StageProps extends UseEquilibriaEventCallbacks {
 
     /** The chrome for one panel: its name, a delta chip, whatever the app wants. */
     renderChrome?: (panel: StagePanel) => ReactNode;
+
+    /**
+     * Panels the host draws itself, which the stage arranges like any other.
+     *
+     * Not every panel worth putting beside a diagram is a diagram: a picture,
+     * a report, a table a lesson is about. Such a panel takes a place in the
+     * arrangement — on the rail, in the strip, focal once it is promoted, a
+     * cell of the grid — and travels with the rest when the focus or the mode
+     * changes, and the engine never hears of it: it has no rect, level or count
+     * among the engine's params, and arriving or leaving rebuilds nothing.
+     *
+     * Arranged after the config's arrived panels, in this order, and present
+     * while they are listed here — `revealed` is about the config's panels and
+     * does not apply. A key the config already declares is ignored, with a
+     * warning: one name cannot be two panels.
+     *
+     * What one shows is `renderPanel`'s. Its chrome and its backdrop are drawn
+     * like any panel's, so a promote button covers it on the rail as it would
+     * an engine panel.
+     */
+    hostPanels?: string[];
+
+    /**
+     * What a host panel shows, drawn at its box in a layer above the diagram
+     * and under the chrome. Focal and in the grid it takes the pointer, so its
+     * own controls work there; on the rail, the strip or the shelf the promote
+     * button over it takes it instead. Called once per frame of a move.
+     */
+    renderPanel?: (panel: StagePanel) => ReactNode;
 
     /**
      * Something drawn *behind* one panel: a card, a tint, a frame.
@@ -198,6 +239,8 @@ export function Stage({
     mode = 'focus',
     onPromote,
     renderChrome,
+    hostPanels,
+    renderPanel,
     renderBackdrop,
     chromeRoom,
     promoteLabel,
@@ -272,7 +315,25 @@ export function Stage({
     const roomKey = JSON.stringify(chromeRoom || {});
     const room = useMemo(() => JSON.parse(roomKey) as RoomByRole, [roomKey]);
 
-    const focusIndex = Math.max(0, keys.indexOf(focused as string));
+    // The host's panels, by value for the same reason the reveal is, and never
+    // one of the engine's: a key both declared would be two panels by one name.
+    const hostedKey = (hostPanels || []).join('\n');
+    const hosted = useMemo(
+        () => (hostPanels || []).filter((key, i, all) => keys.indexOf(key) < 0 && all.indexOf(key) === i),
+        [hostedKey, keysKey]
+    );
+    useEffect(() => {
+        const clashing = (hostPanels || []).filter(key => keys.indexOf(key) > -1);
+        if (clashing.length > 0) {
+            console.warn(`Stage: "${clashing.join('", "')}" ${clashing.length === 1 ? 'is' : 'are'} ` +
+                `declared by the config and listed in hostPanels too. One key cannot be two panels, ` +
+                `so the config's panel was kept. Give the host's panel a name of its own.`);
+        }
+    }, [hostedKey, keysKey]);
+
+    const focusKey = keys.indexOf(focused as string) > -1 || hosted.indexOf(focused as string) > -1
+        ? focused as string
+        : keys[0];
 
     // Joined rather than passed by identity: a host that recomputes the array
     // every render would otherwise re-arrange the stage on every render.
@@ -312,11 +373,11 @@ export function Stage({
         () => (box && keys.length > 0
             ? arrange({
                 width: box.width, height: box.height,
-                panels: keys.slice(0, arrived), focused: keys[focusIndex], mode,
+                panels: keys.slice(0, arrived).concat(hosted), focused: focusKey, mode,
                 chrome: room, furniture: FURNITURE
             })
             : null),
-        [box && box.width, box && box.height, keysKey, focusIndex, mode, arrived, room]
+        [box && box.width, box && box.height, keysKey, hosted, focusKey, mode, arrived, room]
     );
 
     /** The arrangement at rest, with the room around each panel in pixels: chrome plus furniture. */
@@ -402,9 +463,12 @@ export function Stage({
     const stageConfig = useMemo(() => {
         if (!measurable || !arrangement || keys.length === 0) return null;
 
+        // The host's panels as they stand, so the engine's first frame leaves
+        // their places clear — and out of the dependencies, like everything
+        // else the arrangement owns: one arriving is a relayout, not a rebuild.
         const layout = toCustomLayout({
-            width: box!.width, height: box!.height, panels: keys, focused: keys[focusIndex], mode,
-            arrived: arrived, chrome: room, furniture: FURNITURE
+            width: box!.width, height: box!.height, panels: keys, focused: focusKey, mode,
+            arrived: arrived, hosted: hosted, chrome: room, furniture: FURNITURE
         });
         const next: any = JSON.parse(JSON.stringify(config));
         const def = customLayoutDef(next.layout);
@@ -524,6 +588,9 @@ export function Stage({
             });
         }
         frame.panels.forEach(function (p) {
+            // The engine has no panel by a host panel's name; its fade is the
+            // wrapper's, in the layer below.
+            if (keys.indexOf(p.key) < 0) return;
             if ((p.key in faded ? faded[p.key] : 1) !== p.opacity) instance.setPanelOpacity(p.key, p.opacity);
         });
     }, [isReady, instance, frame, built, authoredDensity, keysKey]);
@@ -550,6 +617,7 @@ export function Stage({
             // square is which.
             focused: panel.role === 'focal',
             role: panel.role,
+            level: panel.level,
             box: pxBox,
             slot: {
                 x: panel.slot.x * width,
@@ -603,6 +671,33 @@ export function Stage({
                 </div>
             ) : null}
             <div ref={containerRef} className={KG_CONTAINER_CLASS} />
+            {frame && box && renderPanel && hosted.length > 0 ? (
+                <div style={OVERLAY} data-testid="stage-panels">
+                    {frame.panels.filter(panel => hosted.indexOf(panel.key) > -1).map(function (panel) {
+                        const { info, position: placed, opacity } = placeOf(frame, panel, box.width);
+                        // Read where it is read, and promoted from the chrome
+                        // everywhere else: the button over a rail panel is the
+                        // chrome's, a layer up.
+                        const reads = panel.role === 'focal' || panel.role === 'grid';
+                        // `data-host-panel` rather than `data-panel`, for the
+                        // reason the backdrop has its own: a selector written
+                        // for a panel's chrome must not find this first.
+                        return (
+                            <div
+                                key={panel.key}
+                                style={{
+                                    ...placed,
+                                    ...(opacity < 1 ? { opacity: opacity } : {}),
+                                    pointerEvents: reads ? 'auto' : 'none'
+                                }}
+                                data-host-panel={panel.key}
+                            >
+                                {renderPanel(info)}
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : null}
             {frame && box ? (
                 <div style={OVERLAY} data-testid="stage-chrome">
                     {frame.panels.map(function (panel) {

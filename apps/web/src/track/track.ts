@@ -119,6 +119,16 @@ export interface LessonStep extends StepDefinition {
      * like a picture step it asks nothing of the diagram under it.
      */
     recap?: { takeaway: string };
+
+    /**
+     * A report this step shows beside the diagram, by its key in the lesson's
+     * `asides`: the event a question turns on, while the student answers it.
+     *
+     * A panel of its own on the stage, arranged with the diagram's — on the
+     * rail, promotable — for this step only. The step's words then need not
+     * tell the story the report does, and should not: one home for it.
+     */
+    aside?: string;
 }
 
 /** One control a step hands the student: which param, and what to call it. */
@@ -359,6 +369,12 @@ export function slideAt(steps: LessonStep[], position: number, hasCover: boolean
 export function askAt(steps: LessonStep[], position: number): LessonQuestion | null {
     const step = steps[position - 1];
     return step && step.ask ? step.ask : null;
+}
+
+/** The report beside the diagram at `position`, or null. */
+export function asideAt(steps: LessonStep[], position: number): string | null {
+    const step = steps[position - 1];
+    return step && step.aside ? step.aside : null;
 }
 
 /** The controls the step at `position` hands the student, or none. */

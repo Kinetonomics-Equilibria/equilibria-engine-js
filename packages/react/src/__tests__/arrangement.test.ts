@@ -549,7 +549,8 @@ describe('one layout, whose rects are params', () => {
 
     it('declares the focus, the mode, the reveal and four edges for every panel', () => {
         expect(layout.params.map(p => p.name)).toEqual([FOCUS_PARAM, MODE_PARAM, REVEALED_PARAM, ...rectNames]);
-        expect(layout.params[0].max).toBe(KEYS.length - 1);
+        // One past the last engine panel, which is how a host panel's focus is said.
+        expect(layout.params[0].max).toBe(KEYS.length);
     });
 
     // So a host that never mentions reveal gets the arrangement it always got.
@@ -704,6 +705,45 @@ describe('layoutParams', () => {
 
     it('has nothing to say about no panels', () => {
         expect(layoutParams([], arrange({ ...STAGE, panels: [] }))).toEqual([]);
+    });
+
+    /**
+     * A panel the host draws (`Stage`'s `hostPanels`) takes a place in the
+     * arrangement and none in the engine: no rect, no level, and not counted
+     * as arrived — the engine has no panel by its name, and a param it does
+     * not declare would be dropped without a word.
+     */
+    it('gives a panel the host draws a place, and the engine no param for it', () => {
+        const a = arrange({ ...STAGE, panels: [...KEYS.slice(0, 2), 'news'], focused: 'market' });
+        const params = layoutParams(KEYS, a);
+        const values = valuesOf(params);
+
+        expect(a.panels.map(p => p.key)).toContain('news');
+        expect(params.some(p => p.name.indexOf('news') > -1)).toBe(false);
+        expect(values[REVEALED_PARAM]).toBe(2);
+        expect(values[FOCUS_PARAM]).toBe(0);
+    });
+
+    // Promoted, the host's panel is focal and no engine panel is: the param
+    // says so by naming none of them, rather than claiming the first.
+    it('says no engine panel is focal when the host\'s panel is', () => {
+        const a = arrange({ ...STAGE, panels: [...KEYS.slice(0, 2), 'news'], focused: 'news' });
+        const values = valuesOf(layoutParams(KEYS, a));
+
+        expect(values[FOCUS_PARAM]).toBe(KEYS.length);
+        expect(values.density_market).toBe(densityIndex('indicator'));
+        expect(boxAt(values, 'cost')).toEqual([a.panels[2].x, a.panels[2].y, a.panels[2].width, a.panels[2].height]);
+    });
+
+    it('lays a host\'s panel out after the arrived ones, and declares nothing for it', () => {
+        const layout = toCustomLayout({ ...STAGE, panels: KEYS, arrived: 2, hosted: ['news'] });
+        expect(layout.panels.map(p => p.key)).toEqual(KEYS);
+        expect(layout.params.some(p => p.name.indexOf('news') > -1)).toBe(false);
+        const arrangement = arrange({ ...STAGE, panels: [...KEYS.slice(0, 2), 'news'] });
+        const values: { [name: string]: number } = {};
+        layout.params.forEach(p => { values[p.name] = p.value });
+        expect(values[rectParamName(1, 'width')])
+            .toBeCloseTo(arrangement.panels.filter(p => p.key === 'firm')[0].width, 6);
     });
 });
 

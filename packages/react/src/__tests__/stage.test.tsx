@@ -634,6 +634,109 @@ describe('a staged reveal', () => {
     });
 });
 
+/**
+ * Panels the app draws (`hostPanels`): a place in the arrangement, and nothing
+ * in the engine. A picture beside the diagram is arranged, captioned and
+ * promoted like any panel, and the engine — which has no panel by its name —
+ * is never asked to lay it out, fade it or count it.
+ */
+describe('panels the app draws', () => {
+
+    const hostLayer = (root: HTMLElement) => root.querySelector('[data-testid="stage-panels"]') as HTMLElement;
+    const hosted = (root: HTMLElement, key: string) =>
+        root.querySelector(`[data-host-panel="${key}"]`) as HTMLElement;
+
+    it('arranges one beside the diagram, draws it, and offers to promote it', () => {
+        const { container } = render(
+            <Stage config={config()} focused="market" revealed={['market']} hostPanels={['news']}
+                renderPanel={p => <span>{p.role}</span>} renderChrome={p => <span>{p.key}</span>} />
+        );
+
+        expect(hosted(container, 'news').textContent).toBe('rail');
+        expect(hosted(container, 'news').style.pointerEvents).toBe('none');
+        expect(container.querySelector('button[data-panel="news"]')).toBeTruthy();
+        // The focal panel gives up the rail's width to it.
+        expect(boxOf(chromeFor(container, 'market')).width).toBeLessThan(700);
+    });
+
+    it('tells the engine nothing about it', () => {
+        render(
+            <Stage config={config()} focused="market" revealed={['market']} hostPanels={['news']}
+                renderPanel={() => null} />
+        );
+        const built = latestInstance().config as any;
+        expect(built.layout.CustomLayout.panels.map((p: any) => p.key)).toEqual(KEYS);
+        expect(built.params.some((p: any) => p.name.indexOf('news') > -1)).toBe(false);
+        expect(declared(REVEALED_PARAM).value).toBe(1);
+    });
+
+    it('arrives and leaves by laying the engine out again, never by rebuilding', () => {
+        const cfg = config();
+        const { rerender } = render(
+            <Stage config={cfg} focused="market" revealed={['market']} renderPanel={() => null} />
+        );
+        const engine = latestInstance();
+
+        rerender(<Stage config={cfg} focused="market" revealed={['market']} hostPanels={['news']}
+            renderPanel={() => null} />);
+        rerender(<Stage config={cfg} focused="market" revealed={['market']} renderPanel={() => null} />);
+
+        expect(engineControl.instances).toHaveLength(1);
+        expect(engine.destroyed).toBe(false);
+        expect(engine.relayouts.length).toBeGreaterThanOrEqual(2);
+        expect(laidOut().some(p => p.name === REVEALED_PARAM && p.value !== 1)).toBe(false);
+        expect(paramUpdates()).toEqual([]);
+    });
+
+    it('is focal once promoted, and the engine is told none of its own is', () => {
+        const cfg = config();
+        const { container, rerender } = render(
+            <Stage config={cfg} focused="market" revealed={['market']} hostPanels={['news']}
+                renderPanel={p => <span>{p.role}</span>} />
+        );
+        rerender(<Stage config={cfg} focused="news" revealed={['market']} hostPanels={['news']}
+            renderPanel={p => <span>{p.role}</span>} />);
+
+        expect(hosted(container, 'news').textContent).toBe('focal');
+        expect(hosted(container, 'news').style.pointerEvents).toBe('auto');
+        expect(laidOut()).toContainEqual({ name: FOCUS_PARAM, value: KEYS.length });
+        expect(latestInstance().opacities.some(o => o.key === 'news')).toBe(false);
+    });
+
+    it('draws it above the diagram and under the chrome', () => {
+        const { container } = render(
+            <Stage config={config()} focused="market" revealed={['market']} hostPanels={['news']}
+                renderPanel={() => null} renderChrome={() => null} />
+        );
+        const layers = [...container.firstElementChild!.children];
+        const canvas = layers.findIndex(el => el.classList.contains(KG_CONTAINER_CLASS));
+        const panels = layers.indexOf(hostLayer(container));
+        const chrome = layers.findIndex(el => el.getAttribute('data-testid') === 'stage-chrome');
+        expect(canvas).toBeLessThan(panels);
+        expect(panels).toBeLessThan(chrome);
+        // Its own attribute, so a selector for a panel's chrome finds the chrome.
+        expect(hosted(container, 'news').hasAttribute('data-panel')).toBe(false);
+    });
+
+    it('draws no layer when the app draws no panels', () => {
+        const { container } = render(<Stage config={config()} renderPanel={() => null} />);
+        expect(hostLayer(container)).toBeNull();
+    });
+
+    // Arranged after the config's panels and never part of the reveal's
+    // prefix, so it cannot open a gap in it.
+    it('warns about a key the config declares, and about no gap', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => { });
+        render(
+            <Stage config={config()} focused="market" revealed={['market']} hostPanels={['firm', 'news']}
+                renderPanel={() => null} />
+        );
+        expect(warn.mock.calls.some(c => String(c[0]).includes('One key cannot be two panels'))).toBe(true);
+        expect(warn.mock.calls.some(c => String(c[0]).includes('arrive in the order'))).toBe(false);
+        warn.mockRestore();
+    });
+});
+
 describe('when the stage cannot do as it is told', () => {
 
     it('says so when the config is not a stage config', () => {
@@ -878,6 +981,23 @@ describe('a move', () => {
         expect(engine.opacities.some(o => o.opacity === 0)).toBe(true);
         expect(engine.opacities[engine.opacities.length - 1]).toEqual({ key: 'market', opacity: 1 });
         expect(chromeFor(container, 'market').style.opacity).toBe('');
+    });
+
+    // The engine is never asked to fade a panel it does not have: a host
+    // panel's fade is its wrapper's.
+    it('fades a panel the app draws as it steps aside, without telling the engine', () => {
+        stubMotion();
+        const cfg = config();
+        const props = { config: cfg, revealed: ['market'], hostPanels: ['news'], renderPanel: () => null };
+        const { container, rerender } = render(<Stage {...props} focused="news" />);
+        rerender(<Stage {...props} focused="market" />);
+        frameAt(40);
+
+        const news = container.querySelector('[data-host-panel="news"]') as HTMLElement;
+        expect(news.style.opacity).toBe('0');
+        frameAt(MOVE_MS);
+        expect(news.style.opacity).toBe('');
+        expect(latestInstance().opacities.some(o => o.key === 'news')).toBe(false);
     });
 
     it('slides the sheet stepping aside under the one coming forward', () => {

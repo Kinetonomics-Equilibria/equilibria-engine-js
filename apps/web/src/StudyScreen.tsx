@@ -18,13 +18,14 @@ import { NarrationCard } from './NarrationCard';
 import { QuestionRow } from './QuestionRow';
 import { TryRow } from './TryRow';
 import { LessonCard, LessonResume } from './LessonCard';
+import { AsidePanel } from './AsidePanel';
 import { LessonCover } from './LessonCover';
 import { LessonRecap } from './LessonRecap';
 import type { RecapCase } from './LessonRecap';
 import { PictureSheet } from './PictureSheet';
 import { StageSheet } from './StageSheet';
 import {
-    AT_START, askAt, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer, tryAt
+    AT_START, askAt, asideAt, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer, tryAt
 } from './track/track';
 import type { LessonQuestion, Outcome, TrackState } from './track/track';
 import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
@@ -261,6 +262,13 @@ const reach = (sheet: Room): CSSProperties =>
 const NAMED_GRID_PX = 220;
 
 /**
+ * The shortest glyph a report's own words are read in: a headline's two lines
+ * and a line of its sentence. Under it, as on a phone's strip, the caption
+ * carries the headline instead.
+ */
+const REPORT_GLYPH_PX = 96;
+
+/**
  * Each role's caption box, in the sheet, sized from the room that holds it.
  *
  * A caption across the top of a sheet runs from one side of it to the other,
@@ -299,6 +307,22 @@ const sheetBehind = (panel: StagePanel) => (
     <div className={classes.sheet} style={reach(sheetOf(panel))} />
 );
 
+/**
+ * Where a panel the screen draws itself puts what it shows, against its box:
+ * the sheet, less its padding and its caption's room. Where an engine panel
+ * draws its plot and its axes — the room the stage kept for the axes is the
+ * sheet's, so a report gets it too.
+ */
+function asideBody(panel: StagePanel): CSSProperties {
+    const sheet = sheetOf(panel), room = CHROME_ROOM[panel.role];
+    return {
+        top: -sheet.top + room.top,
+        right: -sheet.right + room.right,
+        bottom: -sheet.bottom + room.bottom,
+        left: -sheet.left + room.left
+    };
+}
+
 export interface StudyScreenProps {
     /**
      * The lesson on screen. Fixed for the life of the screen: a different
@@ -311,7 +335,7 @@ export interface StudyScreenProps {
 export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const {
         diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, paramWords, explorePrompts,
-        scenarios, questionApparatus, directionWords
+        scenarios, questionApparatus, directionWords, asides
     } = content;
     const { steps, panelKeys, narrated } = useMemo(() => prepare(content), [content]);
 
@@ -1193,6 +1217,22 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         [steps, panelKeys, shown]
     );
 
+    /**
+     * The report beside the diagram at this step, if it has one: a panel of
+     * the stage's for as long as the step is on screen, drawn by this screen
+     * rather than by the engine. Never while exploring, where the steps'
+     * reports have nothing to report on.
+     */
+    const aside = pane === 'explore' ? null : asideAt(steps, track.position);
+    const hostPanels = useMemo(() => (aside ? [aside] : []), [aside]);
+
+    // A report promoted and then left behind leaves nothing at the front, and
+    // the stage would put the first panel there for now and the report back
+    // the next time one arrived. The diagram is what the next step is about.
+    useEffect(() => {
+        if (asides && asides[focused] && focused !== aside) setFocused(panels[0].key);
+    }, [aside, focused, asides, panels]);
+
     // Deliberately not called for undo, which is the mirror case: undo restores
     // the params to what `prev` already holds, so leaving the snapshot alone is
     // what lets the ghosts hide themselves and the narration read rest.
@@ -1213,21 +1253,32 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         setMode('focus');
     }, []);
 
+    const report = useCallback((panel: StagePanel) => {
+        const told = asides ? asides[panel.key] : undefined;
+        if (!told) return null;
+        const picture = told.picture && content.pictures ? content.pictures[told.picture] : undefined;
+        return <AsidePanel aside={told} picture={picture} panel={panel} style={asideBody(panel)} />;
+    }, [asides, content.pictures]);
+
     const chrome = useCallback((panel: StagePanel) => {
         const declared = panels.filter(p => p.key === panel.key)[0];
-        if (!declared) return null;
+        // A report beside the diagram is captioned by its name alone: it has
+        // no number to headline, and what it says is in the panel itself.
+        const report = declared ? undefined : (asides || {})[panel.key];
+        if (!declared && !report) return null;
+        const name = declared ? declared.name : report!.name;
 
         // The caption says what its number *is*. "Market $13.0" left a student
         // to guess that the figure was the clearing price and not, say, the
         // revenue — and on the revenue panel, that "$91.0" was revenue and not
         // a price. The label is the one the narration uses for the same calc.
-        const metric = narrated[declared.headline],
-            label = metric ? metric.label : declared.headline,
+        const metric = declared ? narrated[declared.headline] : undefined,
+            label = metric ? metric.label : declared ? declared.headline : '',
             unit = metric && metric.unit ? metric.unit : '',
             places = calcPrecision(metric);
 
-        const level = readout[declared.headline],
-            delta = readout[declared.delta];
+        const level = declared ? readout[declared.headline] : undefined,
+            delta = declared ? readout[declared.delta] : undefined;
 
         // Shown only once something has moved *as printed*. At rest a chip that
         // says "▲ $0.00" is noise pretending to be news, and a threshold of its
@@ -1242,7 +1293,14 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         const body = (
             <>
                 {named ? (
-                    <Text component="span" className={classes.panelName}>{declared.name}</Text>
+                    <Text component="span" className={classes.panelName}>{name}</Text>
+                ) : null}
+                {/* On a phone a panel beside the diagram is its caption, more
+                  * or less — its glyph a few pixels tall, too short for the
+                  * report's own words — so a report says its headline there,
+                  * where a chart would say its number. */}
+                {report && !panel.focused && panel.role !== 'grid' && panel.box.height < REPORT_GLYPH_PX ? (
+                    <Text component="span" className={classes.reportLine}>{report.headline}</Text>
                 ) : null}
                 {typeof level === 'number' ? (
                     <>
@@ -1298,7 +1356,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                     className={classes[panel.role]}
                     style={style}
                     onClick={panel.promote}
-                    aria-label={`Show ${declared.name}`}
+                    aria-label={`Show ${name}`}
                 >
                     {body}
                     <IconArrowsDiagonal size={16} stroke={1.75} className={classes.icon} aria-hidden="true" />
@@ -1328,7 +1386,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         }
 
         return <div className={classes[panel.role]} style={style}>{body}</div>;
-    }, [readout, panels, narrated]);
+    }, [readout, panels, narrated, asides]);
 
     /**
      * The instruments, and what they are all handed.
@@ -1597,11 +1655,16 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                             mode={mode}
                             onPromote={promote}
                             renderChrome={chrome}
+                            hostPanels={hostPanels}
+                            renderPanel={report}
                             renderBackdrop={sheetBehind}
                             chromeRoom={CHROME_ROOM}
                             promoteLabel={key => {
                                 const declared = panels.filter(p => p.key === key)[0];
-                                return `Show ${declared ? declared.name : key}`;
+                                const told = asides ? asides[key] : undefined;
+                                return declared ? `Show ${declared.name}`
+                                    : told ? `Show the ${told.name.charAt(0).toLowerCase()}${told.name.slice(1)}`
+                                        : `Show ${key}`;
                             }}
                             onParamChanged={onParamChanged}
                             onParamBlocked={onParamBlocked}

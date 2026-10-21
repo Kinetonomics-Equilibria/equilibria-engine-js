@@ -251,12 +251,30 @@ export async function textCollisions(page: Page): Promise<string[]> {
             .filter(el => el.children.length === 0 && visible(el) && (el.textContent || '').trim() !== '')
             .map(el => ({ text: `caption "${(el.textContent || '').trim()}"`, box: el.getBoundingClientRect() }));
 
+        // What a panel the app draws says (P15): its own words are on the stage
+        // too, beside the captions and the diagram's. Measured as far as they
+        // are drawn — the panel clips what does not fit — so a line cut off at
+        // the panel's edge is not counted as landing on whatever is past it.
+        const hosted = [...document.querySelectorAll('[data-testid="stage-panels"] p')]
+            .filter(el => visible(el) && (el.textContent || '').trim() !== '')
+            .map(el => {
+                const box = el.getBoundingClientRect();
+                const clip = el.closest('[data-host-panel] > *')!.getBoundingClientRect();
+                const top = Math.max(box.top, clip.top), bottom = Math.min(box.bottom, clip.bottom);
+                const left = Math.max(box.left, clip.left), right = Math.min(box.right, clip.right);
+                return {
+                    text: `panel "${(el.textContent || '').trim().slice(0, 24)}"`,
+                    box: new DOMRect(left, top, Math.max(0, right - left), Math.max(0, bottom - top))
+                };
+            })
+            .filter(t => t.box.width > 0 && t.box.height > 0);
+
         // A pixel of anti-aliasing either way is not a collision.
         const overlap = (a: DOMRect, b: DOMRect) =>
             Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
             Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
 
-        const all = [...chrome, ...diagram.map(t => ({ ...t, text: `"${t.text}"` }))];
+        const all = [...chrome, ...hosted, ...diagram.map(t => ({ ...t, text: `"${t.text}"` }))];
         const found: string[] = [];
         for (let i = 0; i < all.length; i++) {
             for (let j = i + 1; j < all.length; j++) {

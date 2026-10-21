@@ -3,8 +3,9 @@
 **Lane:** app + bindings ·
 **Depends on:** P7 (the stage), P10 (one timeline), P11 (the attempt loop), P14 (which curve moves) ·
 **Unblocks:** lessons that teach with a picture as well as a diagram ·
-**Status:** 🚧 **In progress** — phases 1 (the cover), 2 (the picture step) and 3 (the recap) landed
-2026-10-21; phase 4 to follow, its own commit.
+**Status:** ✅ **Done** (2026-10-21), in four commits, one per phase. Read against the code before
+building — see [Read against the code](#read-against-the-code-2026-10-21) — and [Findings](#findings)
+for what building it turned up.
 
 ## Goal
 
@@ -124,11 +125,43 @@ is what survived that:
   so the rule became the takeaway — said once, under the cases — and the card says "Here's how you
   went on the four cases." The supply and demand lesson has no recap yet.
 
-### Phase 4 — the picture beside the diagram
+### Phase 4 — the picture beside the diagram ✅
 
-`Stage` gains `hostPanels` and `renderPanel`: panels the app draws, arranged after the diagram's,
-given no engine params, and drawn in a layer between the canvas and the chrome. The A$ lesson's
-first question shows its news report there.
+`packages/react`:
+
+- `Stage` takes `hostPanels` — keys the stage arranges after the config's arrived panels, present
+  while listed — and `renderPanel`, which draws one in a new layer (`data-testid="stage-panels"`)
+  between the canvas and the chrome. Each is placed at its box like the chrome, faded at the
+  frame's opacity in a move, and takes the pointer only when it is read (focal or in the grid); on
+  the rail, the strip or the shelf the chrome's promote button covers it, as it covers an engine
+  panel. Its wrapper carries `data-host-panel`, not `data-panel`, so a selector for a panel's
+  chrome never finds it first. A key the config declares is ignored, with a warning.
+- `keys` stays the engine's. The arrangement is of the arrived engine panels plus the host's;
+  `stageConfig` is built with the host's panels as they stand but does not depend on them, so one
+  arriving or leaving is a relayout, never a rebuild. `setPanelOpacity` is never called for one.
+- `layoutParams` counts only engine panels — the reveal, the densities — and when a host panel is
+  focal says so with a focus of `keys.length`, one past the last engine panel, rather than
+  claiming the first; `toCustomLayout` takes `hosted` and declares the focus param's max to match.
+  Nothing read `stageFocus`, so the wider range changes nothing an author wrote.
+- `StagePanel` carries `level`, so a host panel turns from glyph to read in the frame the engine's
+  panels do.
+
+`apps/web`:
+
+- `StudyContent.asides`, by key: a report's name (its caption), headline, sentence, a note, and a
+  picture. `LessonStep.aside` names one; `asideAt` reads it; the screen hands the stage
+  `hostPanels` from the current step (none while exploring).
+- `AsidePanel` (new) draws a report in its sheet's body — under the caption, where an engine panel
+  draws its plot and axes (`asideBody`, from `sheetOf` and `CHROME_ROOM`). Read, it shows the
+  picture, the headline, the sentence and the note; as a glyph, the words first and the picture only
+  with height to spare, and the note left to a screen reader. Where the glyph is too short to hold
+  the words — a phone's strip — the caption says the headline instead (`REPORT_GLYPH_PX`).
+- The caption names a report and prints no number; its promote control is "Show the news report".
+  A report promoted and then left behind hands the front back to the first chart.
+- Content: the A$ lesson's first question shows `rbaReport` — "The RBA lifts the cash rate above US
+  interest rates", "Investors overseas buy Australian bonds to earn the higher return", "A made-up
+  report, for this question", with a generic office-tower picture (`fx-rba.svg`). The card says only
+  "Read the news report next to the diagram" and the question.
 
 ## API / schema surface
 
@@ -150,6 +183,19 @@ interface LessonStep { recap?: { takeaway: string } }              // NEW (phase
 interface TrackState { outcomes: Record<number, Outcome> }         // NEW (phase 3)
 type Outcome = { how: 'first' } | { how: 'retry'; goes: number } | { how: 'shown' };  // NEW
 // TrackAction 'resolve' now carries `outcome: Outcome`             // CHANGED (phase 3)
+interface LessonStep { aside?: string }                            // NEW (phase 4)
+function asideAt(steps, position): string | null;                  // NEW (phase 4)
+interface StudyContent { asides?: Record<string, Aside> }          // NEW (phase 4)
+interface Aside { name; headline; body; note?; picture? }          // NEW (phase 4)
+
+// packages/react — Stage.tsx / arrangement.ts (phase 4)
+interface StageProps {
+    hostPanels?: string[];                                         // NEW
+    renderPanel?: (panel: StagePanel) => ReactNode;                // NEW
+}
+interface StagePanel { level: DensityLevel }                       // NEW
+interface LayoutInput { hosted?: string[] }                        // NEW
+// FOCUS_PARAM's declared max is keys.length (was keys.length - 1)  // CHANGED
 type Slide = { kind: 'cover' } | { kind: 'picture'; picture: string }
     | { kind: 'recap'; takeaway: string };                         // NEW; a kind per phase
 function slideAt(steps, position, hasCover): Slide | null;         // NEW
@@ -199,6 +245,27 @@ Phase 3:
 - `fx.spec.ts` — the outcomes on the sheet, right and shown in different colours, the takeaway, and
   Tab never stopping in the inert stage under the recap.
 
+Phase 4:
+
+- `arrangement.test.ts` — a panel the host draws has a place and no param; focal, it makes the focus
+  `keys.length`; `toCustomLayout` lays it out after the arrived panels and declares nothing for it.
+  The focus param's declared max is `keys.length`.
+- `stage.test.tsx`, "panels the app draws" — arranged beside the diagram, drawn, and offered for
+  promotion; nothing about it told the engine; arriving and leaving relay out without rebuilding;
+  focal once promoted, with the engine told none of its own is and never asked to fade it; drawn
+  above the canvas and under the chrome, on its own attribute; no layer without one; a clashing key
+  warned about, and no gap warning. In "a move", it fades as it steps aside, without the engine.
+- `lessons.test.ts` — a report's words are part of its question's prompt, so they cannot name a
+  curve the question offers; a step shows only reports the lesson has, with words, a picture it has,
+  and a key no chart panel uses.
+- `track.test.ts` — the report at its step only; never a slide.
+- `foreignExchange.test.tsx` — the report beside its question, with the story the card no longer
+  tells; gone before and after; promoted, and the market back at the front when it goes.
+- `fx.spec.ts` — the report is a panel of the stage, promoted from the keyboard and read at the
+  front; no text collides with it at 1440, 1800 and 1024 wide, in Focus and the grid; on a phone its
+  caption carries the headline and it is read once brought forward. `textCollisions` now reads the
+  host panels' text too, clipped to what they draw.
+
 ## Risks and unknowns
 
 - A phone's stage is short; the cover drops its picture below 460px of sheet height and shrinks its
@@ -210,7 +277,8 @@ Phase 3:
 - [x] Phase 1: the cover, both lessons — unit, screen and browser tests above, all green.
 - [x] Phase 2: the picture step — tests above, all green.
 - [x] Phase 3: the recap — tests above, all green.
-- [ ] Phase 4: the picture beside the diagram.
+- [x] Phase 4: the picture beside the diagram — tests above, all green: 435 engine, 201 bindings and
+  430 app unit tests, and 74 browser tests.
 
 ## Out of scope
 
@@ -225,6 +293,17 @@ Phase 3:
   13px labels came out at 10. Redrawn at 760 wide, about the stage's width, it is drawn at nearly
   its own size. On a phone it is still drawn at under half, and its labels are small; the alt text
   says everything it shows. A picture meant for a phone as well would want a narrower drawing.
+- **A container query cannot style its own container.** The report's body is its own size
+  container, and a rule for it under `@container (min-aspect-ratio: 4/3)` styled its picture — a
+  descendant — and not the body itself, so the picture shrank to 40% while the words stayed under it.
+  The row layout went; the picture is across the top.
+- **On a phone a panel beside the diagram is its caption.** The strip's glyph comes out a few pixels
+  tall at 390px wide — the US$ market is a green dot — and a report's words have nowhere to be. So
+  where the glyph is under `REPORT_GLYPH_PX` the caption says the headline, as a chart's says its
+  number, and a tap on the card brings the report forward to be read.
+- **The question's "RBA" moved, and a browser test noticed.** `toTheFirstQuestion` checked the card
+  said "RBA". The card no longer does — the report does — which is the design working, and the test
+  now reads the report.
 - **Playwright finds a button's icon as an image.** A Tabler icon is an `<svg>`, which the
   accessibility tree reports with the `img` role, so `getByRole('img')` inside the picture's sheet
   found the picture and the Pause icon. The browser tests find the picture by its `<img>` element.

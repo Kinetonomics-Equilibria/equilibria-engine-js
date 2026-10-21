@@ -265,6 +265,55 @@ describe('the recap', () => {
     });
 });
 
+describe('the report beside the first question', () => {
+
+    const report = () => document.querySelector('[data-host-panel="rbaReport"]');
+
+    // The event is the report's: the card asks the question and nothing else.
+    it('is beside the diagram at its question, and tells the story the card does not', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(FIRST_QUESTION));
+
+        expect(report()!.textContent).toContain('The RBA lifts the cash rate above US interest rates');
+        expect(report()!.textContent).toContain('A made-up report');
+        expect(words()).toContain('Read the news report next to the diagram.');
+        expect(words()).not.toContain('RBA');
+        expect(screen.getByRole('button', { name: 'Show the news report' })).toBeTruthy();
+    });
+
+    it('is gone at the next question, and was never there before', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(FIRST_QUESTION - 1));
+        expect(report()).toBeNull();
+
+        await user.click(marker(FIRST_QUESTION));
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Show me' }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+        expect(report()).toBeNull();
+    });
+
+    // Promoted, it is read at the front; left behind, the market comes back
+    // to the front rather than whichever panel the stage would fall back on.
+    it('can be brought to the front, and gives it back to the market when it goes', async () => {
+        const user = userEvent.setup();
+        mount();
+        await user.click(marker(FIRST_QUESTION));
+        await user.click(screen.getByRole('button', { name: 'Show the news report' }));
+        expect(screen.getByRole('button', { name: 'Show A$ market' })).toBeTruthy();
+
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Show me' }));
+        await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+        expect(screen.queryByRole('button', { name: 'Show A$ market' })).toBeNull();
+        expect(document.querySelector('[data-testid="stage-chrome"] [data-panel="market"]')!
+            .getAttribute('data-role')).toBe('focal');
+    });
+});
+
 describe('what the lesson says the A$ is worth', () => {
 
     it('opens at A$1 = US$0.65, with the US$ side still to come', () => {
