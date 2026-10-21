@@ -76,8 +76,14 @@ import { Schema } from "../../schemas/schema";
                 longRun: 'orange',
                 profit: 'green',
                 loss: 'red',
-                ppf: 'red',
                 mrt: 'orange',
+
+                // production possibilities: the curve, and the resources it is
+                // built from; the points chosen on it, and the step between
+                // them; and a combination anywhere, inside, on or outside it.
+                ppf: 'blue',
+                choice: 'orange',
+                combination: 'purple',
 
                 // equilibrium
                 price: 'grey',

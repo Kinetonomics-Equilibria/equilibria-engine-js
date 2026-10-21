@@ -138,11 +138,11 @@ export const PPC_LESSON: LessonStep[] = [
         }
     },
     {
-        reveal: ['P', 'attainable'],
+        reveal: ['Z', 'attainable'],
         set: { ...BASELINE, pt: 40, pc: 120 },
         title: 'Inside the curve',
         say: 'Last Saturday started slowly: for an hour, two staff had nothing to do. The café ' +
-            'made only 40 toasties and 120 coffees, point P.\n\n' +
+            'made only 40 toasties and 120 coffees, point Z.\n\n' +
             'Points inside the curve can be made, but they waste resources. The café could have ' +
             'made more of both.',
         term: {
@@ -164,15 +164,15 @@ export const PPC_LESSON: LessonStep[] = [
                 'thing without making less of another.'
         }
     },
-    // The try is safe to hand over: P is not seen again until "Full
+    // The try is safe to hand over: Z is not seen again until "Full
     // employment", which puts it where its words say.
     {
         set: { ...BASELINE, pt: 100, pc: 160 },
         title: 'Outside the curve',
         say: '100 toasties and 160 coffees is outside the curve. With the staff, time and ' +
             'machines it has, the café can\'t make that much, however hard it works.\n\n' +
-            'Move P around and watch its label: inside the curve, on it, or outside.',
-        try: [{ param: 'pt', label: 'Toasties at P' }, { param: 'pc', label: 'Coffees at P' }],
+            'Move Z around and watch its label: inside the curve, on it, or outside.',
+        try: [{ param: 'pt', label: 'Toasties at Z' }, { param: 'pc', label: 'Coffees at Z' }],
         term: {
             word: 'Unattainable',
             meaning: 'More than the resources can make: any point outside the curve.'
@@ -289,7 +289,7 @@ export const PPC_LESSON: LessonStep[] = [
         title: 'Full employment',
         say: 'Every point on the curve assumes all the café\'s resources are working, and working ' +
             'well. Real cafés have slow patches, with staff standing around.\n\n' +
-            'Then the café makes less than it could, like P: inside the curve, with nothing ' +
+            'Then the café makes less than it could, like Z: inside the curve, with nothing ' +
             'gained in return.',
         term: {
             word: 'Full employment',
@@ -368,7 +368,7 @@ export const PPC_LESSON: LessonStep[] = [
         }
     },
     // A and B come back for the instruments, where the student has the whole
-    // diagram to themselves, and P is put down and to the left, clear of them.
+    // diagram to themselves, and Z is put down and to the left, clear of them.
     {
         set: { ...BASELINE, a: 60, b: 80, pt: 30, pc: 80 },
         title: 'Over to you',
@@ -386,9 +386,9 @@ export const PPC_LESSON: LessonStep[] = [
 /** The position of the step titled `title`: 1 for the first step. */
 const stepTitled = (title: string) => PPC_LESSON.findIndex(step => step.title === title) + 1;
 
-/** Where A and B arrive, and where P stands down for them. */
+/** Where A and B arrive, and where Z stands down for them. */
 const CHOICES = stepTitled('Twenty more toasties');
-/** The one step after that which is about P again. */
+/** The one step after that which is about Z again. */
 const IDLE = stepTitled('Full employment');
 /** Where the curve is about shifts, and its ends arrive to drag. */
 const SHIFTS = stepTitled('Fixed resources');
@@ -399,7 +399,7 @@ const END = PPC_LESSON.length;
 /**
  * When each point is on the stage.
  *
- * Three points on one curve is two too many for most steps. P is about
+ * Three points on one curve is two too many for most steps. Z is about
  * efficiency, and stands aside while A and B are about cost; A and B stand
  * aside for the questions, which are about the curve. The instruments draw the
  * diagram at the last step, so everything is back for them.
@@ -408,7 +408,7 @@ const END = PPC_LESSON.length;
  * track as a step that draws something. The step between them and its labels
  * are not, and arrive with them by this alone.
  */
-const SHOW_P = `params.step < ${CHOICES} or params.step == ${IDLE} or params.step >= ${END}`;
+const SHOW_Z = `params.step < ${CHOICES} or params.step == ${IDLE} or params.step >= ${END}`;
 const SHOW_CHOICES = `(params.step >= ${CHOICES} and params.step < ${QUESTIONS}) or params.step >= ${END}`;
 
 /**
@@ -431,7 +431,7 @@ const choice = (name: 'A' | 'B', param: 'a' | 'b') => ({
     def: {
         name, title: name,
         x: `min(params.${param}, calcs.maxT)`, y: `calcs.c${name}`,
-        color: 'colors.orange',
+        color: 'colors.choice',
         show: SHOW_CHOICES,
         drag: [{ directions: 'xy', param, expression: ALONG_CURVE }],
         srTitle: 'Point ' + name
@@ -462,8 +462,8 @@ const letter = (name: 'A' | 'B', side: 'inside' | 'outside') => {
             name: `${name}${side === 'inside' ? 'In' : 'Out'}`, title: '',
             x: `max(${scale} * calcs.t${name}, calcs.maxT / 25)`,
             y: `max(${scale} * calcs.c${name}, calcs.maxC / 25)`,
-            text: name, align: 'center', plainText: true, fontSize: 11,
-            color: 'colors.orange',
+            text: name, align: 'center', plainText: true,
+            color: 'colors.choice',
             show: `(${SHOW_CHOICES}) and calcs.gain ${rightwards ? '>=' : '<'} 0`
         }
     };
@@ -485,7 +485,7 @@ const readout = (name: string, line: number, text: string, show = 'true') => ({
     def: {
         name, title: '', x: 158, y: 320, text, plainText: true,
         align: 'right', xPixelOffset: -5, yPixelOffset: -(10 + 16 * line),
-        fontSize: 10, color: 'colors.orange',
+        color: 'colors.choice',
         show: `(${SHOW_CHOICES}) and ${show}`
     }
 });
@@ -502,17 +502,26 @@ const at = (name: 'A' | 'B') =>
  * clear of the curve depends on it. Going right, the steps run above and to
  * the right of the curve between A and B, and the labels go outside them;
  * going left, the corner is under the curve, and they go inside it.
+ *
+ * `place` is the engine's label placement. The toasties' label starts just
+ * past A and runs along its leg away from it, rather than being centred on
+ * the leg: it is wider than a short step, and centred it reached back over A,
+ * the point a student is dragging.
  */
 const legLabel = (
-    name: string, x: string, y: string, text: string, rightwards: boolean, position: string
+    name: string, x: string, y: string, text: string, rightwards: boolean, place: object
 ) => ({
     type: 'Label',
     def: {
-        name, title: '', x, y, text, position, plainText: true, fontSize: 9,
-        color: 'colors.orange',
+        name, title: '', x, y, text, plainText: true, ...place,
+        color: 'colors.choice',
         show: `(${SHOW_CHOICES}) and calcs.gain ${rightwards ? '>' : '<'} 0`
     }
 });
+
+/** Just past A, along the leg away from it: above it going right, below it going left. */
+const PAST_A_RIGHTWARDS = { align: 'left', xPixelOffset: 9, yPixelOffset: 10 };
+const PAST_A_LEFTWARDS = { align: 'right', xPixelOffset: -9, yPixelOffset: -12 };
 
 /** "1 coffee", "2 coffees". */
 const counted = (n: string, word: string) => `concat(string(${n}), ${n} == 1 ? " ${word}" : " ${word}s")`;
@@ -555,10 +564,10 @@ const calcs = {
     gain: `(${SHOW_CHOICES}) ? calcs.tB - calcs.tA : NaN`,
     cost: `(${SHOW_CHOICES}) ? calcs.cA - calcs.cB : NaN`,
     oc: 'round(calcs.cost / calcs.gain, 1)',
-    // Where P is against the curve, as a fraction of the way out to it along
+    // Where Z is against the curve, as a fraction of the way out to it along
     // its own ray: under 1 inside, over 1 outside. Three hundredths either way
     // counts as on it, which is a coffee or so's width at this scale.
-    rP: '((params.pt / calcs.maxT)^params.k + (params.pc / calcs.maxC)^params.k)^(1 / params.k)',
+    rZ: '((params.pt / calcs.maxT)^params.k + (params.pc / calcs.maxC)^params.k)^(1 / params.k)',
     dOc: 'calcs.oc - prev.calcs.oc'
 };
 
@@ -581,8 +590,8 @@ export const ppcDiagram = {
         // In steps of 5 toasties, so every move is a sum a student can check.
         { name: 'a', label: 'Toasties at A', value: 60, min: 0, max: 150, round: 5 },
         { name: 'b', label: 'Toasties at B', value: 80, min: 0, max: 150, round: 5 },
-        { name: 'pt', label: 'Toasties at P', value: 40, min: 0, max: 160, round: 5 },
-        { name: 'pc', label: 'Coffees at P', value: 120, min: 0, max: 320, round: 5 },
+        { name: 'pt', label: 'Toasties at Z', value: 40, min: 0, max: 160, round: 5 },
+        { name: 'pc', label: 'Coffees at Z', value: 120, min: 0, max: 320, round: 5 },
 
         // The question apparatus, presentation like every lesson's.
         { name: 'asking', value: 0, min: 0, max: 1, round: 1, presentation: true },
@@ -613,7 +622,7 @@ export const ppcDiagram = {
                                 name: 'attainable', title: '',
                                 fn1: curveAt('(x)'), fn2: '0',
                                 min: 0, max: 'calcs.maxT', samplePoints: 80,
-                                color: 'colors.blue', opacity: 0.08,
+                                color: 'colors.ppf', opacity: 0.08,
                                 srTitle: 'What the café can make'
                             }
                         },
@@ -621,7 +630,7 @@ export const ppcDiagram = {
                             type: 'Curve',
                             def: {
                                 name: 'questionStart', ...curveOf(START),
-                                color: 'colors.blue', lineStyle: 'dashed', strokeOpacity: 0.35,
+                                color: 'colors.ppf', lineStyle: 'dashed', strokeOpacity: 0.35,
                                 show: 'params.asking'
                             }
                         },
@@ -629,7 +638,7 @@ export const ppcDiagram = {
                             type: 'Curve',
                             def: {
                                 name: 'questionAnswer', ...curveOf(ANSWER),
-                                color: 'colors.blue', lineStyle: 'dotted',
+                                color: 'colors.ppf', lineStyle: 'dotted',
                                 label: { text: '\\text{PPC}_1', t: 1.35, position: 'bl' },
                                 show: ANSWERED
                             }
@@ -644,7 +653,7 @@ export const ppcDiagram = {
                             type: 'Curve',
                             def: {
                                 name: 'ppc', title: '', ...curveOf({ toasties: 'calcs.maxT', coffees: 'calcs.maxC' }),
-                                color: 'colors.blue', strokeWidth: 2.5,
+                                color: 'colors.ppf',
                                 // Its name, up on the flat top, outside. Not
                                 // while the lesson is about A and B, which
                                 // the lesson puts there as well; the name was
@@ -678,7 +687,7 @@ export const ppcDiagram = {
                             type: 'Point',
                             def: {
                                 name: 'coffeeEnd', title: '', x: 0, y: 'calcs.maxC',
-                                color: 'colors.blue', r: 5,
+                                color: 'colors.ppf', r: 5,
                                 drag: [{
                                     directions: 'y', param: 'C', expression: 'max(drag.y, 0) / params.h',
                                     draggable: 'not(params.submitted)'
@@ -690,7 +699,7 @@ export const ppcDiagram = {
                             type: 'Point',
                             def: {
                                 name: 'toastieEnd', title: '', x: 'calcs.maxT', y: 0,
-                                color: 'colors.blue', r: 5,
+                                color: 'colors.ppf', r: 5,
                                 drag: [{
                                     directions: 'x', param: 'T', expression: 'max(drag.x, 0) / params.h',
                                     draggable: 'not(params.submitted)'
@@ -702,11 +711,15 @@ export const ppcDiagram = {
                         // Untitled, as everything drawn here but the points
                         // is: a name doubles as a word in "What changed", and
                         // a leg growing is not something the student moved.
+                        //
+                        // Dotted, as a dropline is: each is a distance to read
+                        // off. Dashed is what a curve's ghost is, where the
+                        // curve used to be (docs/chart-design.md).
                         {
                             type: 'Segment',
                             def: {
                                 name: 'gainLeg', title: '', a: ['calcs.tA', 'calcs.cA'], b: ['calcs.tB', 'calcs.cA'],
-                                color: 'colors.orange', lineStyle: 'dashed',
+                                color: 'colors.choice', lineStyle: 'dotted',
                                 show: `(${SHOW_CHOICES}) and calcs.gain != 0`
                             }
                         },
@@ -714,18 +727,18 @@ export const ppcDiagram = {
                             type: 'Segment',
                             def: {
                                 name: 'costLeg', title: '', a: ['calcs.tB', 'calcs.cA'], b: ['calcs.tB', 'calcs.cB'],
-                                color: 'colors.orange', lineStyle: 'dashed',
+                                color: 'colors.choice', lineStyle: 'dotted',
                                 show: `(${SHOW_CHOICES}) and calcs.cost != 0`
                             }
                         },
-                        legLabel('gainRight', '(calcs.tA + calcs.tB) / 2', 'calcs.cA',
-                            'concat("+", string(calcs.gain), " toasties")', true, 'b'),
+                        legLabel('gainRight', 'calcs.tA', 'calcs.cA',
+                            'concat("+", string(calcs.gain), " toasties")', true, PAST_A_RIGHTWARDS),
                         legLabel('costRight', 'calcs.tB', '(calcs.cA + calcs.cB) / 2',
-                            `concat("−", ${counted('calcs.cost', 'coffee')})`, true, 'l'),
-                        legLabel('gainLeft', '(calcs.tA + calcs.tB) / 2', 'calcs.cA',
-                            'concat("−", string(-calcs.gain), " toasties")', false, 't'),
+                            `concat("−", ${counted('calcs.cost', 'coffee')})`, true, { position: 'l' }),
+                        legLabel('gainLeft', 'calcs.tA', 'calcs.cA',
+                            'concat("−", string(-calcs.gain), " toasties")', false, PAST_A_LEFTWARDS),
                         legLabel('costLeft', 'calcs.tB', '(calcs.cA + calcs.cB) / 2',
-                            `concat("+", ${counted('-calcs.cost', 'coffee')})`, false, 'r'),
+                            `concat("+", ${counted('-calcs.cost', 'coffee')})`, false, { position: 'r' }),
                         readout('route', 0, `concat(${at('A')}, " → ", ${at('B')})`),
                         // Going left the café gains coffees, so it is a coffee's
                         // cost in toasties; a move along the flat top that
@@ -744,20 +757,20 @@ export const ppcDiagram = {
                         {
                             type: 'Point',
                             def: {
-                                name: 'P', title: 'P',
+                                name: 'Z', title: 'Z',
                                 x: 'params.pt', y: 'params.pc',
-                                color: 'colors.purple',
-                                show: SHOW_P,
+                                color: 'colors.combination',
+                                show: SHOW_Z,
                                 label: {
-                                    text: 'concat("P · ", calcs.rP < 0.97 ? "inefficient" : ' +
-                                        '(calcs.rP > 1.03 ? "unattainable" : "efficient"))',
+                                    text: 'concat("Z · ", calcs.rZ < 0.97 ? "inefficient" : ' +
+                                        '(calcs.rZ > 1.03 ? "unattainable" : "efficient"))',
                                     plainText: true
                                 },
                                 drag: [
                                     { directions: 'xy', param: 'pt', expression: 'params.pt + drag.dx' },
                                     { directions: 'xy', param: 'pc', expression: 'params.pc + drag.dy' }
                                 ],
-                                srTitle: 'Point P'
+                                srTitle: 'Point Z'
                             }
                         }
                     ]
@@ -932,7 +945,7 @@ export const PRODUCTION_POSSIBILITIES: StudyContent = {
         'Make every toastie cost the same number of coffees, wherever A and B are.'
     ],
     // The three things the curve is built from are blue, as the curve is; A
-    // and B are orange, as their points and the step between them are; P is
+    // and B are orange, as their points and the step between them are; Z is
     // purple. Specialisation bends the curve but is drawn into every point on
     // it as well, so it claims no colour.
     paramWords: {
@@ -941,21 +954,21 @@ export const PRODUCTION_POSSIBILITIES: StudyContent = {
                 'resources.',
             rise: 'Resources increase',
             fall: 'Resources decrease',
-            curve: 'blue'
+            curve: 'ppf'
         },
         C: {
             about: 'How many coffees an hour of work makes, if all of it goes on coffee. Better ' +
                 'machines and skills raise it.',
             rise: 'Coffee-making gets faster',
             fall: 'Coffee-making gets slower',
-            curve: 'blue'
+            curve: 'ppf'
         },
         T: {
             about: 'How many toasties an hour of work makes, if all of it goes on toasties. A ' +
                 'better sandwich press raises it.',
             rise: 'Toastie-making gets faster',
             fall: 'Toastie-making gets slower',
-            curve: 'blue'
+            curve: 'ppf'
         },
         k: {
             about: 'How differently suited the staff are to the two jobs. At 1 everyone is as ' +
@@ -963,10 +976,10 @@ export const PRODUCTION_POSSIBILITIES: StudyContent = {
             rise: 'The staff are more specialised',
             fall: 'The staff are less specialised'
         },
-        a: { about: 'Point A, on the curve. Drag it along the curve, or move it here.', curve: 'orange' },
-        b: { about: 'Point B, on the curve. Drag it along the curve, or move it here.', curve: 'orange' },
-        pt: { about: 'Point P can go anywhere: inside the curve, on it or outside.', curve: 'purple' },
-        pc: { about: 'Point P can go anywhere: inside the curve, on it or outside.', curve: 'purple' }
+        a: { about: 'Point A, on the curve. Drag it along the curve, or move it here.', curve: 'choice' },
+        b: { about: 'Point B, on the curve. Drag it along the curve, or move it here.', curve: 'choice' },
+        pt: { about: 'Point Z can go anywhere: inside the curve, on it or outside.', curve: 'combination' },
+        pc: { about: 'Point Z can go anywhere: inside the curve, on it or outside.', curve: 'combination' }
     },
     questionApparatus: {
         h: { start: 'startH', answer: 'answerH' },

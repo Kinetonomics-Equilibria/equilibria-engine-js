@@ -47,7 +47,7 @@ function hidden(node: Element | null): boolean {
     return false;
 }
 
-/** Every label the diagram is showing: the readout, the step's legs, P's, the letters. */
+/** Every label the diagram is showing: the readout, the step's legs, Z's, the letters. */
 const labels = () => [...document.querySelectorAll('.kg-container div[class^="rootElement-"]')]
     .filter(label => !hidden(label))
     .map(label => label.textContent || '');
@@ -96,12 +96,12 @@ describe('what each step says it costs', () => {
         'Every model simplifies': '2.0'
     };
 
-    /** Where P is against the curve at each step that shows it. */
-    const P_IS: Record<string, string> = {
-        'Inside the curve': 'P · inefficient',
-        'On the curve': 'P · efficient',
-        'Outside the curve': 'P · unattainable',
-        'Full employment': 'P · inefficient'
+    /** Where Z is against the curve at each step that shows it. */
+    const Z_IS: Record<string, string> = {
+        'Inside the curve': 'Z · inefficient',
+        'On the curve': 'Z · efficient',
+        'Outside the curve': 'Z · unattainable',
+        'Full employment': 'Z · inefficient'
     };
 
     it('is what the diagram solves to, at every step before the questions', async () => {
@@ -128,8 +128,8 @@ describe('what each step says it costs', () => {
             const given = /gives up (?:just )?(\d+) coffees/.exec(said);
             if (given) expect(labels(), where).toContain(`−${given[1]} coffees`);
 
-            const p = labels().filter(label => /^P · /.test(label));
-            expect(p, where).toEqual(P_IS[step.title!] ? [P_IS[step.title!]] : []);
+            const z = labels().filter(label => /^Z · /.test(label));
+            expect(z, where).toEqual(Z_IS[step.title!] ? [Z_IS[step.title!]] : []);
         }
     });
 
@@ -151,16 +151,16 @@ describe('what each step says it costs', () => {
 
     // A step whose params are already where it puts them raises no change of
     // its own, and the chain used to stay on the step before's move: here,
-    // P going outside the curve, at a step where P has been put away.
+    // Z going outside the curve, at a step where Z has been put away.
     it('says nothing has changed at a step that changed nothing', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(at('On the curve')));
         await user.click(next());
-        expect(chain()).toMatch(/Toasties at P\s*60\s*→\s*100/);
+        expect(chain()).toMatch(/Toasties at Z\s*60\s*→\s*100/);
 
         await user.click(next());
-        expect(chain()).not.toContain('Toasties at P');
+        expect(chain()).not.toContain('Toasties at Z');
     });
 });
 
@@ -211,12 +211,12 @@ describe('the move from A to B', () => {
 
 describe('the questions', () => {
 
-    it('puts A, B and P away, and offers the same three changes every time', async () => {
+    it('puts A, B and Z away, and offers the same three changes every time', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
 
-        expect(labels().filter(label => /^(A|B|P)\b/.test(label))).toEqual([]);
+        expect(labels().filter(label => /^(A|B|Z)\b/.test(label))).toEqual([]);
         expect(caption()).not.toContain('Coffees per toastie');
         expect(document.querySelector('[data-host-panel="noticeboard"]')!.textContent)
             .toContain('New sandwich press arrives Friday');
