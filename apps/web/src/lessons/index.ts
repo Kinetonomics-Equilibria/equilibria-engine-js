@@ -1,6 +1,7 @@
 import type { StudyContent } from './content';
 import { SUPPLY_AND_DEMAND } from './supplyAndDemand';
 import { FOREIGN_EXCHANGE } from './foreignExchange';
+import { PRODUCTION_POSSIBILITIES } from './productionPossibilities';
 
 /** A topic in the navbar's Lessons panel: a row that drops down to its lessons. */
 export interface LessonTopic {
@@ -32,7 +33,13 @@ export const CURRICULUM: LessonStrand[] = [
     {
         label: 'Microeconomics',
         topics: [
-            { id: 'markets', label: 'Markets', color: 'teal', lessons: [SUPPLY_AND_DEMAND] }
+            { id: 'markets', label: 'Markets', color: 'teal', lessons: [SUPPLY_AND_DEMAND] },
+            // After Markets for now, though a course meets it first: the first
+            // lesson listed is the one the app opens on.
+            {
+                id: 'economic-problem', label: 'The economic problem', color: 'grape',
+                lessons: [PRODUCTION_POSSIBILITIES]
+            }
         ]
     },
     {

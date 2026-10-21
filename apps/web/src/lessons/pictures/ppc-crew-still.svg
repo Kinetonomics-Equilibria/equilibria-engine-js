@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1012" height="400" viewBox="0 0 1012 400">
+  <!-- ppc-crew.svg standing still: the same five staff, two machines and
+       clock, with the steam where it is and the clock's hand at 9, halfway
+       through the shift. Made from ppc-crew.svg by dropping its <animate>
+       elements, for Pause and for a student who has asked for less motion. -->
+  <rect width="1012" height="400" fill="#f6efe6"/>
+  <!-- The clock, with the shift shaded from 7 to 11. -->
+  <circle cx="506" cy="64" r="40" fill="#f8f9fa" stroke="#334e68" stroke-width="5"/>
+  <path d="M506 64 L486 98.64 A40 40 0 0 1 486 29.36 Z" fill="#c9d8e8"/>
+  <g stroke="#334e68" stroke-width="3" stroke-linecap="round">
+    <line x1="506" y1="30" x2="506" y2="36"/>
+    <line x1="540" y1="64" x2="534" y2="64"/>
+    <line x1="506" y1="98" x2="506" y2="92"/>
+    <line x1="472" y1="64" x2="478" y2="64"/>
+  </g>
+  <line x1="506" y1="64" x2="506" y2="38" stroke="#243b53" stroke-width="5" stroke-linecap="round" transform="rotate(270 506 64)">
+  </line>
+  <circle cx="506" cy="64" r="5" fill="#243b53"/>
+  <g font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" fill="#486581" font-size="18">
+    <text x="560" y="71">7–11</text>
+  </g>
+
+  <!-- Five staff. Baristas in dark aprons with a cup, kitchen hands in light
+       aprons with a toastie, the manager in a shirt. -->
+  <g>
+    <!-- Barista. -->
+    <path d="M222 286 Q222 196 270 190 Q318 196 318 286 Z" fill="#486581"/>
+    <path d="M244 214 L296 214 L300 286 L240 286 Z" fill="#243b53"/>
+    <path d="M262 238 L278 238 L276 252 L264 252 Z" fill="#f8f9fa"/>
+    <circle cx="270" cy="160" r="26" fill="#c68642"/>
+    <path d="M244 156 Q246 128 270 128 Q296 128 296 156 Q284 142 270 144 Q256 142 244 156 Z" fill="#3b2a1e"/>
+  </g>
+  <g>
+    <!-- Barista. -->
+    <path d="M336 286 Q336 196 384 190 Q432 196 432 286 Z" fill="#486581"/>
+    <path d="M358 214 L410 214 L414 286 L354 286 Z" fill="#243b53"/>
+    <path d="M376 238 L392 238 L390 252 L378 252 Z" fill="#f8f9fa"/>
+    <circle cx="384" cy="160" r="26" fill="#f1c27d"/>
+    <path d="M356 166 Q350 124 384 126 Q418 124 412 166 Q410 146 396 140 Q384 150 358 146 Z" fill="#a0522d"/>
+  </g>
+  <g>
+    <!-- Manager. -->
+    <path d="M458 286 Q458 196 506 190 Q554 196 554 286 Z" fill="#627d98"/>
+    <path d="M496 192 L506 214 L516 192 Z" fill="#f8f9fa"/>
+    <circle cx="506" cy="160" r="26" fill="#8d5524"/>
+    <path d="M480 152 Q484 130 506 130 Q528 130 532 152 Q520 140 506 142 Q492 140 480 152 Z" fill="#1f1a17"/>
+  </g>
+  <g>
+    <!-- Kitchen hand. -->
+    <path d="M580 286 Q580 196 628 190 Q676 196 676 286 Z" fill="#486581"/>
+    <path d="M602 214 L654 214 L658 286 L598 286 Z" fill="#bcccdc"/>
+    <path d="M618 252 L638 252 L628 236 Z" fill="#d9a066"/>
+    <circle cx="628" cy="160" r="26" fill="#ffdbac"/>
+    <path d="M602 158 Q600 128 628 128 Q656 128 654 158 Q648 140 628 142 Q608 140 602 158 Z" fill="#e3b04b"/>
+  </g>
+  <g>
+    <!-- Kitchen hand. -->
+    <path d="M694 286 Q694 196 742 190 Q790 196 790 286 Z" fill="#486581"/>
+    <path d="M716 214 L768 214 L772 286 L712 286 Z" fill="#bcccdc"/>
+    <path d="M732 252 L752 252 L742 236 Z" fill="#d9a066"/>
+    <circle cx="742" cy="160" r="26" fill="#e0ac69"/>
+    <path d="M716 160 Q712 126 742 126 Q772 126 768 160 Q764 142 742 140 Q724 142 716 160 Z" fill="#3b2a1e"/>
+  </g>
+
+  <!-- The counter. -->
+  <rect y="282" width="1012" height="118" fill="#334e68"/>
+  <rect y="270" width="1012" height="16" fill="#243b53"/>
+
+  <!-- The espresso machine, at the baristas' end. -->
+  <rect x="40" y="170" width="160" height="100" rx="10" fill="#486581"/>
+  <rect x="40" y="170" width="160" height="22" rx="10" fill="#243b53"/>
+  <rect x="62" y="206" width="34" height="16" rx="4" fill="#243b53"/>
+  <rect x="144" y="206" width="34" height="16" rx="4" fill="#243b53"/>
+  <path d="M68 246 L92 246 L88 268 L72 268 Z" fill="#f8f9fa"/>
+  <path d="M150 246 L174 246 L170 268 L154 268 Z" fill="#f8f9fa"/>
+  <g fill="none" stroke="#b6cfe8" stroke-width="4" stroke-linecap="round">
+    <path d="M80 160 q -9 -12 0 -24 t 0 -24">
+    </path>
+    <path d="M162 160 q 9 -12 0 -24 t 0 -24">
+    </path>
+  </g>
+
+  <!-- The sandwich press, at the kitchen hands' end. -->
+  <rect x="826" y="232" width="150" height="38" rx="8" fill="#486581"/>
+  <path d="M826 228 L976 228 L966 198 L836 198 Z" fill="#243b53"/>
+  <rect x="884" y="186" width="36" height="13" rx="6" fill="#243b53"/>
+  <rect x="840" y="228" width="122" height="6" fill="#d9a066"/>
+  <g fill="none" stroke="#b6cfe8" stroke-width="3" stroke-linecap="round">
+    <path d="M900 182 q -7 -10 0 -20 t 0 -20">
+    </path>
+  </g>
+
+  <g fill="none" stroke="#b6cfe8" stroke-width="3" stroke-linecap="round">
+    <path d="M120 340 q 14 -8 28 0 t 28 0"/>
+    <path d="M480 356 q 14 -8 28 0 t 28 0"/>
+    <path d="M840 340 q 14 -8 28 0 t 28 0"/>
+  </g>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1012" height="400" viewBox="0 0 1012 400">
+  <!-- The production possibilities lesson's cover: a café counter on a
+       Saturday morning, with the espresso machine at one end and the sandwich
+       press at the other, and what each makes waiting between them. Flat
+       shapes in the screen's slate, with coffee browns and toast tans, so
+       nothing here borrows a curve's colour (docs/design.md: colour means one
+       thing). -->
+  <rect width="1012" height="400" fill="#f6efe6"/>
+  <rect x="704" y="34" width="240" height="150" rx="6" fill="#dbe7f3"/>
+  <circle cx="884" cy="78" r="26" fill="#ffe8cc"/>
+  <path d="M704 150 C 760 128, 820 140, 870 124 C 900 116, 925 120, 944 116 L944 184 L704 184 Z" fill="#c9d8e8"/>
+  <rect x="700" y="30" width="248" height="158" rx="8" fill="none" stroke="#334e68" stroke-width="6"/>
+  <line x1="824" y1="30" x2="824" y2="188" stroke="#334e68" stroke-width="4"/>
+  <!-- The menu board. -->
+  <rect x="300" y="40" width="300" height="130" rx="8" fill="#243b53"/>
+  <g fill="#f6efe6" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" letter-spacing="3">
+    <text x="330" y="92" font-size="28">COFFEE</text>
+    <text x="330" y="146" font-size="28">TOASTIES</text>
+  </g>
+  <g stroke="#9fb3c8" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9">
+    <line x1="470" y1="84" x2="560" y2="84"/>
+    <line x1="500" y1="138" x2="560" y2="138"/>
+  </g>
+  <!-- The counter. -->
+  <rect y="282" width="1012" height="118" fill="#334e68"/>
+  <rect y="270" width="1012" height="16" fill="#243b53"/>
+  <!-- The espresso machine. -->
+  <rect x="70" y="150" width="200" height="120" rx="10" fill="#486581"/>
+  <rect x="70" y="150" width="200" height="26" rx="10" fill="#243b53"/>
+  <rect x="98" y="196" width="40" height="18" rx="4" fill="#243b53"/>
+  <rect x="202" y="196" width="40" height="18" rx="4" fill="#243b53"/>
+  <rect x="112" y="214" width="12" height="16" fill="#243b53"/>
+  <rect x="216" y="214" width="12" height="16" fill="#243b53"/>
+  <path d="M104 246 L132 246 L128 268 L108 268 Z" fill="#f8f9fa"/>
+  <path d="M208 246 L236 246 L232 268 L212 268 Z" fill="#f8f9fa"/>
+  <g fill="none" stroke="#b6cfe8" stroke-width="4" stroke-linecap="round">
+    <path d="M118 140 q -10 -14 0 -28 t 0 -28"/>
+    <path d="M222 140 q 10 -14 0 -28 t 0 -28"/>
+  </g>
+  <!-- Coffees waiting to go out. -->
+  <g>
+    <path d="M330 232 L370 232 L364 270 L336 270 Z" fill="#f8f9fa"/>
+    <ellipse cx="350" cy="232" rx="20" ry="5" fill="#8b5e3c"/>
+    <path d="M390 232 L430 232 L424 270 L396 270 Z" fill="#f8f9fa"/>
+    <ellipse cx="410" cy="232" rx="20" ry="5" fill="#8b5e3c"/>
+    <path d="M450 232 L490 232 L484 270 L456 270 Z" fill="#f8f9fa"/>
+    <ellipse cx="470" cy="232" rx="20" ry="5" fill="#8b5e3c"/>
+  </g>
+  <!-- Toasties on a board. -->
+  <rect x="540" y="258" width="190" height="12" rx="3" fill="#a27b5c"/>
+  <g fill="#d9a066" stroke="#a46a33" stroke-width="3">
+    <path d="M556 256 L616 256 L586 212 Z" stroke-linejoin="round"/>
+    <path d="M626 256 L686 256 L656 212 Z" stroke-linejoin="round"/>
+    <path d="M664 256 L718 256 L691 216 Z" stroke-linejoin="round"/>
+  </g>
+  <!-- The sandwich press. -->
+  <rect x="770" y="226" width="190" height="44" rx="8" fill="#486581"/>
+  <path d="M770 222 L960 222 L948 188 L782 188 Z" fill="#243b53"/>
+  <rect x="842" y="176" width="46" height="14" rx="6" fill="#243b53"/>
+  <rect x="786" y="222" width="158" height="6" fill="#d9a066"/>
+  <g stroke="#9fb3c8" stroke-width="3" stroke-linecap="round">
+    <line x1="806" y1="246" x2="924" y2="246"/>
+  </g>
+  <g fill="none" stroke="#b6cfe8" stroke-width="3" stroke-linecap="round">
+    <path d="M60 340 q 14 -8 28 0 t 28 0"/>
+    <path d="M520 352 q 14 -8 28 0 t 28 0"/>
+    <path d="M860 336 q 14 -8 28 0 t 28 0"/>
+  </g>
+</svg>
