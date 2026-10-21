@@ -1300,7 +1300,14 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             moved = change !== null && Number(change) !== 0,
             rose = typeof delta === 'number' && delta > 0;
 
-        const named = panel.role !== 'grid' || panel.box.width >= NAMED_GRID_PX
+        // A label that is the panel's name is said once. The labels are words
+        // now, so "Consumer surplus" would otherwise head its own number:
+        // "Consumer surplus  Consumer surplus $40.50". The name stays, even in
+        // a narrow grid panel where it is squeezed, since it is the only thing
+        // left saying what the number is.
+        const isName = !!label && label.toLowerCase() === name.toLowerCase();
+
+        const named = isName || panel.role !== 'grid' || panel.box.width >= NAMED_GRID_PX
             || typeof level !== 'number';
 
         const body = (
@@ -1322,7 +1329,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                           * separates them; a dot between them is not needed. */}
                         <Group gap={6} wrap="nowrap" className={classes.values}>
                             <Text component="span" className={classes.headline}>
-                                {label} {unit}{formatValue(level, places)}
+                                {isName ? '' : label + ' '}{unit}{formatValue(level, places)}
                             </Text>
                             {/* A direction and an amount, in the panel's own
                               * unit, and no verdict. Red for a fall said a lower

@@ -23,6 +23,9 @@
  */
 const DRAG_DEMAND = [{ vertical: 'a', draggable: 'not(params.submitted)' }];
 
+/** Where a demand curve with intercept `a` is labelled; see `demand`. */
+const DEMAND_LABEL_AT = (a: string) => `min(${a}, 20) - 2`;
+
 /**
  * A `name` is an address; a `title` is what the thing is called.
  *
@@ -42,7 +45,12 @@ const demand = (panel: string, draggable = false, ghost = false) => ({
         color: 'colors.demand',
         // Positioned by x along the line: a `Line` builds a univariate function
         // before it reaches `Curve`, so a label with an x lands on the curve.
-        label: { text: 'D', x: 4 },
+        //
+        // At its lower-right end, where a textbook puts it: two short of where
+        // it leaves the panel, through the quantity axis or, past a = 20, the
+        // right-hand edge. At x = 4 it was at the top left, which in the
+        // surplus panel is inside the shaded triangle (docs/chart-design.md).
+        label: { text: 'D', x: DEMAND_LABEL_AT('params.a') },
         ...(draggable ? { drag: DRAG_DEMAND } : {}),
         // Where this curve was when the student took hold of it (P13). The
         // engine builds the dashed twin from this same def, so the two cannot
@@ -71,7 +79,15 @@ const supply = (panel: string) => ({
         name: 'supply_' + panel, title: 'supply',
         yIntercept: 'params.c', slope: 1,
         color: 'colors.supply',
-        label: { text: 'S', x: 16 }
+        // At its upper-right end, a price of 18 whatever `c` is. At x = 16 a
+        // `c` over 4 put the label above the top of the panel.
+        //
+        // Except when the market clears up there too: P* reaches 18 with `a`
+        // and `c` both near the top of their ranges, and the label was drawn
+        // over the equilibrium. Higher up it does not fit in a small panel,
+        // and the engine slides it back down onto the point. So it goes to
+        // the curve's other end, which is then nowhere near P*.
+        label: { text: 'S', x: 'calcs.Pe > 16 ? 1.5 : 18 - params.c' }
     }
 });
 
@@ -106,7 +122,7 @@ const questionAnswer = () => ({
         // weight, which separates it from the start ghost (dashed and faint)
         // without borrowing the equilibrium's green and reading as a dropline.
         color: 'colors.demand', lineStyle: 'dotted',
-        label: { text: 'D_1', x: 4 },
+        label: { text: 'D_1', x: DEMAND_LABEL_AT('params.answerA') },
         show: 'params.revealed'
     }
 });
@@ -128,9 +144,10 @@ const equilibrium = (panel: string, ghost = false) => ({
     }
 });
 
+/** In words, with the unit: "P" and "Q" were letters nothing on screen explained. */
 const axes = () => ({
-    xAxis: { title: 'Q', min: 0, max: 20 },
-    yAxis: { title: 'P', min: 0, max: 20 }
+    xAxis: { title: 'Quantity', min: 0, max: 20 },
+    yAxis: { title: 'Price (\\$)', min: 0, max: 20 }
 });
 
 /**
@@ -162,7 +179,7 @@ export const LESSON = [
         part: 'Meet the market',
         reveal: ['demand_market'],
         title: 'Demand: what buyers want',
-        say: 'The demand curve shows how much of something buyers want at each price.\n\n' +
+        say: 'The demand curve, D, shows how much of something buyers want at each price.\n\n' +
             'It slopes down. When the price goes up, people buy less, and when it comes down, ' +
             'they buy more.',
         term: {
@@ -173,7 +190,7 @@ export const LESSON = [
     {
         reveal: ['supply_market'],
         title: 'Supply: what sellers offer',
-        say: 'The supply curve shows how much sellers want to sell at each price.\n\n' +
+        say: 'The supply curve, S, shows how much sellers want to sell at each price.\n\n' +
             'It slopes up. A higher price makes it worth producing more.',
         term: {
             word: 'Supply',
@@ -356,8 +373,16 @@ export const studyDiagram = {
                     ...axes(),
                     objects: [
                         demand('surplus', true), supply('surplus'),
-                        // The two triangles either side of the clearing price,
-                        // between each curve and P*, out to the quantity traded.
+                        // The triangle between demand and P*, out to the
+                        // quantity traded. The panel's one area, so its title
+                        // names it.
+                        //
+                        // Producer surplus was shaded under it as well, in
+                        // supply's orange, with no label, under a title saying
+                        // "Consumer surplus" — and no step ever mentions it. A
+                        // student could only take it for part of what the
+                        // title named. It comes back with a step that teaches
+                        // it, and a label of its own.
                         {
                             type: 'Area',
                             def: {
@@ -366,16 +391,6 @@ export const studyDiagram = {
                                 min: 0, max: 'calcs.Qe',
                                 color: 'colors.demand',
                                 srTitle: 'Consumer surplus'
-                            }
-                        },
-                        {
-                            type: 'Area',
-                            def: {
-                                name: 'producerSurplus',
-                                fn1: 'calcs.Pe', fn2: 'params.c + (x)',
-                                min: 0, max: 'calcs.Qe',
-                                color: 'colors.supply',
-                                srTitle: 'Producer surplus'
                             }
                         },
                         equilibrium('surplus')
@@ -414,8 +429,8 @@ export const studyDiagram = {
  *
  * A headline names one of `NARRATED_CALCS` below, and takes its label, unit and
  * decimals from there rather than declaring its own. The caption reads "Market ·
- * P* $13.00" and the strip under it reads "P* $11.00 → $13.00"; a panel that
- * kept its own copy of the unit is how those would come to disagree.
+ * Price $13.00" and the strip under it reads "Price $11.00 → $13.00"; a panel
+ * that kept its own copy of the unit is how those would come to disagree.
  */
 export const PANELS = [
     { key: 'market', name: 'Market', headline: 'Pe', delta: 'dPe' },
@@ -445,29 +460,40 @@ const MONEY = { unit: '$', precision: 2 };
  *
  * It is also what every number on the screen is *called*. The strip's clauses,
  * the panel captions and their change chips all print a calc with the label,
- * unit and decimals given here, so `P*` is `P*` and $13.00 is $13.00 wherever
- * a student reads it.
+ * unit and decimals given here, so the price is "Price" and $13.00 is $13.00
+ * wherever a student reads it.
+ *
+ * The labels are words, because a caption and the strip are words: "P* $13.00"
+ * and "CS $40.50" asked a student to know two abbreviations nobody had spelt
+ * out. A symbol is for the diagram and for a formula, where there is no room
+ * for a word, so `tex` gives the Maths instrument the one the dropline uses.
+ * Consumer surplus and revenue have none on the diagram, and their formulas
+ * say them in words.
  *
  * Order matters twice over: it is the order the clauses appear in, and the first
  * entry is what "why?" opens the maths explainer on.
  */
 export const NARRATED_CALCS = [
     {
-        name: 'Pe', label: 'P*', meaning: 'Equilibrium price', ...MONEY,
+        name: 'Pe', label: 'Price', tex: 'P^*', meaning: 'Equilibrium price', ...MONEY,
         rise: 'The price rises', fall: 'The price falls'
     },
     {
-        name: 'Qe', label: 'Q*', meaning: 'Equilibrium quantity',
+        name: 'Qe', label: 'Quantity', tex: 'Q^*', meaning: 'Equilibrium quantity',
         rise: 'More is bought and sold', fall: 'Less is bought and sold'
     },
     // In the words of the steps that bring these panels in: "What buyers gain"
-    // and "What sellers earn".
+    // and "What sellers earn". Labelled as the panels are named, so a caption
+    // says the name once and not twice.
+    //
+    // In a formula consumer surplus is "Surplus", under the heading that says
+    // whose: the whole phrase made its working wider than the Maths tab.
     {
-        name: 'CS', label: 'CS', meaning: 'Consumer surplus', ...MONEY,
+        name: 'CS', label: 'Consumer surplus', tex: '\\text{Surplus}', meaning: 'Consumer surplus', ...MONEY,
         rise: 'Buyers gain more', fall: 'Buyers gain less'
     },
     {
-        name: 'TR', label: 'TR', meaning: 'Total revenue', ...MONEY,
+        name: 'TR', label: 'Revenue', meaning: 'Total revenue', ...MONEY,
         rise: 'Sellers earn more', fall: 'Sellers earn less'
     }
 ];
@@ -481,8 +507,8 @@ export const NARRATED_CALCS = [
  * sliders call them `a` and `c`, and so do the formulas this explains.
  */
 export const PARAM_MEANINGS = {
-    a: 'where demand meets the P axis',
-    c: 'where supply meets the P axis'
+    a: 'where demand meets the price axis',
+    c: 'where supply meets the price axis'
 };
 
 /**

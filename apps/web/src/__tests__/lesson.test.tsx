@@ -161,7 +161,7 @@ describe('the lesson or the instruments', () => {
         expect(instruments()).toBeTruthy();
         expect(screen.queryByRole('region', { name: 'Lesson' })).toBeNull();
         expect(promotable()).toHaveLength(2);
-        expect(marketCaption()).toContain('P* $11.00');
+        expect(marketCaption()).toContain('Price $11.00');
     });
 
     // From one instrument to another is only a change of tab: the lesson is
@@ -174,7 +174,7 @@ describe('the lesson or the instruments', () => {
         await open(user, 'Maths');
 
         expect(instruments()).toBeTruthy();
-        expect(marketCaption()).toContain('P* $13.00');
+        expect(marketCaption()).toContain('Price $13.00');
     });
 
     it('puts the instruments away again when the lesson is opened', async () => {
@@ -198,7 +198,7 @@ describe('the lesson or the instruments', () => {
 
         expect(instruments()).toBeTruthy();
         expect(screen.getByRole('tab', { name: 'Explore' }).getAttribute('aria-selected')).toBe('true');
-        expect(marketCaption()).toContain('P* $11.00');
+        expect(marketCaption()).toContain('Price $11.00');
         expect(await valueOf(user, 'a')).toBe(20);
         expect(await valueOf(user, 'c')).toBe(2);
     });
@@ -223,17 +223,17 @@ describe('coming back to the lesson', () => {
         mount();
         await user.click(marker(MOVES));
         // a = 26 and c = 2: P* = 14.
-        expect(marketCaption()).toContain('P* $14.00');
+        expect(marketCaption()).toContain('Price $14.00');
 
         await open(user, 'Explore');
         await inputCostsRise(user);
-        expect(marketCaption()).toContain('P* $16.00');
+        expect(marketCaption()).toContain('Price $16.00');
 
         await open(user, 'Lesson');
 
         expect(instruments()).toBeNull();
         expect(words()).toContain('Incomes rise');
-        expect(marketCaption()).toContain('P* $14.00');
+        expect(marketCaption()).toContain('Price $14.00');
     });
 
     // The step's words point at its move — "watch the price change" — so the
@@ -267,7 +267,7 @@ describe('coming back to the lesson', () => {
         const row = screen.getByRole('group', { name: 'Question' });
         expect(row.getAttribute('data-phase')).toBe('prompt');
         expect(within(row).getByRole('slider', { name: /Your answer/ }).getAttribute('aria-valuenow')).toBe('20');
-        expect(marketCaption()).toContain('P* $11.00');
+        expect(marketCaption()).toContain('Price $11.00');
     });
 });
 
@@ -294,14 +294,14 @@ describe('what a step hands the student', () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(TRIES));
-        expect(marketCaption()).toContain('P* $14.00');
+        expect(marketCaption()).toContain('Price $14.00');
 
         const demand = within(tryIt()!).getByRole('slider', { name: 'Demand' });
         demand.focus();
         fireEvent.keyDown(demand, { key: 'End' });
 
         // a = 28 and c = 2: P* = 15.
-        expect(marketCaption()).toContain('P* $15.00');
+        expect(marketCaption()).toContain('Price $15.00');
     });
 });
 
@@ -320,7 +320,7 @@ describe('where the lesson says the market is', () => {
         await user.click(marker(BACK));
 
         // a = 20 and c = 2 again: P* = 11.
-        expect(marketCaption()).toContain('P* $11.00');
+        expect(marketCaption()).toContain('Price $11.00');
     });
 });
 
@@ -340,7 +340,7 @@ describe('the question, after demand has been moved', () => {
 
     it('starts from the baseline', async () => {
         await askAfterMovingDemand();
-        expect(marketCaption()).toContain('P* $11.00');
+        expect(marketCaption()).toContain('Price $11.00');
     });
 
     // The step put `a` back while the screen was arriving at the question. Had

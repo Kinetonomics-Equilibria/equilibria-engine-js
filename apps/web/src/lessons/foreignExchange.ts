@@ -505,8 +505,10 @@ const NARRATED_CALCS = [
         tex: '\\frac{1}{e^*}', meaning: 'The price of US$1 in A$',
         rise: 'The US$ appreciates', fall: 'The US$ depreciates'
     },
+    // In words where a student reads it, and Q* only in a formula, where it
+    // is the dropline's symbol (docs/chart-design.md).
     {
-        name: 'Qe', label: 'Q*', precision: 0, meaning: 'Quantity of A$ traded',
+        name: 'Qe', label: 'A$ traded', tex: 'Q^*', precision: 0, meaning: 'Quantity of A$ traded',
         rise: 'More A$ change hands', fall: 'Fewer A$ change hands'
     }
 ];

@@ -230,11 +230,12 @@ test('puts each panel\'s headline number beside it, from the diagram\'s own calc
     // Each number says what it is, in the strip's own words for it, and money
     // is to the cent. "Market $11.0" left a student to work out that the figure
     // was the clearing price.
-    await expect(page.getByText('P* $11.00', { exact: true })).toBeVisible();
+    await expect(page.getByText('Price $11.00', { exact: true })).toBeVisible();
     // Consumer surplus is 0.5 * Q* * (a - P*). It read $0.5 until Model.evaluate
     // stopped truncating an expression to the number it happens to start with.
-    await expect(page.getByText('CS $40.50', { exact: true })).toBeVisible();
-    await expect(page.getByText('TR $99.00', { exact: true })).toBeVisible();
+    // Its label is the panel's name, so the caption says it once, as the name.
+    await expect(page.getByText('$40.50', { exact: true })).toBeVisible();
+    await expect(page.getByText('$99.00', { exact: true })).toBeVisible();
 });
 
 test('promotes a rail panel without rebuilding the diagram', async ({ page }) => {
@@ -629,9 +630,13 @@ test('a narrow grid drops its names before its numbers', async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 800 });
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
 
-    await expect(page.locator(panel('Market'))).toHaveText('P* $11.00');
-    await expect(page.locator(panel('Consumer surplus'))).toHaveText('CS $40.50');
-    await expect(page.locator(panel('Revenue'))).toHaveText('TR $99.00');
+    await expect(page.locator(panel('Market'))).toHaveText('Price $11.00');
+    // A number labelled by its panel's name keeps the name, squeezed if it
+    // has to be: it is the only thing saying what the number is.
+    await expect(page.locator(panel('Consumer surplus'))).toContainText('$40.50');
+    await expect(page.locator(panel('Consumer surplus'))).toContainText('Consumer');
+    await expect(page.locator(panel('Revenue'))).toContainText('$99.00');
+    await expect(page.locator(panel('Revenue'))).toContainText('Revenue');
     await expect.poll(() => textCollisions(page)).toEqual([]);
 });
 
@@ -993,7 +998,7 @@ test('the maths instrument prints the same numbers as the diagram', async ({ pag
     // number in a different typeface.
     expect(await workingOf(page, 'Pe')).toMatch(/^P∗=2a\+c=220\.0\+2\.0=\$11\.00$/);
 
-    const caption = (await page.getByText('P* $11.00').first().textContent())!;
+    const caption = (await page.getByText('Price $11.00').first().textContent())!;
     expect(caption).toContain('$11.00');
 });
 
