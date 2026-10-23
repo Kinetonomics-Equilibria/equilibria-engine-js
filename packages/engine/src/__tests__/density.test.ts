@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { mountConfig, stubContainerLayout, captureWarnings } from './helpers';
 import { COMPACT_BELOW_PX, INDICATOR_BELOW_PX, levelForSize } from '../ts/KGAuthor/parsers/density';
+import { LINE_WEIGHT } from '../ts/view/viewObjects/viewObject';
 
 /**
  * Density — how much detail a panel draws.
@@ -180,8 +181,8 @@ describe('indicator keeps the shape and drops everything else', () => {
         const full = mount(onePanel('full'));
         const indicator = mount(onePanel('indicator'));
 
-        expect(curves(full, 'market')[0].drawnStrokeWidth()).toBe(2);
-        expect(curves(indicator, 'market')[0].drawnStrokeWidth()).toBe(4);
+        expect(curves(full, 'market')[0].drawnStrokeWidth()).toBe(LINE_WEIGHT);
+        expect(curves(indicator, 'market')[0].drawnStrokeWidth()).toBe(LINE_WEIGHT * 1.5);
 
         full.destroy();
         indicator.destroy();
@@ -249,8 +250,8 @@ describe('a level composes with the diagram rather than overruling it', () => {
         };
         const r2 = mount({ schema: 'EconSchema', params: [], layout: { CustomLayout: { panels: [thick] } } });
 
-        expect(curves(r, 'market')[0].drawnStrokeWidth()).toBe(4);
-        expect(curves(r2, 'market')[0].drawnStrokeWidth()).toBe(10);
+        expect(curves(r, 'market')[0].drawnStrokeWidth()).toBe(LINE_WEIGHT * 1.5);
+        expect(curves(r2, 'market')[0].drawnStrokeWidth()).toBe(7.5);
 
         r.destroy();
         r2.destroy();
@@ -278,8 +279,8 @@ describe('two panels at different levels in one canvas', () => {
     it('draw different stroke widths at the same instant', () => {
         const r = mount(stageAndRail);
 
-        expect(curves(r, 'stage')[0].drawnStrokeWidth()).toBe(2);
-        expect(curves(r, 'rail')[0].drawnStrokeWidth()).toBe(4);
+        expect(curves(r, 'stage')[0].drawnStrokeWidth()).toBe(LINE_WEIGHT);
+        expect(curves(r, 'rail')[0].drawnStrokeWidth()).toBe(LINE_WEIGHT * 1.5);
 
         r.destroy();
     });
@@ -300,7 +301,7 @@ describe('two panels at different levels in one canvas', () => {
         const r = mount(mixed);
 
         expect(axisTitlesShown(r, 'stage')).toBe(2);
-        expect(curves(r, 'stage')[0].drawnStrokeWidth()).toBe(2);
+        expect(curves(r, 'stage')[0].drawnStrokeWidth()).toBe(LINE_WEIGHT);
         expect(shownLabels(r, 'rail')).toHaveLength(0);
 
         r.destroy();

@@ -134,7 +134,7 @@ async function toTheFirstQuestion(page: Page) {
 async function dottedLines(page: Page) {
     const drawn = page.locator(`.kg-container ${RENDERED.visibleCurve}`);
     const dotted = await drawn.evaluateAll((nodes) => nodes
-        .map((node, i) => (node as SVGElement).style.strokeDasharray.replace(/\s|px/g, '') === '1,2' ? i : -1)
+        .map((node, i) => /^0,/.test((node as SVGElement).style.strokeDasharray.replace(/\s|px/g, '')) ? i : -1)
         .filter((i) => i > -1));
     return Promise.all(dotted.map(async (i) => {
         const line = drawn.nth(i);

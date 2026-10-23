@@ -3,7 +3,7 @@
 import * as d3 from "d3";
 import { ParametricFunctionDefinition, ParametricFunction } from "../../math/parametricFunction";
 import { UnivariateFunctionDefinition, UnivariateFunction } from "../../math/univariateFunction";
-import { ViewObjectDefinition, ViewObject } from "./viewObject";
+import { ViewObjectDefinition, ViewObject, LINE_WEIGHT } from "./viewObject";
 import { Sample } from "../movement";
 import { setDefaults, setProperties } from "../../util";
 
@@ -31,7 +31,7 @@ export class Curve extends ViewObject {
         let univariateFunction, parametricFunction;
         setDefaults(def, {
             interpolation: 'curveBasis',
-            strokeWidth: 2
+            strokeWidth: LINE_WEIGHT
         });
         setProperties(def, 'constants', ['interpolation']);
         if (def.hasOwnProperty('univariateFunction')) {

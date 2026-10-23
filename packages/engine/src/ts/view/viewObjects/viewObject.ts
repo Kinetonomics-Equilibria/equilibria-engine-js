@@ -8,6 +8,17 @@ import { Scale } from "../scale";
 
 
 
+/**
+ * How heavy a line in a diagram is, unless its author says otherwise: every
+ * curve and every segment, droplines and arrows included.
+ *
+ * 3px, up from 2, because these diagrams are read on a projector at the front
+ * of a classroom as well as on a laptop, and at 100% zoom a 2px curve and a 1px
+ * axis were hard to see from the back of the room. The axes are 2px
+ * (kgjs-theme.css), so a curve still outweighs the frame it is drawn in.
+ */
+export const LINE_WEIGHT = 3;
+
 export interface ViewObjectDefinition extends UpdateListenerDefinition {
     layer?: any;
     svgContainerDiv?: any;
@@ -45,7 +56,7 @@ export interface ViewObjectDefinition extends UpdateListenerDefinition {
      * A multiplier on `strokeWidth`, carried separately so a density level can
      * thicken a stroke without knowing what it was.
      *
-     * `strokeWidth`'s default lives in each view class (`Curve` 2, `Point` 1)
+     * `strokeWidth`'s default lives in each view class (`Curve` 3, `Point` 1.5)
      * and is applied when that class is constructed, which is *after* parsing —
      * so a compiler working over the parsed defs has no base to multiply. A
      * factor has one either way, and it composes: an author's own `strokeWidth`
@@ -296,11 +307,18 @@ export class ViewObject extends UpdateListener implements IViewObject {
             el.style('stroke-dashArray', '10,10');
         }
         else if (vo.lineStyle == 'dotted') {
-            el.style('stroke-dashArray', '1,2');
+            // Round dots as wide as the line, a line's width apart. The dashes
+            // were 1px long whatever the weight, which at 2px and up read as a
+            // thin hatched line rather than as dots, and on a projector as
+            // nothing at all. A dash of no length with a round cap is a dot.
+            const width = +vo.drawnStrokeWidth() || LINE_WEIGHT;
+            el.style('stroke-dashArray', `0,${2 * width}`);
+            el.style('stroke-linecap', 'round');
         }
         else {
             el.style('stroke-dashArray', '10,0');
         }
+        if (vo.lineStyle != 'dotted') el.style('stroke-linecap', null);
     }
 
     drawFill(el) {

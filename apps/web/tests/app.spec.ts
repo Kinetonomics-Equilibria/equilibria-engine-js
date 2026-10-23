@@ -1358,7 +1358,7 @@ test('the reveal draws the answer beside the student\'s, and takes it away again
     await question.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByRole('group', { name: 'Question' })).toHaveCount(0);
     const dotted = () => page.locator(RENDERED.visibleCurve).evaluateAll(nodes => nodes
-        .filter(n => (n as SVGElement).style.strokeDasharray.replace(/\s|px/g, '') === '1,2').length);
+        .filter(n => /^0,/.test((n as SVGElement).style.strokeDasharray.replace(/\s|px/g, ''))).length);
     await expect.poll(dotted, 'the answer line').toBe(0);
 
     // What stays is the student's own move. The question's faint start line

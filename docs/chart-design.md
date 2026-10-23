@@ -36,7 +36,7 @@ When one is fixed, delete its line.
    needs it.
 
 3. **Weight follows attention.** The thing a student is reading is the heaviest
-   mark on the chart, and the frame is the lightest: curves are 2px, axes 1px,
+   mark on the chart, and the frame is the lightest: curves are 3px, axes 2px,
    and a shaded area has no outline at all.
 
 4. **A line's style says when it is.** Solid is now. Dashed and faint is where
@@ -95,17 +95,25 @@ in between: no 9, no 11.
 
 | Role | Weight | Style | Colour | Opacity |
 | --- | --- | --- | --- | --- |
-| Axis line and ticks | 1px | solid | `--kg-axis-color` (#333) | 100% |
-| A curve, now | 2px | solid | its own | 100% |
-| Where it was (the ghost) | 2px | dashed, 10 on 10 off | the curve's | 35% |
-| Where it should go (the answer, after Check) | 2px | dotted | the curve's | 100% |
-| Dropline | 2px | dotted, 1 on 2 off | the point's | 100% |
-| Measured step ("+20 toasties") | 2px | dotted | the thing measured | 100% |
+| Axis line and ticks | 2px | solid | `--kg-axis-color` (#333) | 100% |
+| A curve, now | 3px | solid | its own | 100% |
+| Where it was (the ghost) | 3px | dashed, 10 on 10 off | the curve's | 35% |
+| Where it should go (the answer, after Check) | 3px | dotted | the curve's | 100% |
+| Dropline | 3px | dotted | the point's | 100% |
+| Measured step ("+20 toasties") | 3px | dotted | the thing measured | 100% |
 | Gridline | 1px | dotted | light grey | 100% |
 
-- Every curve is 2px, the one a student can drag included. Don't thicken the
-  curve a lesson is about: the lesson's words and the caption already say what
-  it is about.
+- **Weights are set for the back of a classroom.** These charts are shown on
+  a projector at 100% zoom as well as read on a laptop, and at 2px curves and
+  1px axes they could hardly be seen across a room. The defaults are 3px
+  (`LINE_WEIGHT` in `packages/engine/src/ts/view/viewObjects/viewObject.ts`)
+  and 2px (the axes, in `kgjs-theme.css`). A config sets no `strokeWidth`.
+- Every curve is the same weight, the one a student can drag included. Don't
+  thicken the curve a lesson is about: the lesson's words and the caption
+  already say what it is about.
+- Dotted is round dots as wide as the line, a line's width apart. In the
+  smallest panels (`indicator`) every line is drawn half as heavy again, and
+  its dots and gaps grow with it.
 - A ghost comes from `ghost:` on the object, never from a hand-drawn dashed
   copy. The engine builds it from the same definition, so the two can't
   disagree about slope or colour. With `ghost: { label: '_0' }` it is named D₀
@@ -122,9 +130,9 @@ in between: no 9, no 11.
 
 | Role | Size | Fill |
 | --- | --- | --- |
-| A point the chart is about: equilibrium, a chosen combination | radius 6 (the default) | solid, its colour |
-| A handle: a curve's end that can be dragged | radius 5 | solid, the curve's colour |
-| A ghost point | radius 6 | 35%, from `ghost:` |
+| A point the chart is about: equilibrium, a chosen combination | radius 7 (the default), with a 1.5px white ring | solid, its colour |
+| A handle: a curve's end that can be dragged | radius 6 | solid, the curve's colour |
+| A ghost point | radius 7 | 35%, from `ghost:` |
 | An area the lesson names: consumer surplus, revenue, profit | — | 20% (the default), no outline |
 | A region that is context: the attainable set under a PPC | — | 8%, no outline |
 
@@ -277,7 +285,7 @@ above the plot.
 For a point whose values a student is meant to read off the axes: the
 equilibrium price and quantity, or the quantity traded under a price ceiling.
 
-- **From the point to both axes**, unless only one value matters. Dotted, 2px,
+- **From the point to both axes**, unless only one value matters. Dotted, 3px,
   in the point's colour. Set with `droplines: { vertical: 'Q^*', horizontal:
   'P^*' }` on the point.
 - **Labelled on the axis**, among the tick numbers, with the symbol. A tick
@@ -391,7 +399,7 @@ Currency codes (A$, US$) are fine: that is how money is written.
 - Nothing a student has to read is smaller than 12px.
 - Don't shrink a drag target. The engine gives curves and points an invisible
   grip 20px across or more, so a student on a trackpad doesn't have to land on
-  a 2px line.
+  a 3px line.
 
 ## Adding a chart
 
@@ -399,7 +407,7 @@ Currency codes (A$, US$) are fine: that is how money is written.
    is in words.
 2. **Axes.** Titles in words with units. Ranges that cover the sliders' full
    reach. Round ticks.
-3. **Curves.** A semantic colour, the default 2px, and a label from the symbol
+3. **Curves.** A semantic colour, the default weight, and a label from the symbol
    list at the conventional end.
 4. **Points.** The default radius. A letter if the lesson names the point.
    Droplines only if it is read off the axes.

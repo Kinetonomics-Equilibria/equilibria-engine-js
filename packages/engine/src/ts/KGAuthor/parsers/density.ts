@@ -58,12 +58,16 @@ const TICK_FACTOR = [1, 0.5, 0];
 /**
  * What each level does to a stroke width.
  *
- * Under one canvas (P3) every panel shares one pixel space, so a 2px curve in a
+ * Under one canvas (P3) every panel shares one pixel space, so a curve in a
  * 190px panel reads three times thinner than the same curve in a 620px one. At
- * `indicator` the curve *is* the content, so it is drawn twice as heavy. This
- * is the one place density adds rather than removes.
+ * `indicator` the curve *is* the content, so it is drawn heavier. This is the
+ * one place density adds rather than removes.
+ *
+ * Half as heavy again, not twice: the base is 3px now (`LINE_WEIGHT`), and
+ * doubled it was 6px in a glyph a hundred pixels across, a stripe rather than a
+ * curve. 4.5px is about the 4 it was before the base went up.
  */
-const STROKE_SCALE = [1, 1, 2];
+const STROKE_SCALE = [1, 1, 1.5];
 
 /** Below this many pixels on a panel's short side, `auto` chooses `indicator`. */
 export const INDICATOR_BELOW_PX = 240;

@@ -33,9 +33,19 @@
     background-color: var(--kg-bg-color);
 }
 
-.kg-axis line,
-.kg-axis path {
+/*
+ * The axes, their ticks included: 2px, in the axis colour.
+ *
+ * d3 draws them 1px in `currentColor`, and at 100% zoom on a classroom
+ * projector a 1px axis all but disappears. 2px keeps them a step lighter than
+ * the 3px curves drawn in them (`LINE_WEIGHT`, view/viewObjects/viewObject.ts).
+ * This rule used to be written for `.kg-axis`, a class no axis has, so the
+ * colour never applied either.
+ */
+.kg-container g.axis line,
+.kg-container g.axis path {
     stroke: var(--kg-axis-color);
+    stroke-width: 2px;
 }
 
 /*

@@ -31,9 +31,12 @@ import { ViewObjectDefinition, ViewObject } from "./viewObject";
                 fill: 'colors.blue',
                 opacity: 1,
                 stroke: 'white',
-                strokeWidth: 1,
+                // A point is half again as wide as it was, to stand out from
+                // 3px curves on a projector (`LINE_WEIGHT`), and its white ring
+                // is wider with it, to keep the curve under it off its edge.
+                strokeWidth: 1.5,
                 strokeOpacity: 1,
-                r: 6
+                r: 7
             });
             setProperties(def, 'updatables',['x', 'y', 'r']);
             super(def);

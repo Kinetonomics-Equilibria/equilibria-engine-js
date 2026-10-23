@@ -1,7 +1,7 @@
 import { setDefaults, setProperties } from "../../util";
 import { Sample } from "../movement";
 import { Scale } from "../scale";
-import { ViewObjectDefinition, ViewObject } from "./viewObject";
+import { ViewObjectDefinition, ViewObject, LINE_WEIGHT } from "./viewObject";
 
 
 
@@ -67,7 +67,7 @@ export class Segment extends ViewObject {
         setDefaults(def, {
             xScale2: def.xScale,
             yScale2: def.yScale,
-            strokeWidth: 2
+            strokeWidth: LINE_WEIGHT
         });
         setProperties(def, 'constants', ['xScale2', 'yScale2', 'startArrow', 'endArrow', 'offset', 'inset']);
         setProperties(def, 'updatables', ['x1', 'y1', 'x2', 'y2']);

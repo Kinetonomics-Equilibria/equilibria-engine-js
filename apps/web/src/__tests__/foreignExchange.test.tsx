@@ -102,7 +102,8 @@ function drawnCurves() {
                 xy = (path.getAttribute('d') || '').match(/-?\d+(\.\d+)?/g)!.map(Number);
             return {
                 stroke: path.getAttribute('stroke'),
-                style: !dash ? 'solid' : dash[1].trim() === '1,2' ? 'dotted'
+                // Dotted is round dots: a dash of no length, every two widths.
+                style: !dash ? 'solid' : /^0,/.test(dash[1].replace(/\s/g, '')) ? 'dotted'
                     : dash[1].trim() === '10,10' ? 'dashed' : 'solid',
                 from: { x: xy[0], y: xy[1] },
                 slopesDown: xy[2] > xy[0]

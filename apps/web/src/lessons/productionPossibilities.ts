@@ -691,7 +691,7 @@ export const ppcDiagram = {
                             type: 'Point',
                             def: {
                                 name: 'coffeeEnd', title: '', x: 0, y: 'calcs.maxC',
-                                color: 'colors.ppf', r: 5,
+                                color: 'colors.ppf', r: 6,
                                 drag: [{
                                     directions: 'y', param: 'C', expression: 'max(drag.y, 0) / params.h',
                                     draggable: 'not(params.submitted)'
@@ -703,7 +703,7 @@ export const ppcDiagram = {
                             type: 'Point',
                             def: {
                                 name: 'toastieEnd', title: '', x: 'calcs.maxT', y: 0,
-                                color: 'colors.ppf', r: 5,
+                                color: 'colors.ppf', r: 6,
                                 drag: [{
                                     directions: 'x', param: 'T', expression: 'max(drag.x, 0) / params.h',
                                     draggable: 'not(params.submitted)'
