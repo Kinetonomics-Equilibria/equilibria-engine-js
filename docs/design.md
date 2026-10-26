@@ -199,6 +199,8 @@ first version of the screen did, so a lesson can gain them one at a time.
 
 1. **Which question does it answer?** Put it on that card. If it answers a new
    question, it is a new card, placed where that question comes in the order.
+   A tool for the whole stage or page answers no card's question: look under
+   "Reserved for later" first, where it may already have a place.
 2. **Must it always be visible?** If not, put it behind a tab, a link or "Why?".
 3. **Does it change size?** The cards beside the stage do not, so it scrolls
    inside the card it is on. Put it below the controls whose effect it shows,
@@ -209,3 +211,121 @@ first version of the screen did, so a lesson can gain them one at a time.
    and unit, so it agrees with every other place that number appears.
 6. **Does it say anything?** Write the words in the lesson's content, in the
    lesson's vocabulary, not in the component.
+
+## Reserved for later
+
+Places kept for tools that are not built yet, so that the first one built
+lands where the rest expect it and none of them has to move another. Nothing
+in this section is on the screen today.
+
+### The title line
+
+```
+ The Australian dollar, and what moves it    Focus│Grid  ┊  ↺ Reset  ▭  ⇪ Share
+```
+
+- The stage's controls already sit at the right of the title line (the
+  arrangement toggle, in `StudyScreen`), and the tools below act on the whole
+  stage or the whole page, so they join it in this order: Focus | Grid, a
+  hairline, Reset, Present, Share. Share goes at the far end because it is
+  the page's, not the stage's.
+- Not over the stage, where the toggle would have landed on a panel's
+  caption, and not in the side column, whose cards each answer one question
+  that none of these answers.
+- Reset and Share say their names; Present is an icon, with "Present to a
+  class" as its label. Where the line runs short the names go before
+  anything wraps, so the line keeps its height and the stage its size.
+- Under a sheet, Focus | Grid and Reset are disabled, not hidden, as the
+  toggle is now. Present and Share still work.
+
+### Reset
+
+- Puts the diagram back where the open tab or step began: during the lesson,
+  the step's own values; under an instrument, the values the instruments
+  opened with.
+- A move like any other: it takes the engine's snapshot first
+  (`engine.snapshot()`, as `resumeLesson` does), so Undo brings the changes
+  back, and "What changed" reports it. That is why it never asks "Are you
+  sure?".
+- Greyed, not hidden, when nothing has changed.
+- It does not restart the lesson or forget an answer. The lesson's own Back
+  and track do that.
+
+### Present
+
+Full screen with the rail put away, for a classroom projector; Esc comes
+back. Nothing else changes: the stage notices its new size and arranges
+itself, as it does when the window changes. Not offered on a phone.
+
+### Share
+
+One menu for everything that leaves the screen:
+
+```
+ The link, QR code and embed open at
+ [ This view | The start of the lesson ]
+ ──────────────────────────────
+ Copy link
+ Show a QR code
+ Embed…
+ ──────────────────────────────
+ Download the diagram       PNG
+ Print or save as PDF
+```
+
+- Each item says under its name what it does, in a few plain words.
+- "Opens at" decides what the link, the QR code and the embed carry. The
+  download and the print are always this view.
+- The QR code goes on a stage sheet (`StageSheet`), as large as the diagram
+  was, so a class can scan it from the board, with the short link beside it
+  for anyone who would rather type.
+- Embed opens a dialog: the whole lesson or the diagram only, where it opens,
+  and the code to copy.
+- Download gives the panels as drawn, as a picture for notes, slides or an
+  assignment.
+- Print is a print stylesheet, not an export of its own: the lesson's title,
+  the view's settings in words, the diagram, the chain from "What changed",
+  and a QR code back to the view. The browser's dialog saves it as a PDF.
+- On a phone there is no room for the row. Focus | Grid stays, and a `⋯`
+  beside it holds Reset, Copy link, the phone's own share sheet ("Send
+  with…"), Download and Print. QR, Embed and Present are for bigger screens.
+
+### The rail's foot
+
+Help goes above Settings. An account button goes at the very bottom, under
+Settings, once there are accounts. Both are about the app rather than the
+diagram, so they belong to the rail, apart from the places to go, as
+Settings already is.
+
+### Links
+
+- A link is a view: the lesson, the open tab or the lesson's step, each
+  param the student can move that is not where the lesson puts it, the
+  arrangement and the focused panel. "The start of the lesson" is just
+  `?lesson=fx`.
+- Written as readable query parameters beside `?lesson=`, named after the
+  params, so that a teacher can see what a link will open before sending it.
+- The address follows the view. A lesson change is pushed, as now; anything
+  else replaces, so Back still goes to the last lesson rather than the last
+  drag, and the address bar is always the link to this view. Copy link copies
+  it.
+- **A link never carries an answer.** A question a link opens at is
+  unanswered, whoever sent it, so a link cannot pass answers round a class.
+- A link that names a param the lesson no longer has opens without it,
+  rather than failing: lessons change, and links handed out last term should
+  still open.
+
+### Embeds
+
+- `/embed/<lesson>?layout=full` or `layout=diagram`, plus the same view as a
+  link. The code is an iframe whose `title` is the lesson's.
+- **The whole lesson** is the study screen less the rail: the title line, the
+  stage and the side column. Share becomes "Open in Kinetonomics", which
+  opens the app at the same view in a tab of its own. It wants about
+  1000 × 640; narrower, it takes the stacked layout the screen already has
+  for a phone.
+- **The diagram only** is the stage, still draggable, with one line under it:
+  Reset at one end and "Open the full lesson" at the other. No tabs, no
+  lesson and no "What changed". It fits a 640px column.
+- An embed saves nothing to the page it is on. Each student who opens it has
+  their own copy, and nothing they do leaves their browser.
