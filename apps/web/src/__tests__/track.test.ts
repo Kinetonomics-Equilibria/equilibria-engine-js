@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     AT_START, trackReducer, maxPosition, isBlocked, stepKinds,
-    paramsAt, paramsBetween, sayAt, revealedPanels, partsOf, partCounts, slideAt, asideAt
+    paramsAt, paramsBetween, sayAt, revealedPanels, partsOf, partCounts, slideAt, asideAt, focusBetween
 } from '../track/track';
 import type { LessonStep, TrackState } from '../track/track';
 
@@ -243,6 +243,39 @@ describe('what is beside the diagram', () => {
     // Under a sheet there is no diagram to be beside.
     it('is never a picture or a recap', () => {
         expect(slideAt([{ aside: 'report', ask: ASK }], 1, true)).toBeNull();
+    });
+});
+
+describe('which panel a move brings to the front', () => {
+
+    const FOCUSED: LessonStep[] = [
+        { say: 'One buyer.' },
+        { reveal: ['market'], focus: 'market' },
+        { say: 'The market.' },
+        { ask: ASK }
+    ];
+
+    it('is the panel of a step the lesson steps onto', () => {
+        expect(focusBetween(FOCUSED, 1, 2)).toBe('market');
+    });
+
+    // A student who jumps from the cover to a question meets the stage as one
+    // who stepped through would have.
+    it('is the panel of a step the lesson jumps past', () => {
+        expect(focusBetween(FOCUSED, 0, 4)).toBe('market');
+    });
+
+    // The student may have promoted another panel since, and going back is
+    // looking back, not starting again.
+    it('is nothing going back, or moving on from it', () => {
+        expect(focusBetween(FOCUSED, 4, 2)).toBeNull();
+        expect(focusBetween(FOCUSED, 2, 3)).toBeNull();
+        expect(focusBetween(FOCUSED, 2, 2)).toBeNull();
+    });
+
+    it('is the last one passed, where a move passes two', () => {
+        const twice: LessonStep[] = [{ focus: 'a' }, { focus: 'b' }, { say: 'Three.' }];
+        expect(focusBetween(twice, 0, 3)).toBe('b');
     });
 });
 

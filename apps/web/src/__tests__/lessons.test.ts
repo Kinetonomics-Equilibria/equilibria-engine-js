@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ParamInfo } from 'equilibria-engine-js';
 import { LESSONS, lessonById } from '../lessons';
 import type { StudyContent } from '../lessons';
-import { paramsAt, partsOf } from '../track/track';
+import { paramsAt, partsOf, revealedPanels } from '../track/track';
 import { candidatesOf, nearestAchievable, validateChoice, validateQuestion } from '../quiz/grade';
 import { parkApparatus } from '../quiz/apparatus';
 import { verdictFor } from '../quiz/verdict';
@@ -292,6 +292,18 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
                 const label = (def && def.label ? def.label : name).toLowerCase();
                 expect(prompt.toLowerCase(), `step ${i + 1} names "${label}"`).not.toContain(label);
             });
+        });
+    });
+
+    // A focus on a panel the stage has not arranged yet is quietly ignored:
+    // the stage puts the first panel that has arrived at the front instead.
+    it('brings to the front only a panel it has, once it has arrived', () => {
+        const keys = lesson.panels.map(p => p.key);
+        lesson.lesson.forEach((step, i) => {
+            if (!step.focus) return;
+            expect(keys, `step ${i + 1} focuses "${step.focus}"`).toContain(step.focus);
+            expect(revealedPanels(lesson.lesson, i + 1, keys), `step ${i + 1} focuses "${step.focus}" early`)
+                .toContain(step.focus);
         });
     });
 

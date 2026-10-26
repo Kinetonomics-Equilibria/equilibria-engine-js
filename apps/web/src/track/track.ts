@@ -129,6 +129,21 @@ export interface LessonStep extends StepDefinition {
      * tell the story the report does, and should not: one home for it.
      */
     aside?: string;
+
+    /**
+     * The panel this step brings to the front, by its key.
+     *
+     * For a panel that arrives to take over the lesson rather than to sit
+     * beside it: the market, after a step or two about one buyer. Panels
+     * arrive in the order they are declared, so a later one comes in on the
+     * rail, and this is what puts it at the front instead. Said once, at the
+     * step it applies to, and applied whenever the lesson passes that step
+     * going forward, a jump past it included; the student can promote another
+     * panel after it, and the steps that follow leave their choice alone.
+     *
+     * The app's, like `aside`. The panel must have arrived by this step.
+     */
+    focus?: string;
 }
 
 /** One control a step hands the student: which param, and what to call it. */
@@ -375,6 +390,22 @@ export function askAt(steps: LessonStep[], position: number): LessonQuestion | n
 export function asideAt(steps: LessonStep[], position: number): string | null {
     const step = steps[position - 1];
     return step && step.aside ? step.aside : null;
+}
+
+/**
+ * The panel to bring to the front on moving from `from` to `to`: the one
+ * named by the last step passed on the way that names one, or null.
+ *
+ * Passed, not landed on, so a student who jumps from the start to a question
+ * meets the market at the front, as one who stepped through would have.
+ * Moving back passes nothing: it leaves the focus wherever the student had it.
+ */
+export function focusBetween(steps: LessonStep[], from: number, to: number): string | null {
+    for (let position = to; position > from; position--) {
+        const step = steps[position - 1];
+        if (step && step.focus) return step.focus;
+    }
+    return null;
 }
 
 /** The controls the step at `position` hands the student, or none. */

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1012" height="400" viewBox="0 0 1012 400">
+  <!-- The Air Jordans lesson's cover: a sneaker wall in a shop, three
+       high-tops on its shelves and one pair on the counter under a price tag.
+       Generic shoes, with no maker's marks on them: the lesson is about the
+       buyers, and a logo drawn here would be a brand's, not ours. Flat shapes
+       in the screen's slate with sneaker reds and whites, so nothing here
+       borrows a curve's colour (docs/design.md: colour means one thing). -->
+  <defs>
+    <!-- One high-top, side on, toe to the right: the upper, the collar and
+         the panel over the toe in the shoe's colour, a plain stripe along
+         the side, the laces and the sole. -->
+    <g id="shoe">
+      <path d="M8 96 L8 40 C 8 22, 24 12, 44 12 L66 12 C 74 12, 78 20, 80 30 L84 50 C 100 54, 128 60, 146 70 C 158 76, 164 86, 164 96 Z" fill="#f8f9fa"/>
+      <path d="M8 40 C 8 22, 24 12, 44 12 L66 12 C 74 12, 78 20, 80 30 L84 50 L40 56 L8 58 Z" fill="currentColor"/>
+      <path d="M84 50 C 100 54, 128 60, 146 70 C 156 76, 162 84, 164 92 L120 92 C 112 76, 98 64, 84 60 Z" fill="currentColor"/>
+      <path d="M30 64 C 52 62, 76 66, 100 78" fill="none" stroke="#243b53" stroke-width="5" stroke-linecap="round"/>
+      <g stroke="#243b53" stroke-width="3" stroke-linecap="round">
+        <line x1="72" y1="38" x2="84" y2="34"/>
+        <line x1="80" y1="48" x2="94" y2="44"/>
+        <line x1="92" y1="56" x2="106" y2="52"/>
+      </g>
+      <rect x="4" y="94" width="164" height="14" rx="5" fill="#d9e2ec"/>
+      <rect x="4" y="104" width="164" height="6" rx="3" fill="#9fb3c8"/>
+    </g>
+  </defs>
+  <rect width="1012" height="400" fill="#f0f4f8"/>
+  <!-- The sneaker wall: two shelves, three shoes on them. -->
+  <rect x="40" y="24" width="560" height="248" rx="8" fill="#d9e2ec"/>
+  <rect x="40" y="136" width="560" height="10" fill="#9fb3c8"/>
+  <rect x="40" y="252" width="560" height="10" fill="#9fb3c8"/>
+  <use href="#shoe" x="90" y="26" style="color:#c53030"/>
+  <use href="#shoe" x="330" y="26" style="color:#243b53"/>
+  <use href="#shoe" x="210" y="142" style="color:#c53030"/>
+  <use href="#shoe" x="430" y="142" style="color:#486581"/>
+  <!-- The counter. -->
+  <rect y="300" width="1012" height="100" fill="#334e68"/>
+  <rect y="290" width="1012" height="14" fill="#243b53"/>
+  <!-- The box on the counter, and the pair on it. -->
+  <rect x="660" y="226" width="260" height="66" rx="4" fill="#c53030"/>
+  <rect x="660" y="226" width="260" height="16" rx="4" fill="#9b2c2c"/>
+  <use href="#shoe" x="672" y="114" style="color:#c53030"/>
+  <use href="#shoe" x="744" y="120" style="color:#c53030"/>
+  <!-- The price tag, hung on a string. -->
+  <line x1="880" y1="40" x2="880" y2="78" stroke="#486581" stroke-width="3"/>
+  <path d="M832 78 L928 78 L928 136 L832 136 Z" fill="#fff8e1" stroke="#486581" stroke-width="3"/>
+  <circle cx="880" cy="90" r="5" fill="#486581"/>
+  <text x="880" y="126" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="28" font-weight="700" fill="#243b53">$300</text>
+</svg>

@@ -25,7 +25,8 @@ import type { RecapCase } from './LessonRecap';
 import { PictureSheet } from './PictureSheet';
 import { StageSheet } from './StageSheet';
 import {
-    AT_START, askAt, asideAt, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer, tryAt
+    AT_START, askAt, asideAt, focusBetween, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer,
+    tryAt
 } from './track/track';
 import type { LessonQuestion, Outcome, TrackState } from './track/track';
 import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
@@ -1240,6 +1241,18 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     useEffect(() => {
         if (asides && asides[focused] && focused !== aside) setFocused(panels[0].key);
     }, [aside, focused, asides, panels]);
+
+    // A step that brings a panel to the front does it each time the lesson
+    // passes it going forward, by Next or by a jump along the track. Anything
+    // else leaves the focus where the student last put it, and a panel that
+    // has not arrived yet cannot be at the front: the stage puts the first
+    // that has there instead.
+    const passedFrom = useRef(track.position);
+    useEffect(() => {
+        const front = focusBetween(steps, passedFrom.current, track.position);
+        passedFrom.current = track.position;
+        if (front) setFocused(front);
+    }, [steps, track.position]);
 
     // Deliberately not called for undo, which is the mirror case: undo restores
     // the params to what `prev` already holds, so leaving the snapshot alone is

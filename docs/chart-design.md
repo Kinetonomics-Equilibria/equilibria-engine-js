@@ -103,6 +103,7 @@ between.
 | Where it was (the ghost) | 3px | dashed, 10 on 10 off | the curve's | 35% |
 | Where it should go (the answer, after Check) | 3px | dotted | the curve's | 100% |
 | Dropline | 3px | dotted | the point's | 100% |
+| Price line (a set price across the plot, to read points against; labelled P on the price axis) | 3px | dotted | `choice` | 100% |
 | Measured step ("+20 toasties") | 3px | dotted | the thing measured | 100% |
 | Gridline | 1px | dotted | light grey | 100% |
 
@@ -174,7 +175,7 @@ A new colour must clear 3:1 as a line, because nothing darkens a line for you.
 | `supply` | orange | Supply, and the sellers behind it |
 | `equilibriumPrice` | green | Where the market clears: the point, its droplines, its arrow, the revenue it makes |
 | `ppf` | blue | The production possibility curve, and the resources it is built from |
-| `choice` | orange | Points chosen on the curve (A, B), and the step between them |
+| `choice` | orange | Points chosen on the curve (A, B), and the step between them; a price a seller sets, and the point it picks on demand |
 | `combination` | purple | A combination anywhere: inside, on or outside the curve |
 
 Contrast of the engine's palette on white. "Text" is what a label in that
@@ -368,6 +369,9 @@ point gives one price, P\*, and one quantity, Q\*."
 | D₁, S₁, PPC₁ | Where that curve goes | The answer, after a question |
 | P\* | The equilibrium price | The price axis, at the end of a dropline |
 | Q\* | The equilibrium quantity | The quantity axis, at the end of a dropline |
+| P | A price a seller sets, where nothing clears a market | The price axis, at the end of a dropline or a price line |
+| P₁ | Where that price goes | The price axis, for the answer after a question |
+| Q<sub>d</sub> | The quantity demanded at P | The quantity axis, at the end of a dropline |
 | e\* | The equilibrium exchange rate, US$ per A$ | The A$ market's rate axis |
 | 1/e\* | Its reciprocal, A$ per US$ | The US$ market's rate axis |
 | A, B, C… | Points the lesson names | Beside the point |
