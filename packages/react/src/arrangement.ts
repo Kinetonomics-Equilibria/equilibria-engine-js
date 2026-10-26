@@ -75,18 +75,19 @@ export type RoomByRole = Partial<Record<PanelRole, Partial<Room>>>;
  * How far the engine's own furniture reaches outside a panel's box, per level.
  *
  * Measured on the default theme rather than derived, and rounded up a couple of
- * pixels. `full` is dominated by the axis titles, which the engine places 40px
- * below the x axis and 48px left of the y axis (`KGAuthor/graphObjects/axis.ts`);
- * `compact` by the tick labels and a dropline's `P*`/`Q*`, which are wider than
- * a tick; `indicator` draws no text at all, only the axis line's end caps.
+ * pixels. `full` is dominated by the axis titles, which the engine places 44px
+ * below the x axis and 56px left of the y axis (`KGAuthor/graphObjects/axis.ts`),
+ * 16px type about 12px either side of that; `compact` by the tick labels and a
+ * dropline's `P*`/`Q*`, which are wider than a tick; `indicator` draws no text
+ * at all, only the axis line's end caps.
  *
- * Tick numbers are 12px (`kgjs-theme.css`), and a four-character one — the A$
- * market's "0.70" — reaches 35px out from its axis, which is what `compact`'s
- * left is kept for.
+ * Tick numbers are 14px (`kgjs-theme.css`), and a four-character one — the A$
+ * market's "0.70" — reaches 39px out from its axis, which is what `compact`'s
+ * left is kept for. Under the x axis, ticks and `Q*` reach 24px.
  */
 export const FURNITURE: Record<DensityLevel, Room> = {
-    full: { top: 8, right: 8, bottom: 52, left: 60 },
-    compact: { top: 8, right: 8, bottom: 26, left: 38 },
+    full: { top: 8, right: 8, bottom: 58, left: 70 },
+    compact: { top: 8, right: 8, bottom: 28, left: 42 },
     indicator: { top: 0, right: 0, bottom: 6, left: 6 }
 };
 

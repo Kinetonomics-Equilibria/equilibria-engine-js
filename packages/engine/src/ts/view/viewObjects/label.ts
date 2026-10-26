@@ -5,6 +5,7 @@ import { AXIS_TITLE } from "../../KGAuthor/graphObjects/axis";
 import * as katex from "katex";
 import * as d3 from "d3";
 import { readableOn } from "../readable";
+import { LABEL_SIZE } from "../typeScale";
 
 
 
@@ -173,7 +174,7 @@ export class Label extends ViewObject {
         setDefaults(def, {
             xPixelOffset: 0,
             yPixelOffset: 0,
-            fontSize: 10,
+            fontSize: LABEL_SIZE,
             align: 'center',
             valign: 'middle',
             rotate: 0,

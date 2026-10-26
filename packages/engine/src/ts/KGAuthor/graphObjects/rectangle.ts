@@ -1,4 +1,5 @@
 import { randomString } from "../../model/updateListener";
+import { LABEL_SIZE } from "../../view/typeScale";
 import { setDefaults } from "../../util";
 import { Label } from "./label";
 import { ClipPath } from "../defObjects/clipPath";
@@ -24,7 +25,7 @@ export class Rectangle extends GraphObject {
             delete labelDef.label;
             labelDef = setDefaults(labelDef, def.label);
             labelDef = setDefaults(labelDef, {
-                fontSize: 10,
+                fontSize: LABEL_SIZE,
                 color: def.color,
                 bgcolor: null,
                 x: averageDefs(rect['x1'], rect['x2']),

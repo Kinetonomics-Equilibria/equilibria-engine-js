@@ -14,6 +14,9 @@ import { mountObjects } from './helpers';
 
 const LABEL_WIDTH = 60;
 
+/** How far `position: 'r'` puts a label from its anchor (KGAuthor/graphObjects/label.ts). */
+const BESIDE = 8;
+
 const isLabel = (el: Element) => el.tagName === 'DIV' && /^rootElement-/.test(el.getAttribute('class') || '');
 
 beforeAll(() => {
@@ -41,8 +44,8 @@ describe('a label that flips to fit', () => {
         // x = 1 in [0, 30] is a few pixels from the y axis: no room for 60px.
         const r = mountObjects([beside('stays', 1, false), beside('flips', 1, true)]);
 
-        // The same anchor, 5px either side of it: one ends there, one starts there.
-        expect(left(r.container, 'flips')).toBeCloseTo(left(r.container, 'stays') + LABEL_WIDTH + 10, 5);
+        // The same anchor, a little way either side of it: one ends there, one starts there.
+        expect(left(r.container, 'flips')).toBeCloseTo(left(r.container, 'stays') + LABEL_WIDTH + 2 * BESIDE, 5);
         r.destroy();
     });
 
@@ -59,11 +62,11 @@ describe('a label that flips to fit', () => {
             { params: [{ name: 'x', value: 1, min: 0, max: 30 }] });
         const flipped = () => left(r.container, 'flips') - left(r.container, 'stays');
 
-        expect(flipped()).toBeCloseTo(LABEL_WIDTH + 10, 5);
+        expect(flipped()).toBeCloseTo(LABEL_WIDTH + 2 * BESIDE, 5);
         r.kg.update({ params: [{ name: 'x', value: 15 }] });
         expect(flipped()).toBe(0);
         r.kg.update({ params: [{ name: 'x', value: 1 }] });
-        expect(flipped()).toBeCloseTo(LABEL_WIDTH + 10, 5);
+        expect(flipped()).toBeCloseTo(LABEL_WIDTH + 2 * BESIDE, 5);
         r.destroy();
     });
 });

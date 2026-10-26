@@ -1,4 +1,5 @@
 import { randomString } from "../../model/updateListener";
+import { LABEL_SIZE } from "../../view/typeScale";
 import { setDefaults } from "../../util";
 import { LabelDefinition, Label } from "./label";
 import { GraphObjectGenerator } from "../defObjects/graphObjectGenerator";
@@ -50,7 +51,7 @@ export class Point extends GraphObject {
             delete labelDef.label;
             labelDef = setDefaults(labelDef, def.label);
             labelDef = setDefaults(labelDef, {
-                fontSize: 10,
+                fontSize: LABEL_SIZE,
                 position: 'bl',
                 color: def.color,
                 bgcolor: null
@@ -73,7 +74,7 @@ export class Point extends GraphObject {
                     xTopAxisLabelDef.y = 'OPPAXIS';
                     setDefaults(xTopAxisLabelDef, {
                         text: def.droplines.top,
-                        fontSize: 10
+                        fontSize: LABEL_SIZE
                     });
                     p.subObjects.push(new Label(xTopAxisLabelDef, graph));
                 }
@@ -86,7 +87,7 @@ export class Point extends GraphObject {
                 xAxisLabelDef.y = 'AXIS';
                 setDefaults(xAxisLabelDef, {
                     text: def.droplines.vertical,
-                    fontSize: 10
+                    fontSize: LABEL_SIZE
                 });
                 p.subObjects.push(new Label(xAxisLabelDef, graph));
             }
@@ -108,7 +109,7 @@ export class Point extends GraphObject {
                 yAxisLabelDef.x = 'AXIS';
                 setDefaults(yAxisLabelDef, {
                     text: def.droplines.horizontal,
-                    fontSize: 10
+                    fontSize: LABEL_SIZE
                 });
                 p.subObjects.push(new Label(yAxisLabelDef, graph));
             }

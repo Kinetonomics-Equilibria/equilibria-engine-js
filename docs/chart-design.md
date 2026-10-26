@@ -59,7 +59,7 @@ When one is fixed, delete its line.
 | Chart title | Caption row across the top of the sheet, left end | The app, from the panel's `name` in `PANELS` |
 | Headline number and change chip | Caption row, right end | The app, from the panel's `headline` and `delta` calcs |
 | Plot | Under the caption | The engine |
-| Axis titles | 40px under the x axis, centred; 48px left of the y axis, rotated, centred | The engine, from `xAxis.title` and `yAxis.title` |
+| Axis titles | 44px under the x axis, centred; 56px left of the y axis, rotated, centred | The engine, from `xAxis.title` and `yAxis.title` |
 | Tick numbers | Outside each axis | The engine (d3) |
 | Dropline labels | On the axis, among the tick numbers | The engine, from `droplines` on a point |
 | Curve, point and area labels | On the plot, beside what they name | The engine, from `label` on the object |
@@ -75,21 +75,24 @@ every word and every number. KaTeX's maths italic is used for one thing only,
 symbols — D, S, P\*, Q\*, e\* — so a symbol always looks like maths and a word
 never does. A word in a label is plain text (`plainText: true`), not `\text{}`.
 
-A label's `fontSize` is in **points**, not pixels: `fontSize: 10` is 13.3px.
+A label's `fontSize` is in **points**, not pixels: `fontSize: 12` is 16px.
 
 | What | Size | Style | Colour |
 | --- | --- | --- | --- |
 | Chart title | 16px | semibold | text |
 | Headline number and chip | 14px | regular, tabular figures | dimmed grey |
-| Curve label (a symbol) | `fontSize: 12` (16px) | maths italic | the curve's |
-| Axis title | `fontSize: 10` (13.3px) | regular | text |
-| Dropline label | `fontSize: 10` | maths italic | the point's |
-| Point letter, area label, annotation | `fontSize: 10` | regular, plain text | the thing's |
-| Tick numbers | 12px | regular, tabular figures | axis grey |
+| Curve label (a symbol) | `SYMBOL_SIZE`, 14pt (18.7px) | maths italic | the curve's |
+| Axis title | `LABEL_SIZE`, 12pt (16px) | regular | text |
+| Dropline label | `LABEL_SIZE` | maths italic | the point's |
+| Point letter, area label, annotation | `LABEL_SIZE` | regular, plain text | the thing's |
+| Tick numbers | 14px | regular, tabular figures | axis grey |
 
-These are the engine's defaults for each kind of label, so a config normally
-sets no `fontSize` at all. Nothing a student has to read is smaller than 12px, and there are no sizes
-in between: no 9, no 11.
+These are the engine's defaults for each kind of label (`LABEL_SIZE` and
+`SYMBOL_SIZE` in `packages/engine/src/ts/view/typeScale.ts`; tick numbers in
+`kgjs-theme.css`), so a config sets no `fontSize` at all. They are sized for a
+projector at the front of a classroom at 100% zoom, not only for a laptop.
+Nothing a student has to read is smaller than 14px, and there are no sizes in
+between.
 
 ## Lines
 
@@ -265,7 +268,7 @@ above the plot.
   for a param. The café's free point is Z for both reasons: P is price, and C
   is coffees an hour.
 - **The letter sits beside its point**, on the side with open space, in the
-  point's colour, as plain text at `fontSize: 10`.
+  point's colour, as plain text at the default size.
 - **The equilibrium is not lettered.** Its droplines name it.
 - **A point's coordinates are not written beside it.** If the numbers matter,
   they are read off the axes with droplines, or stated in a readout.
@@ -308,7 +311,7 @@ Anything else written on the plot. There are three kinds.
    in words, counted properly: "1 coffee", "2 coffees".
 2. **A readout**: a line or two about what is drawn. "A (60, 160) → B (80,
    120)", "1 more toastie costs 2.0 coffees". It goes in the top-right corner
-   of the plot, right-aligned, with lines 16px apart, in the corner no curve
+   of the plot, right-aligned, with lines 24px apart, in the corner no curve
    reaches across the lesson's ranges. If no corner is clear all the way
    through, the readout belongs in the caption or in "What changed", not on the
    plot.
@@ -316,7 +319,7 @@ Anything else written on the plot. There are three kinds.
 
 For all three:
 
-- Plain text (`plainText: true`), at `fontSize: 10`, in the colour of the thing
+- Plain text (`plainText: true`), at the default size, in the colour of the thing
   it is about, using the darker text shade where the colour needs one. No box.
 - Words in full, in sentence case. Numbers at the same precision as the
   caption, so a number reads the same on the plot as beside it.
@@ -396,7 +399,7 @@ Currency codes (A$, US$) are fine: that is how money is written.
   "Equilibrium", "Point A", "Most coffees".
 - Colour is never the only difference (see [Colour](#colour)), and the contrast
   ratios above apply.
-- Nothing a student has to read is smaller than 12px.
+- Nothing a student has to read is smaller than 14px.
 - Don't shrink a drag target. The engine gives curves and points an invisible
   grip 20px across or more, so a student on a trackpad doesn't have to land on
   a 3px line.
@@ -414,7 +417,7 @@ Currency codes (A$, US$) are fine: that is how money is written.
 5. **Areas.** 20%, or 8% for context, and labelled in words.
 6. **Before and after.** Use `ghost:` for before and a dotted answer line for a
    question. Never two P\*s.
-7. **Annotations.** Plain text at `fontSize: 10` in the thing's colour, readouts
+7. **Annotations.** Plain text at the default size in the thing's colour, readouts
    at the top right, no more than three at a time.
 8. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
    hand-set `strokeWidth`.

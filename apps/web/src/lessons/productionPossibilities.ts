@@ -484,7 +484,7 @@ const readout = (name: string, line: number, text: string, show = 'true') => ({
     type: 'Label',
     def: {
         name, title: '', x: 158, y: 320, text, plainText: true,
-        align: 'right', xPixelOffset: -5, yPixelOffset: -(10 + 16 * line),
+        align: 'right', xPixelOffset: -5, yPixelOffset: -(12 + 24 * line),
         color: 'colors.choice',
         show: `(${SHOW_CHOICES}) and ${show}`
     }
@@ -524,8 +524,8 @@ const legLabel = (
 });
 
 /** Just past A, along the leg away from it: above it going right, below it going left. */
-const PAST_A_RIGHTWARDS = { align: 'left', xPixelOffset: 9, yPixelOffset: 10 };
-const PAST_A_LEFTWARDS = { align: 'right', xPixelOffset: -9, yPixelOffset: -12 };
+const PAST_A_RIGHTWARDS = { align: 'left', xPixelOffset: 10, yPixelOffset: 13 };
+const PAST_A_LEFTWARDS = { align: 'right', xPixelOffset: -10, yPixelOffset: -15 };
 
 /** "1 coffee", "2 coffees". */
 const counted = (n: string, word: string) => `concat(string(${n}), ${n} == 1 ? " ${word}" : " ${word}s")`;

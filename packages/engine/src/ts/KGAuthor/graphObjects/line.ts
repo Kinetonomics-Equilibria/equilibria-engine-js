@@ -1,4 +1,5 @@
 import { setDefaults } from "../../util";
+import { SYMBOL_SIZE } from "../../view/typeScale";
 import { CurveDefinition, Curve } from "./curve";
 import { Label } from "./label";
 import { Point, PointDefinition } from "./point";
@@ -156,7 +157,7 @@ export class Line extends Curve {
             delete labelDef.label;
             labelDef = setDefaults(labelDef, def.label);
             labelDef = setDefaults(labelDef, {
-                fontSize: 12,
+                fontSize: SYMBOL_SIZE,
                 color: def.color,
                 coordinates: lineRadius(l, labelDef.r, labelDef.center)
             });

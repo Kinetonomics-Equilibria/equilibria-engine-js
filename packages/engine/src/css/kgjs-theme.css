@@ -65,13 +65,14 @@
  * KaTeX_Main comes from, and maths inside a title keeps its own fonts, which
  * KaTeX sets by class lower down.
  *
- * Ticks are 12px, not the 10px d3 writes beside them: the smallest text on the
- * chart, and the numbers a student reads every value against
- * (docs/chart-design.md).
+ * Ticks are 14px, not the 10px d3 writes beside them: the smallest text on the
+ * chart, and the numbers a student reads every value against, from the back of
+ * a classroom as well as at a laptop (docs/chart-design.md, and
+ * view/typeScale.ts for the labels beside them).
  */
 .kg-container g.axis {
     font-family: inherit;
-    font-size: 12px;
+    font-size: 14px;
     font-variant-numeric: tabular-nums;
 }
 

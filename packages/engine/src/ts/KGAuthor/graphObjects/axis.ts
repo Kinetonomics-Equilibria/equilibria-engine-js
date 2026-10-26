@@ -19,14 +19,15 @@ export const AXIS_TITLE = 'axisTitle';
 export class Axis extends GraphObject {
 
     constructor(def, graph) {
-        // How far a title sits from its axis. Further from a vertical one,
-        // because its tick numbers run sideways from it: at 12px, "0.70" on
-        // the A$ market's rate axis reaches 35px out, and a title at 40px,
-        // which is about 10px wide either side of that when it is turned on
-        // its side, was written over them.
+        // How far a title sits from its axis, clear of the tick numbers and a
+        // dropline's label between them. Further from a vertical one, because
+        // its tick numbers run sideways from it: at 14px, "0.70" on the A$
+        // market's rate axis reaches 39px out, and a 16px title turned on its
+        // side is about 12px either side of where it is put. Under the x axis
+        // the ticks and `Q*` reach 24px down.
         setDefaults(def, {
-            yPixelOffset: 40,
-            xPixelOffset: 48
+            yPixelOffset: 44,
+            xPixelOffset: 56
         })
         super(def, graph);
         let a = this;

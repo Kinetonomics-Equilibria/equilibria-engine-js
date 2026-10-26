@@ -1,4 +1,5 @@
 import { ParametricFunctionDefinition, ParametricFunction } from "../../math/parametricFunction";
+import { SYMBOL_SIZE } from "../../view/typeScale";
 import { UnivariateFunctionDefinition, UnivariateFunction } from "../../math/univariateFunction";
 import { setDefaults } from "../../util";
 import { LabelDefinition, Label } from "./label";
@@ -88,7 +89,7 @@ export class Curve extends GraphObject {
             delete labelDef.label;
             labelDef = setDefaults(labelDef, def.label);
             labelDef = setDefaults(labelDef, {
-                fontSize: 12,
+                fontSize: SYMBOL_SIZE,
                 color: def.color
             });
             if (def.hasOwnProperty('univariateFunction')) {

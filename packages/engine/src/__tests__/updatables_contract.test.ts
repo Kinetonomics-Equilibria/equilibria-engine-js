@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { mountConfig, stubContainerLayout } from './helpers';
+import { LABEL_SIZE } from '../ts/view/typeScale';
 
 /**
  * Which drawn properties respond to a param change, and which are frozen.
@@ -118,7 +119,7 @@ describe('label font size is updatable, and was not', () => {
         ], []);
 
         expect(labelDiv(r.container, 'sized')!.style.fontSize).toBe('18pt');
-        expect(labelDiv(r.container, 'plain')!.style.fontSize).toBe('10pt');
+        expect(labelDiv(r.container, 'plain')!.style.fontSize).toBe(LABEL_SIZE + 'pt');
 
         r.destroy();
     });

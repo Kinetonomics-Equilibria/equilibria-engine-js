@@ -27,46 +27,50 @@ export class Label extends GraphObject {
     public type: string;
 
     constructor(def: LabelDefinition, graph: Graph) {
+        // A position is a little way off the anchor, in pixels: enough to
+        // clear a point of radius 7 and a 3px line with 16px text beside them
+        // (view/typeScale.ts). They were 5 across and 10 up, for 13px labels
+        // beside points of radius 6.
         if (def.hasOwnProperty('position')) {
             const pos = def.position.toLowerCase();
             switch (pos) {
                 case 'bl':
-                    def.xPixelOffset = 5;
-                    def.yPixelOffset = 10;
+                    def.xPixelOffset = 8;
+                    def.yPixelOffset = 12;
                     def.align = 'left';
                     break;
                 case 'tr':
-                    def.xPixelOffset = -5;
-                    def.yPixelOffset = -12;
+                    def.xPixelOffset = -8;
+                    def.yPixelOffset = -14;
                     def.align = 'right';
                     break;
                 case 'tl':
-                    def.xPixelOffset = 5;
-                    def.yPixelOffset = -12;
+                    def.xPixelOffset = 8;
+                    def.yPixelOffset = -14;
                     def.align = 'left';
                     break;
                 case 'br':
-                    def.xPixelOffset = -5;
-                    def.yPixelOffset = 10;
+                    def.xPixelOffset = -8;
+                    def.yPixelOffset = 12;
                     def.align = 'right';
                     break;
                 case 't':
                     def.xPixelOffset = 0;
-                    def.yPixelOffset = -12;
+                    def.yPixelOffset = -14;
                     def.align = 'center';
                     break;
                 case 'b':
                     def.xPixelOffset = 0;
-                    def.yPixelOffset = 10;
+                    def.yPixelOffset = 12;
                     def.align = 'center';
                     break;
                 case 'l':
-                    def.xPixelOffset = 5;
+                    def.xPixelOffset = 8;
                     def.yPixelOffset = 0;
                     def.align = 'left';
                     break;
                 case 'r':
-                    def.xPixelOffset = -5;
+                    def.xPixelOffset = -8;
                     def.yPixelOffset = 0;
                     def.align = 'right';
                     break;

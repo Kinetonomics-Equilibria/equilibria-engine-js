@@ -1,4 +1,5 @@
 import { setDefaults } from "../../util";
+import { SYMBOL_SIZE } from "../../view/typeScale";
 import { LabelDefinition, Label } from "./label";
 import { KGAuthorClasses } from "../classRegistry";
 import { setStrokeColor, averageDefs, copyJSON } from "../parsers/parsingFunctions";
@@ -70,7 +71,7 @@ export class Segment extends GraphObject {
             }
             labelDef = setDefaults(def.label || {}, labelDef);
             labelDef = setDefaults(labelDef, {
-                fontSize: 12,
+                fontSize: SYMBOL_SIZE,
                 color: def.color,
                 location: 0.5
             });

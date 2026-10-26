@@ -1,4 +1,5 @@
 import { setDefaults } from "../../util";
+import { LABEL_SIZE } from "../../view/typeScale";
 import { LabelDefinition, Label } from "./label";
 import { setFillColor, setStrokeColor, makeDraggable, copyJSON } from "../parsers/parsingFunctions";
 import { GraphObjectDefinition, GraphObject } from "./graphObject";
@@ -58,7 +59,7 @@ export class Ellipse extends GraphObject {
             delete labelDef.label;
             labelDef = setDefaults(labelDef, def.label);
             labelDef = setDefaults(labelDef, {
-                fontSize: 10,
+                fontSize: LABEL_SIZE,
                 color: def.color,
                 bgcolor: null
             });
