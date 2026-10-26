@@ -4,9 +4,9 @@
  * The rail began as the Mantine UI recipe of the same name
  * (ui.mantine.dev/component/double-navbar), and is now a card of its own: a
  * sheet of paper standing a little in from the window's left, top and bottom
- * edges, with the logo at its head and Settings at its foot. AppShell owns the
- * navbar's box, which is the card and the margin to its left, so its width in
- * App.tsx is `--rail-width` plus `--rail-inset`.
+ * edges, with the logo at its head and the profile circle at its foot.
+ * AppShell owns the navbar's box, which is the card and the margin to its left,
+ * so its width in App.tsx is `--rail-width` plus `--rail-inset`.
  */
 
 .navbar {
@@ -65,10 +65,23 @@
             color: var(--mantine-color-blue-light-color);
         }
     }
+}
 
-    /* Settings, alone at the rail's foot. */
-    &[data-foot] {
-        margin-top: auto;
+/* The profile circle, alone at the rail's foot. The button is as big as a rail
+ * icon's, so it is as easy to hit, and round, so its hover and focus ring are
+ * a halo round the avatar rather than a square behind it. */
+.profile {
+    flex: none;
+    margin-top: auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-5));
     }
 }
 

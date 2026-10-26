@@ -216,7 +216,8 @@ first version of the screen did, so a lesson can gain them one at a time.
 
 Places kept for tools that are not built yet, so that the first one built
 lands where the rest expect it and none of them has to move another. Nothing
-in this section is on the screen today.
+in this section is on the screen today but the profile circle at the rail's
+foot, which the tools to come there are placed around.
 
 ### The title line
 
@@ -292,10 +293,12 @@ One menu for everything that leaves the screen:
 
 ### The rail's foot
 
-Help goes above Settings. An account button goes at the very bottom, under
-Settings, once there are accounts. Both are about the app rather than the
-diagram, so they belong to the rail, apart from the places to go, as
-Settings already is.
+The profile circle is at the very bottom of the rail, and Settings is in its
+menu. Help goes above the circle, in the rail itself, a press away rather than
+in a menu. Once there are accounts the circle shows the student's initials,
+the menu opens with their name, and Sign out goes at its end, under Settings.
+All of it is about the app rather than the diagram, so it belongs to the rail,
+apart from the places to go.
 
 ### Links
 

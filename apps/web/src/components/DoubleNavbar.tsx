@@ -7,7 +7,9 @@ import {
     IconSettings,
     IconX
 } from '@tabler/icons-react';
-import { ActionIcon, Collapse, Text, Tooltip, Transition, UnstyledButton, useMantineTheme } from '@mantine/core';
+import {
+    ActionIcon, Avatar, Collapse, Menu, Text, Tooltip, Transition, UnstyledButton, useMantineTheme
+} from '@mantine/core';
 import { useClickOutside, useMediaQuery, useWindowEvent } from '@mantine/hooks';
 import type { LessonStrand, LessonTopic } from '../lessons';
 import classes from './DoubleNavbar.module.css';
@@ -22,13 +24,12 @@ import logo from './kinetonomics-logo.svg';
 /** The rail sections that open a panel. Only Lessons has one so far. */
 export type NavPanel = 'lessons';
 
-// Home and Settings have no pages behind them yet. They are here so the rail
-// has its shape, and pressing one only puts away a panel that is out. `foot`
-// sends Settings to the bottom of the rail, apart from the places to go.
-const RAIL: { icon: typeof IconHome2; label: string; panel?: NavPanel; foot?: boolean }[] = [
+// Home has no page behind it yet. It is here so the rail has its shape, and
+// pressing it only puts away a panel that is out. The profile circle at the
+// rail's foot is not one of these: it opens a menu rather than going anywhere.
+const RAIL: { icon: typeof IconHome2; label: string; panel?: NavPanel }[] = [
     { icon: IconHome2, label: 'Home' },
-    { icon: IconChartPpf, label: 'Lessons', panel: 'lessons' },
-    { icon: IconSettings, label: 'Settings', foot: true }
+    { icon: IconChartPpf, label: 'Lessons', panel: 'lessons' }
 ];
 
 // The section the open page belongs to, which the rail keeps lit. Every page is
@@ -76,10 +77,14 @@ export function DoubleNavbar({
         if (panel && floats) onPanelChange(null);
     });
 
+    // Whether the profile menu is out. Below `sm` it opens over the panel, and
+    // Escape then puts away the menu alone, as it would any menu.
+    const [profileOpen, setProfileOpen] = useState(false);
+
     // Capture phase: the rail button that brought the panel out still has
     // focus, and its Tooltip keeps Escape from bubbling up to the window.
     useWindowEvent('keydown', (event) => {
-        if (panel && event.key === 'Escape') onPanelChange(null);
+        if (panel && !profileOpen && event.key === 'Escape') onPanelChange(null);
     }, { capture: true });
 
     const rail = RAIL.map((link) => {
@@ -98,7 +103,6 @@ export function DoubleNavbar({
                     onClick={() => onPanelChange(link.panel && !isOut ? link.panel : null)}
                     className={classes.mainLink}
                     data-active={link.label === PAGE_SECTION || isOut || undefined}
-                    data-foot={link.foot || undefined}
                     aria-label={link.label}
                     aria-expanded={link.panel ? isOut : undefined}
                     aria-controls={link.panel ? PANEL_ID : undefined}
@@ -114,6 +118,55 @@ export function DoubleNavbar({
             <div className={classes.aside}>
                 <img className={classes.logo} src={logo} alt="Kinetonomics" />
                 {rail}
+
+                {/* Opens beside the rail, its foot level with the circle's.
+                  * The circle sits 10px in from the rail's edge, so an offset
+                  * of 18 stands the menu 8px off the rail, as the panel
+                  * stands. Above `sm` opening it puts the panel away, which
+                  * it would otherwise cover; below it the panel is the
+                  * overlay the circle is on, so it stays. */}
+                <Menu
+                    opened={profileOpen}
+                    onChange={setProfileOpen}
+                    onOpen={() => { if (panel && floats) onPanelChange(null); }}
+                    position="right-end"
+                    offset={18}
+                    width={200}
+                    shadow="md"
+                    radius="md"
+                >
+                    {/* The Tooltip outside the target: inside it, the Tooltip
+                      * keeps the menu's `aria-expanded` and `aria-haspopup`
+                      * for itself and they never reach the button. */}
+                    <Tooltip
+                        label="Profile"
+                        position="right"
+                        withArrow
+                        transitionProps={{ duration: 0 }}
+                        disabled={profileOpen}
+                    >
+                        <Menu.Target>
+                            <UnstyledButton className={classes.profile} aria-label="Profile">
+                                {/* No accounts yet, so no picture or initials:
+                                  * Mantine's own placeholder figure. Blue
+                                  * while its menu is out, as a rail icon is
+                                  * while its panel is. */}
+                                <Avatar size={36} color={profileOpen ? 'blue' : 'gray'} />
+                            </UnstyledButton>
+                        </Menu.Target>
+                    </Tooltip>
+
+                    <Menu.Dropdown>
+                        {/* Settings has no page behind it yet, so choosing it
+                          * only puts away what is out, as Home does. */}
+                        <Menu.Item
+                            leftSection={<IconSettings size={16} stroke={1.5} />}
+                            onClick={() => onPanelChange(null)}
+                        >
+                            Settings
+                        </Menu.Item>
+                    </Menu.Dropdown>
+                </Menu>
             </div>
 
             <Transition mounted={panel === 'lessons'} transition="slide-right" duration={150} timingFunction="ease">

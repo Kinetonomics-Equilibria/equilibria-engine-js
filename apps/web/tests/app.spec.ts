@@ -1559,3 +1559,52 @@ test('on a phone the burger leaves the title row its controls', async ({ page })
     await page.getByRole('button', { name: 'Toggle navigation' }).click();
     await expect(page.getByRole('link', { name: 'Supply and demand' })).toBeHidden();
 });
+
+/**
+ * The rail's foot is a profile circle rather than a cog, and Settings is in its
+ * menu. The menu is Mantine's, so its roles and keys are too: the circle says
+ * it has a menu and whether it is out, and Escape puts it away and hands focus
+ * back to the circle.
+ */
+test('the profile circle opens a menu with Settings in it', async ({ page, pageErrors }) => {
+    const profile = page.getByRole('button', { name: 'Profile' });
+    await expect(page.getByRole('button', { name: 'Settings' })).toHaveCount(0);
+    await expect(profile).toHaveAttribute('aria-haspopup', 'menu');
+
+    await profile.click();
+    await expect(profile).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toBeHidden();
+    await expect(profile).toBeFocused();
+    expect(pageErrors).toEqual([]);
+});
+
+/**
+ * Above `sm` the lessons panel floats where the menu opens, so opening the menu
+ * puts the panel away. On a phone the panel is the overlay the circle is on:
+ * the menu opens over it, and Escape puts away the menu and nothing else.
+ */
+test('the profile menu puts the floating lessons panel away, but not a phone\'s', async ({ page }) => {
+    const panel = page.locator('#navbar-lessons-panel');
+    const profile = page.getByRole('button', { name: 'Profile' });
+    const settings = page.getByRole('menuitem', { name: 'Settings' });
+
+    await page.getByRole('button', { name: 'Lessons' }).click();
+    await expect(panel).toBeVisible();
+    await profile.click();
+    await expect(settings).toBeVisible();
+    await expect(panel).toBeHidden();
+    await page.keyboard.press('Escape');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('button', { name: 'Toggle navigation' }).click();
+    await expect(panel).toBeVisible();
+    await profile.click();
+    await expect(settings).toBeVisible();
+    await expect(panel).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(settings).toBeHidden();
+    await expect(panel).toBeVisible();
+});
