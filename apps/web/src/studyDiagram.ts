@@ -302,15 +302,15 @@ export const LESSON = [
         }
     },
     // The lesson hands the market back where it found it, so Finish hands the
-    // instruments the diagram as the config declares it, with everything drawn
-    // and nothing left mid-demonstration.
+    // playground the model as it declares it, with everything drawn and
+    // nothing left mid-demonstration.
     {
         set: { a: 20, c: 2 },
         title: 'Over to you',
         say: 'One shift in demand moved the price, the quantity, consumer surplus and revenue, ' +
             'all at once.\n\n' +
-            'Press Finish and the market is yours: drag the demand curve, try a scenario, or ' +
-            'see the maths behind each number.'
+            'Press Finish and the market is yours in the Playground: drag the demand curve, ' +
+            'try a scenario, or see the maths behind each number.'
     }
 ];
 

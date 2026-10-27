@@ -22,7 +22,7 @@ const EQUILIBRIUM = { Q: 50, rate: 0.65 };
 const TOLERANCE = { Q: 0.5, rate: 0.005 };
 
 /**
- * Through the lesson and out of it, into the instruments and the whole diagram.
+ * Through the lesson and out of it, into the playground and the whole diagram.
  *
  * Every question is direction only, so the shortest way past one is to be shown.
  */
@@ -149,7 +149,7 @@ async function dottedLines(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-    await page.goto('/?lesson=fx');
+    await page.goto('/lessons/fx');
     await page.locator('.kg-container svg').waitFor();
 });
 
@@ -581,7 +581,7 @@ test('the first question has its news report beside it, as a panel of the stage'
 test('no text lands on other text with the report beside the diagram', async ({ page }) => {
     for (const [width, height] of [[1440, 900], [1800, 1000], [1024, 768]]) {
         await page.setViewportSize({ width, height });
-        await page.goto('/?lesson=fx');
+        await page.goto('/lessons/fx');
         await page.locator('.kg-container svg').waitFor();
         await toTheFirstQuestion(page);
         for (const arrangement of ['Focus', 'Grid'] as const) {
@@ -598,7 +598,7 @@ test('no text lands on other text with the report beside the diagram', async ({ 
 // read whole.
 test('on a phone the report is captioned by its headline, and read once brought forward', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/?lesson=fx');
+    await page.goto('/lessons/fx');
     await page.locator('.kg-container svg').waitFor();
     await toTheFirstQuestion(page);
 
@@ -630,7 +630,7 @@ test('the Lessons panel moves between lessons, and the back button returns', asy
     await market.click();
     await expect(page.getByRole('heading', { name: 'A market, and what it does to everything else' }))
         .toBeVisible();
-    expect(new URL(page.url()).searchParams.get('lesson')).toBe('market');
+    expect(new URL(page.url()).pathname).toBe('/lessons/market');
 
     // Choosing a lesson puts the panel away, and the rail brings it back, out
     // on the topic of the lesson just chosen.

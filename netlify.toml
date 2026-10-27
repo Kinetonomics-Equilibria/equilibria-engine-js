@@ -18,3 +18,12 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Every page is a path the app reads (`lessons/fx`, `playground/aud`), and
+# there is one `index.html`: Netlify serves it for any path that is not a
+# file, so a link opens on a first visit and on a refresh. A file that exists,
+# such as anything under assets/, is served as it is.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

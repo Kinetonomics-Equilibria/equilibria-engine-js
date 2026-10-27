@@ -107,13 +107,14 @@ const stepMarker = (page: Page, position: number) =>
  * Run the lesson out to its end and finish it, which is where free exploration
  * lives.
  *
- * The side column holds the lesson or the instruments, never both — they are
- * tabs on one card — and Finish at the last step opens Explore. What the instruments get is the
- * diagram as the track's end draws it — everything revealed, the market at its
- * baseline — so this suite, which was written before the track existed and
- * describes a screen with three panels and no lesson, still describes it from
- * here on. If the instruments were handed anything other than "no lesson at
- * all", these would start failing and say so.
+ * A page holds the lesson or the instruments, never both, and Finish at the
+ * last step opens the playground on the lesson's model, with Explore open.
+ * What the playground draws is the model whole — everything revealed, the
+ * market the lesson ended on, which here is its baseline — so this suite,
+ * which was written before the track existed and describes a screen with three
+ * panels and no lesson, still describes it from here on. If the playground
+ * drew anything other than "no lesson at all", these would start failing and
+ * say so.
  */
 async function toTheEnd(page: Page) {
     const markers = page.locator('button[data-kinds]');
@@ -142,10 +143,14 @@ async function toTheEnd(page: Page) {
     await expect(page.getByRole('tab', { name: 'Explore' })).toHaveAttribute('aria-selected', 'true');
 }
 
-/** From the instruments back into the finished lesson, at its last step. */
+/**
+ * From the playground back into the finished lesson, at its last step: Back,
+ * since Finish is pushed, and the lesson's history entry remembers its answer.
+ */
 async function backToTheLesson(page: Page) {
-    await page.getByRole('tab', { name: 'Lesson' }).click();
+    await page.goBack();
     await expect(page.getByRole('group', { name: 'Lesson steps' })).toBeVisible();
+    await page.locator('.kg-container svg').waitFor();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -156,9 +161,9 @@ test.beforeEach(async ({ page }) => {
 
 test('renders the study screen', async ({ page }) => {
     await expect(page).toHaveTitle('Equilibria');
-    await expect(
-        page.getByRole('heading', { name: 'A market, and what it does to everything else' })
-    ).toBeVisible();
+    // The playground, after Finish: titled by the model, not the lesson.
+    await expect(page.getByRole('heading', { name: 'A market, its surplus and its revenue' })).toBeVisible();
+    await expect(page).toHaveURL(/\/playground\/market$/);
     await expect(page.getByRole('button', { name: 'Switch to Grid' })).toBeVisible();
 });
 
@@ -519,13 +524,16 @@ async function smallPanelProblems(page: Page): Promise<string[]> {
  * asks every small panel what was wrong with it — with a chip and without, and
  * on a small laptop, where there is room for a strip again.
  *
- * Exploring rather than in the lesson. On a phone the lesson card goes under
- * the diagram and leaves the stage too short for a shelf to beat a strip, and
- * the strip's 30px sheets are back; a narrow stage with the lesson *beside* it
- * was the navbar's open column on a small laptop, which floats now.
+ * On a tall phone. Under a 844px phone's stage the lesson's card, or in the
+ * playground the instruments, leave it too short for a shelf to beat a strip,
+ * and the strip's slivers of sheet are back — 3px glyphs, measured; at 1000px
+ * the shelf's glyphs are 81px; a narrow stage with the lesson
+ * *beside* it was the navbar's open column on a small laptop, which floats now.
  */
+const TALL_PHONE = { width: 390, height: 1000 };
+
 test('a narrow stage captions its small panels inside their sheets', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize(TALL_PHONE);
     await expect(page.locator('[data-role="shelf"]')).toHaveCount(2);
 
     const fits = async (where: string) => {
@@ -544,7 +552,7 @@ test('a narrow stage captions its small panels inside their sheets', async ({ pa
     await expect(page.locator('[data-role="strip"]')).toHaveCount(2);
     await fits('a small laptop, a strip');
 
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize(TALL_PHONE);
     await expect(page.locator('[data-role="shelf"]')).toHaveCount(2);
     await fits('a shelf, with chips');
     await expect(page.locator(panel('Consumer surplus'))).toContainText('Consumer surplus');
@@ -1461,18 +1469,20 @@ test('moving through the lesson never changes the diagram\'s size', async ({ pag
 });
 
 /**
- * The lesson and the instruments are tabs on one card, so switching between
- * them is as still as moving through either: the card is the top two thirds of
- * the column and "What changed" the rest, whichever tab is open and whatever
- * either holds. At the end of the lesson the two draw the same diagram, so the
- * stage has nothing at all to rearrange.
+ * The lesson's card and the playground's instruments are each the top two
+ * thirds of the column and "What changed" the rest, whichever tab is open and
+ * whatever either holds, so going from one page to the other is as still as
+ * moving through either. At the end of the lesson the two draw the same
+ * diagram, so the stage has nothing at all to rearrange.
  */
-test('the lesson is a tab beside the instruments, and switching moves nothing', async ({ page }) => {
-    const tabs = page.getByRole('complementary', { name: 'Lesson and instruments' });
+test('the lesson and the instruments take one place beside the stage, and moving between them moves nothing', async ({ page }) => {
+    const instruments = page.getByRole('complementary', { name: 'Instruments' });
+    const lesson = page.getByRole('region', { name: 'Lesson' });
     const changed = page.getByRole('region', { name: 'What changed' });
     const column = async () => {
-        const [top, bottom] = [(await tabs.boundingBox())!, (await changed.boundingBox())!];
-        return { top, bottom, whole: bottom.y + bottom.height - top.y };
+        const top = (await instruments.count()) > 0 ? instruments : lesson;
+        const [upper, bottom] = [(await top.boundingBox())!, (await changed.boundingBox())!];
+        return { top: upper, bottom, whole: bottom.y + bottom.height - upper.y };
     };
 
     const exploring = await column();
@@ -1483,8 +1493,9 @@ test('the lesson is a tab beside the instruments, and switching moves nothing', 
     expect(exploring.bottom.y).toBeGreaterThan(exploring.top.y + exploring.top.height);
 
     await backToTheLesson(page);
-    await expect(page.getByRole('tabpanel', { name: 'Lesson' })).toBeVisible();
-    await expect(page.getByRole('tabpanel', { name: /^(Explore|Scenarios|Maths)$/ })).toHaveCount(0);
+    await expect(lesson).toBeVisible();
+    await expect(instruments).toHaveCount(0);
+    await expect(page.getByRole('tab')).toHaveCount(0);
 
     // And in the lesson, at its end and at its longest: the question with its
     // verdict.
@@ -1528,16 +1539,17 @@ test('on a phone the lesson goes under the diagram, at a height that does not ch
 
 /**
  * On a phone the burger floats in the top right corner, and the title's line
- * ends with the arrangement toggle and the instruments' door. Drawn in the same
- * corner, the burger sat on the door and half of the toggle, and took their taps.
+ * ends with the arrangement toggle and the `⋯`. Drawn in the same corner, the
+ * burger sat on what was then the instruments' door and half of the toggle,
+ * and took their taps.
  */
 test('on a phone the burger leaves the title row its controls', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const burger = (await page.getByRole('button', { name: 'Toggle navigation' }).boundingBox())!;
     const toggle = page.getByRole('button', { name: 'Switch to Grid' });
-    const door = page.getByRole('button', { name: 'Open instruments' });
+    const more = page.getByRole('button', { name: 'More' });
 
-    for (const [name, control] of [['the toggle', toggle], ['the door', door]] as const) {
+    for (const [name, control] of [['the toggle', toggle], ['the ⋯', more]] as const) {
         const box = (await control.boundingBox())!;
         expect(box.x + box.width, `${name} ends before the burger`).toBeLessThanOrEqual(burger.x);
     }
@@ -1546,16 +1558,41 @@ test('on a phone the burger leaves the title row its controls', async ({ page })
     // over the point it taps.
     await arrange(page, 'Grid');
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
-    await door.click();
-    await expect(page.getByRole('dialog', { name: 'Instruments' })).toBeVisible();
+    await more.click();
+    await expect(page.getByRole('menuitem', { name: 'Reset' })).toBeVisible();
     await page.keyboard.press('Escape');
 
-    // And the burger still opens the navbar, with the Lessons panel out on the
-    // open lesson's topic.
+    // And the burger still opens the navbar, at the panel of the place the
+    // open page is in: the Playground, after Finish, on the model's topic.
+    const model = page.getByRole('link', { name: 'A market, its surplus and its revenue' });
     await page.getByRole('button', { name: 'Toggle navigation' }).click();
-    await expect(page.getByRole('link', { name: 'Supply and demand' })).toHaveAttribute('aria-current', 'page');
+    await expect(model).toHaveAttribute('aria-current', 'page');
     await page.getByRole('button', { name: 'Toggle navigation' }).click();
-    await expect(page.getByRole('link', { name: 'Supply and demand' })).toBeHidden();
+    await expect(model).toBeHidden();
+});
+
+/**
+ * On a phone there is no lesson in the playground to hold the place under the
+ * stage, so the instruments take it, tabs and all, at the height a lesson's
+ * card has; and there is no bottom sheet or door to one.
+ */
+test('on a phone the playground\'s instruments go under the diagram', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const instruments = page.getByRole('complementary', { name: 'Instruments' });
+    // Under the stage once the page has laid itself out for the phone: the
+    // title line's tools in the `⋯`, so the title wraps as a phone's does.
+    await expect(page.getByRole('button', { name: 'More' })).toBeVisible();
+    await expect.poll(async () => {
+        const [stageAt, dockAt] = [await stageBox(page), (await instruments.boundingBox())!];
+        return dockAt.y > stageAt.y + stageAt.height;
+    }).toBe(true);
+    const stage = await stageBox(page);
+    const box = (await instruments.boundingBox())!;
+
+    await instruments.getByRole('tab', { name: 'Maths' }).click();
+    expect((await instruments.boundingBox())!.height).toBeCloseTo(box.height, 0);
+    expect((await stageBox(page)).height).toBeCloseTo(stage.height, 0);
+    await expect(page.getByRole('button', { name: 'Open instruments' })).toHaveCount(0);
 });
 
 /**
@@ -1585,7 +1622,9 @@ test('the profile circle opens a menu with Settings in it', async ({ page, pageE
  * the menu opens over it, and Escape puts away the menu and nothing else.
  */
 test('the profile menu puts the floating lessons panel away, but not a phone\'s', async ({ page }) => {
-    const panel = page.locator('#navbar-lessons-panel');
+    // The Lessons panel above `sm`, from its rail button; on a phone the
+    // burger brings out the open page's, which after Finish is the Playground's.
+    const panel = page.locator('#navbar-lessons-panel, #navbar-playground-panel');
     const profile = page.getByRole('button', { name: 'Profile' });
     const settings = page.getByRole('menuitem', { name: 'Settings' });
 

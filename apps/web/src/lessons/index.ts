@@ -1,4 +1,4 @@
-import type { StudyContent } from './content';
+import type { StudyContent, StudyModel } from './content';
 import { SUPPLY_AND_DEMAND } from './supplyAndDemand';
 import { FOREIGN_EXCHANGE } from './foreignExchange';
 import { PRODUCTION_POSSIBILITIES } from './productionPossibilities';
@@ -58,7 +58,7 @@ export const CURRICULUM: LessonStrand[] = [
  * Every lesson the app offers, in the order the Lessons panel lists them.
  *
  * The first is where the app opens. A lesson is addressed by its `id`, which is
- * what `?lesson=` carries — so a teacher can hand a class a link to one.
+ * what `lessons/<id>` carries — so a teacher can hand a class a link to one.
  */
 export const LESSONS: StudyContent[] =
     CURRICULUM.flatMap(strand => strand.topics.flatMap(topic => topic.lessons));
@@ -72,6 +72,44 @@ export function lessonById(id: string | null | undefined): StudyContent {
 export function topicOfLesson(id: string): LessonTopic | null {
     const topics = CURRICULUM.flatMap(strand => strand.topics);
     return topics.filter(topic => topic.lessons.some(lesson => lesson.id === id))[0] || null;
+}
+
+/** Each model once, in the order the lessons drawn on them first come. */
+const firstOfEach = (lessons: StudyContent[]): StudyModel[] => lessons
+    .map(lesson => lesson.model)
+    .filter((model, i, all) => all.map(m => m.id).indexOf(model.id) === i);
+
+/**
+ * Every model the playground offers: each one a lesson is drawn on, once, in
+ * the order the Lessons panel lists the first lesson on it. Read off the
+ * curriculum, so a model is in the playground once a lesson on it is listed,
+ * and the two panels cannot disagree about what exists. A model is addressed
+ * by its `id`: `playground/<id>`.
+ */
+export const MODELS: StudyModel[] = firstOfEach(LESSONS);
+
+/** The model an id names, or the first one for an id that names nothing. */
+export function modelById(id: string | null | undefined): StudyModel {
+    return MODELS.filter(model => model.id === id)[0] || MODELS[0];
+}
+
+/**
+ * A model under the topic its first lesson is listed under, or `null` for one
+ * no listed lesson is drawn on — so the playground's panel is arranged in the
+ * lessons' strands and topics, and a model is named over its title as its
+ * lesson is.
+ */
+export function topicOfModel(id: string): LessonTopic | null {
+    const lesson = LESSONS.filter(l => l.model.id === id)[0];
+    return lesson ? topicOfLesson(lesson.id) : null;
+}
+
+/** The models a topic's lessons are drawn on, for the playground's panel. */
+export function modelsOf(topic: LessonTopic): StudyModel[] {
+    return firstOfEach(topic.lessons).filter(model => {
+        const home = topicOfModel(model.id);
+        return home !== null && home.id === topic.id;
+    });
 }
 
 export type { StudyContent, StudyModel } from './content';

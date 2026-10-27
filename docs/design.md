@@ -71,7 +71,7 @@ attention on finding things.
    | Teal | The reasoning | "Why" after a question; a right answer, in a verdict and in the recap; the recap's takeaway |
    | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts; an answer the student was shown, in the recap |
    | The curves' colours | The market itself | the diagram, the slider that moves each curve, and the chain's markers for what moved and the curves it moved |
-   | A topic's colour | Which topic, only ever as a dot before its name | the Lessons panel, and over the lesson's title. Beside the name, so a teal topic is never read as the reasoning |
+   | A topic's colour | Which topic, only ever as a dot before its name | the Lessons and Playground panels, and over the page's title. Beside the name, so a teal topic is never read as the reasoning |
 
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
    the depth one press away: "Why? See the maths" opens the formula behind the
@@ -87,8 +87,8 @@ attention on finding things.
                                                         ╰─────────────────╯
 ```
 
-- The lesson's title under the topic the Lessons panel lists it in, and at
-  its end the tools that act on the whole stage: the arrangement and Reset,
+- The page's title under its topic, and at its end the tools that act on
+  the whole stage: the arrangement and Reset,
   a hairline, then Present (`TitleLine`) and Share at the far end, because
   it is the page's rather than the stage's. The hairline parts what a sheet
   over the stage disables from what still works under one.
@@ -97,9 +97,12 @@ attention on finding things.
   sits on the desk above them, the one thing there. The tools are in a
   capsule of paper, because they are things to press, and so they read as
   one set rather than loose glyphs on the desk, a greyed one included.
-- The topic is small and grey over the title, after the dot the Lessons
-  panel draws before the topic's name, in the topic's colour, so the two
-  read as one place. A lesson no topic lists has its title alone.
+- A lesson's title is its own, under the topic the Lessons panel lists it
+  in. In the playground the title is the model's name, under the topic of
+  the first lesson drawn on it, which is where the Playground panel lists it.
+- The topic is small and grey over the title, after the dot the panels
+  draw before the topic's name, in the topic's colour, so the two read as
+  one place. A page no topic lists has its title alone.
 - No sentence under the title. It used to say how to read the price axis,
   which the axis's own title says, and to follow the lesson or drag a curve,
   which the cover and the lesson card say. It cost the stage a line.
@@ -128,19 +131,21 @@ attention on finding things.
   and Share still work: a cover is worth showing a class, and worth a link.
 - On a phone there is no room for the row: the arrangement stays, a `⋯`
   beside it holds Reset and Share's items, and the title wraps, as it always
-  has. Present and the QR code are not offered there. The `⋯` and the
-  instruments' door are in the capsule beside the arrangement, as tall as
-  it and as close, which keeps the first lesson's title to two lines,
-  exploring or in the lesson.
+  has. Present and the QR code are not offered there. The `⋯` is in the
+  capsule beside the arrangement, as tall as it and as close, which keeps
+  the first lesson's title to two lines. The instruments are under the
+  stage there (see [The side column](#the-side-column)), so they need no
+  door in the capsule.
 
 ### Reset
 
-- Puts the diagram back where the open tab or step began. During the lesson
-  that is the step's own market: the diagram's, with every step's `set` up
-  to here over it, so a curve no step sets goes back where the diagram drew
-  it. A question's curves go back where the question found them, which is
-  where it is marked from. Under an instrument, it is the market the
-  instruments were handed.
+- Puts the diagram back where the step began, or where the playground
+  opened. In a lesson that is the step's own market: the diagram's, with
+  every step's `set` up to here over it, so a curve no step sets goes back
+  where the diagram drew it. A question's curves go back where the question
+  found them, which is where it is marked from. In the playground it is the
+  market the page opened with: the model's own, or the one a link or a
+  lesson's Finish handed it.
 - It is how a step's own market comes back after scrubbing back, which
   un-draws and leaves the student's values alone. It took the place of the
   lesson card's "Reset the diagram to this step", which put back only what
@@ -189,12 +194,17 @@ One menu for everything that leaves the screen (`ShareMenu`):
   the browser refuses, a small grey line under the name says what to do
   instead. The menu is as wide whatever it says, and the line Share is on
   never changes width, so nothing on it moves.
-- The link and the QR code open the lesson at its start: `?lesson=fx`. What
-  a class or a friend needs is the lesson, and a choice between this view
-  and the start, above the items, was one more thing to read before any of
-  them. Anyone who wants this view has it in the address bar, which always
-  holds [the link](#links) to it. The download and the print are always this
-  view, and the printed page's code goes back to it.
+- In a lesson the link and the QR code open the lesson at its start:
+  `lessons/fx`. What a class or a friend needs is the lesson, and a choice
+  between this view and the start, above the items, was one more thing to
+  read before any of them. Anyone who wants this view has it in the address
+  bar, which always holds [the link](#links) to it.
+- In the playground they are this view, params and all:
+  `playground/aud?tab=scenarios&supply=56`. A lesson has a start worth more
+  than any view of it; a market has none, and a teacher who set one up to
+  show a class wants that one.
+- The download and the print are always this view, and the printed page's
+  code goes back to it.
 - Copy link copies by the browser's clipboard, and by selecting and copying
   where that is refused, as it often is inside another site's frame. Where
   both are refused it says so and gives the link to type.
@@ -220,7 +230,7 @@ One menu for everything that leaves the screen (`ShareMenu`):
   no diagram to give.
 - On a phone the `⋯` holds Reset, Copy link, the phone's own share sheet
   ("Send with…") where it has one, Download and Print. A phone's link is
-  the lesson's too.
+  the one a laptop would give on the same page.
 - Embed… joins the menu with [Embeds](#embeds), after Show a QR code. Where
   an embed opens is asked in its own dialog, since a class page is where a
   particular view is worth fixing.
@@ -228,23 +238,32 @@ One menu for everything that leaves the screen (`ShareMenu`):
 ## Links
 
 ```
- ?lesson=fx&step=7&arrange=grid&focus=mirror&supply=56
+ lessons/fx?step=7&arrange=grid&focus=mirror&supply=56
+ playground/aud?tab=maths&supply=56
 ```
 
-- A link is a view: the lesson, the open tab or the lesson's step, each
-  param the student can move that is not where the lesson puts it, the
-  arrangement and the panel at the front (`links.ts`). "The start of the
-  lesson" is just `?lesson=fx`.
-- Readable query parameters beside `?lesson=`, named after the params, so a
-  teacher can see what a link will open before sending it: `step` or `tab`,
-  then `arrange=grid` and `focus` where they are not the lesson's own, then
-  the params. Where the lesson puts a param is the step's market, as Reset
-  has it; under an instrument, the diagram's own.
-- The address follows the view. A lesson change is pushed, as the lesson
-  alone; anything else replaces, so Back goes to the last lesson rather than
-  the last drag, and the address bar is always the link to this view. Each
-  history entry is left at the view its lesson was left at, so Back opens
-  that lesson there.
+- A link is a page and a view of it (`links.ts`). The page is the path: a
+  lesson, `lessons/<id>`, or a model in the playground, `playground/<id>`,
+  so a teacher can read what a link opens before sending it. The view is
+  after the `?`: the lesson's step or the playground's open tab, each param
+  the student can move that is not where the page puts it, the arrangement
+  and the panel at the front. "The start of the lesson" is just
+  `lessons/fx`, and a model at its own market with Explore open is just
+  `playground/aud`.
+- Readable query parameters, named after the params: `step` or `tab`, then
+  `arrange=grid` and `focus` where they are not the page's own, then the
+  params. `step` belongs to a lesson and `tab` to the playground, and each
+  page ignores the other's. Where a lesson puts a param is the step's
+  market, as Reset has it; where the playground puts one is the model's own.
+- Addresses are written from the app's root, so the app can be served
+  anywhere. Netlify serves `index.html` for every path (a `/* /index.html
+  200` rewrite in `netlify.toml`), and the root itself opens the first
+  lesson until [Home](#home) is built.
+- The address follows the view. Opening another page, from the rail or by
+  Finish, is pushed, as its path alone or as Finish writes it; anything else
+  replaces, so Back goes to the last page rather than the last drag, and the
+  address bar is always the link to this view. Each history entry is left at
+  the view its page was left at, so Back opens that page there.
 - Written when the view settles, the boundary the narration keeps: a drag is
   written once, when it is let go. A held arrow key commits on every repeat,
   so writes are at least 350ms apart, the newest replacing one that waits,
@@ -252,7 +271,7 @@ One menu for everything that leaves the screen (`ShareMenu`):
 - Opening at a link is a restore, in the order every restore uses: the
   market back, then the engine's snapshot. Nothing is drawn or said for a
   move nobody made: no ghost, no change chip, "What changed" at rest. Reset
-  puts back the step's market, or under an instrument the one the link
+  puts back the step's market, or in the playground the one the link
   opened with.
 - **A link never carries an answer.** A question a link opens at is
   unanswered, whoever sent it, and its curves are where the step puts them,
@@ -260,17 +279,25 @@ One menu for everything that leaves the screen (`ShareMenu`):
   written. A link to a step past a question opens at the first unanswered
   one, as the lesson puts it, without the link's params: they were the
   market after the answer, and could be it.
-- A link that names a param the lesson no longer has opens without it, and
+- Back is not a link. A lesson's history entry remembers which questions
+  were answered, and how, in the browser's own state for that entry, which
+  never leaves the tab: Back to a lesson opens it where it was left, past
+  the questions already answered, so Back from the playground after Finish
+  is the lesson's end and not its first question asked again.
+- A link that names a param the page no longer has opens without it, and
   so does one whose value is not a number or whose param is not the
-  student's to move; a step past the end is the end, and a lesson that has
-  gone opens the first lesson at its start. Lessons change, and links handed
-  out last term should still open. The address then says what did.
-- A phone writes what a laptop does, so one link opens on either: the open
-  instrument is the tab, sheet up or down. A phone opened at a tab leaves
-  the sheet down with the lesson put away, since what was sent is the
-  diagram and the sheet would cover it.
-- No lesson may give a param one of the address's own names: `lesson`,
-  `step`, `tab`, `arrange`, `focus`. A test checks.
+  student's to move; a step past the end is the end, and a lesson or model
+  that has gone opens the first lesson, or the first model, at its start.
+  Lessons change, and links handed out last term should still open. The
+  address then says what did.
+- Addresses from before the pages open what they opened, and the address
+  then says where that is now: `?lesson=fx&step=7` is that lesson at that
+  step, and `?lesson=fx&tab=scenarios&supply=56` is the playground at the
+  lesson's model, at that tab and market.
+- A phone writes what a laptop does, so one link opens on either.
+- No model may give a param one of the address's own names: `lesson`,
+  `step`, `tab`, `arrange`, `focus`. `lesson` is in the path now, and stays
+  reserved, since old links carry it. A test checks.
 
 ## The side column
 
@@ -283,10 +310,10 @@ whose panels sit side by side and are held by the stage's width, pays for it,
 which is why the column stops at 380.
 
 ```
- While a lesson runs                 With the lesson put away
+ A lesson                            The playground
 
  ┌────────────────────────┐          ┌────────────────────────┐ ┬
- │ Lesson Explore Scen… … │          │ Lesson Explore Scen… … │ │ where you are,
+ │ Lesson                 │          │ Explore Scenarios Maths│ │ where you are,
  │ Part 2 of 3 · …        │          │ Demand for AUD      50 │ │ what you can do
  │ ▬▬▬▬ ▬▬▬▬▬ ▬▬▬▬        │          │ who it is              │ │
  │ Demand for AUD …       │          │ ━━━━━━━○━━━━━━━━━━━━━━ │ │ two thirds
@@ -300,25 +327,27 @@ which is why the column stops at 380.
  └────────────────────────┘          └────────────────────────┘ ┴
 ```
 
-- One card holds the lesson and the instruments under one row of tabs —
-  Lesson, Explore, Scenarios, Maths — one open at a time, and only the open one
-  mounted. Opening an instrument's tab puts the lesson away and hands the
-  instruments the whole diagram; the Lesson tab brings the lesson back where it
-  was left, its market, ghost and question with it. Finish, at the last step,
-  opens Explore. The tabs are the way out, so the lesson has no close here.
-- The tabs' card is the top two thirds of the column and "What changed" the
-  bottom third, whatever either holds and whichever tab is open. A long step
-  scrolls between the lesson's head and its Back and Next, which hold still; an
-  instrument scrolls inside its tab; a long chain scrolls under "What changed"'s
-  head. Four calcs of maths fit their tab at 1440×900; below about 875px tall
-  the Maths tab scrolls.
+- Beside a lesson the top card is the lesson's, with a card head of its own,
+  "Lesson", as "What changed" has. Nothing on it leads out of the lesson but
+  Finish, at the last step, which opens the playground (see
+  [Lessons](#lessons)); the rail is the other way out.
+- In the playground the top card holds the instruments under one row of
+  tabs, Explore, Scenarios and Maths, Explore open first, one open at a time
+  and only the open one mounted.
+- The top card is two thirds of the column and "What changed" the bottom
+  third, whatever either holds and whichever tab is open. A long step
+  scrolls between the lesson's head and its Back and Next, which hold still;
+  an instrument scrolls inside its tab; a long chain scrolls under "What
+  changed"'s head. Four calcs of maths fit their tab at 1440×900; below
+  about 875px tall the Maths tab scrolls.
 - The tabs are each as wide as their name, sharing out what is left, and the
   open one is no bolder than the rest, so opening one moves no other.
-- On a phone there is no column: the lesson goes under the stage at a fixed
-  height, the instruments into a bottom sheet, and the chain into the one-line
-  strip under the stage (`NarrationStrip`) — the same narration, at the density
-  a phone has room for. The two never appear together and announce the same
-  sentence.
+- On a phone there is no column: the lesson, or in the playground the
+  instruments, tabs and all, go under the stage at one fixed height, and the
+  chain into the one-line strip under the stage (`NarrationStrip`) — the same
+  narration, at the density a phone has room for. The two never appear
+  together and announce the same sentence. Nothing is in a bottom sheet: a
+  sheet over the diagram hid what moving a slider did.
 
 ### Why the chain left the strip
 
@@ -350,7 +379,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Title line | `TitleLine.tsx` | The lesson's topic over its title, and the stage's tools in a capsule of paper beside them; the title never wraps: the tools are borderless round icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
 | QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it, and so does the title line's capsule, with its own corner. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
-| Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close on a phone, "What changed"'s Undo). |
+| Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left ("Lesson" beside the stage, "What changed"); the card's one action at the right ("What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. Drawn in its curve's colour where the lesson names one, the theme's blue where it does not. The gesture wiring is `ParamSlider`'s. |
 | The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine. Rendered from `narrate()`; decides nothing. |
@@ -368,8 +397,9 @@ top of a card's class, then only what is particular to that card.
 ## What a lesson supplies
 
 The components hold no economics. Everything a student reads comes from the
-lesson's `StudyContent` and the `StudyModel` it is drawn on
-(`lessons/content.ts`), so a teacher's edit is a data change. `paramWords`,
+lesson's `StudyContent` and the `StudyModel` it is drawn on, or in the
+playground the model alone (`lessons/content.ts`), so a teacher's edit is a
+data change. `paramWords`,
 `narratedCalcs`, `explorePrompts` and `scenarios` are the model's; the rest
 are the lesson's own:
 
@@ -428,24 +458,29 @@ first version of the screen did, so a lesson can gain them one at a time.
 
 ## Pages to come
 
-Proposed, not built: until it is, everything above describes the screen as it
-is. The app grows from one page, a lesson with its instruments beside it, to
+The app grows from one page, a lesson with its instruments beside it, to
 three places a student can go, **Lessons**, the **Playground** and **In the
-news**, and a Home that points at them. It is written down before any of it is
-built, so the first one built lands where the others expect it.
+news**, and a Home that points at them. It was written down before any of it
+was built, so the first one built lands where the others expect it.
+
+**Built:** models, the Lessons page, the Playground, their addresses and
+their places on the rail, and the sections above describe them. **Still to
+come:** Home and In the news; until they are built, the root opens the first
+lesson and the rail has no In the news.
 
 ### Why the lesson and the instruments part
 
-- The tab row draws Lesson, Explore, Scenarios and Maths as four of a kind,
-  and they are not. A lesson has a place, a cover, questions, answers and a
+- The tab row drew Lesson, Explore, Scenarios and Maths as four of a kind,
+  and they were not. A lesson has a place, a cover, questions, answers and a
   recap; the instruments are tools that keep none of that. The screen already
-  knows it: the lesson is one pane and the instruments another, with a choice
+  knew it: the lesson was one pane and the instruments another, with a choice
   of instrument inside it.
-- Much of what is hardest on the screen exists to join the two: putting the
+- Much of what was hardest on the screen existed to join the two: putting the
   lesson away and bringing it back where it was left, its market, ghost and
   question with it; Reset meaning one thing under the lesson and another under
-  an instrument; a link that carries a step or a tab.
-- For a student halfway through a question, three tabs beside the lesson are
+  an instrument; a link that carried a step or a tab. Parting them took all
+  of that out.
+- For a student halfway through a question, three tabs beside the lesson were
   three ways out of it.
 - What parts them is who is driving. The lesson leads; in the playground the
   student does; a story starts from something that happened. All three are
@@ -458,12 +493,18 @@ built, so the first one built lands where the others expect it.
   maths, its "Try this" prompts and its scenarios. A **lesson** is a cover,
   steps, questions and a recap over one model. A **story** is a real event,
   told against one model.
-- Built, though no student sees it: a lesson names its model
-  (`StudyContent.model`, a `StudyModel`), whose fields are listed under
-  [What each supplies](#what-each-supplies), and the screen adds the lesson's
-  steps to the model's config as it hands it to the engine, so the diagram is
-  the same whichever lesson draws it. For now each model sits beside its one
-  lesson, in that lesson's file.
+- Built: a lesson names its model (`StudyContent.model`, a `StudyModel`),
+  whose fields are listed under [What each supplies](#what-each-supplies),
+  and the screen adds the lesson's steps to the model's config as it hands
+  it to the engine, so the diagram is the same whichever lesson draws it.
+  For now each model sits beside its one lesson, in that lesson's file. The
+  playground's list is read off the lessons (`MODELS`), so a model is in it
+  once a lesson on it is listed.
+- A model's own expressions may read the step a lesson has reached: the
+  café draws Z before its choices and again once the lesson is over. The
+  playground hands the engine no steps, so it declares that param itself,
+  past every lesson's end — the model as a student who had seen every step
+  would find it.
 - Several lessons may share a model: demand's shifters, elasticity and a price
   ceiling are all one market. So the playground's list stays short as the
   lessons grow, which is the sign it is a list of something else.
@@ -485,31 +526,36 @@ built, so the first one built lands where the others expect it.
 
 - Four places, in the order a student meets them: where to start, then learn
   it, play with it, see it happen. Each is an icon with its name in its
-  tooltip, as Home and Lessons are today. Help and the profile circle stay at
-  the rail's foot, apart from the places to go.
-- The chart Lessons has today goes to the Playground, which is where the
-  charts are, and Lessons becomes a book.
+  tooltip. Help and the profile circle stay at the rail's foot, apart from
+  the places to go.
+- Built for Home, Lessons and the Playground (`DoubleNavbar.tsx`). Home is
+  on the rail with no page behind it yet, and In the news joins it when
+  there are stories to list.
+- The chart Lessons had goes to the Playground, which is where the charts
+  are, and Lessons is a book.
 - Lessons, Playground and In the news each bring out a panel beside the rail
-  listing what is in them, as Lessons does today; choosing from it opens that
-  thing and puts the panel away. Home has no panel: it is a page.
+  listing what is in them; choosing from it opens that thing and puts the
+  panel away. Home has no panel: it is a page.
 - No place has a page that is only its list. A list is a panel, or a part of
   Home, and a press in it opens a lesson, a model or a story, so no page in
   the app has nothing on it to do but choose.
 - The Playground panel is arranged as the Lessons panel is, in the same
-  strands and topics with the same dots, so a model sits under the topic its
-  lessons do. The In the news panel is newest first, under each month: a
-  story's date, its topic's dot and its headline.
-- The rail lights the place the open page belongs to (`PAGE_SECTION`, today
-  always Lessons), and the icon whose panel is out, as now.
+  strands and topics with the same dots, so a model sits under the topic of
+  the first lesson drawn on it, once. Either panel opens on the topic of the
+  open page, so the Playground panel beside a lesson opens where its model
+  is. The In the news panel is newest first, under each month: a story's
+  date, its topic's dot and its headline.
+- The rail lights the place the open page belongs to, and the icon whose
+  panel is out.
 - On a phone the burger opens the overlay at the panel of the open page's
-  place, rather than always at Lessons.
+  place.
 
 ### Home
 
-- Where the app opens, at `/`. Today the app opens on the first lesson
-  listed, which is why The economic problem is listed after Markets though a
-  course meets it first (`lessons/index.ts`). Once Home is where the app
-  opens, the Lessons panel can follow a course.
+- Where the app opens, at `/`. Until it is built the root opens the first
+  lesson listed, which is why The economic problem is listed after Markets
+  though a course meets it first (`lessons/index.ts`). Once Home is where
+  the app opens, the Lessons panel can follow a course.
 - A page that points: the three places, each with a line saying what is in
   it and a way in, and the latest stories from In the news, newest first, as a
   feed: each its date, its topic's dot and its headline, a press from the
@@ -535,24 +581,28 @@ built, so the first one built lands where the others expect it.
  └────────────────────────┘ ┴
 ```
 
-- The study screen as it is, less Explore, Scenarios and Maths. The lesson
-  card has the column's top two thirds to itself, with a card head of its own
-  where the tab row was. "What changed" keeps the bottom third, since the
-  lesson's try-its and questions move curves.
+Built, at `lessons/<id>`.
+
+- The study screen less Explore, Scenarios and Maths. The lesson card has the
+  column's top two thirds to itself, with a card head of its own where the
+  tab row was. "What changed" keeps the bottom third, since the lesson's
+  try-its and questions move curves.
 - Nothing on the lesson page leads out of the lesson but the rail. A student
   who wants the market to themselves finishes the lesson or takes the rail;
-  neither is on the card beside a question.
+  neither is on the card beside a question. The card has no close, on a
+  phone either.
 - Finish, at the last step, opens the playground at the lesson's model and at
-  the market the lesson ended on. It is pushed, as a change of lesson is, so
-  Back returns to the recap. The recap's line says where Finish goes:
-  "Finish, and this market is yours in the Playground."
-- "Why? See the maths" is not offered, as today: it is offered only with the
-  lesson put away. The maths is the playground's.
-- Reset is the step's market, as now. What it does under an instrument moves
-  to the playground.
-- On a phone, as now: the lesson under the stage and the chain in the strip,
-  less the instruments' door in the capsule and the bottom sheet behind it.
-- Share as now: the link opens the lesson at its start.
+  the market the lesson ended on, written in the playground's address as a
+  link would write it. It is pushed, as a change of lesson is, and the
+  lesson's own entry remembers its answers, so Back returns to the recap
+  with its questions on it. The line under the recap says where Finish goes:
+  "Finish, and this market is yours in the Playground", and each lesson's
+  last step says so in its own words.
+- "Why? See the maths" is not offered. The maths is the playground's.
+- Reset is the step's market.
+- On a phone: the lesson under the stage and the chain in the strip, with
+  no instruments' door in the capsule.
+- Share's link opens the lesson at its start.
 
 ### The Playground
 
@@ -570,24 +620,25 @@ built, so the first one built lands where the others expect it.
  └────────────────────────┘ ┴
 ```
 
+Built, at `playground/<id>`.
+
 - One model to a page. The title line is the model's topic over its name, with
   the same tools: the arrangement, Reset, Present and Share.
 - The stage draws all of the model's panels from the start. A lesson brings
   them in step by step; a student who has come to play has nothing to be
   brought to.
-- The column is today's with the lesson put away: one card of three tabs,
-  Explore, Scenarios and Maths, with Explore open first, and "What changed"
-  under it, at the same heights and scrolling the same way.
-- "Why? See the maths" opens the Maths tab at the calc, as it does today with
-  the lesson put away.
+- The column is one card of three tabs, Explore, Scenarios and Maths, with
+  Explore open first, and "What changed" under it, at the same heights and
+  scrolling the same way as a lesson's.
+- "Why? See the maths" opens the Maths tab at the calc.
 - Reset puts back the market the page opened with: the model's own, or the
   one a link, a lesson's Finish or a story handed it.
 - Share's link is this view, params and all, where a lesson's is its start. A
   lesson has a start worth more than any view of it; a market has none, and a
   teacher who set one up to show a class wants that one.
 - On a phone there is no lesson to hold the place under the stage, so the
-  instruments take it, at the height the lesson has, tabs and all, and the
-  bottom sheet goes. The chain stays in the strip.
+  instruments take it, at the height the lesson has, tabs and all, and there
+  is no bottom sheet. The chain stays in the strip.
 
 ### In the news
 
@@ -624,10 +675,13 @@ built, so the first one built lands where the others expect it.
  /news/2026-11-rba-cash-rate             a story
 ```
 
+Built for lessons and the playground, as [Links](#links) describes; a
+story's comes with In the news, and `/` with Home.
+
 - Each place is a path, so a teacher can read what a link opens before
-  sending it; after the `?` the view is written as now.
+  sending it; after the `?` the view is written as it was.
 - Opening another page, lesson, model or story is pushed; anything else
-  replaces, as now, so Back goes to the last thing opened, not the last drag.
+  replaces, so Back goes to the last thing opened, not the last drag.
 - Old addresses open what they opened, because links handed out last term
   should still open. `?lesson=fx&step=7` is that lesson at that step;
   `?lesson=fx&tab=scenarios&supply=56` is the playground at the lesson's
@@ -635,7 +689,7 @@ built, so the first one built lands where the others expect it.
 - `step` belongs to a lesson and `tab` to the playground. `lesson` leaves the
   query for the path, but stays reserved, since old links carry it.
 - Netlify serves `index.html` for every path (a `/* /index.html 200`
-  rewrite), which today's single address does not need.
+  rewrite in `netlify.toml`).
 
 ### What each supplies
 
@@ -659,22 +713,19 @@ built, so the first one built lands where the others expect it.
 
 ### What changes when it is built
 
-Each of these sections is rewritten as the page it describes is built:
+Each of these sections is rewritten as the page it describes is built.
+Rewritten for the Lessons page and the Playground: [The title
+line](#the-title-line), [Share](#share), [Links](#links), [The side
+column](#the-side-column), [Reset](#reset) and the rail. Still to come:
 
-- [The title line](#the-title-line): the phone's capsule loses the
-  instruments' door; the playground's title is a model's, and a story's
-  carries its date.
-- [Share](#share): what the link opens, per page.
-- [Links](#links): the paths above, the redirects from old addresses, and the
-  reserved names.
-- [The side column](#the-side-column): no tab row beside a lesson; three tabs
-  in the playground; the phone's bottom sheet goes.
-- [Reset](#reset): its sentence about an instrument moves to the playground.
+- [The title line](#the-title-line): a story's carries its date.
+- [Share](#share) and [Links](#links): a story's address and what its link
+  opens.
 - [What a lesson supplies](#what-a-lesson-supplies): a story's fields,
   beside the lesson's and the model's.
 - [Embeds](#embeds): the diagram-only embed is the playground's stage, and its
   link opens the Playground.
-- The rail, `DoubleNavbar.tsx`: its places and panels, as above.
+- The rail, `DoubleNavbar.tsx`: In the news, and a page behind Home.
 
 ### Still open
 

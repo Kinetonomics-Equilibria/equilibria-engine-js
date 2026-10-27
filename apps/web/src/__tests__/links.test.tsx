@@ -3,16 +3,18 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { App } from '../App';
-import { LESSONS } from '../lessons';
-import { LINK_KEYS, readLink, writeLink } from '../links';
+import { MODELS } from '../lessons';
+import { LINK_KEYS, readLink, readPlace, writeLink } from '../links';
 import { theme } from '../theme';
 
 /**
- * Links: the address follows the view, and a pasted address opens it.
+ * Links: the address follows the page and the view, and a pasted address
+ * opens them.
  *
  * The whole app, because the address is the shell's, on the shipped market
- * lesson with a real engine underneath: a link's claims are about where the
- * curves are when it opens, and about what it never carries — an answer.
+ * lesson and its model with a real engine underneath: a link's claims are
+ * about where the curves are when it opens, and about what it never carries —
+ * an answer.
  */
 
 /** jsdom performs no layout, so the stage would measure 0x0 and mount nothing. */
@@ -25,15 +27,15 @@ beforeAll(() => {
     });
 });
 
-/** Open the app at an address, as pasting it would. */
-const open = (search = '') => {
-    window.history.replaceState(null, '', '/' + search);
+/** Open the app at an address, from the site's root, as pasting it would. */
+const open = (address = '') => {
+    window.history.replaceState(null, '', '/' + address);
     return render(<MantineProvider theme={theme} env="test"><App /></MantineProvider>);
 };
 
-const address = () => window.location.search;
+const address = () => window.location.pathname + window.location.search;
 /** The address, once the screen has written it: writes are paced, so a second can wait a moment. */
-const settles = (search: string) => waitFor(() => expect(address()).toBe(search));
+const settles = (expected: string) => waitFor(() => expect(address()).toBe(expected));
 /** Longer than a write is ever held back. */
 const pause = () => act(() => new Promise(resolve => setTimeout(resolve, 500)));
 
@@ -54,67 +56,79 @@ const TRIES = 6;
 const ALL_THREE = 7;
 /** The question: "move demand to where it belongs", from a = 20. */
 const ASK = 8;
+/** "Over to you", the last step. */
+const LAST = 9;
+
+/** The rail is out of the accessibility tree in jsdom, which matches no
+ * media query and so has it collapsed as on a phone. */
+const rail = (name: string) => screen.getByRole('button', { name, hidden: true });
 
 describe('The address follows the view', () => {
 
-    it('is the lesson alone at its start', async () => {
+    // Home is not built, so the root opens the first lesson, as it always has.
+    it('is the lesson\'s path alone at its start', async () => {
         open();
-        await settles('?lesson=market');
+        await settles('/lessons/market');
     });
 
     it('follows the lesson, replacing rather than pushing', async () => {
         const user = userEvent.setup();
-        open('?lesson=market');
+        open('lessons/market');
         const entries = window.history.length;
 
         await user.click(marker(MOVES));
 
         // The step put demand at 26, so there is nothing else to say.
-        await settles('?lesson=market&step=5');
+        await settles('/lessons/market?step=5');
         expect(window.history.length).toBe(entries);
     });
 
     it('names a param once the student has moved it off where the lesson puts it', async () => {
         const user = userEvent.setup();
-        open('?lesson=market');
+        open('lessons/market');
         await user.click(marker(TRIES));
         trySlider().focus();
         fireEvent.keyDown(trySlider(), { key: 'End' });
-        await settles('?lesson=market&step=6&a=28');
+        await settles('/lessons/market?step=6&a=28');
 
         await user.click(reset());
-        await settles('?lesson=market&step=6');
+        await settles('/lessons/market?step=6');
     });
 
-    it('names the open instrument rather than the step', async () => {
+    // Measured from the model's own market. The first tab is the one the
+    // playground opens on, so it is left out.
+    it('names the playground\'s open tab, and each param off where the model puts it', async () => {
         const user = userEvent.setup();
-        open('?lesson=market');
-        await user.click(marker(MOVES));
-        await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
+        open('playground/market');
+        await settles('/playground/market');
 
-        // Measured from the diagram's own market, which is what an
-        // instrument opened at the start would be handed.
-        await settles('?lesson=market&tab=scenarios&a=26');
+        await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
+        await settles('/playground/market?tab=scenarios');
+        await user.click(screen.getByRole('button', { name: 'Input costs rise' }));
+        await settles('/playground/market?tab=scenarios&c=6');
+
+        await user.click(screen.getByRole('tab', { name: 'Explore' }));
+        await settles('/playground/market?c=6');
     });
 
     it('names the arrangement, and the panel brought to the front', async () => {
         const user = userEvent.setup();
-        open('?lesson=market');
+        open('lessons/market');
         await user.click(marker(ALL_THREE));
         await user.click(screen.getByRole('button', { name: 'Show Revenue' }));
-        await settles('?lesson=market&step=7&focus=revenue');
+        await settles('/lessons/market?step=7&focus=revenue');
 
         await user.click(screen.getByRole('button', { name: 'Switch to Grid' }));
-        await settles('?lesson=market&step=7&arrange=grid&focus=revenue');
+        await settles('/lessons/market?step=7&arrange=grid&focus=revenue');
     });
 
     // A held arrow key commits on every repeat. Each is written, but no
     // faster than the browser will take them, and the last one always lands.
     it('keeps up with a held key without writing every press', async () => {
         const user = userEvent.setup();
-        open('?lesson=market');
+        open('lessons/market');
         await user.click(marker(TRIES));
-        await settles('?lesson=market&step=6');
+        await settles('/lessons/market?step=6');
         const replace = window.history.replaceState.bind(window.history), written: number[] = [];
         vi.spyOn(window.history, 'replaceState').mockImplementation((state, unused, url) => {
             written.push(Date.now());
@@ -124,7 +138,7 @@ describe('The address follows the view', () => {
         trySlider().focus();
         for (let press = 0; press < 10; press++) fireEvent.keyDown(trySlider(), { key: 'ArrowRight' });
 
-        await settles('?lesson=market&step=6&a=27');
+        await settles('/lessons/market?step=6&a=27');
         expect(written.length).toBeLessThan(10);
         // A third of a second apart at least, however long the presses took.
         written.slice(1).forEach((at, i) => expect(at - written[i]).toBeGreaterThanOrEqual(340));
@@ -132,19 +146,17 @@ describe('The address follows the view', () => {
 
     it('pushes a lesson change, and Back opens the last lesson where it was left', async () => {
         const user = userEvent.setup();
-        open('?lesson=market');
+        open('lessons/market');
         await user.click(marker(TRIES));
         trySlider().focus();
         fireEvent.keyDown(trySlider(), { key: 'End' });
-        await settles('?lesson=market&step=6&a=28');
+        await settles('/lessons/market?step=6&a=28');
         const entries = window.history.length;
 
-        // The rail is out of the accessibility tree in jsdom, which matches no
-        // media query and so has it collapsed as on a phone.
-        await user.click(screen.getByRole('button', { name: 'Lessons', hidden: true }));
+        await user.click(rail('Lessons'));
         await user.click(screen.getByRole('button', { name: /International economics/, hidden: true }));
         await user.click(screen.getByRole('link', { name: 'Exchange rates (AUD)', hidden: true }));
-        expect(address()).toBe('?lesson=fx');
+        expect(address()).toBe('/lessons/fx');
         expect(window.history.length).toBe(entries + 1);
 
         act(() => window.history.back());
@@ -154,14 +166,57 @@ describe('The address follows the view', () => {
         await waitFor(() => expect(marketCaption()).toContain('Price $15.00'));
         expect(screen.getByRole('group', { name: 'Try it' })).toBeTruthy();
     });
+
+    // The Playground panel lists the models under the lessons' topics, and a
+    // model chosen there opens at its start. Pushed, so Back is the lesson.
+    it('pushes a model chosen from the Playground panel', async () => {
+        const user = userEvent.setup();
+        open('lessons/market');
+        await settles('/lessons/market');
+
+        await user.click(rail('Playground'));
+        await user.click(screen.getByRole('button', { name: /International economics/, hidden: true }));
+        await user.click(screen.getByRole('link', { name: 'The market for the Australian dollar', hidden: true }));
+
+        expect(address()).toBe('/playground/aud');
+        await screen.findByRole('heading', { name: 'The market for the Australian dollar' });
+
+        act(() => window.history.back());
+        await screen.findByRole('heading', { name: 'A market, and what it does to everything else' });
+        expect(address()).toBe('/lessons/market');
+    });
+
+    // Finish is pushed, as opening any page is, so Back returns to where the
+    // lesson ended — with its question still answered, which the lesson's
+    // history entry remembers and its link never says.
+    it('pushes Finish into the playground, and Back returns to the end with its answer kept', async () => {
+        const user = userEvent.setup();
+        open('lessons/market');
+        await user.click(marker(ASK));
+        await user.click(screen.getByRole('button', { name: 'Check' }));
+        await user.click(screen.getByRole('button', { name: 'Show me' }));
+        await user.click(screen.getByRole('button', { name: 'Next' }));
+
+        await user.click(screen.getByRole('button', { name: 'Finish' }));
+
+        expect(address()).toBe('/playground/market');
+        await screen.findByRole('heading', { name: 'A market, its surplus and its revenue' });
+
+        act(() => window.history.back());
+
+        await screen.findByRole('heading', { name: 'A market, and what it does to everything else' });
+        expect(address()).toBe('/lessons/market?step=9');
+        expect(marker(LAST).getAttribute('aria-current')).toBe('step');
+        expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
+    });
 });
 
 describe('A pasted link', () => {
 
     it('opens at its step and market, with nothing drawn or said for a move nobody made', async () => {
         const user = userEvent.setup();
-        open('?lesson=market&step=6&a=28');
-        await settles('?lesson=market&step=6&a=28');
+        open('lessons/market?step=6&a=28');
+        await settles('/lessons/market?step=6&a=28');
 
         expect(trySlider().getAttribute('aria-valuenow')).toBe('28');
         expect(marketCaption()).toContain('Price $15.00');
@@ -176,8 +231,8 @@ describe('A pasted link', () => {
 
     it('opens a question unanswered, with its curve where the lesson puts it', async () => {
         const user = userEvent.setup();
-        open('?lesson=market&step=8&a=26');
-        await settles('?lesson=market&step=8');
+        open('lessons/market?step=8&a=26');
+        await settles('/lessons/market?step=8');
 
         const answer = screen.getByRole('slider', { name: /Your answer/ });
         expect(answer.getAttribute('aria-valuenow')).toBe('20');
@@ -188,13 +243,13 @@ describe('A pasted link', () => {
         fireEvent.keyDown(answer, { key: 'End' });
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await pause();
-        expect(address()).toBe('?lesson=market&step=8');
+        expect(address()).toBe('/lessons/market?step=8');
     });
 
     // Past a question is after its answer, and the market there can be it.
     it('to a step past a question opens at the question, as the lesson puts it', async () => {
-        open('?lesson=market&step=9&a=26');
-        await settles('?lesson=market&step=8');
+        open('lessons/market?step=9&a=26');
+        await settles('/lessons/market?step=8');
 
         expect(marker(ASK).getAttribute('aria-current')).toBe('step');
         expect(screen.getByRole('slider', { name: /Your answer/ }).getAttribute('aria-valuenow')).toBe('20');
@@ -202,17 +257,17 @@ describe('A pasted link', () => {
     });
 
     it('opens without a param the lesson does not have, or one that is not the student\'s', async () => {
-        open('?lesson=market&step=6&a=28&gone=3&revealed=1&asking=1');
-        await settles('?lesson=market&step=6&a=28');
+        open('lessons/market?step=6&a=28&gone=3&revealed=1&asking=1');
+        await settles('/lessons/market?step=6&a=28');
 
         expect(marketCaption()).toContain('Price $15.00');
         expect(screen.getByRole('group', { name: 'Try it' })).toBeTruthy();
     });
 
-    it('opens at an instrument, with that market as the one it was handed', async () => {
+    it('opens the playground at its tab, with that market as the one it was handed', async () => {
         const user = userEvent.setup();
-        open('?lesson=market&tab=scenarios&a=26');
-        await settles('?lesson=market&tab=scenarios&a=26');
+        open('playground/market?tab=scenarios&a=26');
+        await settles('/playground/market?tab=scenarios&a=26');
 
         expect(screen.getByRole('tab', { name: 'Scenarios' }).getAttribute('aria-selected')).toBe('true');
         expect(marketCaption()).toContain('Price $14.00');
@@ -225,8 +280,8 @@ describe('A pasted link', () => {
 
     it('opens in its arrangement, with its panel at the front', async () => {
         const user = userEvent.setup();
-        open('?lesson=market&step=7&arrange=grid&focus=revenue');
-        await settles('?lesson=market&step=7&arrange=grid&focus=revenue');
+        open('lessons/market?step=7&arrange=grid&focus=revenue');
+        await settles('/lessons/market?step=7&arrange=grid&focus=revenue');
         // In the grid, so the toggle offers Focus.
         await user.click(screen.getByRole('button', { name: 'Switch to Focus' }));
 
@@ -236,24 +291,68 @@ describe('A pasted link', () => {
     });
 
     it('to a lesson there is not opens the first lesson at its start', async () => {
-        open('?lesson=gone&step=6&a=28');
-        await settles('?lesson=market');
+        open('lessons/gone?step=6&a=28');
+        await settles('/lessons/market');
         expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
+    });
+
+    it('to a model there is not opens the first model at its start', async () => {
+        open('playground/gone?tab=maths&a=26');
+        await settles('/playground/market');
+        expect(marketCaption()).toContain('Price $11.00');
+    });
+});
+
+/** Links handed out last term, before the pages, still open what they opened. */
+describe('A link from before the pages', () => {
+
+    it('opens the lesson at its step and market, at its path', async () => {
+        open('?lesson=market&step=6&a=28');
+        await settles('/lessons/market?step=6&a=28');
+        expect(trySlider().getAttribute('aria-valuenow')).toBe('28');
+    });
+
+    it('opens the playground at the lesson\'s model where it named a tab', async () => {
+        open('?lesson=market&tab=scenarios&a=26');
+        await settles('/playground/market?tab=scenarios&a=26');
+        expect(screen.getByRole('tab', { name: 'Scenarios' }).getAttribute('aria-selected')).toBe('true');
+        expect(marketCaption()).toContain('Price $14.00');
+    });
+
+    it('opens the first lesson at its start where its lesson has gone', async () => {
+        open('?lesson=gone&tab=scenarios&a=26');
+        await settles('/lessons/market');
     });
 });
 
 describe('The words of a link', () => {
 
+    /** The view a written address names, read back. */
+    const viewOf = (written: string) => readLink(new URL(written, 'https://example.org/').search);
+
     it('read back what was written', () => {
         const link = { step: 7, tab: null, arrange: 'grid' as const, focus: 'mirror', params: { supply: 56 } };
-        const search = writeLink('fx', link);
-        expect(search).toBe('?lesson=fx&step=7&arrange=grid&focus=mirror&supply=56');
-        expect(readLink(search)).toEqual(link);
+        const written = writeLink({ kind: 'lesson', id: 'fx' }, link);
+        expect(written).toBe('lessons/fx?step=7&arrange=grid&focus=mirror&supply=56');
+        expect(viewOf(written)).toEqual(link);
+    });
+
+    it('put a model under the playground, with its tab', () => {
+        const link = { step: 0, tab: 'maths', arrange: 'focus' as const, focus: null, params: { supply: 56 } };
+        const written = writeLink({ kind: 'playground', id: 'aud' }, link);
+        expect(written).toBe('playground/aud?tab=maths&supply=56');
+        expect(viewOf(written)).toEqual(link);
+    });
+
+    it('are the path alone at a page\'s start', () => {
+        expect(writeLink({ kind: 'lesson', id: 'fx' })).toBe('lessons/fx');
+        expect(writeLink({ kind: 'playground', id: 'aud' })).toBe('playground/aud');
     });
 
     it('write a value without the dust of getting there', () => {
-        expect(writeLink('market', { step: 6, tab: null, arrange: 'focus', focus: null, params: { a: 0.1 * 3 } }))
-            .toBe('?lesson=market&step=6&a=0.3');
+        expect(writeLink({ kind: 'lesson', id: 'market' },
+            { step: 6, tab: null, arrange: 'focus', focus: null, params: { a: 0.1 * 3 } }))
+            .toBe('lessons/market?step=6&a=0.3');
     });
 
     it('leave out what is not a number, rather than fail', () => {
@@ -263,12 +362,25 @@ describe('The words of a link', () => {
         expect(readLink('?step=-3').step).toBe(0);
     });
 
+    it('name a page by its path under the app\'s root, and an old one by its query', () => {
+        const at = (pathname: string, search = '', root = '/') => readPlace({ pathname, search }, root);
+        expect(at('/lessons/fx')).toEqual({ place: { kind: 'lesson', id: 'fx' }, old: false });
+        expect(at('/playground/aud', '?tab=maths')).toEqual({ place: { kind: 'playground', id: 'aud' }, old: false });
+        expect(at('/app/lessons/fx', '', '/app/')).toEqual({ place: { kind: 'lesson', id: 'fx' }, old: false });
+        expect(at('/', '?lesson=fx&step=7')).toEqual({ place: { kind: 'lesson', id: 'fx' }, old: true });
+        expect(at('/')).toBeNull();
+        expect(at('/elsewhere/fx')).toBeNull();
+        expect(at('/lessons/')).toBeNull();
+        // A path that is not a percent-encoding is read as it stands.
+        expect(at('/lessons/%E0%A4%A')).toEqual({ place: { kind: 'lesson', id: '%E0%A4%A' }, old: false });
+    });
+
     // A param by one of the address's own names could not be linked at all.
-    it('are never a name a lesson gives a param', () => {
-        LESSONS.forEach(lesson => {
-            const names = (lesson.model.diagram as { params: { name: string; presentation?: boolean }[] }).params
+    it('are never a name a model gives a param', () => {
+        MODELS.forEach(model => {
+            const names = (model.diagram as { params: { name: string; presentation?: boolean }[] }).params
                 .filter(p => !p.presentation).map(p => p.name);
-            expect(names.filter(name => LINK_KEYS.indexOf(name) > -1), lesson.id).toEqual([]);
+            expect(names.filter(name => LINK_KEYS.indexOf(name) > -1), model.id).toEqual([]);
         });
     });
 });

@@ -10,9 +10,12 @@ import { toPng } from 'html-to-image';
  * making a picture or a page of the view.
  */
 
-/** The address for a link's words (`?lesson=fx&…`) on this site, whole. */
-export function linkHref(search: string): string {
-    return new URL(search, window.location.href).href;
+/**
+ * An address from `writeLink` (`lessons/fx?…`) on this site, whole: from the
+ * app's root, wherever the page asking is.
+ */
+export function linkHref(address: string): string {
+    return new URL(address, new URL(import.meta.env.BASE_URL, window.location.origin)).href;
 }
 
 /**

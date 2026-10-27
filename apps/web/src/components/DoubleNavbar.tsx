@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import {
+    IconBook2,
     IconChartPpf,
     IconChevronRight,
     IconHome2,
@@ -11,7 +12,6 @@ import {
     ActionIcon, Avatar, Collapse, Menu, Text, Tooltip, Transition, UnstyledButton, useMantineTheme
 } from '@mantine/core';
 import { useClickOutside, useMediaQuery, useWindowEvent } from '@mantine/hooks';
-import type { LessonStrand, LessonTopic } from '../lessons';
 import classes from './DoubleNavbar.module.css';
 import logo from './kinetonomics-logo.svg';
 
@@ -21,24 +21,54 @@ import logo from './kinetonomics-logo.svg';
 // else, or Escape — puts it away again. So there is no toggle of its own, and
 // the stage keeps the window's width whether the panel is out or not.
 
-/** The rail sections that open a panel. Only Lessons has one so far. */
-export type NavPanel = 'lessons';
+/**
+ * The rail sections that open a panel, which are also the places a page
+ * belongs to: a lesson is in Lessons, a model in the Playground.
+ */
+export type NavPanel = 'lessons' | 'playground';
 
-// Home has no page behind it yet. It is here so the rail has its shape, and
-// pressing it only puts away a panel that is out. The profile circle at the
-// rail's foot is not one of these: it opens a menu rather than going anywhere.
+/** Something a panel lists — a lesson, or a model — with its address. */
+export interface NavItem {
+    id: string;
+    label: string;
+    href: string;
+}
+
+/** A topic in a panel: a row that drops down to what it holds. */
+export interface NavTopic {
+    id: string;
+    label: string;
+    /**
+     * A Mantine colour name. The dot before the topic's name is drawn in it,
+     * and the topic holding the open page is lit in it.
+     */
+    color: string;
+    items: NavItem[];
+}
+
+/** A run of topics under one heading in a panel. */
+export interface NavStrand {
+    label: string;
+    topics: NavTopic[];
+}
+
+// The places, in the order a student meets them: where to start, then learn
+// it, then play with it (docs/design.md, "The rail"). Home has no page behind
+// it yet: it is here so the rail has its shape, and pressing it only puts away
+// a panel that is out. In the news joins after the Playground when there are
+// stories to list. The profile circle at the rail's foot is not one of these:
+// it opens a menu rather than going anywhere.
 const RAIL: { icon: typeof IconHome2; label: string; panel?: NavPanel }[] = [
     { icon: IconHome2, label: 'Home' },
-    { icon: IconChartPpf, label: 'Lessons', panel: 'lessons' }
+    { icon: IconBook2, label: 'Lessons', panel: 'lessons' },
+    { icon: IconChartPpf, label: 'Playground', panel: 'playground' }
 ];
 
-// The section the open page belongs to, which the rail keeps lit. Every page is
-// a lesson so far.
-const PAGE_SECTION = 'Lessons';
+const TITLE: Record<NavPanel, string> = { lessons: 'Lessons', playground: 'Playground' };
 
-// The ids the Lessons button points `aria-controls` at, and the panel's title.
-const PANEL_ID = 'navbar-lessons-panel';
-const PANEL_TITLE_ID = 'navbar-lessons-title';
+// The id a rail button points `aria-controls` at, and its panel's title's.
+const panelId = (panel: NavPanel) => `navbar-${panel}-panel`;
+const titleId = (panel: NavPanel) => `navbar-${panel}-title`;
 
 interface DoubleNavbarProps {
     /**
@@ -50,19 +80,21 @@ interface DoubleNavbarProps {
     /** Called with a panel to bring it out, or with `null` to put it away. */
     onPanelChange: (panel: NavPanel | null) => void;
 
-    /** The lessons, arranged into strands and topics. */
-    curriculum: LessonStrand[];
+    /** What each panel lists, arranged into strands and topics. */
+    lists: Record<NavPanel, NavStrand[]>;
 
-    /** Which lesson is open. Owned by the shell, which mounts it. */
-    activeLesson: string;
+    /**
+     * The open page: the place it belongs to, which the rail keeps lit, the
+     * id of what is open there, and the topic it is under, which either panel
+     * opens on. Owned by the shell, which mounts the page.
+     */
+    page: { place: NavPanel; id: string; topic: string | null };
 
-    /** Called with a lesson's id when the student chooses it. */
-    onSelectLesson: (id: string) => void;
+    /** Called with a panel and an item's id when the student chooses it. */
+    onSelect: (panel: NavPanel, id: string) => void;
 }
 
-export function DoubleNavbar({
-    panel, onPanelChange, curriculum, activeLesson, onSelectLesson
-}: DoubleNavbarProps) {
+export function DoubleNavbar({ panel, onPanelChange, lists, page, onSelect }: DoubleNavbarProps) {
     // Above `sm` the panel floats over the page, and a click anywhere else puts
     // it away. Below it the panel is part of the burger's overlay, and the
     // burger is outside this nav: counting its click as "outside" would put the
@@ -80,6 +112,12 @@ export function DoubleNavbar({
     // Whether the profile menu is out. Below `sm` it opens over the panel, and
     // Escape then puts away the menu alone, as it would any menu.
     const [profileOpen, setProfileOpen] = useState(false);
+
+    // The panel last out, so one going away still has its list while it slides
+    // off. Switching between the two swaps the list in place.
+    const lastOut = useRef<NavPanel>(page.place);
+    if (panel) lastOut.current = panel;
+    const showing = panel || lastOut.current;
 
     // Capture phase: the rail button that brought the panel out still has
     // focus, and its Tooltip keeps Escape from bubbling up to the window.
@@ -102,10 +140,10 @@ export function DoubleNavbar({
                 <UnstyledButton
                     onClick={() => onPanelChange(link.panel && !isOut ? link.panel : null)}
                     className={classes.mainLink}
-                    data-active={link.label === PAGE_SECTION || isOut || undefined}
+                    data-active={(link.panel !== undefined && link.panel === page.place) || isOut || undefined}
                     aria-label={link.label}
                     aria-expanded={link.panel ? isOut : undefined}
-                    aria-controls={link.panel ? PANEL_ID : undefined}
+                    aria-controls={link.panel ? panelId(link.panel) : undefined}
                 >
                     <link.icon size={22} stroke={1.5} />
                 </UnstyledButton>
@@ -169,16 +207,16 @@ export function DoubleNavbar({
                 </Menu>
             </div>
 
-            <Transition mounted={panel === 'lessons'} transition="slide-right" duration={150} timingFunction="ease">
+            <Transition mounted={panel !== null} transition="slide-right" duration={150} timingFunction="ease">
                 {(styles) => (
                     <section
                         className={classes.panel}
                         style={styles}
-                        id={PANEL_ID}
-                        aria-labelledby={PANEL_TITLE_ID}
+                        id={panelId(showing)}
+                        aria-labelledby={titleId(showing)}
                     >
                         <div className={classes.header}>
-                            <Text fw={600} size="sm" id={PANEL_TITLE_ID}>Lessons</Text>
+                            <Text fw={600} size="sm" id={titleId(showing)}>{TITLE[showing]}</Text>
                             {/* Below `sm` the burger turns into a close
                               * button in this same corner, and closes the
                               * panel with the overlay. */}
@@ -186,16 +224,19 @@ export function DoubleNavbar({
                                 variant="subtle"
                                 color="gray"
                                 visibleFrom="sm"
-                                aria-label="Close lessons"
+                                aria-label={`Close ${TITLE[showing].toLowerCase()}`}
                                 onClick={() => onPanelChange(null)}
                             >
                                 <IconX size={16} />
                             </ActionIcon>
                         </div>
-                        <LessonList
-                            curriculum={curriculum}
-                            activeLesson={activeLesson}
-                            onSelectLesson={onSelectLesson}
+                        {/* Keyed by panel, so each opens on its own topic. */}
+                        <PlaceList
+                            key={showing}
+                            strands={lists[showing]}
+                            active={page.place === showing ? page.id : null}
+                            topic={page.topic}
+                            onSelect={id => onSelect(showing, id)}
                         />
                     </section>
                 )}
@@ -204,29 +245,25 @@ export function DoubleNavbar({
     );
 }
 
-/** The topic that holds a lesson, or `null` for an id no topic holds. */
-function topicOf(curriculum: LessonStrand[], lessonId: string): string | null {
-    const topics = curriculum.flatMap(strand => strand.topics);
-    const holder = topics.filter(topic => topic.lessons.some(lesson => lesson.id === lessonId))[0];
-    return holder ? holder.id : null;
+interface PlaceListProps {
+    strands: NavStrand[];
+    /** What is open, where it is in this list. */
+    active: string | null;
+    /** The topic the open page is under, which the list opens on. */
+    topic: string | null;
+    onSelect: (id: string) => void;
 }
 
-interface LessonListProps {
-    curriculum: LessonStrand[];
-    activeLesson: string;
-    onSelectLesson: (id: string) => void;
-}
-
-/** The panel's body: each strand's heading, and its topics under it. */
-function LessonList({ curriculum, activeLesson, onSelectLesson }: LessonListProps) {
+/** A panel's body: each strand's heading, and its topics under it. */
+function PlaceList({ strands, active, topic, onSelect }: PlaceListProps) {
     // One topic open at a time. Mounted afresh whenever the panel comes out, so
-    // it opens every time on the topic the open lesson is in, with that lesson
-    // in view.
-    const [openTopic, setOpenTopic] = useState(() => topicOf(curriculum, activeLesson));
+    // it opens every time on the topic the open page is under — a lesson's
+    // model under its lesson's — with what is open in view.
+    const [openTopic, setOpenTopic] = useState(topic);
 
     return (
         <div className={classes.body}>
-            {curriculum.map((strand) => (
+            {strands.map((strand) => (
                 <div key={strand.label}>
                     <Text size="xs" fw={600} c="dimmed" className={classes.groupLabel}>
                         {strand.label}
@@ -237,8 +274,8 @@ function LessonList({ curriculum, activeLesson, onSelectLesson }: LessonListProp
                             topic={topic}
                             opened={openTopic === topic.id}
                             onToggle={() => setOpenTopic(openTopic === topic.id ? null : topic.id)}
-                            activeLesson={activeLesson}
-                            onSelectLesson={onSelectLesson}
+                            active={active}
+                            onSelect={onSelect}
                         />
                     ))}
                 </div>
@@ -248,19 +285,19 @@ function LessonList({ curriculum, activeLesson, onSelectLesson }: LessonListProp
 }
 
 interface TopicSectionProps {
-    topic: LessonTopic;
+    topic: NavTopic;
     opened: boolean;
     onToggle: () => void;
-    activeLesson: string;
-    onSelectLesson: (id: string) => void;
+    active: string | null;
+    onSelect: (id: string) => void;
 }
 
-/** A topic's row, which drops down to its lessons. */
-function TopicSection({ topic, opened, onToggle, activeLesson, onSelectLesson }: TopicSectionProps) {
-    const lessonsId = `navbar-topic-${topic.id}`;
-    const holdsActive = topic.lessons.some(lesson => lesson.id === activeLesson);
+/** A topic's row, which drops down to what it holds. */
+function TopicSection({ topic, opened, onToggle, active, onSelect }: TopicSectionProps) {
+    const itemsId = `navbar-topic-${topic.id}`;
+    const holdsActive = topic.items.some(item => item.id === active);
 
-    // On a wrapper both the row and its lessons sit in, since a custom property
+    // On a wrapper both the row and its items sit in, since a custom property
     // reaches the two only from an element they share.
     const colours = {
         '--topic-color': `var(--mantine-color-${topic.color}-filled)`,
@@ -268,22 +305,23 @@ function TopicSection({ topic, opened, onToggle, activeLesson, onSelectLesson }:
         '--topic-ink': `var(--mantine-color-${topic.color}-light-color)`
     } as CSSProperties;
 
-    // Real addresses, so a lesson can be opened in a new tab or handed to a
-    // class as a link; a plain click stays in the page and swaps the lesson.
-    const links = topic.lessons.map((lesson) => (
+    // Real addresses, so a lesson or a model can be opened in a new tab or
+    // handed to a class as a link; a plain click stays in the app and swaps
+    // the page.
+    const links = topic.items.map((item) => (
         <a
             className={classes.link}
-            data-active={activeLesson === lesson.id || undefined}
-            aria-current={activeLesson === lesson.id ? 'page' : undefined}
-            href={`?lesson=${encodeURIComponent(lesson.id)}`}
+            data-active={active === item.id || undefined}
+            aria-current={active === item.id ? 'page' : undefined}
+            href={item.href}
             onClick={(event) => {
                 if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
                 event.preventDefault();
-                onSelectLesson(lesson.id);
+                onSelect(item.id);
             }}
-            key={lesson.id}
+            key={item.id}
         >
-            {lesson.label}
+            {item.label}
         </a>
     ));
 
@@ -294,7 +332,7 @@ function TopicSection({ topic, opened, onToggle, activeLesson, onSelectLesson }:
                 data-active={holdsActive || undefined}
                 onClick={onToggle}
                 aria-expanded={opened}
-                aria-controls={lessonsId}
+                aria-controls={itemsId}
             >
                 <span className={classes.dot} aria-hidden />
                 <Text size="sm" fw={500} truncate className={classes.topicLabel}>
@@ -308,10 +346,10 @@ function TopicSection({ topic, opened, onToggle, activeLesson, onSelectLesson }:
                 />
             </UnstyledButton>
             {/* Collapse keeps its children mounted, so a closed topic's
-              * lessons would still be links in the page — found by a screen
+              * items would still be links in the page — found by a screen
               * reader's list of links, and by tabbing, while out of sight. */}
             <Collapse expanded={opened}>
-                {opened && <div id={lessonsId} className={classes.lessons}>{links}</div>}
+                {opened && <div id={itemsId} className={classes.lessons}>{links}</div>}
             </Collapse>
         </div>
     );

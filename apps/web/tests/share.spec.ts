@@ -9,7 +9,7 @@ import { test } from './helpers';
  * it prints.
  */
 
-const VIEW = '/?lesson=fx&step=7&supply=56';
+const VIEW = '/lessons/fx?step=7&supply=56';
 
 async function opened(page: Page, address: string) {
     await page.goto(address);
@@ -20,14 +20,16 @@ const share = (page: Page) => page.getByRole('button', { name: 'Share' });
 const item = (page: Page, name: RegExp) => page.getByRole('menuitem', { name });
 const stageWidth = (page: Page) => page.locator('[class*="stageBox"]').evaluate(el => el.getBoundingClientRect().width);
 
-test('Copy link puts this view\'s address on the clipboard', async ({ page, context }) => {
+// The lesson's link at its start, whatever the view: Copy link is named
+// "Copied" once it has.
+test('Copy link puts the lesson\'s address on the clipboard', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await opened(page, VIEW);
     await share(page).click();
     await item(page, /^Copy link/).click();
 
-    await expect(item(page, /^Copy link/)).toContainText('Copied');
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(page.url());
+    await expect(item(page, /^(Copy link|Copied)/)).toContainText('Copied');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(new URL('/lessons/fx', page.url()).href);
 });
 
 test('Download saves the stage as drawn, at twice its pixels, named for the view', async ({ page, pageErrors }) => {
@@ -55,7 +57,7 @@ test('the QR code is as large as the stage allows, and Esc puts it away', async 
     await share(page).click();
     await item(page, /^Show a QR code/).click();
 
-    const code = page.getByRole('img', { name: /^QR code\. Opens this view/ });
+    const code = page.getByRole('img', { name: /^QR code\. Opens the lesson at its start/ });
     const box = (await code.boundingBox())!;
     expect(Math.min(box.width, box.height)).toBeGreaterThan(0.6 * Math.min(stage.width, stage.height));
     await expect(page.getByRole('region', { name: 'QR code' })).toContainText('localhost');

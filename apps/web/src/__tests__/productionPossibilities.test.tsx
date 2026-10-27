@@ -166,25 +166,25 @@ describe('what each step says it costs', () => {
 
 describe('the move from A to B', () => {
 
-    /** Put the lesson away, as Finish or the Explore tab does. */
-    async function explore(user: ReturnType<typeof userEvent.setup>) {
-        await user.click(screen.getByRole('tab', { name: 'Explore' }));
+    /** The café's model in the playground, where Finish takes it. */
+    const explore = () => {
+        render(
+            <MantineProvider theme={theme} env="test">
+                <StudyScreen playground={PRODUCTION_POSSIBILITIES.model} />
+            </MantineProvider>
+        );
         return screen.getByRole('tabpanel', { name: 'Explore' });
-    }
+    };
 
-    it('starts apart for a student who goes straight to the instruments', async () => {
-        const user = userEvent.setup();
-        mount();
-        await explore(user);
+    it('starts apart for a student who goes straight to the playground', () => {
+        explore();
         expect(labels()).toContain('A (60, 160) → B (80, 120)');
         expect(caption()).toContain('Coffees per toastie 2.0');
     });
 
     // Going left the café gains coffees, so the cost is a coffee's, in toasties.
-    it('costs a coffee in toasties when B is left of A', async () => {
-        const user = userEvent.setup();
-        mount();
-        press(await explore(user), 'Toasties at B', 'ArrowLeft', 10);
+    it('costs a coffee in toasties when B is left of A', () => {
+        press(explore(), 'Toasties at B', 'ArrowLeft', 10);
 
         expect(labels()).toContain('A (60, 160) → B (30, 191)');
         expect(labels()).toContain('−30 toasties');
@@ -198,8 +198,7 @@ describe('the move from A to B', () => {
     // and said 1.4 and 1.5 side by side until the cost was rounded once.
     it('says the same cost in the caption and on the diagram, even on a tie', async () => {
         const user = userEvent.setup();
-        mount();
-        await explore(user);
+        explore();
         await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
         await user.click(screen.getByRole('button', { name: /Customers order on an app/ }));
 

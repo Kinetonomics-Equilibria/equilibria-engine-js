@@ -2,35 +2,52 @@ import { useEffect, useRef } from 'react';
 import type { StageMode } from 'equilibria-react';
 
 /**
- * Links: a view of a lesson, written in its address.
+ * Links: a page and a view of it, written in its address.
  *
- * A link is the lesson, the open tab or the lesson's step, each param the
- * student moved off where the lesson puts it, the arrangement and the panel at
- * the front — as query params beside `?lesson=`, named after the params, so a
- * teacher can read what a link will open before sending it:
+ * The page is the path — a lesson, or a model in the playground — and the view
+ * is what follows the `?`: the lesson's step or the playground's open tab,
+ * each param the student moved off where the page puts it, the arrangement and
+ * the panel at the front, named after the params, so a teacher can read what
+ * a link will open before sending it:
  *
- *     ?lesson=fx&step=7&arrange=grid&focus=mirror&supply=56
+ *     lessons/fx?step=7&arrange=grid&focus=mirror&supply=56
+ *     playground/aud?tab=maths&supply=56
  *
- * The start of a lesson is `?lesson=fx` and nothing else. What the link means
- * is the screen's to say, since only the screen knows where the lesson puts
- * each param; this file reads the words and writes them, and nothing here
- * knows what a step is.
+ * The start of a lesson is `lessons/fx` and nothing else. What the view means
+ * is the screen's to say, since only the screen knows where the page puts each
+ * param; this file reads the words and writes them, and nothing here knows
+ * what a step is.
+ *
+ * Addresses are written from the app's root, without it, so the app can be
+ * served anywhere: `share.ts` makes one whole.
  */
+
+/** A page an address names: a lesson by its id, or a model in the playground by its. */
+export interface Place {
+    kind: 'lesson' | 'playground';
+    id: string;
+}
+
+/** The path each kind of page is under. */
+const UNDER: Record<Place['kind'], string> = { lesson: 'lessons', playground: 'playground' };
 
 /** A view, as an address names it. */
 export interface Link {
-    /** The lesson's step, 0 before the first. Not written while a tab is open. */
+    /** A lesson's step, 0 before the first. A playground has none. */
     step: number;
-    /** The open instrument, or null for the lesson. */
+    /** The playground's open instrument, or null for its first. A lesson has none. */
     tab: string | null;
     arrange: StageMode;
-    /** The panel at the front, or null for the one the lesson puts there. */
+    /** The panel at the front, or null for the one the page puts there. */
     focus: string | null;
     /** Each param the student moved, by name, in the order the diagram declares them. */
     params: Record<string, number>;
 }
 
-/** The address's own words. A lesson's param by one of these names could not be linked. */
+/**
+ * The address's own words. A param by one of these names could not be linked.
+ * `lesson` is in the path now, and stays reserved, because old links carry it.
+ */
 export const LINK_KEYS = ['lesson', 'step', 'tab', 'arrange', 'focus'];
 
 export const AT_THE_START: Link = { step: 0, tab: null, arrange: 'focus', focus: null, params: {} };
@@ -60,12 +77,12 @@ export function readLink(search: string): Link {
 }
 
 /**
- * The address for a view of `lesson`: `?lesson=` first, then the step or the
- * tab, then the arrangement and the panel, then the params. Anything at the
- * lesson's own default is left out, so a link says only what it changes.
+ * The address for a view of a page: its path, then the step or the tab, then
+ * the arrangement and the panel, then the params. Anything at the page's own
+ * default is left out, so a link says only what it changes.
  */
-export function writeLink(lesson: string, link: Link = AT_THE_START): string {
-    const query = new URLSearchParams({ lesson });
+export function writeLink(place: Place, link: Link = AT_THE_START): string {
+    const query = new URLSearchParams();
     if (link.tab) query.set('tab', link.tab);
     else if (link.step > 0) query.set('step', String(link.step));
     if (link.arrange === 'grid') query.set('arrange', 'grid');
@@ -75,7 +92,39 @@ export function writeLink(lesson: string, link: Link = AT_THE_START): string {
     Object.keys(link.params).forEach(name => {
         query.set(name, String(Number(link.params[name].toPrecision(12))));
     });
-    return '?' + query.toString();
+    const view = query.toString();
+    return `${UNDER[place.kind]}/${encodeURIComponent(place.id)}${view ? '?' + view : ''}`;
+}
+
+/**
+ * The page an address names under the app's root, or null where it names
+ * none: the root itself, or a path the app does not have.
+ *
+ * An address from before the pages, `?lesson=fx&…`, names the lesson and is
+ * `old`: it carries a tab where it was a view of the instruments, and which
+ * page that opens is the shell's to say, since only it knows a lesson's model.
+ * Whether the id names anything is the shell's too.
+ */
+export function readPlace(
+    address: { pathname: string; search: string }, root: string
+): { place: Place; old: boolean } | null {
+    const base = root.replace(/\/?$/, '/');
+    if (address.pathname.indexOf(base) === 0) {
+        const [under, id] = address.pathname.slice(base.length).split('/');
+        const kind = (Object.keys(UNDER) as Place['kind'][]).filter(k => UNDER[k] === under)[0];
+        if (kind && id) return { place: { kind, id: decoded(id) }, old: false };
+    }
+    const lesson = new URLSearchParams(address.search).get('lesson');
+    return lesson ? { place: { kind: 'lesson', id: lesson }, old: true } : null;
+}
+
+/** A path's segment in words, or as it stands where it is not a percent-encoding. */
+function decoded(segment: string): string {
+    try {
+        return decodeURIComponent(segment);
+    } catch {
+        return segment;
+    }
 }
 
 /**
@@ -91,21 +140,21 @@ export function writeLink(lesson: string, link: Link = AT_THE_START): string {
 const PACE_MS = 350;
 
 /**
- * Write `search` to the address whenever it changes, paced.
+ * Write `address` (from `writeLink`) whenever it changes, paced.
  *
  * Null holds the address where it is: before the engine has said what its
  * params are, and while a gesture is in flight. That is the narration's
  * boundary — a drag is written once, when it is let go, rather than on every
  * frame of it. A write still waiting when the screen goes is dropped with it,
- * so it cannot land on the address of the lesson that replaced it.
+ * so it cannot land on the address of the page that replaced it.
  */
-export function useAddressFollows(search: string | null, write: ((search: string) => void) | undefined) {
+export function useAddressFollows(address: string | null, write: ((address: string) => void) | undefined) {
     const wrote = useRef(-Infinity);
     useEffect(() => {
-        if (search === null || !write) return;
+        if (address === null || !write) return;
         const now = () => {
             wrote.current = Date.now();
-            write(search);
+            write(address);
         };
         const wait = wrote.current + PACE_MS - Date.now();
         if (wait <= 0) {
@@ -114,5 +163,5 @@ export function useAddressFollows(search: string | null, write: ((search: string
         }
         const timer = window.setTimeout(now, wait);
         return () => window.clearTimeout(timer);
-    }, [search, write]);
+    }, [address, write]);
 }

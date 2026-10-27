@@ -341,7 +341,8 @@ export const DEMAND_LESSON: LessonStep[] = [
         set: { ...BASELINE },
         title: 'Over to you',
         say: 'Here\'s how you went on the four cases.\n\n' +
-            'Press Finish to try more cases in Scenarios, or to move the price and the curve yourself.',
+            'Press Finish to take this market to the Playground, where you can try more cases in ' +
+            'Scenarios or move the price and the curve yourself.',
         recap: {
             takeaway: 'A change in a good\'s own price moves buyers along its demand curve. Anything ' +
                 'else in PETPIG shifts the whole curve: right when buyers want more at every price, ' +

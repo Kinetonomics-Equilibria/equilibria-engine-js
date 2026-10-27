@@ -12,19 +12,20 @@
     min-height: 0;
 }
 
-/* Under the side column's tabs the lesson is the tab's content, not a card of
- * its own: the tabs' card is its paper, and it fills the tab, so its head and
- * foot are at the tab's top and bottom whatever the step says. */
-.tabbed {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
-}
-
 .head {
     flex: none;
     padding: 12px 14px 4px;
+}
+
+/* What the card is, where the tab row was, as "What changed" says what it is:
+ * beside the stage only (`headed`). */
+.cardHead {
+    composes: head from './ui/paper.module.css';
+    margin-bottom: 6px;
+}
+
+.eyebrow {
+    composes: eyebrow from './ui/paper.module.css';
 }
 
 .label {
@@ -33,11 +34,6 @@
 
 .part {
     composes: eyebrow from './ui/paper.module.css';
-}
-
-.leave {
-    flex: none;
-    color: var(--mantine-color-dimmed);
 }
 
 /* The progress bar: one group per part, a gap between groups wider than the
@@ -209,27 +205,6 @@
     text-align: center;
     color: var(--mantine-color-dimmed);
     font-variant-numeric: tabular-nums;
-}
-
-/* The lesson put away, on a phone: where the student left it on one side, the
- * way back on the other. */
-.resume {
-    display: flex;
-    align-items: center;
-    gap: var(--mantine-spacing-sm);
-    padding: 10px 14px;
-}
-
-.resumeText {
-    flex: 1;
-    min-width: 0;
-}
-
-.where {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 @media (prefers-reduced-motion: reduce) {

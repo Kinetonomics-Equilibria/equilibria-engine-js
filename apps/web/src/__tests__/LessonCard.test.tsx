@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import type { ReactElement } from 'react';
-import { LessonCard, LessonResume } from '../LessonCard';
+import { LessonCard } from '../LessonCard';
 import type { LessonStep, TrackState } from '../track/track';
 import { partsOf } from '../track/track';
 import { theme } from '../theme';
@@ -269,83 +269,58 @@ describe('a question stops it', () => {
 });
 
 /**
- * While a lesson runs the instruments are put away, and they come back when
- * the student leaves it. The card only asks; what leaving does to the diagram
- * is the screen's.
+ * Nothing on the card leads out of the lesson but Finish, at the end, which
+ * opens the playground. The card only asks; where Finish goes is the screen's.
  */
-describe('leaving the lesson', () => {
+describe('finishing the lesson', () => {
 
-    function leaving(state: TrackState) {
-        const onLeave = vi.fn(), onGoTo = vi.fn();
-        view(<LessonCard steps={STEPS} state={state} goals={GOALS} onGoTo={onGoTo} onLeave={onLeave} />);
-        return { onLeave, onGoTo };
+    function finishing(state: TrackState) {
+        const onFinish = vi.fn(), onGoTo = vi.fn();
+        view(<LessonCard steps={STEPS} state={state} goals={GOALS} onGoTo={onGoTo} onFinish={onFinish} />);
+        return { onFinish, onGoTo };
     }
 
-    it('is offered at every step, and asks the screen', async () => {
-        const { onLeave } = leaving(at(2));
-        await userEvent.setup().click(screen.getByRole('button', { name: 'Leave lesson' }));
-        expect(onLeave).toHaveBeenCalled();
-    });
-
-    it('is a skip before the lesson has started', () => {
-        leaving(at(0));
-        expect(screen.getByRole('button', { name: 'Skip lesson' })).toBeTruthy();
+    it('is not offered before the end, and the card has no way out of its own', () => {
+        finishing(at(2));
+        expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
+        expect(screen.queryByRole('button', { name: /lesson$/ })).toBeNull();
     });
 
     // The last step's way on is out of the lesson: Next would have nowhere to go.
     it('finishes at the last step, in place of Next', async () => {
-        const { onLeave, onGoTo } = leaving(at(STEPS.length, [3]));
+        const { onFinish, onGoTo } = finishing(at(STEPS.length, [3]));
         const finish = screen.getByRole('button', { name: 'Finish' });
         expect(finish.hasAttribute('disabled')).toBe(false);
         await userEvent.setup().click(finish);
-        expect(onLeave).toHaveBeenCalled();
+        expect(onFinish).toHaveBeenCalled();
         expect(onGoTo).not.toHaveBeenCalled();
     });
 
     it('does not finish past a last question still waiting for its answer', () => {
-        leaving(at(STEPS.length));
+        finishing(at(STEPS.length));
         expect(screen.getByRole('button', { name: 'Finish' }).hasAttribute('disabled')).toBe(true);
     });
 
-    // Under the side column's tabs the instruments' tabs are the way out, so
-    // the close goes; Finish stays, as the last step's way on.
-    it('has no close under the tabs, and still finishes', () => {
-        view(<LessonCard steps={STEPS} state={at(STEPS.length, [3])} goals={GOALS} onGoTo={vi.fn()} onLeave={vi.fn()} tabbed />);
-        expect(screen.queryByRole('button', { name: /lesson$/ })).toBeNull();
-        expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();
-    });
-
-    it('offers neither without a handler', () => {
+    it('is not offered without a handler', () => {
         mount({ state: at(STEPS.length, [3]) });
-        expect(screen.queryByRole('button', { name: /lesson$/ })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Finish' })).toBeNull();
     });
 });
 
-describe('the lesson put away', () => {
+/**
+ * Beside the stage the card is one of the column's two, and says what it is
+ * where the tab row was, as "What changed" under it does. Under the stage on a
+ * phone it is the only card, and the line goes to its words.
+ */
+describe('the card\'s head', () => {
 
-    function resting(state: TrackState) {
-        const onResume = vi.fn();
-        view(<LessonResume steps={STEPS} state={state} onResume={onResume} />);
-        return onResume;
-    }
-
-    it('says where the student left it, and takes them back', async () => {
-        const onResume = resting(at(3));
-        expect(within(card()).getByText('Step 3 of 4: Incomes rise')).toBeTruthy();
-        await userEvent.setup().click(screen.getByRole('button', { name: 'Resume' }));
-        expect(onResume).toHaveBeenCalled();
+    it('says "Lesson" beside the stage', () => {
+        view(<LessonCard steps={STEPS} state={at(2)} goals={GOALS} onGoTo={vi.fn()} headed />);
+        expect(within(card()).getByText('Lesson')).toBeTruthy();
     });
 
-    it('offers to start a lesson not yet begun', () => {
-        resting(at(0));
-        expect(within(card()).getByText('Not started')).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
-    });
-
-    it('offers a finished lesson for review', () => {
-        resting(at(STEPS.length, [3]));
-        expect(within(card()).getByText('Finished')).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
+    it('leaves it out under the stage', () => {
+        mount({ state: at(2) });
+        expect(within(card()).queryByText('Lesson')).toBeNull();
     });
 });

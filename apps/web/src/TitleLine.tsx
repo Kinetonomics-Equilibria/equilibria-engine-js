@@ -10,8 +10,9 @@ import type { ShareActions } from './ShareMenu';
 import classes from './TitleLine.module.css';
 
 /**
- * The lesson's title under its topic, and at its end the tools that act on
- * the whole stage, in one capsule.
+ * The page's title under its topic — a lesson's, or a model's in the
+ * playground — and at its end the tools that act on the whole stage, in one
+ * capsule.
  *
  * The arrangement and Reset, a hairline, then Present and Share at the far
  * end, because it is the page's rather than the stage's: the order the design
@@ -28,7 +29,7 @@ import classes from './TitleLine.module.css';
  * among them: a phone is not what a class watches.
  */
 
-/** What the line names of the topic a lesson is listed under. */
+/** What the line names of the topic a lesson, or a model's first lesson, is listed under. */
 export type TitleTopic = Pick<LessonTopic, 'label' | 'color'>;
 
 export interface TitleLineProps {
@@ -44,8 +45,6 @@ export interface TitleLineProps {
     onReset(): void;
     /** No column beside the stage: the tools go into the `⋯`. */
     stacked: boolean;
-    /** The instruments' door, where the dock is a sheet with no edge to grab. */
-    onOpenInstruments?: () => void;
     /** What Share hands out, and how. */
     share: ShareActions;
 }
@@ -97,7 +96,7 @@ function Arrangement({ mode, onModeChange, disabled }: {
 }
 
 export function TitleLine({
-    title, topic, mode, onModeChange, covered, canReset, onReset, stacked, onOpenInstruments, share
+    title, topic, mode, onModeChange, covered, canReset, onReset, stacked, share
 }: TitleLineProps) {
     const resetDisabled = covered || !canReset;
     const presenting = usePresenting();
@@ -176,14 +175,6 @@ export function TitleLine({
                         <ShareMenu {...share} />
                     </>
                 )}
-                {/* Where the dock is a sheet it has no permanent edge to grab,
-                  * so it needs a door. On a wide screen the dock is simply
-                  * there, and while a lesson runs there are no instruments. */}
-                {onOpenInstruments ? (
-                    <ActionIcon {...TOOL} aria-label="Open instruments" onClick={onOpenInstruments}>
-                        &#9776;
-                    </ActionIcon>
-                ) : null}
             </div>
         </div>
     );

@@ -9,13 +9,13 @@ import { STEP_PARAM } from 'equilibria-engine-js';
 import type {
     KineticGraph, ParamBlockedEvent, ParamChangedEvent, ParamInfo
 } from 'equilibria-engine-js';
-import type { StudyContent } from './lessons/content';
+import type { StudyContent, StudyModel } from './lessons/content';
 import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
 import { NarrationStrip } from './NarrationStrip';
 import { NarrationCard } from './NarrationCard';
 import { QuestionRow } from './QuestionRow';
 import { TryRow } from './TryRow';
-import { LessonCard, LessonResume } from './LessonCard';
+import { LessonCard } from './LessonCard';
 import { AsidePanel } from './AsidePanel';
 import { LessonCover } from './LessonCover';
 import { LessonRecap } from './LessonRecap';
@@ -33,7 +33,7 @@ import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } fro
 import type { Attempt } from './quiz/attempt';
 import { candidatesOf, gradeChoice, validateChoice, validateQuestion } from './quiz/grade';
 import { answerPosition, drawsAnswer, drawsAnswerWhenRight, parkApparatus } from './quiz/apparatus';
-import { Dock, LESSON_TAB } from './dock/Dock';
+import { Dock } from './dock/Dock';
 import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
 import { Scenarios } from './dock/Scenarios';
@@ -41,8 +41,8 @@ import type { Instrument, InstrumentProps } from './dock/types';
 import { REST, calcPrecision, formatValue, narrate, undoParams } from './narration/narrate';
 import { phraseRefusal } from './narration/phrasebook';
 import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
-import { useAddressFollows, writeLink } from './links';
-import type { Link } from './links';
+import { AT_THE_START, useAddressFollows, writeLink } from './links';
+import type { Link, Place } from './links';
 import { downloadPicture, linkHref, pictureName, usePrintFit } from './share';
 import type { ShareActions } from './ShareMenu';
 import { QrSheet } from './QrSheet';
@@ -52,7 +52,9 @@ import classes from './StudyScreen.module.css';
 /**
  * The study screen: one diagram, several panels, one of them driving, a line
  * underneath saying what the last thing the student did actually did, and
- * beside it either the lesson or the instruments — never both.
+ * beside it either the lesson or the instruments — never both. Which is the
+ * page's: a lesson's page has the lesson, and a model's page in the
+ * playground has the instruments (docs/design.md, "Pages to come").
  *
  * The division of labour P7 asks for is visible in what this file contains and
  * what it does not. `Stage` measures the box, arranges the panels and turns a
@@ -75,7 +77,7 @@ import classes from './StudyScreen.module.css';
 type Readout = Record<string, number>;
 
 /**
- * What the screen works out from its lesson, once per lesson.
+ * What the screen works out from its lesson and its model, once per page.
  *
  * `steps` is the same array the screen puts in the config it hands the engine
  * (`config`, below), which is what keeps one ordered list rather than two —
@@ -90,12 +92,14 @@ type Readout = Record<string, number>;
  * instrument looks up its decimals here too. The narration reads the same list, so
  * a caption, a chip, a clause and a formula's result print one quantity one way.
  */
-function prepare(content: StudyContent) {
+function prepare(lesson: StudyContent | null, model: StudyModel) {
     const narrated: Record<string, NarratedCalc> = {};
-    content.model.narratedCalcs.forEach(calc => { narrated[calc.name] = calc });
+    model.narratedCalcs.forEach(calc => { narrated[calc.name] = calc });
     return {
-        steps: content.lesson,
-        panelKeys: content.model.panels.map(p => p.key),
+        // The playground has no steps, so everything is revealed from the
+        // start: a student who has come to play has nothing to be brought to.
+        steps: lesson ? lesson.lesson : [],
+        panelKeys: model.panels.map(p => p.key),
         narrated
     };
 }
@@ -141,24 +145,6 @@ const QUESTION_OFF = [
     { name: 'revealed', value: 0 }
 ];
 
-/**
- * What the side column holds: the lesson, or the instruments.
- *
- * Either, not both. With both on screen a student could apply a scenario to
- * curves the lesson had not drawn yet, or drag a slider through a step whose
- * words describe a market they had just moved away from — and a lesson that
- * builds a diagram one idea at a time has no use for a full set of controls
- * beside it. So while a lesson runs, the only controls are the ones a step
- * hands the student: its question, or what it offers to try. The instruments
- * are for when there is no lesson running, and get the whole diagram.
- *
- * Beside the stage the two are tabs on one card — Lesson, Explore, Scenarios,
- * Maths — and which tab is open is this and the open instrument together.
- * Pressing an instrument's tab puts the lesson away, and the Lesson tab brings
- * it back, with all that either does to the diagram.
- */
-type Pane = 'lesson' | 'explore';
-
 /** The params a student moves, by name and value: presentation ones left out. */
 function marketOf(params: { name: string; value: number; presentation?: boolean }[]): Record<string, number> {
     const out: Record<string, number> = {};
@@ -166,15 +152,42 @@ function marketOf(params: { name: string; value: number; presentation?: boolean 
     return out;
 }
 
-const entries = (values: Record<string, number>) =>
-    Object.keys(values).map(name => ({ name, value: values[name] }));
-
-/** The instruments' tabs, which a link may open at: the ids `instruments` gives them. */
+/**
+ * The instruments' tabs, which a link may open at: the ids `instruments` gives
+ * them. The first is open when the playground opens, so a link leaves it out.
+ */
 const TABS = ['explore', 'scenarios', 'maths'];
 
 /**
+ * The step the playground is at: past the end of every lesson.
+ *
+ * A model's own expressions can read the step a lesson has reached — the café
+ * draws Z before its choices and again once the lesson is over, and the Air
+ * Jordans model a quantity once its step has come — so a model with no lesson
+ * still needs the param they read. The playground has nothing to build up: it
+ * is the model as a student who had seen every step would find it, which is
+ * what the instruments drew when they were put at a lesson's end. The engine
+ * declares the param only for a config with steps, so the playground declares
+ * it, at a step no lesson reaches.
+ */
+const PLAYGROUND_STEP = { name: STEP_PARAM, value: 9999, min: 0, max: 9999, round: 1, presentation: true };
+
+/**
+ * What a lesson's history entry remembers that its link never carries: which
+ * questions were answered, and how. So Back to a lesson finds the recap with
+ * its questions on it, while a link handed round still opens each question
+ * unanswered. Plain data, since a history entry keeps a copy.
+ */
+export interface Answered {
+    lesson: string;
+    resolved: TrackState['resolved'];
+    outcomes: TrackState['outcomes'];
+}
+
+/**
  * Where a screen opened at a link starts: the tab or the step, the market,
- * the arrangement and the panel at the front.
+ * the arrangement and the panel at the front. A lesson has no tab and a
+ * playground no step, so each reads only its own.
  *
  * **A link never carries an answer**, so the track starts with nothing
  * answered, whoever sent it, and stops where it always does: at the first
@@ -185,28 +198,36 @@ const TABS = ['explore', 'scenarios', 'maths'];
  * link either — they are where the step puts them, which is where it is marked
  * from — so a link cannot start one at its answer.
  *
+ * Back to a lesson is not a link: its history entry remembers what was
+ * answered (`answered`), and the track starts from that, so it is not stopped
+ * at a question already answered and opens where the student left it.
+ *
  * A step beyond the lesson's end is its end, with its params: the lesson has
  * lost steps since the link was made, and no question stands between.
  *
  * The market is what the lesson puts at that step with the link's params over
- * it — under an instrument, the diagram's own with them over it. Names the
- * lesson no longer has are left in, and the engine leaves them out: only it
- * knows what its params are (`onReady`).
+ * it — in the playground, the model's own with them over it. Names the model
+ * no longer has are left in, and the engine leaves them out: only it knows
+ * what its params are (`onReady`).
  */
-function arrival(link: Link, steps: LessonStep[], panelKeys: string[], asideKeys: string[]) {
-    const tab = link.tab && TABS.indexOf(link.tab) > -1 ? link.tab : null,
-        track = tab ? AT_START : trackReducer(AT_START, { type: 'goTo', position: link.step }, steps),
+function arrival(
+    link: Link, steps: LessonStep[], panelKeys: string[], asideKeys: string[], playing: boolean,
+    answered: Answered | undefined
+) {
+    const tab = playing && link.tab && TABS.indexOf(link.tab) > -1 ? link.tab : null,
+        from: TrackState = answered ? { position: 0, resolved: answered.resolved, outcomes: answered.outcomes } : AT_START,
+        track = trackReducer(from, { type: 'goTo', position: link.step }, steps),
         stopped = track.position < Math.min(link.step, steps.length),
-        question = tab ? null : askAt(steps, track.position),
+        question = askAt(steps, track.position),
         answering = question ? candidatesOf(question) : [],
-        market = tab ? {} : paramsAt(steps, track.position);
+        market = paramsAt(steps, track.position);
     if (!stopped) {
         Object.keys(link.params).forEach(name => {
             if (answering.indexOf(name) < 0) market[name] = link.params[name];
         });
     }
     const known = link.focus && (panelKeys.indexOf(link.focus) > -1 || asideKeys.indexOf(link.focus) > -1),
-        front = (tab ? null : focusBetween(steps, 0, track.position)) || panelKeys[0];
+        front = focusBetween(steps, 0, track.position) || panelKeys[0];
     return { tab, track, market, mode: link.arrange, focused: known ? link.focus as string : front };
 }
 
@@ -382,58 +403,88 @@ export interface StudyScreenProps {
      * this one rebuilding its engine and its track under the student.
      */
     content?: StudyContent;
+    /**
+     * A model to give the student in the playground, in place of a lesson:
+     * the screen is then that model's page, with every panel on the stage and
+     * the instruments beside it, and `content` is not read. Fixed for the
+     * life of the screen, as a lesson is.
+     */
+    playground?: StudyModel;
     /** The topic the lesson is listed under, named over its title. */
     topic?: TitleTopic | null;
     /**
      * The view to open at, from the address. Read once, when the screen
-     * mounts; without it the lesson opens at its start.
+     * mounts; without it the page opens at its start.
      */
     link?: Link;
+    /** What the lesson's history entry remembers was answered; see `Answered`. Read once. */
+    answered?: Answered;
     /**
      * The address for this view, each time it settles somewhere new: the
      * screen's half of the address following the view. The shell owns the
      * address, so it is the one that writes it.
      */
-    onLinkChange?: (search: string) => void;
+    onLinkChange?: (address: string) => void;
+    /** What has been answered, each time a question is, for the shell to keep with the lesson's entry. */
+    onAnswer?: (answered: Answered) => void;
+    /**
+     * Finish: the playground's address at the lesson's model and the market
+     * the lesson ended on, and this view's, for the shell to open the first
+     * and leave the lesson's entry at the second.
+     */
+    onFinish?: (address: string, from: string | null) => void;
 }
 
-export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkChange }: StudyScreenProps) {
-    const { asides } = content;
+export function StudyScreen({
+    content = SUPPLY_AND_DEMAND, playground, topic, link, answered, onLinkChange, onAnswer, onFinish
+}: StudyScreenProps) {
+    // The lesson, on a lesson's page; none in the playground, where the model
+    // is the page.
+    const lesson = playground ? null : content;
+    const model = playground || content.model;
+    const asides = lesson ? lesson.asides : undefined;
     const {
         diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, paramWords, explorePrompts,
         scenarios, questionApparatus, directionWords
-    } = content.model;
-    const { steps, panelKeys, narrated } = useMemo(() => prepare(content), [content]);
+    } = model;
+    const { steps, panelKeys, narrated } = useMemo(() => prepare(lesson, model), [lesson, model]);
+    const place: Place = useMemo(() => (lesson ? { kind: 'lesson', id: lesson.id } : { kind: 'playground', id: model.id }),
+        [lesson, model]);
+
+    /**
+     * Whether the instruments are beside the stage: the playground's. The
+     * lesson and the instruments are never on one page — with both on screen
+     * a student could apply a scenario to curves the lesson had not drawn
+     * yet, or drag a slider through a step whose words describe a market they
+     * had just moved away from, and a lesson that builds a diagram one idea at
+     * a time has no use for a full set of controls beside it. So beside a
+     * lesson the only controls are the ones a step hands the student: its
+     * question, or what it offers to try.
+     */
+    const exploring = !lesson;
 
     // Where a link opens, worked out once: everything below that a link
     // decides starts from it.
-    const [opening] = useState(() => link ? arrival(link, steps, panelKeys, Object.keys(asides || {})) : null);
+    const [opening] = useState(() => link
+        ? arrival(link, steps, panelKeys, Object.keys(asides || {}), exploring, answered) : null);
 
     const [focused, setFocused] = useState<string>(opening ? opening.focused : panels[0].key);
     const [mode, setMode] = useState<StageMode>(opening ? opening.mode : 'focus');
     const [readout, setReadout] = useState<Readout>({});
     const [line, setLine] = useState<NarrationLine>(REST);
 
-    // The lesson and the instruments, tabs on a card beside the stage, until
-    // there is not room for a column there; below that the lesson goes under
-    // the stage and the instruments into a bottom sheet. Measured once, here, because the screen
-    // is what owns the decision — a dock that measured the viewport itself
-    // would be a second answer to the same question.
+    // The lesson or the instruments, a card beside the stage, until there is
+    // not room for a column there; below that either goes under the stage.
+    // Measured once, here, because the screen is what owns the decision — a
+    // dock that measured the viewport itself would be a second answer to the
+    // same question.
     const stacked = useMediaQuery('(max-width: 899px)') ?? false;
-
-    /**
-     * Which the side column holds. A lesson opens on its first page, so the
-     * screen starts with the lesson; the student leaves it from the card, and
-     * Finish at the last step does the same.
-     */
-    const [pane, setPane] = useState<Pane>(opening && opening.tab ? 'explore' : 'lesson');
 
     // Which instrument is open, and whether it was opened *at* something. Both
     // live here rather than in the dock because "why?" — which is under the
     // stage, not in the dock — has to be able to set them.
-    const [instrument, setInstrument] = useState(opening && opening.tab ? opening.tab : 'explore');
+    const [instrument, setInstrument] = useState(opening && opening.tab ? opening.tab : TABS[0]);
     const [focus, setFocus] = useState<{ calc?: string } | undefined>(undefined);
-    const [sheetOpen, setSheetOpen] = useState(false);
 
     /**
      * Where the lesson has got to.
@@ -512,32 +563,17 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     const lastParams = useRef<Record<string, number>>(opening ? opening.market : {});
     const trackAt = useRef<TrackState>(AT_START);
     const asking = useRef<Attempt | null>(null);
-    const paneAt = useRef<Pane>(pane);
     trackAt.current = track;
     asking.current = attempt;
-    paneAt.current = pane;
 
     /**
-     * What a screen opened at a link still has to do once its engine is ready:
-     * ask the step's question, or note the market the instruments were handed,
-     * which is the one the link names. Once: a later remount is repaired from
-     * state like any other.
+     * What the first engine still has to do once it is ready: ask the step's
+     * question a link opened at, or note the market the playground opened
+     * with, which is the one a link names or the model's own. Once: a later
+     * remount is repaired from state like any other.
      */
-    const arriving = useRef(opening);
+    const arriving = useRef(true);
     const arm = useRef<((question: LessonQuestion | null, index: number) => void) | null>(null);
-
-    /**
-     * The lesson's diagram, as the student left it for the instruments.
-     *
-     * The instruments get the whole diagram to do what they like with, so
-     * coming back to the lesson has to put back the market the step was talking
-     * about: its words describe that one, not wherever exploring left the
-     * curves. Two states, because a step is a move as well as a market —
-     * `before` is what the ghosts and the narration measure from, `after` is where
-     * the curves are — and putting back only the second would lose the ghost
-     * the step's words point at.
-     */
-    const held = useRef<{ before: Record<string, number>; after: Record<string, number> } | null>(null);
 
     /**
      * The two markets Reset puts back besides a step's.
@@ -545,8 +581,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
      * `declared` is the diagram's own, as the engine read it — the market under
      * every step that sets nothing — taken in `onReady` before anything is
      * restored, which a remount makes the config's values again. `opened` is
-     * the market the instruments were handed when the lesson was put away.
-     * State rather than refs, since Reset is greyed or not by what they hold.
+     * the market the playground opened with: the model's own, or the one a
+     * link or a lesson's Finish handed it. State rather than refs, since Reset
+     * is greyed or not by what they hold.
      */
     const [declared, setDeclared] = useState<Record<string, number>>({});
     const [opened, setOpened] = useState<Record<string, number>>({});
@@ -582,15 +619,20 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     const before = useRef<Snapshot | null>(null);
 
     // The model's diagram with the lesson's steps in it, which the engine
-    // reveals and sets by. Memoised because `useEquilibria` remounts when the
+    // reveals and sets by; in the playground, with no steps and past every
+    // lesson's end. Memoised because `useEquilibria` remounts when the
     // config's identity changes, and rebuilding the diagram on every keystroke
     // elsewhere in the app would undo everything P7 does to avoid a remount.
-    const config = useMemo(() => ({ ...diagram, steps }), [diagram, steps]);
+    const config = useMemo(() => {
+        if (lesson) return { ...diagram, steps };
+        const params = (diagram.params || []) as { name: string }[];
+        return params.some(p => p.name === STEP_PARAM) ? diagram : { ...diagram, params: [...params, PLAYGROUND_STEP] };
+    }, [lesson, diagram, steps]);
 
     // The lesson's pictures, fetched while the student reads the cover, so a
     // picture step opens on its picture rather than on an empty sheet that
     // fills in. Both frames of one that moves: Pause swaps to the still.
-    const pictures = content.pictures;
+    const pictures = lesson ? lesson.pictures : undefined;
     useEffect(() => {
         Object.keys(pictures || {}).forEach(key => {
             [pictures![key].src, pictures![key].still].forEach(src => {
@@ -777,10 +819,8 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
             }));
         setDockParams(engine.getParams());
 
-        // The instruments draw the diagram as the track's end does, whatever
-        // step the lesson was left at.
         const previous = lastParams.current,
-            position = paneAt.current === 'explore' ? steps.length : trackAt.current.position,
+            position = trackAt.current.position,
             question = asking.current,
             apparatus = question ? questionApparatus[question.question.param] : undefined;
 
@@ -842,11 +882,12 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
         // Opened at a link, the question is asked as arriving at it asks it:
         // after the market is back and snapshotted, so it starts where the
         // step puts it and nothing has been answered.
-        const arrived = arriving.current;
-        arriving.current = null;
-        if (arrived && arrived.tab) setOpened(marketOf(engine.getParams()));
-        else if (arrived && arm.current) arm.current(askAt(steps, position), position - 1);
-    }, [questionApparatus, steps, paramWords]);
+        if (arriving.current) {
+            arriving.current = false;
+            if (exploring) setOpened(marketOf(engine.getParams()));
+            else if (arm.current) arm.current(askAt(steps, position), position - 1);
+        }
+    }, [questionApparatus, steps, paramWords, exploring]);
 
     /**
      * Put the params back where the snapshot found them.
@@ -1213,17 +1254,17 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
      * drawn; and a curve whose answer is in is left alone, because Reset does
      * not forget an answer.
      *
-     * Under an instrument it is the market the instruments were handed.
+     * In the playground it is the market the page opened with.
      */
     const resetTo = useMemo(() => {
-        const target: Record<string, number> = pane === 'explore' ? opened : {
+        const target: Record<string, number> = exploring ? opened : {
             ...declared, ...paramsAt(steps, track.position), ...(attempt ? attempt.starts : {})
         };
         return dockParams
             .filter(p => !p.presentation && p.name in target && frozen.indexOf(p.name) < 0
                 && Math.abs(p.value - target[p.name]) > 1e-9)
             .map(p => ({ name: p.name, value: target[p.name] }));
-    }, [pane, opened, declared, steps, track.position, attempt, dockParams, frozen]);
+    }, [exploring, opened, declared, steps, track.position, attempt, dockParams, frozen]);
 
     /**
      * Reset: a move like any other.
@@ -1242,123 +1283,25 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     }, [resetTo, endGesture, updateParams]);
 
     /**
-     * Put the lesson away and hand the student the instruments.
-     *
-     * The instruments get the whole diagram: the step param at the track's end,
-     * so every curve and every panel is there to be moved. A scenario applied to
-     * curves the lesson had not drawn yet moved nothing anyone could see, and
-     * the strip under the empty axes went on announcing new prices. A question
-     * is stood down, since nobody is answering it now; coming back asks it
-     * again, as moving back to it does.
-     *
-     * Then a snapshot, after the move rather than before it: the lesson's last
-     * move belongs to the lesson, and exploring starts at rest, with no ghost
-     * and nothing in "What changed". `held` keeps what the snapshot is about to
-     * forget, so the lesson can have it back.
-     */
-    const leaveLesson = useCallback(() => {
-        const engine = engineRef.current;
-        if (!engine) return;
-        endGesture();
-
-        const market = marketOf(engine.getParams()),
-            snap = engine.getSnapshot(),
-            measuredFrom: Record<string, number> = {};
-        Object.keys(market).forEach(name => {
-            measuredFrom[name] = snap && name in snap.params ? snap.params[name] : market[name];
-        });
-        held.current = {
-            before: measuredFrom,
-            // A question is put back where it started, not where the student
-            // had got to with it: it is asked again from there.
-            after: { ...market, ...(attempt ? attempt.starts : {}) }
-        };
-
-        asked.current = [];
-        parked.current = [];
-        applyingStep.current = true;
-        try {
-            engine.update({
-                params: [{ name: STEP_PARAM, value: steps.length }, ...(attempt ? QUESTION_OFF : [])]
-            });
-            engine.snapshot();
-        } finally {
-            applyingStep.current = false;
-        }
-
-        setAttempt(null);
-        setReadout(engine.getCalcs() as Readout);
-        setOpened(market);
-        latest.current = null;
-        setLine(REST);
-        setRefusal(null);
-        setPane('explore');
-    }, [attempt, steps, endGesture]);
-
-    /**
-     * Back to the lesson, where the student left it.
-     *
-     * The order is the one every restore in this file uses, run twice: the step
-     * and the market its move was measured from, then a snapshot, then the
-     * market as the student left it. So the ghost the step left is drawn again
-     * and "What changed" says again what the step did — the screen as it was, rather
-     * than a step whose words point at a ghost that is not there.
-     *
-     * A question is asked afresh, from where it started, as arriving at it is.
-     */
-    const resumeLesson = useCallback(() => {
-        const engine = engineRef.current;
-        if (!engine) return;
-        endGesture();
-
-        const authored = paramsAt(steps, track.position),
-            kept = held.current || { before: authored, after: authored };
-        held.current = null;
-        latest.current = null;
-        setLine(REST);
-        setRefusal(null);
-        setPane('lesson');
-
-        applyingStep.current = true;
-        try {
-            engine.update({
-                params: [{ name: STEP_PARAM, value: track.position }, ...entries(kept.before)]
-            });
-            engine.snapshot();
-            // Raised as ordinary changes, so the narration reports the step's move
-            // again from the snapshot just taken.
-            const after = entries(kept.after);
-            if (after.length > 0) engine.update({ params: after });
-        } finally {
-            applyingStep.current = false;
-        }
-        setReadout(engine.getCalcs() as Readout);
-
-        armQuestion(askAt(steps, track.position), track.position - 1);
-    }, [steps, track.position, armQuestion, endGesture]);
-
-    /**
-     * Which panels are on the stage: what the lesson has brought in, or all of
-     * them while the instruments are out.
+     * Which panels are on the stage: what the lesson has brought in, or, in
+     * the playground, which has no steps, all of them.
      *
      * The same rule the engine applies to the objects inside them, because it
      * has to be: the stage arranges these and the diagram draws them, and a
      * panel the stage made room for but the diagram is hiding is an empty square
      * with a name over it.
      */
-    const shown = pane === 'explore' ? steps.length : track.position;
     const revealed = useMemo(
-        () => revealedPanels(steps, shown, panelKeys),
-        [steps, panelKeys, shown]
+        () => revealedPanels(steps, track.position, panelKeys),
+        [steps, panelKeys, track.position]
     );
 
     /**
      * The report beside the diagram at this step, if it has one: a panel of
      * the stage's for as long as the step is on screen, drawn by this screen
-     * rather than by the engine. Never while exploring, where the steps'
-     * reports have nothing to report on.
+     * rather than by the engine.
      */
-    const aside = pane === 'explore' ? null : asideAt(steps, track.position);
+    const aside = asideAt(steps, track.position);
     const hostPanels = useMemo(() => (aside ? [aside] : []), [aside]);
 
     // A report promoted and then left behind leaves nothing at the front, and
@@ -1383,22 +1326,20 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     /**
      * This view, as a link: what the address says while the screen is here.
      *
-     * The tab, or the step; each param the student can move that is not where
-     * the lesson puts it — at the step, the diagram's own with every step's
-     * `set` up to here over it, as Reset has it; under an instrument, the
-     * diagram's own; the arrangement; and the panel at the front, where it is
-     * on the stage and not the one the lesson would put there.
+     * The step, or in the playground the tab; each param the student can move
+     * that is not where the page puts it — at the step, the diagram's own with
+     * every step's `set` up to here over it, as Reset has it; in the
+     * playground, the model's own; the arrangement; and the panel at the
+     * front, where it is on the stage and not the one the lesson would put
+     * there.
      *
      * Never a question's own curves: where the student has them is their
      * answer, given or on its way, and a question a link opens at is asked as
      * the lesson puts it. And never the answers: the track's record of them is
      * not in a link at all.
      *
-     * A phone writes what a laptop does, so one link opens on either. Its
-     * instruments are a sheet rather than a column, but the one open in it is
-     * still the tab, sheet up or down; and a phone opened at a tab leaves the
-     * sheet down, with the lesson put away, since what was sent is the diagram
-     * and the sheet would cover it.
+     * A phone writes what a laptop does, so one link opens on either: its
+     * instruments are under the stage rather than beside it, at the same tab.
      *
      * Taken from the params as they were when the view last settled, which
      * is the boundary the narration already keeps: a drag is one move, part
@@ -1413,12 +1354,12 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
 
     const view = useMemo(() => {
         if (settled.length === 0) return null;
-        const tab = pane === 'explore' ? instrument : null,
-            position = tab ? 0 : track.position,
-            question = tab ? null : askAt(steps, position),
+        const tab = exploring && instrument !== TABS[0] ? instrument : null,
+            position = track.position,
+            question = askAt(steps, position),
             answering = question ? candidatesOf(question) : [],
-            lessonPuts: Record<string, number> = tab ? declared : { ...declared, ...paramsAt(steps, position) },
-            front = (tab ? null : focusBetween(steps, 0, position)) || panels[0].key,
+            lessonPuts: Record<string, number> = { ...declared, ...paramsAt(steps, position) },
+            front = focusBetween(steps, 0, position) || panels[0].key,
             params: Record<string, number> = {},
             moved: { info: ParamInfo; from: number }[] = [];
         settled.forEach(p => {
@@ -1433,13 +1374,41 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
             step: position, tab, arrange: mode, focus: shownAtFront && focused !== front ? focused : null, params
         };
         return { link, moved, atFront: shownAtFront ? focused : revealed[0] };
-    }, [settled, pane, instrument, track.position, steps, declared, panels, revealed, focused, aside, mode]);
+    }, [settled, exploring, instrument, track.position, steps, declared, panels, revealed, focused, aside, mode]);
 
-    const here = useMemo(() => (view ? writeLink(content.id, view.link) : null), [view, content.id]);
+    const here = useMemo(() => (view ? writeLink(place, view.link) : null), [view, place]);
 
     // Replaced rather than pushed, by the shell, so Back still goes to the
-    // last lesson rather than the last drag.
+    // last page rather than the last drag.
     useAddressFollows(here, onLinkChange);
+
+    // The answers, for the lesson's history entry: when one is given, and
+    // once at the start, so the entry and the track agree from the first.
+    useEffect(() => {
+        if (lesson && onAnswer) onAnswer({ lesson: lesson.id, resolved: track.resolved, outcomes: track.outcomes });
+    }, [lesson, onAnswer, track.resolved, track.outcomes]);
+
+    /**
+     * Finish: the lesson done, and its market the student's in the
+     * playground.
+     *
+     * The market goes in the playground's address, in the words a link uses —
+     * each param off where the model puts it — so it opens there as a link
+     * would, and Reset there puts back this market rather than the model's.
+     * The shell pushes it, so Back returns to the recap.
+     */
+    const finish = useCallback(() => {
+        const engine = engineRef.current;
+        if (!engine || !onFinish) return;
+        endGesture();
+        const params: Record<string, number> = {};
+        engine.getParams().forEach(p => {
+            if (!p.presentation && p.name in declared && Math.abs(p.value - declared[p.name]) > 1e-9) {
+                params[p.name] = p.value;
+            }
+        });
+        onFinish(writeLink({ kind: 'playground', id: model.id }, { ...AT_THE_START, params }), here);
+    }, [onFinish, endGesture, declared, model.id, here]);
 
     // Deliberately not called for undo, which is the mirror case: undo restores
     // the params to what `prev` already holds, so leaving the snapshot alone is
@@ -1464,9 +1433,9 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     const report = useCallback((panel: StagePanel) => {
         const told = asides ? asides[panel.key] : undefined;
         if (!told) return null;
-        const picture = told.picture && content.pictures ? content.pictures[told.picture] : undefined;
+        const picture = told.picture && pictures ? pictures[told.picture] : undefined;
         return <AsidePanel aside={told} picture={picture} panel={panel} style={asideBody(panel)} />;
-    }, [asides, content.pictures]);
+    }, [asides, pictures]);
 
     const chrome = useCallback((panel: StagePanel) => {
         const declared = panels.filter(p => p.key === panel.key)[0];
@@ -1670,8 +1639,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     const onWhy = useCallback((calc: string) => {
         setFocus({ calc });
         setInstrument('maths');
-        if (stacked) setSheetOpen(true);
-    }, [stacked]);
+    }, []);
 
     /**
      * The lesson card, with the step's controls in it: the question at a step
@@ -1683,15 +1651,15 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
      * the prompt.
      */
     const tries = tryAt(steps, track.position);
-    const lesson = (where: 'beside' | 'below') => (
+    const lessonCard = (where: 'beside' | 'below') => (
         <LessonCard
-            className={where === 'beside' ? undefined : classes.lessonBelow}
-            tabbed={where === 'beside'}
+            className={where === 'beside' ? classes.lessonBeside : classes.lessonBelow}
+            headed={where === 'beside'}
             steps={steps}
             state={track}
-            goals={content.goals}
+            goals={lesson ? lesson.goals : []}
             onGoTo={goTo}
-            onLeave={leaveLesson}
+            onFinish={finish}
         >
             {attempt ? (
                 <QuestionRow
@@ -1723,37 +1691,37 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     );
 
     /**
-     * The lesson put away, under the stage on a phone: where it was left, and
-     * the way back. Beside the stage the Lesson tab is both.
+     * The instruments, beside the stage or, on a phone, under it in the
+     * lesson's place: there is no lesson in the playground to hold it.
      */
-    const resume = (
-        <LessonResume
-            className={classes.resumeBelow}
-            steps={steps}
-            state={track}
-            onResume={resumeLesson}
+    const dock = (where: 'beside' | 'below') => (
+        <Dock
+            className={where === 'beside' ? classes.dockBeside : classes.dockBelow}
+            instruments={instruments}
+            open={instrument}
+            onOpenChange={setInstrument}
+            context={dockContext}
+            focus={focus}
         />
     );
-
-    const exploring = pane === 'explore';
 
     /**
      * What covers the stage, if anything: the lesson's cover before the first
      * step, the picture a step shows, or the recap.
      *
-     * Never while exploring, where the diagram is the whole point. The stage
+     * Never in the playground, where the diagram is the whole point. The stage
      * stays mounted under it, made inert so that neither the keyboard nor the
      * pointer can reach a diagram nobody can see — its promote buttons included
      * — and kept at its size, so the step after finds the engine as it left it.
      * Unmounted rather than hidden when it goes, so a picture that moves stops.
      */
-    const slide = exploring ? null : slideAt(steps, track.position, !!content.cover);
-    const pictureOf = (key: string | undefined) =>
-        key && content.pictures ? content.pictures[key] : undefined;
+    const cover = lesson ? lesson.cover : undefined;
+    const slide = slideAt(steps, track.position, !!cover);
+    const pictureOf = (key: string | undefined) => key && pictures ? pictures[key] : undefined;
     const pictured = slide && slide.kind === 'picture' ? pictureOf(slide.picture) : undefined;
-    const sheet = slide && slide.kind === 'cover' && content.cover ? (
-        <StageSheet label="About this lesson" eyebrow={`${content.label} · ${steps.length} steps`}>
-            <LessonCover cover={content.cover} picture={pictureOf(content.cover.picture)} steps={steps} />
+    const sheet = slide && slide.kind === 'cover' && lesson && cover ? (
+        <StageSheet label="About this lesson" eyebrow={`${lesson.label} · ${steps.length} steps`}>
+            <LessonCover cover={cover} picture={pictureOf(cover.picture)} steps={steps} />
         </StageSheet>
     ) : pictured ? (
         <PictureSheet key={pictured.src} picture={pictured} />
@@ -1767,8 +1735,8 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     ) : null;
 
     /**
-     * Share's QR code, over the stage while it is up, for the lesson's start,
-     * which is what Share's link is. Done or Esc puts it away. A stage sheet
+     * Share's QR code, over the stage while it is up, for what Share's link
+     * is. Done or Esc puts it away. A stage sheet
      * like a cover, but Share's rather than the lesson's: the diagram under
      * it is still the view, so "What changed" goes on saying what it said,
      * and the picture is drawn from under it.
@@ -1781,22 +1749,32 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
         return () => window.removeEventListener('keydown', away);
     }, [qrUp]);
 
-    /** The view's link, for the printed page, and the lesson's, for Share. */
-    const viewLink = useMemo(() => linkHref(here || writeLink(content.id)), [here, content.id]);
-    const lessonLink = useMemo(() => linkHref(writeLink(content.id)), [content.id]);
+    /**
+     * The view's link, for the printed page, and Share's: a lesson's start,
+     * since a lesson has a start worth more than any view of it, and in the
+     * playground this view, since a market has none, and a teacher who set
+     * one up to show a class wants that one.
+     */
+    const viewLink = useMemo(() => linkHref(here || writeLink(place)), [here, place]);
+    const shareLink = useMemo(() => (lesson ? linkHref(writeLink(place)) : viewLink), [lesson, place, viewLink]);
 
-    const covering = qrUp ? <QrSheet href={lessonLink} onClose={() => setQrUp(false)} /> : sheet;
+    const covering = qrUp ? (
+        <QrSheet
+            href={shareLink}
+            opens={lesson ? 'Opens the lesson at its start' : 'Opens this view'}
+            onClose={() => setQrUp(false)}
+        />
+    ) : sheet;
 
     /**
      * The view in words, for the printed page and the picture's name: where
      * in the lesson, which panel is in front, and each param the student
-     * moved, from where the lesson puts it to where they put it, printed as
-     * the chain prints a number.
+     * moved, from where the page puts it to where they put it, printed as
+     * the chain prints a number. In the playground the open tab is left out:
+     * it is not part of the diagram that is printed.
      */
     const inWords = useMemo(() => {
-        const tab = view && view.link.tab,
-            tabName = tab ? (instruments.filter(i => i.id === tab)[0] || { label: tab }).label : null,
-            position = view ? view.link.step : 0,
+        const position = view ? view.link.step : 0,
             title = position > 0 ? steps[position - 1].title : undefined,
             nameOf = (key: string) => {
                 const declared = panels.filter(p => p.key === key)[0];
@@ -1804,16 +1782,16 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
             },
             onStage = revealed.length + hostPanels.length;
         return {
-            where: tab ? `${tabName}, with the lesson put away`
+            where: exploring ? 'In the Playground'
                 : position === 0 ? 'The start of the lesson'
                     : `Step ${position} of ${steps.length}${title ? `: ${title}` : ''}`,
-            short: tab ? tabName : position > 0 ? `step ${position}` : null,
+            short: position > 0 ? `step ${position}` : null,
             arrangement: mode === 'grid' ? 'Every panel side by side, in a grid'
                 : view && onStage > 1 ? `${nameOf(view.atFront)} at the front` : null,
             moved: view ? view.moved.map(m => `${m.info.label} ${formatValue(m.from, m.info.precision)} → ` +
                 formatValue(m.info.value, m.info.precision)) : []
         };
-    }, [view, instruments, steps, panels, asides, revealed, hostPanels, mode]);
+    }, [view, exploring, steps, panels, asides, revealed, hostPanels, mode]);
 
     /**
      * The picture and the page, which are both of the diagram: neither is
@@ -1825,29 +1803,15 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     const stageLayer = useRef<HTMLDivElement>(null);
     usePrintFit(stageBox);
     const hidden = !!sheet;
+    const title = lesson ? lesson.title : model.name;
     const share: ShareActions = useMemo(() => ({
-        link: lessonLink,
-        title: content.title,
+        link: shareLink,
+        title,
         onShowQr: () => setQrUp(true),
         onDownload: hidden ? undefined
-            : () => downloadPicture(stageLayer.current!, pictureName(content.label, inWords.short)),
+            : () => downloadPicture(stageLayer.current!, pictureName(lesson ? lesson.label : model.name, inWords.short)),
         onPrint: hidden ? undefined : () => window.print()
-    }), [lessonLink, content.title, content.label, hidden, inWords.short]);
-
-    /**
-     * A tab pressed beside the stage. Between two instruments it changes only
-     * which is open. Into the lesson's or out of it, it is the lesson taken up
-     * again or put away — the same moves as Resume and Finish, so the diagram
-     * the lesson gets back is the one it left.
-     */
-    const openTab = useCallback((id: string) => {
-        if (id === LESSON_TAB) {
-            if (exploring) resumeLesson();
-            return;
-        }
-        if (!exploring) leaveLesson();
-        setInstrument(id);
-    }, [exploring, resumeLesson, leaveLesson]);
+    }), [shareLink, title, lesson, model.name, hidden, inWords.short]);
 
     /**
      * What the student's last move did, said in one of two places.
@@ -1863,8 +1827,8 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
      * their place whatever they say: a card that came and went would re-divide
      * the column, and a strip that did would resize the diagram.
      *
-     * "Why?" opens the Maths instrument, and while a lesson runs there is none
-     * to open, so neither form offers it then.
+     * "Why?" opens the Maths instrument, and beside a lesson there is none
+     * to open, so neither form offers it there.
      */
     const notStarted = !exploring && track.position === 0 && steps.length > 0;
     // Under a sheet there is no diagram to have changed, so both forms rest —
@@ -1899,7 +1863,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
                   * below. */}
                 <div className={classes.titleBlock} style={{ '--stage-pad': STAGE_PAD } as CSSProperties}>
                     <TitleLine
-                        title={content.title}
+                        title={title}
                         topic={topic}
                         mode={mode}
                         onModeChange={setMode}
@@ -1907,7 +1871,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
                         canReset={resetTo.length > 0}
                         onReset={onReset}
                         stacked={stacked}
-                        onOpenInstruments={stacked && exploring ? () => setSheetOpen(true) : undefined}
                         share={share}
                     />
                 </div>
@@ -1958,30 +1921,20 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
                         restHint={notStarted
                             ? 'Press Start lesson when you\'re ready.'
                             : under === 'picture' ? 'The diagram is back at the next step.'
-                                : under === 'recap' ? 'Press Finish to explore the diagram.' : undefined}
+                                : under === 'recap' ? 'Finish, and this market is yours in the Playground.' : undefined}
                     />
                 ) : null}
 
                 {/* Where there is no room for a column beside the stage, the
-                  * lesson goes under it, at a fixed height so that moving from
-                  * a short step to a long one does not resize the diagram. */}
-                {stacked ? (exploring ? resume : lesson('below')) : null}
+                  * lesson or the instruments go under it, at a fixed height so
+                  * that moving from a short step to a long one, or from one
+                  * tab to another, does not resize the diagram. */}
+                {stacked ? (lesson ? lessonCard('below') : dock('below')) : null}
             </div>
 
             {!stacked ? (
                 <div className={classes.side}>
-                    {/* The lesson is handed over whichever tab is open: the
-                      * dock mounts only the open one, so while an instrument
-                      * is open the lesson's card is not on the screen. */}
-                    <Dock
-                        className={classes.dockBeside}
-                        instruments={instruments}
-                        open={exploring ? instrument : LESSON_TAB}
-                        onOpenChange={openTab}
-                        context={dockContext}
-                        focus={focus}
-                        lesson={lesson('beside')}
-                    />
+                    {lesson ? lessonCard('beside') : dock('beside')}
                     <NarrationCard
                         {...narration}
                         className={classes.narrationBeside}
@@ -1992,25 +1945,12 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
                                     'The diagram is back at the next step.'
                                 : under === 'recap'
                                     ? 'This step looks back, so nothing on the diagram changes. ' +
-                                        'Finish, and the diagram is yours to explore.'
+                                        'Finish, and this market is yours in the Playground.'
                                     : exploring
                                         ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
                                         : undefined}
                     />
                 </div>
-            ) : null}
-
-            {stacked && exploring ? (
-                <Dock
-                    instruments={instruments}
-                    open={instrument}
-                    onOpenChange={setInstrument}
-                    context={dockContext}
-                    focus={focus}
-                    sheet
-                    sheetOpen={sheetOpen}
-                    onSheetClose={() => setSheetOpen(false)}
-                />
             ) : null}
         </div>
     );

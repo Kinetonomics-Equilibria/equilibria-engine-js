@@ -371,8 +371,8 @@ export const FX_LESSON: LessonStep[] = [
         set: { ...BASELINE },
         title: 'Over to you',
         say: 'Here\'s how you went on the four cases.\n\n' +
-            'Press Finish to try more real-world cases in Scenarios, or to drag the curves ' +
-            'yourself.',
+            'Press Finish to take this market to the Playground, where you can try more ' +
+            'real-world cases in Scenarios or drag the curves yourself.',
         recap: {
             takeaway: 'Anything that changes how much AUD the world wants to buy, or how much AUD ' +
                 'Australians want to sell, moves the exchange rate: more demand or less supply ' +

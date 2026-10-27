@@ -3,16 +3,20 @@ import type { Page } from '@playwright/test';
 import { RENDERED, test } from './helpers';
 
 /**
- * Links, in a real browser: a pasted address opens the view it names, and the
- * address follows the view — a drag written when it is let go, not on every
- * frame of it, and replaced rather than pushed.
+ * Links, in a real browser: a pasted address opens the page and the view it
+ * names, and the address follows the view — a drag written when it is let go,
+ * not on every frame of it, and replaced rather than pushed.
  *
  * What only a browser can say: that a linked move draws no ghost, which is the
  * engine's drawing rather than anything the app renders, and that a real
  * drag holds the address still until the pointer is released.
  */
 
-const search = (page: Page) => new URL(page.url()).search;
+/** The address from the site's root: the page's path and the view after it. */
+const address = (page: Page) => {
+    const url = new URL(page.url());
+    return url.pathname + url.search;
+};
 const caption = (page: Page, key: string) => page.locator(`[data-testid="stage-chrome"] [data-panel="${key}"]`);
 const changed = (page: Page) => page.getByRole('region', { name: 'What changed' });
 
@@ -23,23 +27,35 @@ async function opened(page: Page, address: string) {
 
 test('a pasted link opens its step and market, with no ghost of a move nobody made', async ({ page, pageErrors }) => {
     // "The AUD appreciates": demand for AUD at 60 since the step before.
-    await opened(page, '/?lesson=fx&step=7');
+    await opened(page, '/lessons/fx?step=7');
     await expect(caption(page, 'market')).toContainText('USD 0.70');
     const curves = await page.locator(RENDERED.visibleCurve).count();
 
     // Supply at 56 as well: AUD 1 = 0.65 + (60 − 56)/200 = USD 0.67.
-    await opened(page, '/?lesson=fx&step=7&supply=56');
+    await opened(page, '/lessons/fx?step=7&supply=56');
     await expect(caption(page, 'market')).toContainText('USD 0.67');
     await expect(caption(page, 'market')).not.toContainText('▼');
     await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(curves);
     await expect(changed(page)).toHaveAttribute('data-kind', 'rest');
-    expect(search(page)).toBe('?lesson=fx&step=7&supply=56');
+    expect(address(page)).toBe('/lessons/fx?step=7&supply=56');
     expect(pageErrors).toEqual([]);
 });
 
+// Links handed out before the pages still open what they opened, and the
+// address then says where that is now.
+test('a link from before the pages opens the lesson, or the playground where it named a tab', async ({ page }) => {
+    await opened(page, '/?lesson=fx&step=7&supply=56');
+    await expect.poll(() => address(page)).toBe('/lessons/fx?step=7&supply=56');
+    await expect(caption(page, 'market')).toContainText('USD 0.67');
+
+    await opened(page, '/?lesson=fx&tab=scenarios&supply=56');
+    await expect.poll(() => address(page)).toBe('/playground/aud?tab=scenarios&supply=56');
+    await expect(page.getByRole('tab', { name: 'Scenarios' })).toHaveAttribute('aria-selected', 'true');
+});
+
 test('the address follows a drag when it is let go, replacing the last one', async ({ page }) => {
-    await opened(page, '/?lesson=fx&tab=explore');
-    await expect.poll(() => search(page)).toBe('?lesson=fx&tab=explore');
+    await opened(page, '/playground/aud');
+    await expect.poll(() => address(page)).toBe('/playground/aud');
     const entries = await page.evaluate(() => history.length);
 
     // Demand for AUD, in the focal panel, runs down to the right: grab it a
@@ -68,20 +84,20 @@ test('the address follows a drag when it is let go, replacing the last one', asy
     // Held: the curve has moved and the address has not.
     await expect(caption(page, 'market')).toContainText('▲');
     await page.waitForTimeout(500);
-    expect(search(page)).toBe('?lesson=fx&tab=explore');
+    expect(address(page)).toBe('/playground/aud');
 
     await page.mouse.up();
-    await expect.poll(() => search(page)).toMatch(/^\?lesson=fx&tab=explore&demand=\d+$/);
+    await expect.poll(() => address(page)).toMatch(/^\/playground\/aud\?demand=\d+$/);
     expect(await page.evaluate(() => history.length)).toBe(entries);
 });
 
 test('a link past a question opens at the question, unanswered, and says so', async ({ page }) => {
-    await opened(page, '/?lesson=fx&step=15&demand=70');
+    await opened(page, '/lessons/fx?step=15&demand=70');
 
     const question = page.getByRole('group', { name: 'Question' });
     await expect(question.getByRole('button', { name: 'Check' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Interest rates rise' })).toBeVisible();
     // Both curves where the question puts them: AUD 1 = USD 0.65.
     await expect(caption(page, 'market')).toContainText('USD 0.65');
-    await expect.poll(() => search(page)).toBe('?lesson=fx&step=11');
+    await expect.poll(() => address(page)).toBe('/lessons/fx?step=11');
 });

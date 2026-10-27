@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { ActionIcon, Button, Text, Title } from '@mantine/core';
-import { IconX } from '@tabler/icons-react';
+import { Button, Text, Title } from '@mantine/core';
 import { isBlocked, maxPosition, partAt, partsOf, stepKinds } from './track/track';
 import type { LessonStep, TrackState } from './track/track';
 import classes from './LessonCard.module.css';
@@ -10,13 +9,12 @@ import classes from './LessonCard.module.css';
  * The lesson, as something to read: where the student is, what this step says,
  * and the way on.
  *
- * It sits beside the diagram, as the first of the side column's tabs — Lesson,
- * Explore, Scenarios, Maths — because that is where there is room to say
- * something properly. The lesson and the instruments never share the screen:
- * while the lesson's tab is open no instrument is mounted, and the only
- * controls are the ones a step hands the student — a question's, or a "see
- * what happens" step's. The instruments come back when the student opens one
- * of their tabs or finishes the lesson. The lesson used to speak
+ * It sits beside the diagram, the side column's top two thirds, because that
+ * is where there is room to say something properly. The lesson has the page
+ * to itself: the instruments are the playground's, and the only controls here
+ * are the ones a step hands the student — a question's, or a "see what
+ * happens" step's. Nothing on the card leads out of the lesson but Finish, at
+ * the end, which opens the playground. The lesson used to speak
  * through the strip under the stage, which is one line that must never grow: a
  * strip that grew would shrink the diagram under the student's pointer. So
  * every step had to fit in about 110 characters, came out clipped, and gave way
@@ -59,23 +57,18 @@ export interface LessonCardProps {
     className?: string;
 
     /**
-     * Shown under the side column's tabs rather than as a card of its own.
-     *
-     * The tabs' card is its paper, so it has none, and it fills the tab. And it
-     * has no close: the instruments' tabs beside its own are the way out, and
-     * an × beside them would be a second door to the same room.
+     * With a card head of its own, "Lesson", as "What changed" under it has:
+     * beside the stage, where the card is one of the column's two. Under the
+     * stage on a phone it is the only card, and the line goes to its words.
      */
-    tabbed?: boolean;
+    headed?: boolean;
 
     /**
-     * Put the lesson away and hand the student the instruments.
-     *
-     * Offered in the card's head at every step, unless the card is `tabbed`,
-     * and as Finish in place of Next at the last one. The screen owns what
-     * leaving does to the diagram; the card only asks. Absent, the card offers
-     * neither.
+     * The lesson done: Finish, in place of Next at the last step. The screen
+     * owns where it goes; the card only asks. Absent, the last step has no way
+     * on.
      */
-    onLeave?(): void;
+    onFinish?(): void;
 }
 
 /** A step's words, a paragraph per blank line. */
@@ -95,7 +88,7 @@ function markerName(step: LessonStep, position: number, total: number): string {
 }
 
 export function LessonCard({
-    steps, state, goals, onGoTo, children, className, onLeave, tabbed = false
+    steps, state, goals, onGoTo, children, className, onFinish, headed = false
 }: LessonCardProps) {
 
     const body = useRef<HTMLDivElement>(null);
@@ -119,7 +112,7 @@ export function LessonCard({
     // The last step's way on is out of the lesson, unless it is a question
     // still waiting for its answer.
     const unanswered = !!step && !!step.ask && state.resolved.indexOf(state.position - 1) < 0;
-    const finish = atEnd && !!onLeave;
+    const finish = atEnd && !!onFinish;
 
     const marker = (position: number) => {
         const s = steps[position - 1];
@@ -149,11 +142,14 @@ export function LessonCard({
     };
 
     return (
-        <section
-            className={[tabbed ? classes.tabbed : classes.card, className].filter(Boolean).join(' ')}
-            aria-label="Lesson"
-        >
+        <section className={className ? `${classes.card} ${className}` : classes.card} aria-label="Lesson">
             <div className={classes.head}>
+                {/* Said by the section's name already, so not said twice. */}
+                {headed ? (
+                    <div className={classes.cardHead}>
+                        <span className={classes.eyebrow} aria-hidden="true">Lesson</span>
+                    </div>
+                ) : null}
                 <div className={classes.label}>
                     <Text size="xs" className={classes.part}>
                         {here
@@ -162,25 +158,6 @@ export function LessonCard({
                                 : `Part ${here.index + 1} of ${parts.length}`)
                             : 'Before you start'}
                     </Text>
-                    {/* A close in the corner rather than words: the part's name
-                      * is most of the line, and "Leave lesson" beside it put
-                      * the name on two. The words are its name and its
-                      * tooltip, and the lesson keeps the student's place. */}
-                    {onLeave && !tabbed ? (
-                        <ActionIcon
-                            variant="subtle"
-                            color="gray"
-                            size="sm"
-                            className={classes.leave}
-                            aria-label={state.position === 0 ? 'Skip lesson' : 'Leave lesson'}
-                            title={state.position === 0
-                                ? 'Skip the lesson and explore on your own'
-                                : 'Leave the lesson and explore on your own. It keeps your place.'}
-                            onClick={onLeave}
-                        >
-                            <IconX size={16} stroke={1.75} />
-                        </ActionIcon>
-                    ) : null}
                 </div>
 
                 {/* One group per part, each as wide as its share of the steps,
@@ -260,55 +237,12 @@ export function LessonCard({
                     ) : <span className={classes.count} />}
                     <Button
                         size="xs"
-                        onClick={() => (finish ? onLeave!() : onGoTo(state.position + 1))}
+                        onClick={() => (finish ? onFinish!() : onGoTo(state.position + 1))}
                         disabled={finish ? unanswered : atEnd || state.position >= furthest}
                     >
                         {state.position === 0 ? 'Start lesson' : finish ? 'Finish' : 'Next'}
                     </Button>
                 </div>
-            </div>
-        </section>
-    );
-}
-
-export interface LessonResumeProps {
-    steps: LessonStep[];
-    state: TrackState;
-
-    /** Back into the lesson, where the student left it. */
-    onResume(): void;
-
-    className?: string;
-}
-
-/**
- * The lesson, put away: where the student left it, and the way back.
- *
- * Shown under the stage on a phone while no lesson is running, in the card's
- * place: one line and a button, so the diagram gets the height back. Beside the
- * stage the Lesson tab does this job.
- */
-export function LessonResume({ steps, state, onResume, className }: LessonResumeProps) {
-    if (steps.length === 0) return null;
-
-    const step = state.position > 0 ? steps[state.position - 1] : null;
-    const atEnd = state.position >= steps.length;
-
-    const where = state.position === 0 ? 'Not started'
-        : atEnd ? 'Finished'
-            : step && step.title ? `Step ${state.position} of ${steps.length}: ${step.title}`
-                : `Step ${state.position} of ${steps.length}`;
-
-    return (
-        <section className={className ? `${classes.card} ${className}` : classes.card} aria-label="Lesson">
-            <div className={classes.resume}>
-                <div className={classes.resumeText}>
-                    <Text size="xs" className={classes.part}>Lesson</Text>
-                    <Text size="sm" className={classes.where}>{where}</Text>
-                </div>
-                <Button size="xs" variant={state.position === 0 ? 'filled' : 'light'} onClick={onResume}>
-                    {state.position === 0 ? 'Start lesson' : atEnd ? 'Review' : 'Resume'}
-                </Button>
             </div>
         </section>
     );

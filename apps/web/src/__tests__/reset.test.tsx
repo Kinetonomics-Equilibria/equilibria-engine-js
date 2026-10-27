@@ -3,11 +3,12 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
+import { SUPPLY_AND_DEMAND } from '../lessons/supplyAndDemand';
 import { theme } from '../theme';
 
 /**
- * Reset, on the title's line: the diagram back where the open tab or step
- * began.
+ * Reset, on the title's line: the diagram back where the step began, or
+ * where the playground opened.
  *
  * A move like any other, which is the claim most of these are about: it is
  * reported in "What changed", Undo takes it back, and it moves the market and
@@ -119,12 +120,19 @@ describe('Reset', () => {
         expect(screen.getByRole('button', { name: 'Check' })).toBeTruthy();
     });
 
-    // Not the diagram's market, and not the step's: what the instruments were
-    // handed, which here is "Incomes rise" with demand up.
-    it('under the instruments, puts back the market they opened with', async () => {
+    // Not the model's own market: the one the playground was handed, which
+    // here is a link's — as a lesson's Finish hands it one — with demand up.
+    it('in the playground, puts back the market it opened with', async () => {
         const user = userEvent.setup();
-        mount();
-        await user.click(marker(MOVES));
+        render(
+            <MantineProvider theme={theme} env="test">
+                <StudyScreen
+                    playground={SUPPLY_AND_DEMAND.model}
+                    link={{ step: 0, tab: null, arrange: 'focus', focus: null, params: { a: 26 } }}
+                />
+            </MantineProvider>
+        );
+        expect(marketCaption()).toContain('Price $14.00');
         await open(user, 'Scenarios');
         expect(reset()).toHaveProperty('disabled', true);
         await user.click(screen.getByRole('button', { name: 'Input costs rise' }));

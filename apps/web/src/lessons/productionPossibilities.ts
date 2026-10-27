@@ -367,14 +367,15 @@ export const PPC_LESSON: LessonStep[] = [
                 'More resources let the café make more of both, so the whole curve shifts outward.'
         }
     },
-    // A and B come back for the instruments, where the student has the whole
+    // A and B come back for the playground, where the student has the whole
     // diagram to themselves, and Z is put down and to the left, clear of them.
+    // Finish hands the playground this market.
     {
         set: { ...BASELINE, a: 60, b: 80, pt: 30, pc: 80 },
         title: 'Over to you',
         say: 'Here\'s how you went on the four cases.\n\n' +
-            'Press Finish to try more cases in Scenarios, or to drag the points and the curve ' +
-            'yourself.',
+            'Press Finish to take the café to the Playground, where you can try more cases in ' +
+            'Scenarios or drag the points and the curve yourself.',
         recap: {
             takeaway: 'A change in resources moves the whole curve: outward for more, inward for ' +
                 'less. A change in how fast the café makes one good pivots the curve along that ' +
@@ -393,7 +394,7 @@ const IDLE = stepTitled('Full employment');
 /** Where the curve is about shifts, and its ends arrive to drag. */
 const SHIFTS = stepTitled('Fixed resources');
 const QUESTIONS = PPC_LESSON.findIndex(step => !!step.ask) + 1;
-/** The last step, which is also where the instruments draw the diagram. */
+/** The last step. The playground is past it, so it draws what the last step draws. */
 const END = PPC_LESSON.length;
 
 /**
@@ -401,8 +402,8 @@ const END = PPC_LESSON.length;
  *
  * Three points on one curve is two too many for most steps. Z is about
  * efficiency, and stands aside while A and B are about cost; A and B stand
- * aside for the questions, which are about the curve. The instruments draw the
- * diagram at the last step, so everything is back for them.
+ * aside for the questions, which are about the curve. The playground is past
+ * the last step, so everything is back for it.
  *
  * A and B are revealed by their step as well, which is what marks it on the
  * track as a step that draws something. The step between them and its labels
@@ -582,7 +583,7 @@ export const ppcDiagram = {
         // From 10 to 30 hours, 5 to 15 coffees an hour and 2.5 to 7.5 toasties
         // an hour: any one of them at either end keeps the curve inside the
         // axes, which is every move a question or a step makes. Two at the top
-        // together run off them, which the instruments allow — the diagram is
+        // together run off them, which the playground allows — the diagram is
         // clipped, and nothing is refused.
         { name: 'h', label: 'Work hours', ...HOURS },
         { name: 'C', label: 'Coffees an hour', ...COFFEE_RATE },

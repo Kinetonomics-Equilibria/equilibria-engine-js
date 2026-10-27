@@ -1,20 +1,21 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
+import { SUPPLY_AND_DEMAND } from '../lessons/supplyAndDemand';
 import { theme } from '../theme';
 
 /**
- * The shipped lesson, held to what it says — and to the rule that the side
- * column holds the lesson or the instruments, never both. They are tabs on one
- * card, and only the open one is mounted.
+ * The shipped lesson, held to what it says — and to the rule that a page
+ * holds the lesson or the instruments, never both: a lesson's page has the
+ * lesson, and its model's page in the playground has the instruments.
  *
  * With both on screen a student could apply a scenario before the lesson had
  * drawn a curve, and watch the strip announce new prices over empty axes; or
  * move supply halfway through, and read a step claiming a baseline the diagram
- * was not at. So while the lesson runs, the only controls are the ones a step
- * hands the student, and the instruments get the whole diagram when they leave.
+ * was not at. So beside the lesson the only controls are the ones a step hands
+ * the student, and the playground has the whole diagram.
  *
  * A real engine underneath: every claim here is about the numbers the diagram
  * solves to, and a fixture lesson would only be testing itself.
@@ -32,6 +33,11 @@ beforeAll(() => {
 
 const mount = () => render(
     <MantineProvider theme={theme} env="test"><StudyScreen /></MantineProvider>
+);
+
+/** The lesson's model, as the playground's page. */
+const play = () => render(
+    <MantineProvider theme={theme} env="test"><StudyScreen playground={SUPPLY_AND_DEMAND.model} /></MantineProvider>
 );
 
 /** The progress bar's marker for a step, by position (the first step is 1). */
@@ -57,7 +63,7 @@ const marketCaption = () =>
 /** The panels the stage offers to promote: every one on it but the focal one. */
 const promotable = () => document.querySelectorAll('button[data-panel]');
 
-/** The open instrument, if one is: a tab's panel other than the lesson's. */
+/** The open instrument, if one is. */
 const instruments = () => screen.queryByRole('tabpanel', { name: /^(Explore|Scenarios|Maths)$/ });
 
 /** A tab beside the stage, pressed. */
@@ -67,18 +73,6 @@ const words = () =>
     (screen.getByRole('region', { name: 'Lesson' }).querySelector('[aria-live="polite"]') as HTMLElement)
         .textContent || '';
 const strip = () => document.querySelector('[data-kind]') as HTMLElement;
-
-/** Supply up, the way a student would do it from the instruments. */
-async function inputCostsRise(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('tab', { name: 'Scenarios' }));
-    await user.click(screen.getByRole('button', { name: 'Input costs rise' }));
-}
-
-/** A param's value, as its Explore slider holds it. */
-async function valueOf(user: ReturnType<typeof userEvent.setup>, name: string) {
-    await user.click(screen.getByRole('tab', { name: 'Explore' }));
-    return Number(screen.getByRole('slider', { name }).getAttribute('aria-valuenow'));
-}
 
 /** Past the question the shortest way: commit without moving, then ask to be shown. */
 async function pastTheQuestion(user: ReturnType<typeof userEvent.setup>) {
@@ -122,53 +116,82 @@ describe('the cover', () => {
         expect(cover()).toBeTruthy();
     });
 
-    it('is never over the instruments', async () => {
-        const user = userEvent.setup();
-        mount();
-        await open(user, 'Explore');
+    it('is never over the playground', () => {
+        play();
         expect(cover()).toBeNull();
         expect(document.querySelector('[inert]')).toBeNull();
     });
 });
 
-describe('the lesson or the instruments', () => {
+describe('a lesson\'s page', () => {
 
-    it('opens on the lesson, with no instruments beside it', () => {
+    // Nothing on it leads out of the lesson but the rail, and Finish at the end.
+    it('has the lesson beside the stage, and no instruments or tabs', () => {
         mount();
         expect(screen.getByRole('region', { name: 'Lesson' })).toBeTruthy();
-        expect(screen.getByRole('tab', { name: 'Lesson' }).getAttribute('aria-selected')).toBe('true');
         expect(instruments()).toBeNull();
+        expect(screen.queryAllByRole('tab')).toHaveLength(0);
         expect(screen.queryAllByRole('slider')).toHaveLength(0);
-    });
-
-    // The tabs are the way out, so the card has no close beside them.
-    it('is a tab ahead of the instruments\', with no close of its own', () => {
-        mount();
-        expect(screen.getAllByRole('tab').map(t => t.textContent))
-            .toEqual(['Lesson', 'Explore', 'Scenarios', 'Maths']);
         expect(screen.queryByRole('button', { name: /^(Skip|Leave) lesson$/ })).toBeNull();
     });
 
-    // Not the lesson's half-built diagram: a scenario applied to curves the
-    // lesson had not drawn moved nothing anyone could see.
-    it('hands over the instruments and the whole diagram when the lesson is skipped', async () => {
+    // The view it leaves goes with it, so the shell can leave the lesson's
+    // history entry there: Back returns to the step Finish was pressed at.
+    it('finishes into the playground, at the lesson\'s model and the market it ended on', async () => {
         const user = userEvent.setup();
-        mount();
-        expect(promotable()).toHaveLength(0);
+        const onFinish = vi.fn();
+        render(<MantineProvider theme={theme} env="test"><StudyScreen onFinish={onFinish} /></MantineProvider>);
+        await pastTheQuestion(user);
+        await user.click(next());
+        await user.click(screen.getByRole('button', { name: 'Finish' }));
 
-        await open(user, 'Explore');
+        // The last step puts the market back at the model's own, so the
+        // playground's address names no param.
+        expect(onFinish).toHaveBeenCalledWith('playground/market', 'lessons/market?step=9');
+    });
 
-        expect(instruments()).toBeTruthy();
+    // What the history entry remembers is not a link: past an answered question
+    // the lesson opens where it was left, with the market it was left at, and
+    // that market is what Finish hands the playground.
+    it('opens past a question its history entry remembers answering, and finishes with that market', async () => {
+        const user = userEvent.setup();
+        const onFinish = vi.fn();
+        render(
+            <MantineProvider theme={theme} env="test">
+                <StudyScreen
+                    link={{ step: 9, tab: null, arrange: 'focus', focus: null, params: { c: 4 } }}
+                    answered={{ lesson: 'market', resolved: [ASK - 1], outcomes: { [ASK - 1]: { how: 'first' } } }}
+                    onFinish={onFinish}
+                />
+            </MantineProvider>
+        );
+        expect(words()).toContain('Over to you');
+        await user.click(screen.getByRole('button', { name: 'Finish' }));
+        expect(onFinish).toHaveBeenCalledWith('playground/market?c=4', 'lessons/market?step=9&c=4');
+    });
+});
+
+describe('the playground', () => {
+
+    // Not a lesson's half-built diagram: the model, whole, from the start.
+    it('draws every panel from the start, with the instruments beside it and no lesson', () => {
+        play();
         expect(screen.queryByRole('region', { name: 'Lesson' })).toBeNull();
+        expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual(['Explore', 'Scenarios', 'Maths']);
+        expect(screen.getByRole('tab', { name: 'Explore' }).getAttribute('aria-selected')).toBe('true');
         expect(promotable()).toHaveLength(2);
         expect(marketCaption()).toContain('Price $11.00');
     });
 
-    // From one instrument to another is only a change of tab: the lesson is
-    // not taken up and put away again on the way, which would reset the market.
-    it('moves between instruments without the lesson', async () => {
+    it('is titled by the model, not by a lesson', () => {
+        play();
+        expect(screen.getByRole('heading', { name: 'A market, its surplus and its revenue' })).toBeTruthy();
+    });
+
+    // From one instrument to another is only a change of tab.
+    it('moves between instruments, keeping the market', async () => {
         const user = userEvent.setup();
-        mount();
+        play();
         await open(user, 'Scenarios');
         await user.click(screen.getByRole('button', { name: 'Input costs rise' }));
         await open(user, 'Maths');
@@ -177,97 +200,9 @@ describe('the lesson or the instruments', () => {
         expect(marketCaption()).toContain('Price $13.00');
     });
 
-    it('puts the instruments away again when the lesson is opened', async () => {
-        const user = userEvent.setup();
-        mount();
-        await open(user, 'Explore');
-        await open(user, 'Lesson');
-
-        expect(instruments()).toBeNull();
-        expect(words()).toContain('In this lesson');
-        // The lesson's own diagram again: nothing drawn before its first step.
-        expect(promotable()).toHaveLength(0);
-    });
-
-    it('finishes into the instruments, with the market back at its baseline', async () => {
-        const user = userEvent.setup();
-        mount();
-        await pastTheQuestion(user);
-        await user.click(next());
-        await user.click(screen.getByRole('button', { name: 'Finish' }));
-
-        expect(instruments()).toBeTruthy();
-        expect(screen.getByRole('tab', { name: 'Explore' }).getAttribute('aria-selected')).toBe('true');
-        expect(marketCaption()).toContain('Price $11.00');
-        expect(await valueOf(user, 'a')).toBe(20);
-        expect(await valueOf(user, 'c')).toBe(2);
-    });
-
-    // Exploring starts at rest: the lesson's last move is the lesson's, and a
-    // ghost of it under the instruments would be a movement nobody made there.
-    it('starts the instruments at rest', async () => {
-        const user = userEvent.setup();
-        mount();
-        await user.click(marker(MOVES));
-        expect(strip().getAttribute('data-kind')).toBe('settled');
-
-        await open(user, 'Explore');
+    it('starts at rest', () => {
+        play();
         expect(strip().getAttribute('data-kind')).toBe('rest');
-    });
-});
-
-describe('coming back to the lesson', () => {
-
-    it('finds the market where the step left it, whatever was done meanwhile', async () => {
-        const user = userEvent.setup();
-        mount();
-        await user.click(marker(MOVES));
-        // a = 26 and c = 2: P* = 14.
-        expect(marketCaption()).toContain('Price $14.00');
-
-        await open(user, 'Explore');
-        await inputCostsRise(user);
-        expect(marketCaption()).toContain('Price $16.00');
-
-        await open(user, 'Lesson');
-
-        expect(instruments()).toBeNull();
-        expect(words()).toContain('Incomes rise');
-        expect(marketCaption()).toContain('Price $14.00');
-    });
-
-    // The step's words point at its move — "watch the price change" — so the
-    // move comes back too: its ghost, and the strip saying what it did.
-    it('says again what the step did', async () => {
-        const user = userEvent.setup();
-        mount();
-        await user.click(marker(MOVES));
-        await open(user, 'Explore');
-        await inputCostsRise(user);
-        await open(user, 'Lesson');
-
-        expect(strip().getAttribute('data-kind')).toBe('settled');
-        // Demand's move, 20 → 26, and not supply's 2 → 6 from the detour.
-        expect(strip().textContent).toContain('20.0→26.0');
-        expect(strip().textContent).not.toContain('2.0→6.0');
-    });
-
-    it('asks a question again from where it started', async () => {
-        const user = userEvent.setup();
-        mount();
-        await user.click(marker(ASK));
-        const control = screen.getByRole('slider', { name: /Your answer/ });
-        control.focus();
-        fireEvent.keyDown(control, { key: 'End' });
-
-        await open(user, 'Explore');
-        expect(screen.queryByRole('group', { name: 'Question' })).toBeNull();
-
-        await open(user, 'Lesson');
-        const row = screen.getByRole('group', { name: 'Question' });
-        expect(row.getAttribute('data-phase')).toBe('prompt');
-        expect(within(row).getByRole('slider', { name: /Your answer/ }).getAttribute('aria-valuenow')).toBe('20');
-        expect(marketCaption()).toContain('Price $11.00');
     });
 });
 

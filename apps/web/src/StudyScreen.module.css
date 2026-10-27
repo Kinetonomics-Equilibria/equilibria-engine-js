@@ -319,9 +319,11 @@
     min-height: 0;
 }
 
-/* The top two thirds of the column, from the top of the screen. A height
- * rather than a flex ratio, which would share out only what the two cards'
- * padding left and give "What changed" its padding on top of its third. */
+/* The top two thirds of the column, from the top of the screen: the lesson's
+ * card, or the playground's instruments. A height rather than a flex ratio,
+ * which would share out only what the two cards' padding left and give "What
+ * changed" its padding on top of its third. */
+.lessonBeside,
 .dockBeside {
     flex: none;
     height: calc((100% - var(--mantine-spacing-sm)) * 2 / 3);
@@ -336,17 +338,12 @@
 /* Under the stage, at a fixed height: a lesson whose card grew and shrank
  * with each step would reshape the diagram above it at every Next. A third of
  * a phone's height, which is a heading and a paragraph and the way on; the
- * rest scrolls inside. */
-.lessonBelow {
+ * rest scrolls inside. The playground's instruments take the same place at
+ * the same height, tabs and all, and scroll inside it as the lesson does. */
+.lessonBelow,
+.dockBelow {
     flex: none;
     height: clamp(11rem, 34vh, 18rem);
-    margin-top: var(--mantine-spacing-sm);
-}
-
-/* Its place there while the instruments are out, which on a phone are a sheet
- * of their own: one line, so the diagram gets the height back. */
-.resumeBelow {
-    flex: none;
     margin-top: var(--mantine-spacing-sm);
 }
 
@@ -367,9 +364,10 @@
         height: auto;
     }
 
+    .lessonBeside,
     .dockBeside,
     .lessonBelow,
-    .resumeBelow,
+    .dockBelow,
     .icon,
     .cornerIcon {
         display: none;

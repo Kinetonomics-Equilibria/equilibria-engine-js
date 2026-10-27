@@ -20,7 +20,7 @@ import { test } from './helpers';
 const fullScreen = (page: Page) => page.evaluate(() => document.fullscreenElement === document.documentElement);
 
 test('Present puts the page full screen with the rail away, and comes back', async ({ page }) => {
-    await page.goto('/?lesson=fx');
+    await page.goto('/lessons/fx');
     await page.locator('.kg-container svg').waitFor();
 
     const present = page.getByRole('button', { name: 'Present to a class' });

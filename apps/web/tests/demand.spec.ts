@@ -12,7 +12,7 @@ import { arrange, test, textCollisions } from './helpers';
  */
 
 /**
- * Through the lesson and out of it, into the instruments and the whole diagram.
+ * Through the lesson and out of it, into the playground and the whole diagram.
  *
  * Every question is direction only, so the shortest way past one is to be shown.
  */
@@ -33,7 +33,7 @@ async function toTheEnd(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-    await page.goto('/?lesson=demand');
+    await page.goto('/lessons/demand');
 });
 
 test('opens the Air Jordans lesson from its address, without an error', async ({ page, pageErrors }) => {

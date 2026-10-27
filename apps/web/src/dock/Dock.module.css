@@ -1,13 +1,13 @@
 /* The dock. Everything here exists to keep one promise: the stage does not move
  * when the open instrument changes. */
 
-/* The side column's first card, holding the lesson and the instruments under
- * one row of tabs: the same paper as the panels' sheets and "What changed"
- * under it, so everything a student reads or moves sits on one kind of thing.
+/* The playground's first card, holding the instruments under one row of
+ * tabs: the same paper as the panels' sheets and "What changed" under it, so
+ * everything a student reads or moves sits on one kind of thing.
  *
- * How tall it is is the screen's (`.dockBeside`), and depends on nothing in
- * it. Its width is the column's, which is fixed, so switching tabs hands the
- * stage nothing new to re-arrange for. */
+ * How tall it is is the screen's (`.dockBeside`, `.dockBelow`), and depends on
+ * nothing in it. Its width is the column's, which is fixed, so switching tabs
+ * hands the stage nothing new to re-arrange for. */
 .dock {
     composes: paper from '../ui/paper.module.css';
     min-height: 0;
@@ -41,7 +41,7 @@
     margin: 14px 14px 0;
 }
 
-/* Each tab is its name's width, and the room the four names leave is shared
+/* Each tab is its name's width, and the room the names leave is shared
  * out between them. The open tab is no bolder than the rest — it is raised and
  * dark instead — so opening one changes no tab's width and moves none of the
  * others. */
@@ -73,13 +73,6 @@
     min-height: 0;
 }
 
-/* The lesson's card fills its tab, so its head and its Back and Next hold
- * still at the tab's top and foot and its words scroll between them. */
-.lessonPanel {
-    display: flex;
-    flex-direction: column;
-}
-
 .scroll {
     height: 100%;
 }
@@ -90,8 +83,8 @@
 }
 
 /* In the card, the instruments keep the card's margin all round, as the
- * lesson's words keep theirs: 14px at the sides, and 12px under the tabs,
- * where the lesson's head starts, and at the foot. */
+ * lesson card's words keep theirs: 14px at the sides, and 12px under the tabs
+ * and at the foot. */
 .dock .panelInner {
     padding: 12px 14px;
 }

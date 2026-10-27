@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ParamInfo } from 'equilibria-engine-js';
-import { LESSONS, lessonById } from '../lessons';
+import { CURRICULUM, LESSONS, MODELS, lessonById, modelById, modelsOf, topicOfModel } from '../lessons';
 import type { StudyModel } from '../lessons';
 import { paramsAt, partsOf, revealedPanels } from '../track/track';
 import { candidatesOf, nearestAchievable, validateChoice, validateQuestion } from '../quiz/grade';
@@ -319,9 +319,6 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     });
 });
 
-/** Every model a lesson is drawn on, once each, however many lessons share it. */
-const MODELS = LESSONS.map(lesson => lesson.model).filter((model, i, all) => all.indexOf(model) === i);
-
 describe.each(MODELS.map(model => [model.id, model] as const))('the "%s" model', (_id, model) => {
 
     // The steps are a lesson's, and the screen adds them to the config it
@@ -447,6 +444,28 @@ describe('finding a lesson by its address', () => {
 });
 
 describe('the models', () => {
+
+    // The playground's list is read off the lessons, so the two panels cannot
+    // disagree about what exists.
+    it('are every model a lesson is drawn on, once each, in the order the lessons list them', () => {
+        const drawnOn = LESSONS.map(lesson => lesson.model).filter((model, i, all) => all.indexOf(model) === i);
+        expect(MODELS).toEqual(drawnOn);
+    });
+
+    it('opens the model an id names, and the first for an id that names nothing', () => {
+        expect(modelById('aud').id).toBe('aud');
+        expect(modelById('nonsense')).toBe(MODELS[0]);
+        expect(modelById(null)).toBe(MODELS[0]);
+    });
+
+    // So a model sits in the Playground panel under the topic its lessons do,
+    // with the same dot, and once.
+    it('puts every model under the topic of the first lesson drawn on it, and nowhere else', () => {
+        const listed = CURRICULUM.flatMap(strand => strand.topics.flatMap(topic =>
+            modelsOf(topic).map(model => ({ model: model.id, topic: topic.id }))));
+        expect(listed.map(l => l.model)).toEqual(MODELS.map(m => m.id));
+        listed.forEach(l => expect(topicOfModel(l.model)!.id, l.model).toBe(l.topic));
+    });
 
     it('gives every model its own id', () => {
         const ids = MODELS.map(m => m.id);
