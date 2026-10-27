@@ -17,6 +17,11 @@ P15 came from the screen rather than from a defect: what the stage could show be
 cover before the first step, a picture at a step, a recap at the end, and a report beside a question
 as a panel of its own. It is the first plan since P7 to change `Stage`'s surface.
 
+P16 is about writing a lesson rather than showing one. Four lessons in, each writes its own copy of
+the question's wiring and of the chart's house rules; P16 puts both in a kit, checks the chart rules
+in tests, and gives an AI session a template and a guide. It is a draft, not yet read against the
+code.
+
 ## Settle these first
 
 Three forks decide which lane several items belong to. Answer them differently and parts of these
@@ -48,6 +53,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P13](P13-ghost-authoring-shorthand.md) | `ghost:` authoring shorthand ✅ **done** | bindings | P5, P6 |
 | [P14](P14-which-curve-moves.md) | Which curve moves, and showing a direction-only answer ✅ **done** | app | P11, the A$ lesson |
 | [P15](P15-the-stage-beyond-charts.md) | The stage, when it isn't a chart: a cover, pictures, a recap ✅ **done** | app + bindings | P7, P10, P11, P14 |
+| [P16](P16-lesson-kit.md) | A lesson kit: the house rules as code 📝 **draft** | app | P10, P11, P13, P14, P15 |
 
 Both of the plans that were only outlines inside P5 have now been written out and landed: P12, and
 P13, which was the last of them.
@@ -97,6 +103,8 @@ itself rather than a second copy of it.
 - Putting more than a diagram on the stage: ~~**P15**~~ (done). A sheet laid over the stage for a
   moment with no diagram — the cover, a picture, the recap — and `hostPanels` for a panel the app
   draws itself, arranged with the diagram's. Read its "Why this shape" before adding a fifth kind.
+- Writing the next lesson: **P16** (draft). A kit for the question's wiring and the chart's house
+  rules, the chart rules as tests, and a template and guide for an AI session.
 
 ## Findings that cut across the set
 
