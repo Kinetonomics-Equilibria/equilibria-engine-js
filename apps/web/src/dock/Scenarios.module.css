@@ -74,3 +74,12 @@
         transition: none;
     }
 }
+
+/* A place's glyph before its name, in the rail's grey, so a row on Home reads
+ * as the icon it is on the rail. */
+.icon {
+    flex: none;
+    display: flex;
+    align-self: flex-start;
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+}

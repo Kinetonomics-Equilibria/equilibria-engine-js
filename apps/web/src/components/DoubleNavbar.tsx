@@ -5,11 +5,12 @@ import {
     IconChartPpf,
     IconChevronRight,
     IconHome2,
+    IconNews,
     IconSettings,
     IconX
 } from '@tabler/icons-react';
 import {
-    ActionIcon, Avatar, Collapse, Menu, Text, Tooltip, Transition, UnstyledButton, useMantineTheme
+    ActionIcon, Avatar, Collapse, Menu, Text, Tooltip, Transition, UnstyledButton, VisuallyHidden, useMantineTheme
 } from '@mantine/core';
 import { useClickOutside, useMediaQuery, useWindowEvent } from '@mantine/hooks';
 import classes from './DoubleNavbar.module.css';
@@ -23,9 +24,13 @@ import logo from './kinetonomics-logo.svg';
 
 /**
  * The rail sections that open a panel, which are also the places a page
- * belongs to: a lesson is in Lessons, a model in the Playground.
+ * belongs to: a lesson is in Lessons, a model in the Playground, a story In
+ * the news.
  */
-export type NavPanel = 'lessons' | 'playground';
+export type NavPanel = 'lessons' | 'playground' | 'news';
+
+/** Every place on the rail: Home, which is a page, and the three with panels. */
+export type NavPlace = 'home' | NavPanel;
 
 /** Something a panel lists — a lesson, or a model — with its address. */
 export interface NavItem {
@@ -52,19 +57,37 @@ export interface NavStrand {
     topics: NavTopic[];
 }
 
+/** A story as the In the news panel lists it: its day, its topic's dot and its headline. */
+export interface NavStory {
+    id: string;
+    headline: string;
+    /** Its day, in words: "29 Sep". The month is the heading it is under. */
+    day: string;
+    /** The topic it is told in, for its dot. */
+    topic: { label: string; color: string } | null;
+    href: string;
+}
+
+/** A month in the In the news panel, and its stories, newest first. */
+export interface NavMonth {
+    label: string;
+    stories: NavStory[];
+}
+
 // The places, in the order a student meets them: where to start, then learn
-// it, then play with it (docs/design.md, "The rail"). Home has no page behind
-// it yet: it is here so the rail has its shape, and pressing it only puts away
-// a panel that is out. In the news joins after the Playground when there are
-// stories to list. The profile circle at the rail's foot is not one of these:
-// it opens a menu rather than going anywhere.
-const RAIL: { icon: typeof IconHome2; label: string; panel?: NavPanel }[] = [
-    { icon: IconHome2, label: 'Home' },
-    { icon: IconBook2, label: 'Lessons', panel: 'lessons' },
-    { icon: IconChartPpf, label: 'Playground', panel: 'playground' }
+// it, play with it, see it happen (docs/design.md, "The rail"). Home is a
+// page, and opens; the others bring out their panels. The profile circle at
+// the rail's foot is not one of these: it opens a menu rather than going
+// anywhere. Home's own list of the places reads their icons and names here,
+// so the two cannot disagree.
+export const RAIL: { icon: typeof IconHome2; label: string; place: NavPlace; panel?: NavPanel }[] = [
+    { icon: IconHome2, label: 'Home', place: 'home' },
+    { icon: IconBook2, label: 'Lessons', place: 'lessons', panel: 'lessons' },
+    { icon: IconChartPpf, label: 'Playground', place: 'playground', panel: 'playground' },
+    { icon: IconNews, label: 'In the news', place: 'news', panel: 'news' }
 ];
 
-const TITLE: Record<NavPanel, string> = { lessons: 'Lessons', playground: 'Playground' };
+const TITLE: Record<NavPanel, string> = { lessons: 'Lessons', playground: 'Playground', news: 'In the news' };
 
 // The id a rail button points `aria-controls` at, and its panel's title's.
 const panelId = (panel: NavPanel) => `navbar-${panel}-panel`;
@@ -80,21 +103,27 @@ interface DoubleNavbarProps {
     /** Called with a panel to bring it out, or with `null` to put it away. */
     onPanelChange: (panel: NavPanel | null) => void;
 
-    /** What each panel lists, arranged into strands and topics. */
-    lists: Record<NavPanel, NavStrand[]>;
+    /** What the Lessons and Playground panels list, arranged into strands and topics. */
+    lists: Record<'lessons' | 'playground', NavStrand[]>;
+
+    /** What the In the news panel lists: every story, newest first, under each month. */
+    news: NavMonth[];
 
     /**
      * The open page: the place it belongs to, which the rail keeps lit, the
-     * id of what is open there, and the topic it is under, which either panel
-     * opens on. Owned by the shell, which mounts the page.
+     * id of what is open there, and the topic it is under, which the Lessons
+     * and Playground panels open on. Owned by the shell, which mounts the page.
      */
-    page: { place: NavPanel; id: string; topic: string | null };
+    page: { place: NavPlace; id: string; topic: string | null };
 
     /** Called with a panel and an item's id when the student chooses it. */
     onSelect: (panel: NavPanel, id: string) => void;
+
+    /** Called when the student presses Home. */
+    onHome: () => void;
 }
 
-export function DoubleNavbar({ panel, onPanelChange, lists, page, onSelect }: DoubleNavbarProps) {
+export function DoubleNavbar({ panel, onPanelChange, lists, news, page, onSelect, onHome }: DoubleNavbarProps) {
     // Above `sm` the panel floats over the page, and a click anywhere else puts
     // it away. Below it the panel is part of the burger's overlay, and the
     // burger is outside this nav: counting its click as "outside" would put the
@@ -115,7 +144,7 @@ export function DoubleNavbar({ panel, onPanelChange, lists, page, onSelect }: Do
 
     // The panel last out, so one going away still has its list while it slides
     // off. Switching between the two swaps the list in place.
-    const lastOut = useRef<NavPanel>(page.place);
+    const lastOut = useRef<NavPanel>(page.place === 'home' ? 'lessons' : page.place);
     if (panel) lastOut.current = panel;
     const showing = panel || lastOut.current;
 
@@ -127,6 +156,12 @@ export function DoubleNavbar({ panel, onPanelChange, lists, page, onSelect }: Do
 
     const rail = RAIL.map((link) => {
         const isOut = link.panel !== undefined && link.panel === panel;
+        // Home opens, and puts away a panel that is out; a place with a panel
+        // brings it out, or puts it away if it is out already.
+        const press = () => {
+            if (!link.panel) onHome();
+            else onPanelChange(isOut ? null : link.panel);
+        };
         return (
             <Tooltip
                 label={link.label}
@@ -138,9 +173,9 @@ export function DoubleNavbar({ panel, onPanelChange, lists, page, onSelect }: Do
                 key={link.label}
             >
                 <UnstyledButton
-                    onClick={() => onPanelChange(link.panel && !isOut ? link.panel : null)}
+                    onClick={press}
                     className={classes.mainLink}
-                    data-active={(link.panel !== undefined && link.panel === page.place) || isOut || undefined}
+                    data-active={link.place === page.place || isOut || undefined}
                     aria-label={link.label}
                     aria-expanded={link.panel ? isOut : undefined}
                     aria-controls={link.panel ? panelId(link.panel) : undefined}
@@ -231,17 +266,86 @@ export function DoubleNavbar({ panel, onPanelChange, lists, page, onSelect }: Do
                             </ActionIcon>
                         </div>
                         {/* Keyed by panel, so each opens on its own topic. */}
-                        <PlaceList
-                            key={showing}
-                            strands={lists[showing]}
-                            active={page.place === showing ? page.id : null}
-                            topic={page.topic}
-                            onSelect={id => onSelect(showing, id)}
-                        />
+                        {showing === 'news' ? (
+                            <StoryList
+                                months={news}
+                                active={page.place === 'news' ? page.id : null}
+                                onSelect={id => onSelect('news', id)}
+                            />
+                        ) : (
+                            <PlaceList
+                                key={showing}
+                                strands={lists[showing]}
+                                active={page.place === showing ? page.id : null}
+                                topic={page.topic}
+                                onSelect={id => onSelect(showing, id)}
+                            />
+                        )}
                     </section>
                 )}
             </Transition>
         </nav>
+    );
+}
+
+/**
+ * A plain click stays in the app and swaps the page; a click that asks for a
+ * new tab or window is the browser's, since every row is a real address.
+ */
+const inApp = (event: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; button: number }) =>
+    !(event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0);
+
+interface StoryListProps {
+    months: NavMonth[];
+    /** The story that is open, if one is. */
+    active: string | null;
+    onSelect: (id: string) => void;
+}
+
+/**
+ * The In the news panel's body: newest first, under each month, a row a
+ * story — its day, its topic's dot and its headline. No topics to drop down:
+ * a story is found by when it happened, and the dot says which topic it is
+ * told in, the name beside it for a screen reader.
+ */
+function StoryList({ months, active, onSelect }: StoryListProps) {
+    return (
+        <div className={classes.body}>
+            {months.map((month) => (
+                <div key={month.label}>
+                    <Text size="xs" fw={600} c="dimmed" className={classes.groupLabel}>
+                        {month.label}
+                    </Text>
+                    {month.stories.map((story) => (
+                        <a
+                            key={story.id}
+                            className={classes.story}
+                            data-active={active === story.id || undefined}
+                            aria-current={active === story.id ? 'page' : undefined}
+                            href={story.href}
+                            style={story.topic ? {
+                                '--topic-color': `var(--mantine-color-${story.topic.color}-filled)`,
+                                '--topic-ink': `var(--mantine-color-${story.topic.color}-light-color)`
+                            } as CSSProperties : undefined}
+                            onClick={(event) => {
+                                if (!inApp(event)) return;
+                                event.preventDefault();
+                                onSelect(story.id);
+                            }}
+                        >
+                            <span className={classes.storyDay}>{story.day}</span>
+                            {story.topic ? (
+                                <>
+                                    <span className={classes.storyDot} aria-hidden />
+                                    <VisuallyHidden>{story.topic.label}:</VisuallyHidden>
+                                </>
+                            ) : <span />}
+                            <span className={classes.storyHeadline}>{story.headline}</span>
+                        </a>
+                    ))}
+                </div>
+            ))}
+        </div>
     );
 }
 
@@ -315,7 +419,7 @@ function TopicSection({ topic, opened, onToggle, active, onSelect }: TopicSectio
             aria-current={active === item.id ? 'page' : undefined}
             href={item.href}
             onClick={(event) => {
-                if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+                if (!inApp(event)) return;
                 event.preventDefault();
                 onSelect(item.id);
             }}

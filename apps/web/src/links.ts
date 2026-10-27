@@ -4,14 +4,15 @@ import type { StageMode } from 'equilibria-react';
 /**
  * Links: a page and a view of it, written in its address.
  *
- * The page is the path — a lesson, or a model in the playground — and the view
- * is what follows the `?`: the lesson's step or the playground's open tab,
- * each param the student moved off where the page puts it, the arrangement and
- * the panel at the front, named after the params, so a teacher can read what
- * a link will open before sending it:
+ * The page is the path — a lesson, a model in the playground, or a story in
+ * the news — and the view is what follows the `?`: the lesson's step or the
+ * playground's open tab, each param the student moved off where the page puts
+ * it, the arrangement and the panel at the front, named after the params, so
+ * a teacher can read what a link will open before sending it:
  *
  *     lessons/fx?step=7&arrange=grid&focus=mirror&supply=56
  *     playground/aud?tab=maths&supply=56
+ *     news/2026-09-rba-cash-rate?demand=60
  *
  * The start of a lesson is `lessons/fx` and nothing else. What the view means
  * is the screen's to say, since only the screen knows where the page puts each
@@ -22,20 +23,23 @@ import type { StageMode } from 'equilibria-react';
  * served anywhere: `share.ts` makes one whole.
  */
 
-/** A page an address names: a lesson by its id, or a model in the playground by its. */
+/**
+ * A page an address names: a lesson by its id, a model in the playground by
+ * its, or a story in the news by its. Home is the root, and names none.
+ */
 export interface Place {
-    kind: 'lesson' | 'playground';
+    kind: 'lesson' | 'playground' | 'news';
     id: string;
 }
 
 /** The path each kind of page is under. */
-const UNDER: Record<Place['kind'], string> = { lesson: 'lessons', playground: 'playground' };
+const UNDER: Record<Place['kind'], string> = { lesson: 'lessons', playground: 'playground', news: 'news' };
 
 /** A view, as an address names it. */
 export interface Link {
-    /** A lesson's step, 0 before the first. A playground has none. */
+    /** A lesson's step, 0 before the first. A playground and a story have none. */
     step: number;
-    /** The playground's open instrument, or null for its first. A lesson has none. */
+    /** The playground's open instrument, or null for its first. A lesson and a story have none. */
     tab: string | null;
     arrange: StageMode;
     /** The panel at the front, or null for the one the page puts there. */

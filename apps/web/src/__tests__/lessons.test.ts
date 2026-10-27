@@ -437,6 +437,13 @@ describe('finding a lesson by its address', () => {
         expect(lessonById(null)).toBe(LESSONS[0]);
     });
 
+    // The app opens on Home, so the panel is free to follow a course: the
+    // economic problem, then demand's determinants, then the whole market.
+    it('lists the lessons in the order a course meets them', () => {
+        expect(CURRICULUM[0].topics.map(t => t.id)).toEqual(['economic-problem', 'markets']);
+        expect(LESSONS.map(l => l.id).slice(0, 3)).toEqual(['ppc', 'demand', 'market']);
+    });
+
     it('gives every lesson its own address', () => {
         const ids = LESSONS.map(l => l.id);
         expect(new Set(ids).size).toBe(ids.length);

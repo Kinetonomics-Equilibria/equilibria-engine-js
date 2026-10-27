@@ -234,3 +234,55 @@
         }
     }
 }
+
+/* A story in the In the news panel: its day, its topic's dot and its headline,
+ * which wraps rather than being cut, since a headline cut short says less than
+ * a lesson's name does. The day in a column of its own, so the dots and the
+ * headlines line up down the month. */
+.story {
+    position: relative;
+    display: grid;
+    grid-template-columns: 3.25rem 8px minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: baseline;
+    padding: 6px var(--mantine-spacing-xs);
+    border-radius: var(--mantine-radius-md);
+    text-decoration: none;
+    font-size: var(--mantine-font-size-sm);
+    line-height: 1.4;
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+
+    &:hover {
+        background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+        color: var(--mantine-color-text);
+    }
+
+    &[data-active] {
+        &,
+        &:hover {
+            color: var(--topic-ink, var(--mantine-color-text));
+            font-weight: 600;
+        }
+    }
+}
+
+.storyDay {
+    font-size: var(--mantine-font-size-xs);
+    color: var(--mantine-color-dimmed);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Level with the headline's first line, whose middle is half its line in. */
+.storyDot {
+    align-self: start;
+    width: 8px;
+    height: 8px;
+    margin-top: calc((1.4em - 8px) / 2);
+    border-radius: 50%;
+    background-color: var(--topic-color);
+}
+
+.storyHeadline {
+    min-width: 0;
+}

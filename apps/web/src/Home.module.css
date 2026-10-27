@@ -1,0 +1,158 @@
+/* Home: a title on the desk, and two sheets of paper under it — where to go,
+ * and what has happened. Not a study screen, so it is as tall as what it holds
+ * and scrolls as a page does; and nothing on it is a diagram, so it does not
+ * need the window's whole width. */
+
+.home {
+    max-width: 72rem;
+}
+
+/* The title as the study screen's title line has it: on the desk, not on
+ * paper, as tall as a title line and stopping short of the burger on a phone. */
+.heading {
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+    margin-bottom: var(--mantine-spacing-sm);
+    padding-inline-end: var(--app-burger-room, 0px);
+}
+
+.title {
+    min-width: 0;
+}
+
+/* Side by side where there is room for both at a comfortable line, one over
+ * the other where there is not. Each as tall as it needs, not as its
+ * neighbour. */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: var(--mantine-spacing-md);
+    align-items: start;
+}
+
+.card {
+    composes: paper from './ui/paper.module.css';
+    padding: 12px 14px;
+}
+
+.head {
+    composes: head from './ui/paper.module.css';
+    margin-bottom: 6px;
+}
+
+/* A heading to a screen reader, and a card head's eyebrow to the eye. */
+.eyebrow {
+    composes: eyebrow from './ui/paper.module.css';
+    font-weight: 400;
+}
+
+/* The places, as the Scenarios tab lists its rows, the hover reaching the
+ * card's own margin. */
+.list {
+    composes: list from './dock/Scenarios.module.css';
+}
+
+.feed {
+    list-style: none;
+    margin: 0 -8px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* A story: its date, its topic's dot and its headline, and the arrow an action
+ * row has, the whole row the link. The date in a column of its own, so the
+ * dots and headlines line up down the feed. Drawn as an action row is, rather
+ * than composed from one, which is a flex row and this a grid: which of two
+ * one-class rules wins is down to the order the stylesheets land in. */
+.story {
+    position: relative;
+    display: grid;
+    grid-template-columns: 6.5rem 8px minmax(0, 1fr) 16px;
+    column-gap: var(--mantine-spacing-sm);
+    align-items: baseline;
+    padding: 8px;
+    border-radius: var(--mantine-radius-md);
+    text-decoration: none;
+    color: var(--mantine-color-text);
+    font-size: var(--mantine-font-size-sm);
+    line-height: 1.4;
+    transition: background-color 120ms ease;
+
+    &:hover {
+        background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--mantine-primary-color-filled);
+        outline-offset: -2px;
+    }
+}
+
+.date {
+    font-size: var(--mantine-font-size-xs);
+    color: var(--mantine-color-dimmed);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Level with the headline's first line. */
+.dot {
+    align-self: start;
+    width: 8px;
+    height: 8px;
+    margin-top: calc((1.4em - 8px) / 2);
+    border-radius: 50%;
+    background-color: var(--topic-color);
+}
+
+.headline {
+    min-width: 0;
+    font-weight: 500;
+}
+
+.go {
+    composes: go from './dock/Scenarios.module.css';
+    align-self: center;
+}
+
+.story:hover .go {
+    color: var(--mantine-primary-color-filled);
+    transform: translateX(2px);
+}
+
+/* On a phone the date goes over the headline, so the headline has the row. */
+@media (max-width: 30em) {
+    .story {
+        grid-template-columns: 8px minmax(0, 1fr) 16px;
+        row-gap: 2px;
+    }
+
+    .date {
+        grid-column: 1 / 3;
+        grid-row: 1;
+    }
+
+    .dot {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .headline {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .go {
+        grid-column: 3;
+        grid-row: 1 / 3;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .story {
+        transition: none;
+    }
+}

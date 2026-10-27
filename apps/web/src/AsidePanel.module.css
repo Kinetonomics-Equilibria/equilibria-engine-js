@@ -63,14 +63,33 @@
     color: var(--mantine-color-dimmed);
 }
 
+/* A story's outlet, under its sentence: small, as the note is, and a link in
+ * the theme's blue, since it is something to press (design.md, principle 6). */
+.source {
+    margin: 0;
+    font-size: var(--mantine-font-size-sm);
+    color: var(--mantine-color-dimmed);
+
+    & a {
+        color: var(--mantine-color-anchor);
+        text-decoration: none;
+    }
+
+    & a:hover {
+        text-decoration: underline;
+    }
+}
+
 /* A glyph, on the rail or a shelf: the words first, since they are what the
  * question needs, and the picture only where the panel has height to spare.
  * The note is read where the report is — promoted — and a glyph's is clipped
- * to a word or two, so it is left to a screen reader here. */
+ * to a word or two, so it is left to a screen reader here, and a story's
+ * source with it. */
 .glyph .picture {
     height: 72px;
 }
 
+.glyph .source,
 .glyph .note {
     position: absolute;
     width: 1px;

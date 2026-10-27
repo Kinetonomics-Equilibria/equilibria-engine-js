@@ -447,6 +447,24 @@ describe('a filmstrip too narrow for its captions', () => {
         expect(isSquare(px(a, 'revenue', NARROW))).toBe(true);
     });
 
+    // A story's report at the front of a three-panel market, on a phone: a
+    // stage 358px across and 400px down. Neither a strip nor a shelf has room
+    // for a glyph there, and the strip set its captions side by side in shares
+    // narrower than they are, each over the next.
+    it('is a shelf where a strip\'s shares are narrower than its captions, glyphs or none', () => {
+        const PHONE = { width: 358, height: 400 };
+        const a = at(PHONE, CHROME, ['story', ...PANELS]);
+        expect(a.panels.slice(1).map(p => p.role)).toEqual(['shelf', 'shelf', 'shelf']);
+        // Each has its share of the width for its caption, edge to edge.
+        const [, first, second, third] = a.panels;
+        expect(second.slot.x).toBeGreaterThanOrEqual(first.slot.x + first.slot.width - 1e-9);
+        expect(third.slot.width).toBeCloseTo(first.slot.width, 9);
+
+        // Two under the focal one still have room for a caption beside each.
+        at(PHONE, CHROME, ['story', 'market', 'mirror']).panels.slice(1)
+            .forEach(p => expect(p.role).toBe('strip'));
+    });
+
     // Only a host that has said what its chrome takes above a glyph has
     // anything to put there.
     it('offers no shelf to a host that has not given it room', () => {

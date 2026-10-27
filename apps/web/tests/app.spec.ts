@@ -154,7 +154,7 @@ async function backToTheLesson(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/lessons/market');
     await page.locator('.kg-container svg').waitFor();
     await toTheEnd(page);
 });
@@ -679,7 +679,7 @@ test('a panel that has not arrived is neither drawn nor reachable', async ({ pag
     await page.setViewportSize({ width: 1200, height: 900 });
 
     // Before the first step, which is where a fresh load starts.
-    await page.goto('/');
+    await page.goto('/lessons/market');
     await page.locator('.kg-container svg').waitFor();
 
     // Nothing to promote, because nothing else is on the stage; and the market
@@ -737,7 +737,7 @@ test('before the lesson begins, nothing offers a curve to drag', async ({ page }
     // The default hint says to drag a curve; at the start of a build-up there
     // is no curve to drag. A fresh load, because `beforeEach` runs the lesson
     // out to its end.
-    await page.goto('/');
+    await page.goto('/lessons/market');
     await page.locator('.kg-container svg').waitFor();
 
     // Beside the stage "What changed" holds its third of the column, and says
@@ -765,7 +765,7 @@ test('before the lesson begins, nothing offers a curve to drag', async ({ page }
  * promote button nobody can see is a trap for a keyboard.
  */
 test('before the lesson begins, a cover stands in for the empty diagram', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/lessons/market');
     const svg = page.locator('.kg-container svg');
     await svg.waitFor();
 
@@ -1274,7 +1274,7 @@ test('the diagram and its captions change shape in the same frame', async ({ pag
 const ASK_MARKER = 8;
 
 async function toTheQuestion(page: Page) {
-    await page.goto('/');
+    await page.goto('/lessons/market');
     await page.locator('.kg-container svg').waitFor();
     await stepMarker(page, ASK_MARKER).click();
     const question = page.getByRole('group', { name: 'Question' });
@@ -1451,7 +1451,7 @@ test('a step past an unanswered question looks locked, not disabled', async ({ p
 const stageBox = async (page: Page) => (await page.locator('.kg-container svg').first().boundingBox())!;
 
 test('moving through the lesson never changes the diagram\'s size', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/lessons/market');
     await page.locator('.kg-container svg').waitFor();
     await stepMarker(page, 1).click();
     const before = await stageBox(page);
@@ -1517,7 +1517,7 @@ test('the lesson and the instruments take one place beside the stage, and moving
 
 test('on a phone the lesson goes under the diagram, at a height that does not change', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/lessons/market');
     await page.locator('.kg-container svg').waitFor();
 
     const lesson = page.getByRole('region', { name: 'Lesson' });

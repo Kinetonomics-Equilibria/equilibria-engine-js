@@ -33,17 +33,18 @@ export interface LessonStrand {
 export const CURRICULUM: LessonStrand[] = [
     {
         label: 'Microeconomics',
+        // In the order a course meets them: the economic problem, then
+        // markets. The app opens on Home, so the first lesson listed is only
+        // where a course starts, and where a link to a lesson that has gone
+        // opens.
         topics: [
-            // Demand's determinants come before the whole market in a course,
-            // but the first lesson listed is the one the app opens on, and
-            // that stays the market.
-            { id: 'markets', label: 'Markets', color: 'teal', lessons: [SUPPLY_AND_DEMAND, DEMAND_SHIFTERS] },
-            // After Markets for now, though a course meets it first: the first
-            // lesson listed is the one the app opens on.
             {
                 id: 'economic-problem', label: 'The economic problem', color: 'grape',
                 lessons: [PRODUCTION_POSSIBILITIES]
-            }
+            },
+            // Demand's determinants before the whole market, as a course
+            // meets them.
+            { id: 'markets', label: 'Markets', color: 'teal', lessons: [DEMAND_SHIFTERS, SUPPLY_AND_DEMAND] }
         ]
     },
     {
@@ -57,7 +58,7 @@ export const CURRICULUM: LessonStrand[] = [
 /**
  * Every lesson the app offers, in the order the Lessons panel lists them.
  *
- * The first is where the app opens. A lesson is addressed by its `id`, which is
+ * The first is where a course starts. A lesson is addressed by its `id`, which is
  * what `lessons/<id>` carries — so a teacher can hand a class a link to one.
  */
 export const LESSONS: StudyContent[] =

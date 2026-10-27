@@ -83,7 +83,7 @@ function scan(code: Element): string | null {
 describe('Share', () => {
 
     it('is at the far end of the title line, and works under the cover', () => {
-        open();
+        open('lessons/market');
         const line = screen.getByRole('heading', { level: 2 }).parentElement!.parentElement!;
         const names = within(line).getAllByRole('button').map(b => b.getAttribute('aria-label') || b.textContent);
         expect(names[names.length - 1]).toBe('Share');
@@ -179,7 +179,7 @@ describe('Share', () => {
 
     it('offers the picture and the page only where the diagram is on screen', async () => {
         const user = userEvent.setup();
-        open();
+        open('lessons/market');
         await user.click(share());
         expect(item(/^Download the diagram/)).toHaveProperty('disabled', true);
         expect(item(/^Print or save as PDF/)).toHaveProperty('disabled', true);

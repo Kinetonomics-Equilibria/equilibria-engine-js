@@ -413,13 +413,22 @@ export function arrange(input: ArrangeInput): Arrangement {
                 stripH = Math.min(most, Math.max(least, wants)),
                 box: Box = { x: inner.x, y: inner.y + inner.height - stripH, width: inner.width, height: stripH },
                 boxes = role === 'shelf' ? cells(box, n, 1) : slots(box, n, false, room);
-            return { role: role, height: stripH, boxes: boxes, side: fitInRoom(boxes[0], room).width };
+            return {
+                role: role, height: stripH, boxes: boxes, side: fitInRoom(boxes[0], room).width,
+                // A share narrower than the room round its glyph is room alone.
+                crowded: share < room.left + room.right
+            };
         };
 
         const strip = lay('strip');
         if (!(input.chrome && input.chrome.shelf)) return strip;
         const shelf = lay('shelf');
-        return shelf.side > strip.side + 1e-9 ? shelf : strip;
+        // And a shelf where a strip's share is narrower than the caption
+        // column beside its glyph, even if a shelf's glyphs are no bigger: on
+        // a phone with three panels under the focal one, each caption ran on
+        // over the next, where a shelf's each have their share of the width
+        // above their sheet.
+        return shelf.side > strip.side + 1e-9 || strip.crowded ? shelf : strip;
     };
 
     if (keys.length === 0) {

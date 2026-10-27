@@ -36,6 +36,8 @@ export interface TitleLineProps {
     title: string;
     /** The topic over the title, with its dot. Without one, the title stands alone. */
     topic?: TitleTopic | null;
+    /** A story's day, in words, after its topic: a story is true of its day, so it is said first. */
+    date?: string;
     mode: StageMode;
     onModeChange(mode: StageMode): void;
     /** A sheet is over the stage, so there is nothing to arrange or reset. */
@@ -96,7 +98,7 @@ function Arrangement({ mode, onModeChange, disabled }: {
 }
 
 export function TitleLine({
-    title, topic, mode, onModeChange, covered, canReset, onReset, stacked, share
+    title, topic, date, mode, onModeChange, covered, canReset, onReset, stacked, share
 }: TitleLineProps) {
     const resetDisabled = covered || !canReset;
     const presenting = usePresenting();
@@ -106,16 +108,20 @@ export function TitleLine({
         <div className={classes.line} data-stacked={stacked || undefined}>
             <div className={classes.heading}>
                 {/* The dot the Lessons panel draws before the topic's name, in
-                  * the topic's colour, so the two read as one place. */}
-                {topic ? (
+                  * the topic's colour, so the two read as one place. A
+                  * story's day follows, on the same small line. */}
+                {topic || date ? (
                     <Text
                         size="xs"
                         c="dimmed"
                         className={classes.topic}
-                        style={{ '--topic-color': `var(--mantine-color-${topic.color}-filled)` } as CSSProperties}
+                        style={topic ? { '--topic-color': `var(--mantine-color-${topic.color}-filled)` } as CSSProperties
+                            : undefined}
                     >
-                        <span className={classes.dot} aria-hidden />
-                        {topic.label}
+                        {topic ? <span className={classes.dot} aria-hidden /> : null}
+                        {topic ? topic.label : null}
+                        {topic && date ? <span aria-hidden>·</span> : null}
+                        {date ? <span>{date}</span> : null}
                     </Text>
                 ) : null}
                 <Title order={2} size="h4" className={classes.title}>{title}</Title>

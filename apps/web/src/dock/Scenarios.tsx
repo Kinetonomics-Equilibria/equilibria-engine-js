@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { Text, UnstyledButton } from '@mantine/core';
 import { IconArrowRight } from '@tabler/icons-react';
 import type { InstrumentProps } from './types';
@@ -33,29 +34,43 @@ export interface ScenariosProps extends InstrumentProps {
     scenarios: Scenario[];
 }
 
+export interface ActionRowProps {
+    label: string;
+    /** Why, under the name: a scenario's reasoning. */
+    description?: string;
+    /** Params it names that the diagram does not have; the row is disabled and says so. */
+    unknown?: string[];
+    /** Nothing a press would change, so it is greyed: not hidden, so nothing under it moves. */
+    disabled?: boolean;
+    /**
+     * Where a press goes, for a row that opens a page: a real address, so it
+     * can be opened in a tab of its own, while a plain press stays in the app.
+     */
+    href?: string;
+    /** A glyph before the name, for a row that is a place: the one the rail draws for it. */
+    icon?: ReactNode;
+    onPress(): void;
+}
+
 /**
- * One scenario: its name, and the reasoning that makes it a scenario, on one
- * surface that is the whole button.
+ * The action row: a name, the reasoning that makes it worth pressing under
+ * it, and an arrow, on one surface that is the whole button — a scenario, a
+ * story's move, a way to another page.
  *
  * Named by its name alone, so it is "Iron ore prices soar, button" to a screen
  * reader, with the reasoning read after as its description — the same order the
  * eye takes.
  */
-function Row({ scenario, unknown, onApply }: { scenario: Scenario; unknown: string[]; onApply(): void }) {
+export function ActionRow({ label, description, unknown = [], disabled, href, icon, onPress }: ActionRowProps) {
     const describedId = useId();
     const broken = unknown.length > 0;
-    const described = broken || !!scenario.description;
+    const described = broken || !!description;
 
-    return (
-        <UnstyledButton
-            className={classes.row}
-            disabled={broken}
-            aria-label={scenario.label}
-            aria-describedby={described ? describedId : undefined}
-            onClick={onApply}
-        >
+    const words = (
+        <>
+            {icon ? <span className={classes.icon} aria-hidden="true">{icon}</span> : null}
             <span className={classes.text}>
-                <Text component="span" size="sm" className={classes.label}>{scenario.label}</Text>
+                <Text component="span" size="sm" className={classes.label}>{label}</Text>
                 {/* A scenario naming a param the diagram does not have is an
                   * authoring mistake that would otherwise apply silently and
                   * half-work. Named here rather than thrown, because a broken
@@ -64,13 +79,46 @@ function Row({ scenario, unknown, onApply }: { scenario: Scenario; unknown: stri
                     <Text component="span" size="xs" c="red" id={describedId}>
                         Unknown {unknown.length === 1 ? 'param' : 'params'}: {unknown.join(', ')}
                     </Text>
-                ) : scenario.description ? (
+                ) : description ? (
                     <Text component="span" size="xs" className={classes.description} id={describedId}>
-                        {scenario.description}
+                        {description}
                     </Text>
                 ) : null}
             </span>
-            <IconArrowRight size={16} stroke={1.75} className={classes.go} aria-hidden="true" />
+        </>
+    );
+    const arrow = <IconArrowRight size={16} stroke={1.75} className={classes.go} aria-hidden="true" />;
+
+    if (href) {
+        return (
+            <UnstyledButton
+                component="a"
+                href={href}
+                className={classes.row}
+                aria-label={label}
+                aria-describedby={described ? describedId : undefined}
+                onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+                    event.preventDefault();
+                    onPress();
+                }}
+            >
+                {words}
+                {arrow}
+            </UnstyledButton>
+        );
+    }
+
+    return (
+        <UnstyledButton
+            className={classes.row}
+            disabled={broken || disabled}
+            aria-label={label}
+            aria-describedby={described ? describedId : undefined}
+            onClick={onPress}
+        >
+            {words}
+            {arrow}
         </UnstyledButton>
     );
 }
@@ -85,11 +133,12 @@ export function Scenarios({ scenarios, params, updateParams, snapshot }: Scenari
     return (
         <div className={classes.list}>
             {scenarios.map(s => (
-                <Row
+                <ActionRow
                     key={s.id}
-                    scenario={s}
+                    label={s.label}
+                    description={s.description}
                     unknown={Object.keys(s.params).filter(name => !known.has(name))}
-                    onApply={() => {
+                    onPress={() => {
                         // Before the change, not after: this marks where the
                         // diagram is *now* as the state its ghosts and the
                         // sentence beside it should both call "before". A

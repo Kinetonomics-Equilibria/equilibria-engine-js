@@ -1,0 +1,33 @@
+/* A story's card: paper, as the lesson card beside a lesson is, with a card
+ * head saying what it is and its rows under it. Fixed in height by the screen,
+ * as every card in the column is, so what does not fit scrolls inside it. */
+
+.card {
+    composes: paper from './ui/paper.module.css';
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.head {
+    composes: head from './ui/paper.module.css';
+    flex: none;
+    padding: 12px 14px 4px;
+}
+
+.eyebrow {
+    composes: eyebrow from './ui/paper.module.css';
+}
+
+.body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 14px 12px;
+}
+
+/* The rows as the Scenarios tab lists them, their hover reaching the card's
+ * own margin. */
+.list {
+    composes: list from './dock/Scenarios.module.css';
+}

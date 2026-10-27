@@ -50,7 +50,11 @@ beforeEach(() => {
     fullscreen = null;
 });
 
-const mount = () => render(<MantineProvider theme={theme} env="test"><App /></MantineProvider>);
+/** The market lesson, at its start: the root is Home, which has no stage to present. */
+const mount = () => {
+    window.history.replaceState(null, '', '/lessons/market');
+    return render(<MantineProvider theme={theme} env="test"><App /></MantineProvider>);
+};
 
 const present = () => screen.getByRole('button', { name: 'Present to a class' });
 

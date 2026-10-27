@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Aside, Picture } from './lessons/content';
+import type { StorySource } from './news';
 import type { StagePanel } from 'equilibria-react';
 import classes from './AsidePanel.module.css';
 
@@ -20,16 +21,22 @@ import classes from './AsidePanel.module.css';
  * would be a second scrollbar beside the diagram.
  *
  * Drawn once a frame while a promotion plays, so it is kept to markup.
+ *
+ * A story's report is real, so it names its source: a link where the report
+ * is read, which opens the article in a tab of its own, and the outlet's name
+ * alone in a glyph, which the keyboard should not stop at on its way past.
  */
 export interface AsidePanelProps {
     aside: Aside;
     picture?: Picture;
+    /** Who reported it, for a story's report. A lesson's is made up, and has none. */
+    source?: StorySource;
     panel: StagePanel;
     /** Where its body is, against the panel's box: under the caption, inside the sheet. */
     style: CSSProperties;
 }
 
-export function AsidePanel({ aside, picture, panel, style }: AsidePanelProps) {
+export function AsidePanel({ aside, picture, source, panel, style }: AsidePanelProps) {
     const reads = panel.level !== 'indicator';
     return (
         <div className={[classes.aside, reads ? classes.read : classes.glyph].join(' ')} style={style}>
@@ -39,6 +46,13 @@ export function AsidePanel({ aside, picture, panel, style }: AsidePanelProps) {
             <div className={classes.words}>
                 <p className={classes.headline}>{aside.headline}</p>
                 <p className={classes.body}>{aside.body}</p>
+                {source ? (
+                    <p className={classes.source}>
+                        Source: {reads ? (
+                            <a href={source.href} target="_blank" rel="noopener noreferrer">{source.outlet}</a>
+                        ) : source.outlet}
+                    </p>
+                ) : null}
                 {aside.note ? <p className={classes.note}>{aside.note}</p> : null}
             </div>
         </div>

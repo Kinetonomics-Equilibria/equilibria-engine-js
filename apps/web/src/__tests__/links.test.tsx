@@ -65,9 +65,8 @@ const rail = (name: string) => screen.getByRole('button', { name, hidden: true }
 
 describe('The address follows the view', () => {
 
-    // Home is not built, so the root opens the first lesson, as it always has.
     it('is the lesson\'s path alone at its start', async () => {
-        open();
+        open('lessons/market');
         await settles('/lessons/market');
     });
 
@@ -290,16 +289,18 @@ describe('A pasted link', () => {
         expect(screen.getByRole('button', { name: 'Show Market' })).toBeTruthy();
     });
 
+    // The first in the course: the economic problem's.
     it('to a lesson there is not opens the first lesson at its start', async () => {
         open('lessons/gone?step=6&a=28');
-        await settles('/lessons/market');
+        await settles('/lessons/ppc');
         expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
     });
 
     it('to a model there is not opens the first model at its start', async () => {
         open('playground/gone?tab=maths&a=26');
-        await settles('/playground/market');
-        expect(marketCaption()).toContain('Price $11.00');
+        await settles('/playground/cafe');
+        expect(screen.getByRole('heading', { name: 'Toasties and coffees at a café' })).toBeTruthy();
+        expect(screen.getByRole('tab', { name: 'Explore' }).getAttribute('aria-selected')).toBe('true');
     });
 });
 
@@ -321,7 +322,7 @@ describe('A link from before the pages', () => {
 
     it('opens the first lesson at its start where its lesson has gone', async () => {
         open('?lesson=gone&tab=scenarios&a=26');
-        await settles('/lessons/market');
+        await settles('/lessons/ppc');
     });
 });
 

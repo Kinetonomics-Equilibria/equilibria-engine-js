@@ -71,7 +71,7 @@ attention on finding things.
    | Teal | The reasoning | "Why" after a question; a right answer, in a verdict and in the recap; the recap's takeaway |
    | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts; an answer the student was shown, in the recap |
    | The curves' colours | The market itself | the diagram, the slider that moves each curve, and the chain's markers for what moved and the curves it moved |
-   | A topic's colour | Which topic, only ever as a dot before its name | the Lessons and Playground panels, and over the page's title. Beside the name, so a teal topic is never read as the reasoning |
+   | A topic's colour | Which topic, only ever as a dot: before its name, or before a story's headline | the Lessons and Playground panels, and over the page's title; before each headline in the In the news panel and Home's feed, with the topic's name there for a screen reader. Beside words, so a teal topic is never read as the reasoning |
 
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
    the depth one press away: "Why? See the maths" opens the formula behind the
@@ -84,6 +84,9 @@ attention on finding things.
 ```
  ● International economics                              ╭─────────────────╮
  The Australian dollar, and what moves it               │ ◉  ↺  ┊  ▭  ⇪   │
+                                                        ╰─────────────────╯
+ ● International economics · 29 September 2026          ╭─────────────────╮
+ The RBA raises the cash rate to 4.60%                  │ ◉  ↺  ┊  ▭  ⇪   │
                                                         ╰─────────────────╯
 ```
 
@@ -100,9 +103,13 @@ attention on finding things.
 - A lesson's title is its own, under the topic the Lessons panel lists it
   in. In the playground the title is the model's name, under the topic of
   the first lesson drawn on it, which is where the Playground panel lists it.
+  A story's title is its headline, under its model's topic and then the day
+  it happened, after a middle dot on the same small line: a story is true of
+  its day, so the day is said before anything else about it.
 - The topic is small and grey over the title, after the dot the panels
   draw before the topic's name, in the topic's colour, so the two read as
-  one place. A page no topic lists has its title alone.
+  one place. A page no topic lists has its title alone, and so does Home,
+  which has no tools either: it has no stage for them to act on.
 - No sentence under the title. It used to say how to read the price axis,
   which the axis's own title says, and to follow the lesson or drag a curve,
   which the cover and the lesson card say. It cost the stage a line.
@@ -144,8 +151,9 @@ attention on finding things.
   every step's `set` up to here over it, so a curve no step sets goes back
   where the diagram drew it. A question's curves go back where the question
   found them, which is where it is marked from. In the playground it is the
-  market the page opened with: the model's own, or the one a link or a
-  lesson's Finish handed it.
+  market the page opened with: the model's own, or the one a link, a
+  lesson's Finish or a story handed it. On a story's page it is the market
+  the page opened with too, so a story's move is undone by Reset as by Undo.
 - It is how a step's own market comes back after scrubbing back, which
   un-draws and leaves the student's values alone. It took the place of the
   lesson card's "Reset the diagram to this step", which put back only what
@@ -203,6 +211,11 @@ One menu for everything that leaves the screen (`ShareMenu`):
   `playground/aud?tab=scenarios&supply=56`. A lesson has a start worth more
   than any view of it; a market has none, and a teacher who set one up to
   show a class wants that one.
+- On a story's page they open the story, as a lesson's open the lesson:
+  `news/2026-09-rba-cash-rate`, the report at the front and the move not
+  yet made, whatever the view. What happened is worth more than any view of
+  it, and the move is the student's to make. The QR code's sheet says
+  "Opens the story".
 - The download and the print are always this view, and the printed page's
   code goes back to it.
 - Copy link copies by the browser's clipboard, and by selecting and copying
@@ -240,30 +253,36 @@ One menu for everything that leaves the screen (`ShareMenu`):
 ```
  lessons/fx?step=7&arrange=grid&focus=mirror&supply=56
  playground/aud?tab=maths&supply=56
+ news/2026-09-rba-cash-rate?demand=60
 ```
 
 - A link is a page and a view of it (`links.ts`). The page is the path: a
-  lesson, `lessons/<id>`, or a model in the playground, `playground/<id>`,
-  so a teacher can read what a link opens before sending it. The view is
-  after the `?`: the lesson's step or the playground's open tab, each param
-  the student can move that is not where the page puts it, the arrangement
-  and the panel at the front. "The start of the lesson" is just
-  `lessons/fx`, and a model at its own market with Explore open is just
-  `playground/aud`.
+  lesson, `lessons/<id>`; a model in the playground, `playground/<id>`; or a
+  story, `news/<id>`, its id the year and month it happened and a few words
+  for what. So a teacher can read what a link opens before sending it. The
+  view is after the `?`: the lesson's step or the playground's open tab,
+  each param the student can move that is not where the page puts it, the
+  arrangement and the panel at the front. "The start of the lesson" is just
+  `lessons/fx`, a model at its own market with Explore open is just
+  `playground/aud`, and a story with its report at the front and its move
+  not made is just `news/2026-09-rba-cash-rate`.
 - Readable query parameters, named after the params: `step` or `tab`, then
   `arrange=grid` and `focus` where they are not the page's own, then the
-  params. `step` belongs to a lesson and `tab` to the playground, and each
-  page ignores the other's. Where a lesson puts a param is the step's
-  market, as Reset has it; where the playground puts one is the model's own.
+  params. `step` belongs to a lesson and `tab` to the playground, and every
+  page ignores the other's; a story has neither. Where a lesson puts a param
+  is the step's market, as Reset has it; where the playground or a story
+  puts one is the model's own, so a story's move is in its address once it
+  is made.
 - Addresses are written from the app's root, so the app can be served
   anywhere. Netlify serves `index.html` for every path (a `/* /index.html
-  200` rewrite in `netlify.toml`), and the root itself opens the first
-  lesson until [Home](#home) is built.
-- The address follows the view. Opening another page, from the rail or by
-  Finish, is pushed, as its path alone or as Finish writes it; anything else
-  replaces, so Back goes to the last page rather than the last drag, and the
-  address bar is always the link to this view. Each history entry is left at
-  the view its page was left at, so Back opens that page there.
+  200` rewrite in `netlify.toml`), and the root itself is [Home](#home),
+  which has no view to write.
+- The address follows the view. Opening another page — from the rail, from
+  Home, by Finish or by a story's "Open in the Playground" — is pushed, as
+  its path alone or as Finish writes it; anything else replaces, so Back
+  goes to the last page rather than the last drag, and the address bar is
+  always the link to this view. Each history entry is left at the view its
+  page was left at, so Back opens that page there.
 - Written when the view settles, the boundary the narration keeps: a drag is
   written once, when it is let go. A held arrow key commits on every repeat,
   so writes are at least 350ms apart, the newest replacing one that waits,
@@ -288,8 +307,10 @@ One menu for everything that leaves the screen (`ShareMenu`):
   so does one whose value is not a number or whose param is not the
   student's to move; a step past the end is the end, and a lesson or model
   that has gone opens the first lesson, or the first model, at its start.
-  Lessons change, and links handed out last term should still open. The
-  address then says what did.
+  Lessons change, and links handed out last term should still open. A story
+  is never taken away, and an id that names none opens Home rather than
+  another story, which would be another day's news; so does a path the app
+  does not have. The address then says what did.
 - Addresses from before the pages open what they opened, and the address
   then says where that is now: `?lesson=fx&step=7` is that lesson at that
   step, and `?lesson=fx&tab=scenarios&supply=56` is the playground at the
@@ -334,6 +355,9 @@ which is why the column stops at 380.
 - In the playground the top card holds the instruments under one row of
   tabs, Explore, Scenarios and Maths, Explore open first, one open at a time
   and only the open one mounted.
+- Beside a story the top card is the story's, "What it moves" (`StoryCard`):
+  the move as an action row, its reasoning under it, and "Open in the
+  Playground" under that. See [In the news](#in-the-news).
 - The top card is two thirds of the column and "What changed" the bottom
   third, whatever either holds and whichever tab is open. A long step
   scrolls between the lesson's head and its Back and Next, which hold still;
@@ -342,8 +366,9 @@ which is why the column stops at 380.
   about 875px tall the Maths tab scrolls.
 - The tabs are each as wide as their name, sharing out what is left, and the
   open one is no bolder than the rest, so opening one moves no other.
-- On a phone there is no column: the lesson, or in the playground the
-  instruments, tabs and all, go under the stage at one fixed height, and the
+- On a phone there is no column: the lesson, a story's card, or in the
+  playground the instruments, tabs and all, go under the stage at one fixed
+  height, and the
   chain into the one-line strip under the stage (`NarrationStrip`) — the same
   narration, at the density a phone has room for. The two never appear
   together and announce the same sentence. Nothing is in a bottom sheet: a
@@ -383,11 +408,13 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. Drawn in its curve's colour where the lesson names one, the theme's blue where it does not. The gesture wiring is `ParamSlider`'s. |
 | The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine. Rendered from `narrate()`; decides nothing. |
-| Action row | `dock/Scenarios.tsx` | Something to press that needs its reason beside it: the name, the reasoning under it, an arrow — all one button. |
+| Action row | `dock/Scenarios.tsx` `ActionRow` | Something to press that needs its reason beside it: the name, the reasoning under it, an arrow — all one button. A row that opens a page is a real link; a row that is a place has the rail's icon before its name. Scenarios, a story's move and Home's places use it. |
 | Prompt list | `dock/Explore.tsx` | Suggestions under a "Try this" eyebrow, with hollow markers: things to do, not tasks to tick. |
 | Stage sheet | `StageSheet.tsx` | A sheet over the whole stage, for a moment with no diagram to show: paper, inset by the stage's own margin (`STAGE_PAD`), with the card head and a body that scrolls. The stage stays mounted under it, inert and at its size. |
 | Picture sheet | `PictureSheet.tsx` | A step's picture on a stage sheet, as large as the sheet allows and never cropped, with Pause/Play in the head when it moves. Pausing shows its still; reduced motion starts there. |
-| Report panel | `AsidePanel.tsx` | A report beside the diagram, as a panel of the stage's own (`hostPanels`): captioned by its name, read at the front with its picture and note, words first as a glyph. Where its glyph is too short for the words, its caption says the headline. |
+| Report panel | `AsidePanel.tsx` | A report beside the diagram, as a panel of the stage's own (`hostPanels`): captioned by its name, read at the front with its picture and note, words first as a glyph. Where its glyph is too short for the words, its caption says the headline. A story's names its source, linked where it is read. |
+| Story card | `StoryCard.tsx` | A story's top card beside the stage: "What it moves", its move as an action row, greyed once made, and "Open in the Playground" under it. |
+| Home | `Home.tsx` | The page the app opens on: its title on the desk, then "Where to go", the three places as action rows, and "Latest in the news", the newest stories as a feed. |
 | Recap | `LessonRecap.tsx` | The lesson's questions looked back over: a card each with its title, its cause marked in its curve's colour, its explanation and how it went; then the takeaway in the `why` callout. Presentational — the screen builds the cases. |
 | Track bars | `ui/track.module.css` `.bar` | A step drawn as a bar, yellow when it asks a question. The cover's parts use it; the lesson card's markers restate it, because a `::before` cannot compose. |
 
@@ -415,12 +442,31 @@ are the lesson's own:
 | `cover` | The stage, before the first step | A question the lesson answers, one line ending "?", and a hook of one short paragraph. Not the lesson's title over again. |
 | step `picture` | The stage, at that step | A key in `pictures`. The step's words stay on the card and say what the picture is for; the step draws nothing on the diagram under it. |
 | step `recap.takeaway` | The recap, under the cases | The rule every question was an instance of, in one paragraph. Said here and not on the card as well. |
-| `asides`, step `aside` | A panel beside the diagram, at that step | The event a question turns on, as a report: a name for its caption ("News report"), a headline, one sentence, and a note that says it is made up. It is part of the question's prompt, so it names no curve the question offers — and the card does not tell the story again. |
+| `asides`, step `aside` | A panel beside the diagram, at that step | The event a question turns on, as a report: a name for its caption ("News report"), a headline, one sentence, and a note that says it is made up. It is part of the question's prompt, so it names no curve the question offers — and the card does not tell the story again. A real event is a story, below, and never an aside. |
 | `pictures` | The cover, and steps that show one | An imported image file, its name in a few words, and alt text that says what it shows. Anything that moves has a `still`. |
 | step `focus` | The stage, when the lesson passes that step going forward | The key of a panel that arrives to take over the lesson, such as the market after a chart of one buyer. Panels arrive in declared order, on the rail; this puts one at the front instead. Once, at the step that reveals it or later. |
 
 Every field is optional. Without words a clause is shown by its label, as the
 first version of the screen did, so a lesson can gain them one at a time.
+
+A story (`news/stories.ts`, a `Story`) has fields of its own, all of them
+required, since a story without its date, its source or its move is not one.
+Its words are the app's: the source is where a student goes for the
+article's.
+
+| Field | Read by | Write it as |
+| --- | --- | --- |
+| `id` | Its address, `news/<id>` | The year and month it happened, then a few words for what: `2026-09-rba-cash-rate`. |
+| `date` | The title line, the In the news panel, Home | The day it happened, not the day it was written up, as digits: `2026-09-29`. |
+| `headline` | The title line, the report panel, the In the news panel, Home | Plain words, present tense, sentence case, no full stop: "The RBA raises the cash rate to 4.60%". |
+| `body` | The report panel | One sentence of what happened, with its real numbers. |
+| `source` | The report panel | The outlet's name as a student would know it, and a link to the article or the statement it was checked against. |
+| `model` | The stage | The model the story is told against. |
+| `move` | The action row | Where it leaves each param it moves, from the model's own market, as a scenario's set: which way is the point, and how far is the model's, so a move goes as far as the model's scenarios do. |
+| `reasoning` | The action row | Who, which curve, which way, as `scenarios[].description` is written, ending on the curve and the way: "…: demand for AUD rises." |
+
+The note under every story's report is the app's, not the story's: "The
+diagram shows which way this moves the market, not how far" (`STORY_NOTE`).
 
 ## Writing for the screen
 
@@ -438,6 +484,9 @@ first version of the screen did, so a lesson can gain them one at a time.
   drawn at the size they were written.
 - A report a question is about is made up, and says so: a lesson's numbers are
   its own, and a real report quoted at a class would be quoted out of its time.
+- A story is real, and checked against its source before it is written: the
+  event, its date and its numbers. One that cannot be checked is left out.
+  Its numbers are in its words only; the diagram's are the model's.
 
 ## Adding something new
 
@@ -463,10 +512,11 @@ three places a student can go, **Lessons**, the **Playground** and **In the
 news**, and a Home that points at them. It was written down before any of it
 was built, so the first one built lands where the others expect it.
 
-**Built:** models, the Lessons page, the Playground, their addresses and
-their places on the rail, and the sections above describe them. **Still to
-come:** Home and In the news; until they are built, the root opens the first
-lesson and the rail has no In the news.
+**Built:** models and all four places — the Lessons page, the Playground,
+In the news and Home — with their addresses and their places on the rail,
+and the sections above describe them. **Still to come:** what [Embeds](#embeds)
+becomes now the lesson and the playground are parted, and the questions
+under [Still open](#still-open).
 
 ### Why the lesson and the instruments part
 
@@ -528,9 +578,9 @@ lesson and the rail has no In the news.
   it, play with it, see it happen. Each is an icon with its name in its
   tooltip. Help and the profile circle stay at the rail's foot, apart from
   the places to go.
-- Built for Home, Lessons and the Playground (`DoubleNavbar.tsx`). Home is
-  on the rail with no page behind it yet, and In the news joins it when
-  there are stories to list.
+- Built (`DoubleNavbar.tsx`). Home's press opens Home, pushed as any page
+  is, and puts away a panel that is out. Home's own list of the places reads
+  the rail's icons and names (`RAIL`), so the two say each place one way.
 - The chart Lessons had goes to the Playground, which is where the charts
   are, and Lessons is a book.
 - Lessons, Playground and In the news each bring out a panel beside the rail
@@ -543,27 +593,63 @@ lesson and the rail has no In the news.
   strands and topics with the same dots, so a model sits under the topic of
   the first lesson drawn on it, once. Either panel opens on the topic of the
   open page, so the Playground panel beside a lesson opens where its model
-  is. The In the news panel is newest first, under each month: a story's
-  date, its topic's dot and its headline.
+  is; from Home, which is under no topic, both open where a course starts.
+  The In the news panel is newest first, under each month, a heading as a
+  strand's is: a row a story, its day ("29 Sep"), its topic's dot and its
+  headline, which wraps rather than being cut. A story has no topic to drop
+  down to, since it is found by when it happened; the dot says which topic
+  it is told in, and the topic's name is there for a screen reader.
 - The rail lights the place the open page belongs to, and the icon whose
   panel is out.
 - On a phone the burger opens the overlay at the panel of the open page's
-  place.
+  place, and on Home at the Lessons panel, where a course starts.
 
 ### Home
 
-- Where the app opens, at `/`. Until it is built the root opens the first
-  lesson listed, which is why The economic problem is listed after Markets
-  though a course meets it first (`lessons/index.ts`). Once Home is where
-  the app opens, the Lessons panel can follow a course.
-- A page that points: the three places, each with a line saying what is in
-  it and a way in, and the latest stories from In the news, newest first, as a
-  feed: each its date, its topic's dot and its headline, a press from the
-  story itself.
+```
+ Learn it, play with it, see it happen
+
+ ┌──────────────────────────────────┐ ┌──────────────────────────────────┐
+ │ Where to go                      │ │ Latest in the news               │
+ │ ▤  Lessons                     → │ │ 15 Oct 2026  ● Iron ore falls  → │
+ │    Each idea built up a step …   │ │ 29 Sep 2026  ● The RBA raises  → │
+ │ ⌒  Playground                  → │ │ 16 Sep 2026  ● The US Federal  → │
+ │    A market to yourself: drag …  │ └──────────────────────────────────┘
+ │ ▦  In the news                 → │
+ │    Real events, and which …      │
+ └──────────────────────────────────┘
+```
+
+Built, at `/` (`Home.tsx`).
+
+- Where the app opens. The root is Home, and so is a path the app does not
+  have. So the Lessons panel follows a course (`lessons/index.ts`): The
+  economic problem, then Markets, demand's determinants before the whole
+  market.
+- A page that points, and nothing else. It answers the two questions a
+  student arriving has, a card each, side by side where both fit at a
+  comfortable line and one over the other where they do not: "Where to go"
+  and "Latest in the news". Each card is paper with a card head, as every
+  card on the study screen is, and the rows on them are action rows.
+- Its title is on the desk above the cards, as a page's title is, and says
+  what the three places are for, in the order the rail has them: "Learn it,
+  play with it, see it happen". No topic over it and no tools beside it: it
+  is in no topic, and has no stage.
+- "Where to go" is the three places, each with the rail's icon and name, a
+  line saying what is in it, and the arrow. A press brings out that place's
+  panel, as its icon on the rail would — on a phone, the overlay at that
+  panel — opened where a course starts. So Home is also where the rail is
+  learnt, and the way in to each place is the place's own list, not a copy
+  of it.
+- "Latest in the news" is the three newest stories (`ON_HOME`), newest
+  first: each its date, its topic's dot and its headline, and the arrow, the
+  whole row a link to the story. On a phone the date goes over the headline,
+  so the headline has the row. The rest are in the In the news panel, a
+  press away on the rail or on "Where to go".
 - The stories are on Home because they are the one part of the app that
   changes without a lesson changing, and Home is where a student arrives.
-- Its design is to come. What is settled is that every press on Home opens a
-  thing, a lesson, a model or a story, or a place's panel; never a list page.
+- Every press on Home opens a thing, a lesson, a model or a story, or a
+  place's panel; never a list page.
 
 ### Lessons
 
@@ -642,29 +728,67 @@ Built, at `playground/<id>`.
 
 ### In the news
 
+```
+ ┌─────────────────────────────────┐ ┌──────────┐ ┌────────────────────────┐ ┬
+ │           News report           │ │AUD market│ │ What it moves          │ │
+ │ The RBA raises the cash rate …  │ │          │ │ Show it on the       → │ │
+ │ The Reserve Bank lifted the …   │ └──────────┘ │ diagram                │ │ two thirds
+ │ Source: Reserve Bank of Austr…  │ ┌──────────┐ │ Higher interest rates… │ │
+ │ The diagram shows which way …   │ │USD market│ │ Open in the          → │ │
+ │                                 │ │          │ │ Playground             │ │
+ │                                 │ └──────────┘ ├────────────────────────┤ ┼
+ │                                 │              │ What changed     Undo  │ │ one third
+ └─────────────────────────────────┘              └────────────────────────┘ ┴
+```
+
+Built, at `news/<id>`, with its stories in `apps/web/src/news/`.
+
 - A story is something that happened, Australian first: the RBA moves the
-  cash rate, the iron ore price falls, a drought cuts a harvest. It is told
+  cash rate, the iron ore price falls, a tax on petrol is halved. It is told
   against one model: what happened, which curve that moves and which way, and
   why.
 - Its page is built from pieces the kit already has. The title line is the
-  story's topic and date over its headline. The stage is the model, with the
-  story at the front as a report panel (`AsidePanel`), drawn as a lesson's
-  aside is. The column's top card holds the reasoning as an action row: who,
-  which curve, which way; pressing it makes the move, as a scenario does, so
-  "What changed" tells the chain. Under it, "Open in the Playground" opens the
-  market the move made.
+  story's topic and date over its headline. The stage is the model whole, as
+  the playground has it, with the story at the front as a report panel
+  (`AsidePanel`, captioned "News report"), drawn as a lesson's aside is; the
+  model's panels are on the rail beside it, a press away.
+- The column's top card is "What it moves" (`StoryCard`). Its action row is
+  "Show it on the diagram", with the reasoning under it — who, which curve,
+  which way — and pressing it makes the move, as a scenario does: the
+  snapshot, then every param it names in one update, so "What changed"
+  tells the chain and Undo takes it back. It is greyed once the market is
+  where the move puts it, as Reset is when nothing would change. Under it,
+  "Open in the Playground" opens the market the move made, pushed as Finish
+  is, so Back is the story. It is the same address whether or not the move
+  has been made, since it is the news's market and not the student's view,
+  and it is a real link, so it opens in a tab of its own where asked.
+- No instruments and no Maths beside a story, so no "Why?": the story's page
+  is about one move, and the playground is a press away for everything else.
+  The curves can still be dragged, as in the playground, and Reset puts back
+  the market the page opened with.
 - A story is real, so it is dated and sourced: its date first, its outlet
-  named and linked. The headline and sentence are written for the app in
-  plain words, never the article's own text.
+  named and linked under its sentence, opening in a tab of its own. The
+  headline and sentence are written for the app in plain words, never the
+  article's own text.
 - The real numbers are in the story's words only. The diagram's numbers are
-  the model's, and the report's note says so: the diagram shows which way
-  something moved, not how far.
+  the model's, and the report's note says so: "The diagram shows which way
+  this moves the market, not how far."
+- **A story only shows; it asks nothing.** A lesson's question is marked on
+  where the student's curve lands, and a story's diagram shows which way,
+  not how far: the only thing true enough to mark is the way, which the
+  reasoning beside it has already said. Asking it would be asking the
+  student to read the answer back. A question about real news belongs in a
+  lesson, with a made-up report, where the lesson's numbers are its own.
 - A story is true of its day and stays so. It never expires, and a link to it
   keeps opening, with its date; it leaves Home's feed as newer stories
   arrive.
 - A lesson's reports stay made up ([Writing for the screen](#writing-for-the-screen)).
   A story is the one place the app reports a real event, because it carries
   its date and a lesson does not.
+- On a phone the story's card goes under the stage in the lesson card's
+  place and at its height, and the chain into the strip, as on every page.
+  The report is captioned there by its headline until it is brought to the
+  front.
 
 ### Addresses
 
@@ -672,11 +796,10 @@ Built, at `playground/<id>`.
  /                                       Home
  /lessons/fx?step=7&arrange=grid         a lesson, at a view
  /playground/aud?tab=maths&supply=56     a model, at a view
- /news/2026-11-rba-cash-rate             a story
+ /news/2026-09-rba-cash-rate             a story
 ```
 
-Built for lessons and the playground, as [Links](#links) describes; a
-story's comes with In the news, and `/` with Home.
+Built, as [Links](#links) describes.
 
 - Each place is a path, so a teacher can read what a link opens before
   sending it; after the `?` the view is written as it was.
@@ -688,6 +811,8 @@ story's comes with In the news, and `/` with Home.
   model, at that tab and market.
 - `step` belongs to a lesson and `tab` to the playground. `lesson` leaves the
   query for the path, but stays reserved, since old links carry it.
+- A story that is not there, and a path the app does not have, open Home,
+  and the address becomes the root.
 - Netlify serves `index.html` for every path (a `/* /index.html 200`
   rewrite in `netlify.toml`).
 
@@ -699,42 +824,34 @@ story's comes with In the news, and `/` with Home.
   [What a lesson supplies](#what-a-lesson-supplies) says now.
 - **A lesson:** its id, label and title, `cover`, `goals`, `pictures`,
   `asides`, its steps, and the model it is drawn on.
-- **A story:**
-
-| Field | Read by | Write it as |
-| --- | --- | --- |
-| `date` | The title line, the In the news panel, Home | The day it happened, not the day it was written up. |
-| `headline` | The title line, the report panel, the In the news panel, Home | Plain words, present tense, sentence case: "The RBA raises the cash rate". |
-| `body` | The report panel | One sentence of what happened, with its real numbers. |
-| `source` | The report panel | The outlet's name and a link to the article. |
-| `model` | The stage | The model the story is told against. |
-| `move` | The action row | The params it moves and which way, as a scenario's set. |
-| `reasoning` | The action row | Who, which curve, which way, as `scenarios[].description` is written. |
+- **A story:** its id, `date`, `headline`, `body`, `source`, `model`, `move`
+  and `reasoning`, written as the story's table under [What a lesson
+  supplies](#what-a-lesson-supplies) says.
 
 ### What changes when it is built
 
 Each of these sections is rewritten as the page it describes is built.
 Rewritten for the Lessons page and the Playground: [The title
 line](#the-title-line), [Share](#share), [Links](#links), [The side
-column](#the-side-column), [Reset](#reset) and the rail. Still to come:
+column](#the-side-column), [Reset](#reset) and the rail. Rewritten for In
+the news and Home: [The title line](#the-title-line), for a story's date;
+[Share](#share) and [Links](#links), for a story's address and what its
+link opens; [What a lesson supplies](#what-a-lesson-supplies), for a
+story's fields; the kit; and the rail. Still to come:
 
-- [The title line](#the-title-line): a story's carries its date.
-- [Share](#share) and [Links](#links): a story's address and what its link
-  opens.
-- [What a lesson supplies](#what-a-lesson-supplies): a story's fields,
-  beside the lesson's and the model's.
 - [Embeds](#embeds): the diagram-only embed is the playground's stage, and its
   link opens the Playground.
-- The rail, `DoubleNavbar.tsx`: In the news, and a page behind Home.
 
 ### Still open
 
 - Where the playground points back to the lessons on its model. None of the
   column's cards answers "where can I learn this?", so by principle 1 it is a
   card of its own or nothing.
-- Whether a story asks a question, as a lesson's step does, or only shows.
-- Home's design.
-- Who writes the stories, how often, and how many Home shows.
+- Who writes the stories, and how often. For now they are written by hand
+  in `news/stories.ts`, each checked against its source on the day it is
+  written. Home shows the three newest, which is settled
+  ([Home](#home)), and a story asks no question, which is settled too
+  ([In the news](#in-the-news)).
 
 ## Reserved for later
 

@@ -9,8 +9,11 @@ import { STEP_PARAM } from 'equilibria-engine-js';
 import type {
     KineticGraph, ParamBlockedEvent, ParamChangedEvent, ParamInfo
 } from 'equilibria-engine-js';
-import type { StudyContent, StudyModel } from './lessons/content';
+import type { Aside, StudyContent, StudyModel } from './lessons/content';
 import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
+import { STORY_NOTE, dateWords } from './news';
+import type { Story } from './news';
+import { StoryCard } from './StoryCard';
 import { NarrationStrip } from './NarrationStrip';
 import { NarrationCard } from './NarrationCard';
 import { QuestionRow } from './QuestionRow';
@@ -52,9 +55,10 @@ import classes from './StudyScreen.module.css';
 /**
  * The study screen: one diagram, several panels, one of them driving, a line
  * underneath saying what the last thing the student did actually did, and
- * beside it either the lesson or the instruments — never both. Which is the
- * page's: a lesson's page has the lesson, and a model's page in the
- * playground has the instruments (docs/design.md, "Pages to come").
+ * beside it the lesson, the instruments or a story — never two. Which is the
+ * page's: a lesson's page has the lesson, a model's page in the playground has
+ * the instruments, and a story's page has what the story moves, with the story
+ * itself on the stage as a report (docs/design.md, "Pages to come").
  *
  * The division of labour P7 asks for is visible in what this file contains and
  * what it does not. `Stage` measures the box, arranges the panels and turns a
@@ -159,7 +163,7 @@ function marketOf(params: { name: string; value: number; presentation?: boolean 
 const TABS = ['explore', 'scenarios', 'maths'];
 
 /**
- * The step the playground is at: past the end of every lesson.
+ * The step the playground is at, and a story: past the end of every lesson.
  *
  * A model's own expressions can read the step a lesson has reached — the café
  * draws Z before its choices and again once the lesson is over, and the Air
@@ -168,7 +172,8 @@ const TABS = ['explore', 'scenarios', 'maths'];
  * is the model as a student who had seen every step would find it, which is
  * what the instruments drew when they were put at a lesson's end. The engine
  * declares the param only for a config with steps, so the playground declares
- * it, at a step no lesson reaches.
+ * it, at a step no lesson reaches. A story is told on the model whole, so it
+ * is at the same step.
  */
 const PLAYGROUND_STEP = { name: STEP_PARAM, value: 9999, min: 0, max: 9999, round: 1, presentation: true };
 
@@ -212,7 +217,7 @@ export interface Answered {
  */
 function arrival(
     link: Link, steps: LessonStep[], panelKeys: string[], asideKeys: string[], playing: boolean,
-    answered: Answered | undefined
+    answered: Answered | undefined, first: string
 ) {
     const tab = playing && link.tab && TABS.indexOf(link.tab) > -1 ? link.tab : null,
         from: TrackState = answered ? { position: 0, resolved: answered.resolved, outcomes: answered.outcomes } : AT_START,
@@ -227,7 +232,7 @@ function arrival(
         });
     }
     const known = link.focus && (panelKeys.indexOf(link.focus) > -1 || asideKeys.indexOf(link.focus) > -1),
-        front = focusBetween(steps, 0, track.position) || panelKeys[0];
+        front = focusBetween(steps, 0, track.position) || first;
     return { tab, track, market, mode: link.arrange, focused: known ? link.focus as string : front };
 }
 
@@ -331,6 +336,12 @@ const reach = (sheet: Room): CSSProperties =>
 const NAMED_GRID_PX = 220;
 
 /**
+ * The key a story's report is a panel of the stage under. No model's panel may
+ * have it, or the stage would be handed one key for two panels.
+ */
+const STORY_PANEL = 'story';
+
+/**
  * The shortest glyph a report's own words are read in: a headline's two lines
  * and a line of its sentence. Under it, as on a phone's strip, the caption
  * carries the headline instead.
@@ -410,6 +421,13 @@ export interface StudyScreenProps {
      * life of the screen, as a lesson is.
      */
     playground?: StudyModel;
+    /**
+     * A story to tell, in place of a lesson: the screen is then the story's
+     * page, its model whole on the stage with the story at the front as a
+     * report, and what it moves beside it. Fixed for the life of the screen,
+     * as a lesson is, and `content` is not read.
+     */
+    story?: Story;
     /** The topic the lesson is listed under, named over its title. */
     topic?: TitleTopic | null;
     /**
@@ -428,28 +446,43 @@ export interface StudyScreenProps {
     /** What has been answered, each time a question is, for the shell to keep with the lesson's entry. */
     onAnswer?: (answered: Answered) => void;
     /**
-     * Finish: the playground's address at the lesson's model and the market
-     * the lesson ended on, and this view's, for the shell to open the first
-     * and leave the lesson's entry at the second.
+     * The way into the playground — a lesson's Finish, or a story's "Open in
+     * the Playground": the playground's address at the model and the market
+     * this page leaves it, and this view's, for the shell to open the first
+     * and leave this page's entry at the second.
      */
     onFinish?: (address: string, from: string | null) => void;
 }
 
 export function StudyScreen({
-    content = SUPPLY_AND_DEMAND, playground, topic, link, answered, onLinkChange, onAnswer, onFinish
+    content = SUPPLY_AND_DEMAND, playground, story, topic, link, answered, onLinkChange, onAnswer, onFinish
 }: StudyScreenProps) {
     // The lesson, on a lesson's page; none in the playground, where the model
-    // is the page.
-    const lesson = playground ? null : content;
-    const model = playground || content.model;
-    const asides = lesson ? lesson.asides : undefined;
+    // is the page, or on a story's, where the story is.
+    const lesson = playground || story ? null : content;
+    const model = playground || (story ? story.model : content.model);
+
+    // The reports beside the diagram: a lesson's, which its steps bring in and
+    // which are made up and say so, or the story, which is the page's whole
+    // time and real, with its numbers in its words and the model's on the
+    // diagram, which its note says.
+    const asides = useMemo((): Record<string, Aside> | undefined => (lesson ? lesson.asides : story ? {
+        [STORY_PANEL]: { name: 'News report', headline: story.headline, body: story.body, note: STORY_NOTE }
+    } : undefined), [lesson, story]);
     const {
         diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, paramWords, explorePrompts,
         scenarios, questionApparatus, directionWords
     } = model;
     const { steps, panelKeys, narrated } = useMemo(() => prepare(lesson, model), [lesson, model]);
-    const place: Place = useMemo(() => (lesson ? { kind: 'lesson', id: lesson.id } : { kind: 'playground', id: model.id }),
-        [lesson, model]);
+    const place: Place = useMemo(() => (lesson ? { kind: 'lesson', id: lesson.id }
+        : story ? { kind: 'news', id: story.id } : { kind: 'playground', id: model.id }), [lesson, story, model]);
+
+    /**
+     * Whether there is no lesson: the model is on the stage whole, from the
+     * start, and Reset puts back the market the page opened with — the
+     * playground's, and a story's.
+     */
+    const exploring = !lesson;
 
     /**
      * Whether the instruments are beside the stage: the playground's. The
@@ -459,16 +492,21 @@ export function StudyScreen({
      * had just moved away from, and a lesson that builds a diagram one idea at
      * a time has no use for a full set of controls beside it. So beside a
      * lesson the only controls are the ones a step hands the student: its
-     * question, or what it offers to try.
+     * question, or what it offers to try. A story's page has the model whole,
+     * as the playground does, but beside it is the story's move, and there is
+     * no Maths for "Why?" to open.
      */
-    const exploring = !lesson;
+    const instrumented = !!playground;
+
+    /** The panel the page puts at the front: a story's report, or the model's first. */
+    const ownFront = story ? STORY_PANEL : panels[0].key;
 
     // Where a link opens, worked out once: everything below that a link
     // decides starts from it.
     const [opening] = useState(() => link
-        ? arrival(link, steps, panelKeys, Object.keys(asides || {}), exploring, answered) : null);
+        ? arrival(link, steps, panelKeys, Object.keys(asides || {}), instrumented, answered, ownFront) : null);
 
-    const [focused, setFocused] = useState<string>(opening ? opening.focused : panels[0].key);
+    const [focused, setFocused] = useState<string>(opening ? opening.focused : ownFront);
     const [mode, setMode] = useState<StageMode>(opening ? opening.mode : 'focus');
     const [readout, setReadout] = useState<Readout>({});
     const [line, setLine] = useState<NarrationLine>(REST);
@@ -1301,7 +1339,7 @@ export function StudyScreen({
      * the stage's for as long as the step is on screen, drawn by this screen
      * rather than by the engine.
      */
-    const aside = asideAt(steps, track.position);
+    const aside = story ? STORY_PANEL : asideAt(steps, track.position);
     const hostPanels = useMemo(() => (aside ? [aside] : []), [aside]);
 
     // A report promoted and then left behind leaves nothing at the front, and
@@ -1354,12 +1392,12 @@ export function StudyScreen({
 
     const view = useMemo(() => {
         if (settled.length === 0) return null;
-        const tab = exploring && instrument !== TABS[0] ? instrument : null,
+        const tab = instrumented && instrument !== TABS[0] ? instrument : null,
             position = track.position,
             question = askAt(steps, position),
             answering = question ? candidatesOf(question) : [],
             lessonPuts: Record<string, number> = { ...declared, ...paramsAt(steps, position) },
-            front = focusBetween(steps, 0, position) || panels[0].key,
+            front = focusBetween(steps, 0, position) || ownFront,
             params: Record<string, number> = {},
             moved: { info: ParamInfo; from: number }[] = [];
         settled.forEach(p => {
@@ -1374,7 +1412,7 @@ export function StudyScreen({
             step: position, tab, arrange: mode, focus: shownAtFront && focused !== front ? focused : null, params
         };
         return { link, moved, atFront: shownAtFront ? focused : revealed[0] };
-    }, [settled, exploring, instrument, track.position, steps, declared, panels, revealed, focused, aside, mode]);
+    }, [settled, instrumented, instrument, track.position, steps, declared, ownFront, revealed, focused, aside, mode]);
 
     const here = useMemo(() => (view ? writeLink(place, view.link) : null), [view, place]);
 
@@ -1418,6 +1456,40 @@ export function StudyScreen({
     }, []);
 
     /**
+     * A story's move, made as a scenario makes one: the snapshot first, so
+     * the move is measured from where the student had the diagram, then every
+     * param it names in one update. "What changed" then tells the chain, and
+     * Undo takes it back. Greyed once the market is where the move puts it,
+     * since a press would change nothing.
+     */
+    const move = story ? story.move : null;
+    const canMove = !!move && Object.keys(move).some(name => {
+        const param = dockParams.filter(p => p.name === name)[0];
+        return !!param && Math.abs(param.value - move[name]) > 1e-9;
+    });
+    const makeMove = useCallback(() => {
+        if (!move) return;
+        endGesture();
+        snapshot();
+        updateParams(Object.keys(move).map(name => ({ name, value: move[name] })));
+    }, [move, endGesture, snapshot, updateParams]);
+
+    /**
+     * The Playground at the market the story's move makes: the model's own
+     * with the move over it, in the words a link uses, so it opens there as a
+     * link would and Reset there puts back this market. The same address
+     * whether or not the student has pressed the move, since it is the news's
+     * market and not their view; pushed by the shell, as Finish is.
+     */
+    const movedMarket = useMemo(() => (move
+        ? writeLink({ kind: 'playground', id: model.id }, { ...AT_THE_START, params: move }) : null), [move, model.id]);
+    const openPlayground = useCallback(() => {
+        if (!movedMarket || !onFinish) return;
+        endGesture();
+        onFinish(movedMarket, here);
+    }, [movedMarket, onFinish, endGesture, here]);
+
+    /**
      * Bring a panel to the front, from the rail or from the grid.
      *
      * From the grid it also leaves the grid. The grid ignores which panel is
@@ -1433,9 +1505,10 @@ export function StudyScreen({
     const report = useCallback((panel: StagePanel) => {
         const told = asides ? asides[panel.key] : undefined;
         if (!told) return null;
-        const picture = told.picture && pictures ? pictures[told.picture] : undefined;
-        return <AsidePanel aside={told} picture={picture} panel={panel} style={asideBody(panel)} />;
-    }, [asides, pictures]);
+        const picture = told.picture && pictures ? pictures[told.picture] : undefined,
+            source = story && panel.key === STORY_PANEL ? story.source : undefined;
+        return <AsidePanel aside={told} picture={picture} source={source} panel={panel} style={asideBody(panel)} />;
+    }, [asides, pictures, story]);
 
     const chrome = useCallback((panel: StagePanel) => {
         const declared = panels.filter(p => p.key === panel.key)[0];
@@ -1691,6 +1764,21 @@ export function StudyScreen({
     );
 
     /**
+     * A story's card, beside the stage or, on a phone, under it, in the
+     * lesson card's place and at its height.
+     */
+    const storyCard = (where: 'beside' | 'below') => story && movedMarket ? (
+        <StoryCard
+            className={where === 'beside' ? classes.lessonBeside : classes.lessonBelow}
+            reasoning={story.reasoning}
+            canMove={canMove}
+            onMove={makeMove}
+            playground={linkHref(movedMarket)}
+            onOpenPlayground={openPlayground}
+        />
+    ) : null;
+
+    /**
      * The instruments, beside the stage or, on a phone, under it in the
      * lesson's place: there is no lesson in the playground to hold it.
      */
@@ -1756,12 +1844,15 @@ export function StudyScreen({
      * one up to show a class wants that one.
      */
     const viewLink = useMemo(() => linkHref(here || writeLink(place)), [here, place]);
-    const shareLink = useMemo(() => (lesson ? linkHref(writeLink(place)) : viewLink), [lesson, place, viewLink]);
+    // A story's is the story, as a lesson's is the lesson: what happened is
+    // worth more than any view of it.
+    const shareLink = useMemo(() => (lesson || story ? linkHref(writeLink(place)) : viewLink),
+        [lesson, story, place, viewLink]);
 
     const covering = qrUp ? (
         <QrSheet
             href={shareLink}
-            opens={lesson ? 'Opens the lesson at its start' : 'Opens this view'}
+            opens={lesson ? 'Opens the lesson at its start' : story ? 'Opens the story' : 'Opens this view'}
             onClose={() => setQrUp(false)}
         />
     ) : sheet;
@@ -1782,16 +1873,17 @@ export function StudyScreen({
             },
             onStage = revealed.length + hostPanels.length;
         return {
-            where: exploring ? 'In the Playground'
-                : position === 0 ? 'The start of the lesson'
-                    : `Step ${position} of ${steps.length}${title ? `: ${title}` : ''}`,
+            where: story ? `In the news, ${dateWords(story.date, 'long')}`
+                : exploring ? 'In the Playground'
+                    : position === 0 ? 'The start of the lesson'
+                        : `Step ${position} of ${steps.length}${title ? `: ${title}` : ''}`,
             short: position > 0 ? `step ${position}` : null,
             arrangement: mode === 'grid' ? 'Every panel side by side, in a grid'
                 : view && onStage > 1 ? `${nameOf(view.atFront)} at the front` : null,
             moved: view ? view.moved.map(m => `${m.info.label} ${formatValue(m.from, m.info.precision)} → ` +
                 formatValue(m.info.value, m.info.precision)) : []
         };
-    }, [view, exploring, steps, panels, asides, revealed, hostPanels, mode]);
+    }, [view, story, exploring, steps, panels, asides, revealed, hostPanels, mode]);
 
     /**
      * The picture and the page, which are both of the diagram: neither is
@@ -1803,15 +1895,15 @@ export function StudyScreen({
     const stageLayer = useRef<HTMLDivElement>(null);
     usePrintFit(stageBox);
     const hidden = !!sheet;
-    const title = lesson ? lesson.title : model.name;
+    const title = lesson ? lesson.title : story ? story.headline : model.name;
     const share: ShareActions = useMemo(() => ({
         link: shareLink,
         title,
         onShowQr: () => setQrUp(true),
         onDownload: hidden ? undefined
-            : () => downloadPicture(stageLayer.current!, pictureName(lesson ? lesson.label : model.name, inWords.short)),
+            : () => downloadPicture(stageLayer.current!, pictureName(lesson ? lesson.label : title, inWords.short)),
         onPrint: hidden ? undefined : () => window.print()
-    }), [shareLink, title, lesson, model.name, hidden, inWords.short]);
+    }), [shareLink, title, lesson, hidden, inWords.short]);
 
     /**
      * What the student's last move did, said in one of two places.
@@ -1839,7 +1931,7 @@ export function StudyScreen({
         line: sheet ? REST : line,
         refusal: sheet ? null : refusal,
         onUndo,
-        onWhy: exploring ? onWhy : undefined
+        onWhy: instrumented ? onWhy : undefined
     };
 
     // Two columns, and the side one is the screen's whole height: the title is
@@ -1865,6 +1957,7 @@ export function StudyScreen({
                     <TitleLine
                         title={title}
                         topic={topic}
+                        date={story ? dateWords(story.date, 'long') : undefined}
                         mode={mode}
                         onModeChange={setMode}
                         covered={!!covering}
@@ -1921,7 +2014,8 @@ export function StudyScreen({
                         restHint={notStarted
                             ? 'Press Start lesson when you\'re ready.'
                             : under === 'picture' ? 'The diagram is back at the next step.'
-                                : under === 'recap' ? 'Finish, and this market is yours in the Playground.' : undefined}
+                                : under === 'recap' ? 'Finish, and this market is yours in the Playground.'
+                                    : story ? 'Press Show it on the diagram, below.' : undefined}
                     />
                 ) : null}
 
@@ -1929,12 +2023,12 @@ export function StudyScreen({
                   * lesson or the instruments go under it, at a fixed height so
                   * that moving from a short step to a long one, or from one
                   * tab to another, does not resize the diagram. */}
-                {stacked ? (lesson ? lessonCard('below') : dock('below')) : null}
+                {stacked ? (lesson ? lessonCard('below') : story ? storyCard('below') : dock('below')) : null}
             </div>
 
             {!stacked ? (
                 <div className={classes.side}>
-                    {lesson ? lessonCard('beside') : dock('beside')}
+                    {lesson ? lessonCard('beside') : story ? storyCard('beside') : dock('beside')}
                     <NarrationCard
                         {...narration}
                         className={classes.narrationBeside}
@@ -1946,9 +2040,12 @@ export function StudyScreen({
                                 : under === 'recap'
                                     ? 'This step looks back, so nothing on the diagram changes. ' +
                                         'Finish, and this market is yours in the Playground.'
-                                    : exploring
-                                        ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
-                                        : undefined}
+                                    : story
+                                        ? 'Press Show it on the diagram to see what this news changes, or drag a ' +
+                                            'curve yourself.'
+                                        : exploring
+                                            ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
+                                            : undefined}
                     />
                 </div>
             ) : null}

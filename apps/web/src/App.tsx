@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AppShell, Burger } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Burger, useMantineTheme } from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { DoubleNavbar } from './components/DoubleNavbar';
-import type { NavItem, NavPanel, NavStrand } from './components/DoubleNavbar';
+import type { NavItem, NavMonth, NavPanel, NavPlace, NavStrand } from './components/DoubleNavbar';
 import { StudyScreen } from './StudyScreen';
 import type { Answered } from './StudyScreen';
+import { Home } from './Home';
 import { CURRICULUM, lessonById, modelById, modelsOf, topicOfLesson, topicOfModel } from './lessons';
+import { dateWords, storiesByMonth, storyById, topicOfStory } from './news';
 import { usePresenting } from './present';
 import { readLink, readPlace, writeLink } from './links';
 import type { Link, Place } from './links';
@@ -20,7 +22,7 @@ const pathTo = (place: Place) => import.meta.env.BASE_URL + writeLink(place);
  * drawn on, in the same strands and topics with the same dots, so a model
  * sits under the topic its lessons do.
  */
-const LISTS: Record<NavPanel, NavStrand[]> = {
+const LISTS: Record<'lessons' | 'playground', NavStrand[]> = {
     lessons: CURRICULUM.map(strand => ({
         label: strand.label,
         topics: strand.topics.map(topic => ({
@@ -39,9 +41,32 @@ const LISTS: Record<NavPanel, NavStrand[]> = {
     }))
 };
 
+/**
+ * What the In the news panel lists: every story, newest first, under the
+ * month it happened in, each with its day, its topic's dot and its headline.
+ */
+const NEWS: NavMonth[] = storiesByMonth().map(({ month, stories }) => ({
+    label: month,
+    stories: stories.map(story => {
+        const topic = topicOfStory(story);
+        return {
+            id: story.id, headline: story.headline, day: dateWords(story.date, 'day'),
+            topic: topic ? { label: topic.label, color: topic.color } : null,
+            href: pathTo({ kind: 'news', id: story.id })
+        };
+    })
+}));
+
+/** The kind of page each panel's things open as. */
+const KIND: Record<NavPanel, Place['kind']> = { lessons: 'lesson', playground: 'playground', news: 'news' };
+
+/** Where a course starts, which the Lessons and Playground panels open on from Home. */
+const FIRST_TOPIC = CURRICULUM[0].topics[0].id;
+
 /** The page that is open, and what opening it takes from the address. */
 interface Page {
-    place: Place;
+    /** A lesson, a model or a story; null for Home, at the root. */
+    place: Place | null;
     /** The view to open at, where the address names this page: otherwise it opens at its start. */
     link?: Link;
     /** The answers this history entry remembers, for a lesson. */
@@ -51,12 +76,13 @@ interface Page {
 /**
  * The page the address names, and the view after its `?`.
  *
- * Home is not built, so the root opens the first lesson, as the app always
- * has. An id that names nothing opens the first lesson, or the first model,
- * at its start. An address from before the pages opens what it opened: a
- * lesson at its step, or, where it named one of the instruments' tabs, the
- * playground at the lesson's model, at that tab and market. The screen then
- * writes the address the page has now, so it says what did.
+ * The root is Home, and so is a path the app does not have. An id that names
+ * no lesson, or no model, opens the first lesson, or the first model, at its
+ * start; one that names no story opens Home, since another story in its place
+ * would be another day's news. An address from before the pages opens what it
+ * opened: a lesson at its step, or, where it named one of the instruments'
+ * tabs, the playground at the lesson's model, at that tab and market. The
+ * screen then writes the address the page has now, so it says what did.
  *
  * A lesson's answers come from the history entry, never the address: Back to
  * a lesson finds it as the student left it, and a link handed round does not.
@@ -64,12 +90,17 @@ interface Page {
 function pageAt(): Page {
     const found = readPlace(window.location, import.meta.env.BASE_URL),
         link = readLink(window.location.search);
-    if (found && found.place.kind === 'playground') {
+    if (!found) return { place: null };
+    if (found.place.kind === 'news') {
+        const story = storyById(found.place.id);
+        return story ? { place: { kind: 'news', id: story.id }, link } : { place: null };
+    }
+    if (found.place.kind === 'playground') {
         const model = modelById(found.place.id);
         return { place: { kind: 'playground', id: model.id }, link: model.id === found.place.id ? link : undefined };
     }
-    const lesson = lessonById(found ? found.place.id : null),
-        named = !!found && lesson.id === found.place.id;
+    const lesson = lessonById(found.place.id),
+        named = lesson.id === found.place.id;
     if (named && found.old && link.tab) return { place: { kind: 'playground', id: lesson.model.id }, link };
     const kept = window.history.state ? window.history.state.answered as Answered | undefined : undefined;
     return {
@@ -117,8 +148,8 @@ export function App() {
     }, [presenting, changePanel]);
 
     /**
-     * Which page is open — a lesson, or a model in the playground — kept in
-     * the address as well as here.
+     * Which page is open — Home, a lesson, a model in the playground or a
+     * story in the news — kept in the address as well as here.
      *
      * The address is what makes a page something a teacher can hand out, and
      * it is read at load and on Back and Forward, and written on every change:
@@ -127,10 +158,22 @@ export function App() {
      * at its start, so it is pushed as its path alone.
      */
     const [page, setPage] = useState(pageAt);
-    const lesson = page.place.kind === 'lesson' ? lessonById(page.place.id) : null;
-    const model = lesson ? lesson.model : modelById(page.place.id);
-    const topic = lesson ? topicOfLesson(lesson.id) : topicOfModel(model.id);
-    const place: NavPanel = lesson ? 'lessons' : 'playground';
+    const at = page.place;
+    const lesson = at && at.kind === 'lesson' ? lessonById(at.id) : null;
+    const story = at && at.kind === 'news' ? storyById(at.id) : null;
+    const model = lesson ? lesson.model : story ? story.model : at ? modelById(at.id) : null;
+    const topic = lesson ? topicOfLesson(lesson.id) : story ? topicOfStory(story) : model ? topicOfModel(model.id) : null;
+    const place: NavPlace = !at ? 'home' : lesson ? 'lessons' : story ? 'news' : 'playground';
+
+    // Home is the root, so a path the app does not have, or a story that is
+    // not there, says so: the address becomes the root, as a lesson that has
+    // gone becomes the address of the one that opened.
+    useEffect(() => {
+        const root = new URL(linkHref(''));
+        if (!at && (window.location.pathname !== root.pathname || window.location.search !== '')) {
+            window.history.replaceState(window.history.state, '', root);
+        }
+    }, [at]);
 
     useEffect(() => {
         const follow = () => setPage(pageAt());
@@ -144,21 +187,39 @@ export function App() {
     }, []);
 
     const select = useCallback((panel: NavPanel, id: string) => {
-        const next: Place = { kind: panel === 'lessons' ? 'lesson' : 'playground', id };
-        if (next.kind !== page.place.kind || next.id !== page.place.id) go(writeLink(next));
+        const next: Place = { kind: KIND[panel], id };
+        if (!page.place || next.kind !== page.place.kind || next.id !== page.place.id) go(writeLink(next));
         // Choosing puts the list away, so the page gets the room: the panel
         // floats over the stage above `sm`, and below it the overlay covers
         // the page just chosen. The rail's icon brings it back.
         changePanel(null);
     }, [page, go, changePanel]);
 
+    /** Home, from the rail: pushed, as any page is, and any panel put away. */
+    const goHome = useCallback(() => {
+        if (page.place) go('');
+        changePanel(null);
+    }, [page, go, changePanel]);
+
+    // Above `sm` a panel floats beside the rail; below it, it is in the
+    // burger's overlay, which Home's press has to open along with it.
+    const theme = useMantineTheme();
+    const floats = useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
+
+    /** A place's panel, brought out from Home as its icon on the rail would. */
+    const bringOut = useCallback((next: NavPanel) => {
+        if (!floats) openMobile();
+        setPanel(next);
+    }, [floats, openMobile]);
+
     const toggleMobile = () => {
         if (mobileOpened) {
             changePanel(null);
         } else {
             openMobile();
-            // At the panel of the place the open page belongs to.
-            setPanel(place);
+            // At the panel of the place the open page belongs to: on Home,
+            // which has none, the Lessons panel, where a course starts.
+            setPanel(place === 'home' ? 'lessons' : place);
         }
     };
 
@@ -186,10 +247,11 @@ export function App() {
     }, []);
 
     /**
-     * Finish: the lesson's market, opened in the playground. Pushed, as
-     * opening any page is, so Back returns to the recap — once the lesson's
-     * own entry is brought up to the view it is leaving, which a paced write
-     * may not have reached.
+     * Finish, or a story's "Open in the Playground": the market the page
+     * leaves, opened in the playground. Pushed, as opening any page is, so
+     * Back returns to the recap, or the story — once the page's own entry is
+     * brought up to the view it is leaving, which a paced write may not have
+     * reached.
      */
     const finish = useCallback((address: string, from: string | null) => {
         if (from) followView(from);
@@ -235,8 +297,10 @@ export function App() {
                     panel={panel}
                     onPanelChange={changePanel}
                     lists={LISTS}
-                    page={{ place, id: page.place.id, topic: topic ? topic.id : null }}
+                    news={NEWS}
+                    page={{ place, id: at ? at.id : '', topic: at ? (topic ? topic.id : null) : FIRST_TOPIC }}
                     onSelect={select}
+                    onHome={goHome}
                 />
             </AppShell.Navbar>
 
@@ -251,7 +315,9 @@ export function App() {
                   * rather than one screen's state carried into a diagram it
                   * was never about. Opened at the view the address names, as a
                   * link opens. */}
-                {lesson ? (
+                {!model ? (
+                    <Home onPanel={bringOut} onOpen={go} />
+                ) : lesson ? (
                     <StudyScreen
                         key={`lesson/${lesson.id}`}
                         content={lesson}
@@ -260,6 +326,15 @@ export function App() {
                         answered={page.answered}
                         onLinkChange={followView}
                         onAnswer={remember}
+                        onFinish={finish}
+                    />
+                ) : story ? (
+                    <StudyScreen
+                        key={`news/${story.id}`}
+                        story={story}
+                        topic={topic}
+                        link={page.link}
+                        onLinkChange={followView}
                         onFinish={finish}
                     />
                 ) : (
