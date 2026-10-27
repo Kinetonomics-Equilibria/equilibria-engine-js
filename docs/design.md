@@ -65,7 +65,7 @@ attention on finding things.
 
    | Colour | Means | Where |
    | --- | --- | --- |
-   | Blue (primary) | You can act here; where you are | buttons, links, the current step |
+   | Blue (primary) | You can act here; where you are | buttons, links, the current step, Present while presenting |
    | Light blue | A word to learn | key-term callouts |
    | Yellow | A question waiting for you | the question callout, its progress marker, the cover's bars for a question |
    | Teal | The reasoning | "Why" after a question; a right answer, in a verdict and in the recap; the recap's takeaway |
@@ -81,12 +81,12 @@ attention on finding things.
 ## The title line
 
 ```
- The Australian dollar, and what moves it          Focus│Grid  ┊  ↺ Reset
+ The Australian dollar, and what moves it       Focus│Grid  ┊  ↺ Reset  ▭
 ```
 
 - The lesson's title, and at its end the tools that act on the whole stage:
-  Focus | Grid, a hairline, then Reset (`TitleLine`). Present and Share go
-  after Reset when they are built (see "Reserved for later"), so none of
+  Focus | Grid, a hairline, Reset, then Present (`TitleLine`). Share goes
+  after Present when it is built (see "Reserved for later"), so none of
   these has to move.
 - Not over the stage, where a tool lands on a panel's caption, and not in
   the side column, whose cards each answer one question that none of these
@@ -95,11 +95,17 @@ attention on finding things.
   never depends on it. Where the line runs short the tools' names go first,
   measured against the lesson's own title rather than set at a breakpoint;
   where even that leaves the title too long, it is cut with an ellipsis
-  rather than wrapped. At 900px the A$ lesson's title loses its last two
-  words; from about 1000px Reset says its name.
-- Under a sheet, Focus | Grid and Reset are disabled, not hidden.
+  rather than wrapped. Reset says its name from about 1040px, and the A$
+  lesson's title is whole from about 985px; at 900px it reads "The
+  Australian dollar, and w…".
+- Reset says its name; Present is an icon, with "Present to a class" as its
+  label and its tooltip. Reset's icon has its name as a tooltip once the
+  name has gone.
+- Under a sheet, Focus | Grid and Reset are disabled, not hidden. Present
+  still works: a cover is worth showing a class.
 - On a phone there is no room for the row: Focus | Grid stays, a `⋯` beside
-  it holds Reset, and the title wraps, as it always has. The `⋯` and the
+  it holds Reset, and the title wraps, as it always has. Present is not
+  offered there. The `⋯` and the
   instruments' door are as tall as the toggle and 6px apart, which keeps the
   first lesson's title to three lines while exploring; in the lesson the `⋯`
   still costs the title a line, about 26px of the stage.
@@ -123,6 +129,24 @@ attention on finding things.
 - It does not move the lesson's place or forget an answer: a curve whose
   answer is in stays where it was answered. The lesson's own Back and track
   move the lesson.
+
+### Present
+
+- The whole page full screen with the rail put away, for a classroom
+  projector. The rail is about the app, and a class has no use for it, so
+  the stage gets its width; it is inert while it is away, so the keyboard
+  cannot reach it.
+- Nothing else changes: the stage notices its new size and arranges itself,
+  as it does when the window changes, and the lesson, the side column and
+  whatever the student had done stay as they were.
+- Esc comes back, and so does Present again, which shows pressed (light
+  blue, "where you are") while the page is presenting. Whether it is
+  presenting is the browser's to say (`present.ts`): Esc is the browser's
+  key and never reaches the page, so the screen reads
+  `document.fullscreenElement` rather than keeping a flag that Esc would
+  leave behind.
+- Not offered on a phone, and not where the browser cannot go full screen
+  (Safari on an iPhone).
 
 ## The side column
 
@@ -199,7 +223,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 
 | Piece | Where | What it is |
 | --- | --- | --- |
-| Title line | `TitleLine.tsx` | The lesson's title and the stage's tools on one line that never wraps: the tools' names go first, then the title is cut. On a phone the tools but Focus \| Grid are in a `⋯`. |
+| Title line | `TitleLine.tsx` | The lesson's title and the stage's tools on one line that never wraps: the tools' names go first, then the title is cut. On a phone the tools but Focus \| Grid are in a `⋯`, and Present is not offered. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close on a phone, "What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
@@ -288,19 +312,11 @@ foot, which the tools to come there are placed around.
  The Australian dollar, and what moves it    Focus│Grid  ┊  ↺ Reset  ▭  ⇪ Share
 ```
 
-- Present and Share join [the title line](#the-title-line) after Reset, in
-  that order. Share goes at the far end because it is the page's, not the
-  stage's.
-- Share says its name; Present is an icon, with "Present to a class" as its
-  label. Where the line runs short Share's name goes with Reset's, before
-  the title is cut.
-- Under a sheet, Present and Share still work.
-
-### Present
-
-Full screen with the rail put away, for a classroom projector; Esc comes
-back. Nothing else changes: the stage notices its new size and arranges
-itself, as it does when the window changes. Not offered on a phone.
+- Share joins [the title line](#the-title-line) after Present, at the far
+  end because it is the page's, not the stage's.
+- Share says its name. Where the line runs short it goes with Reset's,
+  before the title is cut.
+- Under a sheet, Share still works.
 
 ### Share
 

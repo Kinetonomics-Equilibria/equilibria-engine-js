@@ -1,20 +1,22 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { ActionIcon, Button, Divider, Menu, SegmentedControl, Title } from '@mantine/core';
-import { IconDots, IconRotate } from '@tabler/icons-react';
+import { ActionIcon, Button, Divider, Menu, SegmentedControl, Title, Tooltip } from '@mantine/core';
+import { IconDots, IconPresentation, IconRotate } from '@tabler/icons-react';
 import type { StageMode } from 'equilibria-react';
+import { canPresent, togglePresenting, usePresenting } from './present';
 import classes from './TitleLine.module.css';
 
 /**
  * The lesson's title, and at its end the tools that act on the whole stage.
  *
- * Focus | Grid, a hairline, then Reset: the order the design language keeps
- * for them ("Reserved for later" in `docs/design.md`), so that Present and
- * Share land after Reset without moving it. Not over the stage, where a tool
- * lands on a panel's caption, and not in the side column, whose cards each
- * answer a question none of these answers.
+ * Focus | Grid, a hairline, Reset, then Present: the order the design language
+ * keeps for them (`docs/design.md`), so that Share lands after Present without
+ * moving either. Not over the stage, where a tool lands on a panel's caption,
+ * and not in the side column, whose cards each answer a question none of
+ * these answers.
  *
  * On a phone there is no room for the row: Focus | Grid stays, and a `⋯`
- * beside it holds the rest.
+ * beside it holds the rest. Present is not one of them: a phone is not what a
+ * class watches.
  */
 
 export interface TitleLineProps {
@@ -84,6 +86,7 @@ export function TitleLine({
 }: TitleLineProps) {
     const { line, heading, tools, named } = useNamesFit(stacked);
     const resetDisabled = covered || !canReset;
+    const presenting = usePresenting();
 
     return (
         <div ref={line} className={classes.line} data-stacked={stacked || undefined}>
@@ -131,16 +134,36 @@ export function TitleLine({
                                 Reset
                             </Button>
                         ) : (
-                            <ActionIcon
-                                variant="default"
-                                size="input-xs"
-                                aria-label="Reset"
-                                disabled={resetDisabled}
-                                onClick={onReset}
-                            >
-                                <IconRotate {...ICON} />
-                            </ActionIcon>
+                            <Tooltip label="Reset" withArrow transitionProps={{ duration: 0 }}>
+                                <ActionIcon
+                                    variant="default"
+                                    size="input-xs"
+                                    aria-label="Reset"
+                                    disabled={resetDisabled}
+                                    onClick={onReset}
+                                >
+                                    <IconRotate {...ICON} />
+                                </ActionIcon>
+                            </Tooltip>
                         )}
+                        {/* The page full screen with the rail put away, and
+                          * pressed until the browser says it is not: Esc, which
+                          * the browser takes for itself, or this again. Still
+                          * works under a sheet — a cover is worth showing a
+                          * class. Not offered where the browser cannot. */}
+                        {canPresent() ? (
+                            <Tooltip label="Present to a class" withArrow transitionProps={{ duration: 0 }}>
+                                <ActionIcon
+                                    variant={presenting ? 'light' : 'default'}
+                                    size="input-xs"
+                                    aria-label="Present to a class"
+                                    aria-pressed={presenting}
+                                    onClick={togglePresenting}
+                                >
+                                    <IconPresentation {...ICON} />
+                                </ActionIcon>
+                            </Tooltip>
+                        ) : null}
                     </>
                 )}
                 {/* Where the dock is a sheet it has no permanent edge to grab,

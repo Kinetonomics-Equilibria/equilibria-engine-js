@@ -5,6 +5,7 @@ import { DoubleNavbar } from './components/DoubleNavbar';
 import type { NavPanel } from './components/DoubleNavbar';
 import { StudyScreen } from './StudyScreen';
 import { CURRICULUM, lessonById } from './lessons';
+import { usePresenting } from './present';
 import classes from './App.module.css';
 
 /** The lesson the address names: `?lesson=fx`. */
@@ -34,6 +35,20 @@ export function App() {
         // puts the overlay away too. Above it there is no overlay to close.
         if (!next) closeMobile();
     }, [closeMobile]);
+
+    /**
+     * Presenting puts the rail away, and Esc brings it back.
+     *
+     * The rail is about the app — where to go, who you are — and a class
+     * watching a projector has no use for it, so the stage gets its width, and
+     * arranges itself for it as it does for a wider window. Inert while it is
+     * away, so the keyboard cannot reach buttons nobody can see. A lessons
+     * panel left out goes with it.
+     */
+    const presenting = usePresenting();
+    useEffect(() => {
+        if (presenting) changePanel(null);
+    }, [presenting, changePanel]);
 
     const toggleMobile = () => {
         if (mobileOpened) {
@@ -86,7 +101,7 @@ export function App() {
                 // only bites on desktop.
                 width: NAVBAR_WIDTH,
                 breakpoint: 'sm',
-                collapsed: { mobile: !mobileOpened }
+                collapsed: { mobile: !mobileOpened || presenting, desktop: presenting }
             }}
         >
             {/* With no header there is no bar to hold the burger, so it
@@ -108,7 +123,7 @@ export function App() {
             />
 
             {/* No border: the rail inside is a card with an edge of its own. */}
-            <AppShell.Navbar withBorder={false} className={classes.navbar}>
+            <AppShell.Navbar withBorder={false} className={classes.navbar} inert={presenting}>
                 <DoubleNavbar
                     panel={panel}
                     onPanelChange={changePanel}
