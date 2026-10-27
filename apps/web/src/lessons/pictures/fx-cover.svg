@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1012" height="400" viewBox="0 0 1012 400">
   <!-- The exchange-rate lesson's cover: an ore carrier leaving an Australian
        port, a plane overhead. Exports and travel, the two things the lesson's
-       first steps say the world buys A$ for. Flat shapes in the screen's
+       first steps say the world buys AUD for. Flat shapes in the screen's
        slate and a muted terracotta for the ore, so nothing here borrows a
        curve's colour (docs/design.md: colour means one thing). -->
   <rect width="1012" height="400" fill="#eef4fb"/>

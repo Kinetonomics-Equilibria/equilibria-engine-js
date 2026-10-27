@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="760" height="420" viewBox="0 100 760 420">
-  <!-- Who needs A$, for the A$ lesson's first step: what Australia sells
-       leaves for buyers overseas, and A$ come back to pay for it.
+  <!-- Who needs AUD, for the AUD lesson's first step: what Australia sells
+       leaves for buyers overseas, and AUD come back to pay for it.
 
        Animated with CSS, which runs in an <img>; nothing else here needs the
        page. fx-trade-still.svg is this drawing with the motion off, which the
@@ -11,7 +11,7 @@
        at nearly its own size and a 13px label stays 13px.
 
        The coins are the demand curve's blue (the engine's `colors.demand`),
-       because every A$ they stand for is demand for A$. Nothing else here
+       because every AUD they stand for is demand for AUD. Nothing else here
        borrows a curve's colour. -->
   <style>
     text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -67,15 +67,15 @@
         <text x="522" y="20">Shares</text>
       </g>
     </g>
-    <g id="coinSet" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">
-      <circle cx="15" cy="15" r="15" fill="#1f77b4"/><text x="15" y="19">A$</text>
-      <circle cx="67" cy="15" r="15" fill="#1f77b4"/><text x="67" y="19">A$</text>
-      <circle cx="119" cy="15" r="15" fill="#1f77b4"/><text x="119" y="19">A$</text>
-      <circle cx="171" cy="15" r="15" fill="#1f77b4"/><text x="171" y="19">A$</text>
-      <circle cx="223" cy="15" r="15" fill="#1f77b4"/><text x="223" y="19">A$</text>
-      <circle cx="275" cy="15" r="15" fill="#1f77b4"/><text x="275" y="19">A$</text>
-      <circle cx="327" cy="15" r="15" fill="#1f77b4"/><text x="327" y="19">A$</text>
-      <circle cx="379" cy="15" r="15" fill="#1f77b4"/><text x="379" y="19">A$</text>
+    <g id="coinSet" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">
+      <circle cx="15" cy="15" r="15" fill="#1f77b4"/><text x="15" y="19">AUD</text>
+      <circle cx="67" cy="15" r="15" fill="#1f77b4"/><text x="67" y="19">AUD</text>
+      <circle cx="119" cy="15" r="15" fill="#1f77b4"/><text x="119" y="19">AUD</text>
+      <circle cx="171" cy="15" r="15" fill="#1f77b4"/><text x="171" y="19">AUD</text>
+      <circle cx="223" cy="15" r="15" fill="#1f77b4"/><text x="223" y="19">AUD</text>
+      <circle cx="275" cy="15" r="15" fill="#1f77b4"/><text x="275" y="19">AUD</text>
+      <circle cx="327" cy="15" r="15" fill="#1f77b4"/><text x="327" y="19">AUD</text>
+      <circle cx="379" cy="15" r="15" fill="#1f77b4"/><text x="379" y="19">AUD</text>
     </g>
   </defs>
 
@@ -90,8 +90,8 @@
   <g fill="#495057">
     <circle cx="135" cy="180" r="14"/><path d="M109 226 a26 24 0 0 1 52 0 z"/>
   </g>
-  <rect x="97" y="252" width="76" height="24" rx="12" fill="#fff" stroke="#dee2e6"/>
-  <text x="135" y="268.5" font-size="12" font-weight="600" fill="#495057" text-anchor="middle">US$ → A$</text>
+  <rect x="89" y="252" width="92" height="24" rx="12" fill="#fff" stroke="#dee2e6"/>
+  <text x="135" y="268.5" font-size="12" font-weight="600" fill="#495057" text-anchor="middle">USD → AUD</text>
 
   <!-- Australia, under the Southern Cross. -->
   <circle cx="625" cy="225" r="95" fill="#f1f3f5"/>
@@ -116,7 +116,7 @@
     </g>
   </g>
 
-  <!-- What comes back, left to right: A$. -->
+  <!-- What comes back, left to right: AUD. -->
   <line x1="251" y1="265" x2="509" y2="265" stroke="#a5c8e4" stroke-width="2" stroke-dasharray="6 6"/>
   <path d="M523 265 l-12 -7 v14 z" fill="#a5c8e4"/>
   <g mask="url(#lane)">
@@ -127,7 +127,7 @@
       </g>
     </g>
   </g>
-  <text x="380" y="308" font-size="13" font-weight="600" fill="#1f77b4" text-anchor="middle">Paid for in A$</text>
+  <text x="380" y="308" font-size="13" font-weight="600" fill="#1f77b4" text-anchor="middle">Paid for in AUD</text>
 
   <g text-anchor="middle">
     <text x="135" y="356" font-size="19" font-weight="600" fill="#000">Overseas buyers</text>
@@ -138,6 +138,6 @@
     <text x="625" y="398" font-size="14" fill="#868e96">universities, hotels</text>
   </g>
 
-  <text x="380" y="470" font-size="17" font-weight="600" fill="#1f77b4" text-anchor="middle">Every A$ they need is part of the demand for A$</text>
+  <text x="380" y="470" font-size="17" font-weight="600" fill="#1f77b4" text-anchor="middle">Every AUD they need is part of the demand for AUD</text>
   <line x1="350" y1="488" x2="410" y2="488" stroke="#1f77b4" stroke-width="3" stroke-linecap="round"/>
 </svg>

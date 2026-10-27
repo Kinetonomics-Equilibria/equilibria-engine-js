@@ -320,20 +320,30 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
         });
     });
 
-    // "What changed" marks a cause in its curve's colour and the curves it
-    // moved in the same one, so that is a claim about everything the param
-    // draws — and a marker in the wrong colour renders as happily as the right.
-    it('names, for each param it colours, the colour of everything that param draws', () => {
-        const objects = ((lesson.diagram.layout as any).CustomLayout.panels as any[])
-            .flatMap(panel => panel.objects);
+    // "What changed" marks a cause in its curve's colour, and the curves it
+    // moved in the same one beside the first of them, so that is a claim about
+    // everything the param draws in the first panel it draws in — and a marker
+    // in the wrong colour renders as happily as the right. A later panel may
+    // show the same trades from the other side, where the param moves a curve
+    // of the other kind in that kind's colour (the FX lesson's USD market):
+    // still one of the lesson's curve colours, never a raw one.
+    it('names, for each param it colours, the colour of everything that param draws first', () => {
+        const panels = (lesson.diagram.layout as any).CustomLayout.panels as any[];
+        const words = Object.values(lesson.paramWords || {});
+        const curveColours = words.filter(w => w.curve).map(w => `colors.${w.curve}`);
         Object.keys(lesson.paramWords || {}).forEach(name => {
             const curve = lesson.paramWords![name].curve;
             if (!curve) return;
             const mentions = new RegExp(`params\\.${name}\\b`);
-            const drawn = objects.filter(object => mentions.test(JSON.stringify(object.def)));
-            expect(drawn.length, `param "${name}" draws something`).toBeGreaterThan(0);
-            drawn.forEach(object => {
+            const drawnIn = panels
+                .map(panel => (panel.objects as any[]).filter(object => mentions.test(JSON.stringify(object.def))))
+                .filter(drawn => drawn.length > 0);
+            expect(drawnIn.length, `param "${name}" draws something`).toBeGreaterThan(0);
+            drawnIn[0].forEach(object => {
                 expect(object.def.color, `"${object.def.name}", drawn by "${name}"`).toBe(`colors.${curve}`);
+            });
+            drawnIn.slice(1).flat().forEach(object => {
+                expect(curveColours, `"${object.def.name}", drawn by "${name}"`).toContain(object.def.color);
             });
         });
     });

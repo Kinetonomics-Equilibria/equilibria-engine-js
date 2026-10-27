@@ -41,7 +41,7 @@ attention on finding things.
 3. **Words before symbols.** Plain words first, the economics word second, the
    letter last. A slider says who is behind its curve ("People overseas paying
    for Australian exports, holidays and assets") before it says 50. A move is
-   reported as "The A$ appreciates  US$0.65 → US$0.70", not "A$1 = ▲". And the
+   reported as "The AUD appreciates  USD 0.65 → USD 0.70", not "AUD 1 = ▲". And the
    words are the lesson's own — the steps that teach appreciation are titled
    with the very phrases the chain uses — so exploring and the lesson describe
    one event one way.
@@ -93,16 +93,16 @@ which is why the column stops at 380.
 
  ┌────────────────────────┐          ┌────────────────────────┐ ┬
  │ Lesson Explore Scen… … │          │ Lesson Explore Scen… … │ │ where you are,
- │ Part 2 of 3 · …        │          │ Demand for A$       50 │ │ what you can do
+ │ Part 2 of 3 · …        │          │ Demand for AUD      50 │ │ what you can do
  │ ▬▬▬▬ ▬▬▬▬▬ ▬▬▬▬        │          │ who it is              │ │
- │ Demand for A$ …        │          │ ━━━━━━━○━━━━━━━━━━━━━━ │ │ two thirds
+ │ Demand for AUD …       │          │ ━━━━━━━○━━━━━━━━━━━━━━ │ │ two thirds
  │ step words, key term,  │          │ Try this               │ │
  │ the question or try-it │          │ ○ …                    │ │
  │ Back      1 of 5  Next │          │                        │ │
  ├────────────────────────┤          ├────────────────────────┤ ┼
  │ What changed     Undo  │          │ What changed     Undo  │ │ what it did
  │ ○ Demand … increases   │          │ ○ ·  ●  …              │ │
- │ ● The A$ appreciates   │          │                        │ │ one third
+ │ ● The AUD appreciates  │          │                        │ │ one third
  └────────────────────────┘          └────────────────────────┘ ┴
 ```
 
@@ -130,7 +130,7 @@ which is why the column stops at 380.
 
 The strip under the stage is one line that must never grow — a strip that grew
 would shrink the diagram under the student's pointer. So it clipped a long
-chain from the end, and the end is the effects: after moving supply of A$ by
+chain from the end, and the end is the effects: after moving supply of AUD by
 two, the strip showed the cause and the shifting curves and **not the change in
 the exchange rate**, which is the thing the student moved something to see. The
 lesson's words left the strip for the same reason (see `LessonCard`). Beside the
@@ -178,11 +178,11 @@ change:
 | Field | Read by | Write it as |
 | --- | --- | --- |
 | `paramWords.about` | Explore, under each control | Who is behind the curve, one short sentence. Not the unit. |
-| `paramWords.rise` / `fall` | The chain's cause | A whole clause, present tense, sentence case: "Supply of A$ increases". |
-| `paramWords.curve` | The chain's markers, and the param's slider | The colour its curve is drawn in, as the diagram names it: `demand` for `color: 'colors.demand'`. Every curve the param moves should be drawn in it. |
-| `narratedCalcs[].rise` / `fall` | The chain's effects | The step title that teaches it: "The A$ appreciates", "Sellers earn more". Mind reciprocals — a dearer US$1 is a US$ that has *appreciated*. |
+| `paramWords.rise` / `fall` | The chain's cause | A whole clause, present tense, sentence case: "Supply of AUD increases". |
+| `paramWords.curve` | The chain's markers, and the param's slider | The colour its curve is drawn in, as the diagram names it: `demand` for `color: 'colors.demand'`. Where the param moves curves in two panels, the colour of the first panel's: demand for AUD is blue, though in the USD market it moves the orange supply of USD. |
+| `narratedCalcs[].rise` / `fall` | The chain's effects | The step title that teaches it: "The AUD appreciates", "Sellers earn more". Mind reciprocals — a dearer USD 1 is a USD that has *appreciated*. |
 | `explorePrompts` | "Try this" | Two or three open questions, each answerable with the controls on screen. |
-| `scenarios[].description` | Scenarios | The reasoning: who needs A$ or sells them, so which curve, which way. |
+| `scenarios[].description` | Scenarios | The reasoning: who needs AUD or sells them, so which curve, which way. |
 | step `term` | The lesson card | A word, and what it means, the first time it is used. |
 | `cover` | The stage, before the first step | A question the lesson answers, one line ending "?", and a hook of one short paragraph. Not the lesson's title over again. |
 | step `picture` | The stage, at that step | A key in `pictures`. The step's words stay on the card and say what the picture is for; the step draws nothing on the diagram under it. |
@@ -196,9 +196,9 @@ first version of the screen did, so a lesson can gain them one at a time.
 
 ## Writing for the screen
 
-- Present tense, sentence case, plain words first: "Demand for A$ increases".
+- Present tense, sentence case, plain words first: "Demand for AUD increases".
 - Name the people behind a curve, not the curve: "Australians paying for
-  imports" says more than "Supply of A$".
+  imports" says more than "Supply of AUD".
 - Numbers as the diagram prints them: `formatValue`, the narrated label and
   unit, tabular digits, was → now. Never a colour for a direction.
 - Nothing scolds. A rule the diagram can't break gets a note with an

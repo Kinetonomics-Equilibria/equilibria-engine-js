@@ -7,10 +7,10 @@ import { FOREIGN_EXCHANGE, FX_LESSON } from '../lessons/foreignExchange';
 import { theme } from '../theme';
 
 /**
- * The A$ lesson, held to what it says — with a real engine underneath.
+ * The AUD lesson, held to what it says — with a real engine underneath.
  *
- * Its sentences quote exchange rates: "A$1 now buys US$0.70", "US$1 costs
- * A$1.43". Those are claims about numbers the diagram solves to, and the only
+ * Its sentences quote exchange rates: "AUD 1 now buys USD 0.70", "USD 1 costs
+ * AUD 1.43". Those are claims about numbers the diagram solves to, and the only
  * honest check is to walk the lesson and read the diagram's own captions at
  * each step. A fixture would be testing itself.
  */
@@ -45,11 +45,11 @@ const caption = (panel: 'market' | 'mirror') => {
 /** The cover's parts row: each part's name and how it is counted. */
 const FX_PARTS = [
     ['1 · Meet the market', '5 steps'],
-    ['2 · When the A$ moves', '5 steps'],
+    ['2 · When the AUD moves', '5 steps'],
     ['3 · Your turn', '4 questions']
 ];
 
-/** The first question: the RBA, and demand for A$. */
+/** The first question: the RBA, and demand for AUD. */
 const FIRST_QUESTION = FX_LESSON.findIndex(step => !!step.ask) + 1;
 
 const row = () => screen.getByRole('group', { name: 'Question' });
@@ -60,7 +60,7 @@ const words = () =>
         .textContent || '';
 const verdict = () => row().querySelector('[role="status"]')!.textContent || '';
 
-type Curve = 'Demand for A$' | 'Supply of A$';
+type Curve = 'Demand for AUD' | 'Supply of AUD';
 
 /**
  * A curve's slider in the question row, by its name.
@@ -144,19 +144,19 @@ describe('the picture step', () => {
         return () => { window.matchMedia = original };
     }
 
-    const picture = () => screen.queryByRole('region', { name: 'Who needs A$' });
+    const picture = () => screen.queryByRole('region', { name: 'Who needs AUD' });
 
-    it('shows who needs A$ across the stage, with the diagram under it', async () => {
+    it('shows who needs AUD across the stage, with the diagram under it', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(next());
 
         const sheet = picture()!;
-        expect(within(sheet).getByRole('img').getAttribute('alt')).toMatch(/demand for A\$/);
+        expect(within(sheet).getByRole('img').getAttribute('alt')).toMatch(/demand for AUD/);
         expect(document.querySelector('.kg-container')!.closest('[inert]')).toBeTruthy();
         // The step's words are the card's, and only the card's.
         expect(words()).toContain('Who wants Australian dollars?');
-        expect(sheet.textContent).not.toContain('People overseas need A$');
+        expect(sheet.textContent).not.toContain('People overseas need AUD');
     });
 
     it('pauses on its still, and plays again', async () => {
@@ -197,7 +197,7 @@ describe('the picture step', () => {
         await user.click(next());
         expect(picture()).toBeNull();
         expect(document.querySelector('[inert]')).toBeNull();
-        expect(words()).toContain('Demand for A$ slopes down');
+        expect(words()).toContain('Demand for AUD slopes down');
     });
 });
 
@@ -219,15 +219,15 @@ describe('the recap', () => {
         await user.click(marker(FIRST_QUESTION));
 
         // Interest rates rise: demand right, first time.
-        press('Demand for A$', 'ArrowRight', 5);
+        press('Demand for AUD', 'ArrowRight', 5);
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
         // Prices rise faster here: supply left (wrong), then right.
-        press('Supply of A$', 'ArrowLeft', 3);
+        press('Supply of AUD', 'ArrowLeft', 3);
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Try again' }));
-        press('Supply of A$', 'ArrowRight', 8);
+        press('Supply of AUD', 'ArrowRight', 8);
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -237,7 +237,7 @@ describe('the recap', () => {
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
         // Australians spend less overseas: supply left, first time.
-        press('Supply of A$', 'ArrowLeft', 5);
+        press('Supply of AUD', 'ArrowLeft', 5);
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -252,14 +252,14 @@ describe('the recap', () => {
             ['China buys less iron ore', 'You used Show me'],
             ['Australians spend less overseas', 'Right first time']
         ]);
-        expect(cases()[0].textContent).toContain('Demand for A$ increases');
-        expect(cases()[3].textContent).toContain('Supply of A$ decreases');
-        expect(within(recap()!).getByText(/more demand or less supply and the A\$ appreciates/)).toBeTruthy();
+        expect(cases()[0].textContent).toContain('Demand for AUD increases');
+        expect(cases()[3].textContent).toContain('Supply of AUD decreases');
+        expect(within(recap()!).getByText(/more demand or less supply and the AUD appreciates/)).toBeTruthy();
 
         // Back to the question that was shown, and right this time.
         const shown = FX_LESSON.findIndex(step => step.title === 'China buys less iron ore') + 1;
         await user.click(marker(shown));
-        press('Demand for A$', 'ArrowLeft', 5);
+        press('Demand for AUD', 'ArrowLeft', 5);
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(marker(FX_LESSON.length));
         expect(read()[2]).toEqual(['China buys less iron ore', 'You used Show me']);
@@ -303,23 +303,23 @@ describe('the report beside the first question', () => {
         mount();
         await user.click(marker(FIRST_QUESTION));
         await user.click(screen.getByRole('button', { name: 'Show the news report' }));
-        expect(screen.getByRole('button', { name: 'Show A$ market' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Show AUD market' })).toBeTruthy();
 
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Show me' }));
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-        expect(screen.queryByRole('button', { name: 'Show A$ market' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Show AUD market' })).toBeNull();
         expect(document.querySelector('[data-testid="stage-chrome"] [data-panel="market"]')!
             .getAttribute('data-role')).toBe('focal');
     });
 });
 
-describe('what the lesson says the A$ is worth', () => {
+describe('what the lesson says the AUD is worth', () => {
 
-    it('opens at A$1 = US$0.65, with the US$ side still to come', () => {
+    it('opens at AUD 1 = USD 0.65, with the USD side still to come', () => {
         mount();
-        expect(caption('market')).toContain('A$1 = US$0.65');
+        expect(caption('market')).toContain('AUD 1 = USD 0.65');
         expect(caption('mirror')).toBe('');
     });
 
@@ -331,19 +331,19 @@ describe('what the lesson says the A$ is worth', () => {
             await user.click(next());
             const said = FX_LESSON[position - 1].say || '';
 
-            // A US$ amount to the cent is the price of A$1; an A$ amount to the
-            // cent is the price of US$1. Every sentence that quotes a rate
+            // A USD amount to the cent is the price of AUD 1; an AUD amount to the
+            // cent is the price of USD 1. Every sentence that quotes a rate
             // quotes one of those two, and each panel's caption headlines one.
-            (said.match(/US\$\d+\.\d\d/g) || []).forEach(rate => {
+            (said.match(/USD \d+\.\d\d/g) || []).forEach(rate => {
                 expect(caption('market'), `step ${position}: "${said}"`).toContain(rate);
             });
-            (said.match(/(?<!US)A\$\d+\.\d\d/g) || []).forEach(rate => {
+            (said.match(/AUD \d+\.\d\d/g) || []).forEach(rate => {
                 expect(caption('mirror'), `step ${position}: "${said}"`).toContain(rate);
             });
         }
     });
 
-    it('calls a rise in the A$ an appreciation only where the A$ rose', async () => {
+    it('calls a rise in the AUD an appreciation only where the AUD rose', async () => {
         const user = userEvent.setup();
         mount();
 
@@ -352,8 +352,8 @@ describe('what the lesson says the A$ is worth', () => {
             const said = FX_LESSON[position - 1].say || '';
             // The chip is the diagram's own record of which way the rate went
             // at this step, against the snapshot the step took.
-            if (/the A\$ has appreciated/.test(said)) expect(caption('market')).toContain('▲');
-            if (/the A\$ has depreciated/.test(said)) expect(caption('market')).toContain('▼');
+            if (/the AUD has appreciated/.test(said)) expect(caption('market')).toContain('▲');
+            if (/the AUD has depreciated/.test(said)) expect(caption('market')).toContain('▼');
         }
     });
 });
@@ -365,42 +365,42 @@ describe('the questions', () => {
         mount();
         await user.click(marker(FIRST_QUESTION));
 
-        press('Demand for A$', 'ArrowRight', 5);
+        press('Demand for AUD', 'ArrowRight', 5);
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(verdict()).toContain('Correct');
         // The prompt no longer names the curve, so the verdict does.
-        expect(verdict()).toContain('You moved demand for A$ right, which is the right direction.');
+        expect(verdict()).toContain('You moved demand for AUD right, which is the right direction.');
         // Five steps of two is ten, and ten is five US cents on the rate.
-        expect(caption('market')).toContain('A$1 = US$0.70');
+        expect(caption('market')).toContain('AUD 1 = USD 0.70');
     });
 
     it('says which way a wrong answer went, sideways, and which way it should have', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
-        press('Demand for A$', 'ArrowRight', 1);
+        press('Demand for AUD', 'ArrowRight', 1);
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-        // Relative prices: supply of A$ should go right. Move it left.
+        // Relative prices: supply of AUD should go right. Move it left.
         expect(words()).toContain('Australians switch to imports');
-        press('Supply of A$', 'ArrowLeft', 3);
+        press('Supply of AUD', 'ArrowLeft', 3);
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
-        expect(verdict()).toContain('You moved supply of A$ left, but this change moves it right.');
+        expect(verdict()).toContain('You moved supply of AUD left, but this change moves it right.');
     });
 
-    it('starts each question from A$1 = US$0.65, whatever was moved on the way', async () => {
+    it('starts each question from AUD 1 = USD 0.65, whatever was moved on the way', async () => {
         const user = userEvent.setup();
         mount();
         // The step that shifts supply, and then the question after it.
         await user.click(marker(FIRST_QUESTION - 1));
-        expect(caption('market')).toContain('A$1 = US$0.60');
+        expect(caption('market')).toContain('AUD 1 = USD 0.60');
 
         await user.click(marker(FIRST_QUESTION));
-        expect(caption('market')).toContain('A$1 = US$0.65');
-        expect(caption('mirror')).toContain('US$1 = A$1.54');
+        expect(caption('market')).toContain('AUD 1 = USD 0.65');
+        expect(caption('mirror')).toContain('USD 1 = AUD 1.54');
     });
 });
 
@@ -416,13 +416,13 @@ describe('choosing the curve', () => {
         const names = () => within(row()).getAllByRole('slider').map(s => s.getAttribute('aria-label'));
 
         await user.click(marker(FIRST_QUESTION));                     // about demand
-        expect(names()).toEqual(['Demand for A$', 'Supply of A$']);
+        expect(names()).toEqual(['Demand for AUD', 'Supply of AUD']);
         await user.click(screen.getByRole('button', { name: 'Check' }));
         await user.click(screen.getByRole('button', { name: 'Show me' }));
         await user.click(screen.getByRole('button', { name: 'Continue' }));
 
         expect(words()).toContain('Australians switch to imports');   // about supply
-        expect(names()).toEqual(['Demand for A$', 'Supply of A$']);
+        expect(names()).toEqual(['Demand for AUD', 'Supply of AUD']);
     });
 
     it('counts moving the other curve as an attempt', async () => {
@@ -431,7 +431,7 @@ describe('choosing the curve', () => {
         await user.click(marker(FIRST_QUESTION));
         expect(row().getAttribute('data-phase')).toBe('prompt');
 
-        press('Supply of A$', 'ArrowRight', 1);
+        press('Supply of AUD', 'ArrowRight', 1);
         expect(row().getAttribute('data-phase')).toBe('attempt');
     });
 
@@ -444,11 +444,11 @@ describe('choosing the curve', () => {
         mount();
         await user.click(marker(FIRST_QUESTION));
 
-        press('Supply of A$', 'ArrowRight', 2);
+        press('Supply of AUD', 'ArrowRight', 2);
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(verdict()).toContain('Not yet');
-        expect(verdict()).toContain('This change moves demand for A$, so supply of A$ should stay where it was.');
+        expect(verdict()).toContain('This change moves demand for AUD, so supply of AUD should stay where it was.');
         expect(verdict()).not.toContain('haven\'t moved');
         expect(screen.getByText('Answer the question to unlock the next step.')).toBeTruthy();
     });
@@ -459,17 +459,17 @@ describe('choosing the curve', () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
-        press('Supply of A$', 'ArrowRight', 1);
+        press('Supply of AUD', 'ArrowRight', 1);
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
-        (['Demand for A$', 'Supply of A$'] as Curve[]).forEach(curve => {
+        (['Demand for AUD', 'Supply of AUD'] as Curve[]).forEach(curve => {
             const control = sliderFor(curve);
             const before = control.getAttribute('aria-valuetext');
             fireEvent.keyDown(control, { key: 'End' });
             expect(control.getAttribute('aria-valuetext'), curve).toBe(before);
             expect(screen.getAllByRole('slider', { name: curve }), curve).toEqual([control]);
         });
-        expect(caption('market')).toContain('A$1 = US$0.64');
+        expect(caption('market')).toContain('AUD 1 = USD 0.64');
     });
 
     /**
@@ -482,18 +482,18 @@ describe('choosing the curve', () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
-        press('Demand for A$', 'ArrowRight', 2);                   // 54: right, as asked
-        press('Supply of A$', 'ArrowRight', 3);                    // 56: and supply too
+        press('Demand for AUD', 'ArrowRight', 2);                   // 54: right, as asked
+        press('Supply of AUD', 'ArrowRight', 3);                    // 56: and supply too
         await user.click(screen.getByRole('button', { name: 'Check' }));
-        expect(verdict()).toContain('supply of A$ should stay where it was');
-        expect(verdict()).toContain('You moved demand for A$ right, which is the right direction.');
+        expect(verdict()).toContain('supply of AUD should stay where it was');
+        expect(verdict()).toContain('You moved demand for AUD right, which is the right direction.');
 
         await user.click(screen.getByRole('button', { name: 'Try again' }));
 
-        expect(sliderFor('Supply of A$').getAttribute('aria-valuetext')).toBe('50');
-        expect(sliderFor('Demand for A$').getAttribute('aria-valuetext')).toBe('54');
+        expect(sliderFor('Supply of AUD').getAttribute('aria-valuetext')).toBe('50');
+        expect(sliderFor('Demand for AUD').getAttribute('aria-valuetext')).toBe('54');
         // 0.65 + (54 − 50)/200: the market with only demand moved.
-        expect(caption('market')).toContain('A$1 = US$0.67');
+        expect(caption('market')).toContain('AUD 1 = USD 0.67');
         // The reset was the screen's move, not the student's, so it is not
         // narrated as theirs: the strip is at rest rather than reporting supply
         // shifting left.
@@ -561,7 +561,7 @@ describe('showing a direction-only answer', () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
-        press('Demand for A$', 'ArrowRight', 1);
+        press('Demand for AUD', 'ArrowRight', 1);
         await user.click(screen.getByRole('button', { name: 'Check' }));
 
         expect(verdict()).toContain('Correct');
@@ -599,42 +599,51 @@ describe('the colour of what changed', () => {
         };
     }
 
-    it('marks demand for A$ in the colour of both curves it moves', async () => {
+    // Demand is blue and supply orange in both panels, so each param moves one
+    // curve of each colour: demand for AUD moves the supply of USD it is on the
+    // other side. Its clause is marked in the AUD market curve's colour, and so
+    // are the movements, whose first line is that curve.
+    it('marks demand for AUD in the colour of its AUD market curve', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
 
-        const { strokes, cause, movement } = move('Demand for A$');
+        const { strokes, cause, movement } = move('Demand for AUD');
         expect(cause).toMatch(/^#[0-9a-f]{6}$/i);
-        // Demand for A$, and the supply of US$ it is on the other side.
-        expect(strokes).toEqual([cause, cause]);
+        expect(strokes).toHaveLength(2);
+        expect(strokes[0]).toBe(cause);
+        expect(strokes[1]).not.toBe(cause);
         expect(movement).toBe(cause);
     });
 
-    it('marks supply of A$ in its own', async () => {
+    it('marks supply of AUD in its own', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
 
-        const { strokes, cause, movement } = move('Supply of A$');
+        const { strokes, cause, movement } = move('Supply of AUD');
         expect(cause).toMatch(/^#[0-9a-f]{6}$/i);
-        expect(strokes).toEqual([cause, cause]);
+        expect(strokes).toHaveLength(2);
+        expect(strokes[0]).toBe(cause);
+        expect(strokes[1]).not.toBe(cause);
         expect(movement).toBe(cause);
     });
 
     // The slider that moves a curve is drawn in the curve's colour, so a
     // student choosing between two can match each to its line.
-    it('draws each slider in the colour of the curves it moves', async () => {
+    it('draws each slider in the colour of the AUD market curve it moves', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(FIRST_QUESTION));
 
         const colourOf = (curve: Curve) => (sliderFor(curve).closest('.mantine-Slider-root') as HTMLElement)
             .style.getPropertyValue('--slider-color');
-        (['Demand for A$', 'Supply of A$'] as Curve[]).forEach(curve => {
-            const { strokes } = move(curve);
-            expect(colourOf(curve), curve).toBe(strokes[0]);
-        });
-        expect(colourOf('Demand for A$')).not.toBe(colourOf('Supply of A$'));
+        const demand = move('Demand for AUD'), supply = move('Supply of AUD');
+        expect(colourOf('Demand for AUD')).toBe(demand.strokes[0]);
+        expect(colourOf('Supply of AUD')).toBe(supply.strokes[0]);
+        expect(colourOf('Demand for AUD')).not.toBe(colourOf('Supply of AUD'));
+        // One colour to a kind of curve, in both panels: the blue that demand
+        // moved in the AUD market is the blue supply moved in the USD market.
+        expect(demand.strokes).toEqual([...supply.strokes].reverse());
     });
 });

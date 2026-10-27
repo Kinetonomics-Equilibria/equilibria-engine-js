@@ -3,17 +3,17 @@ import type { Locator, Page } from '@playwright/test';
 import { dataCoordinates, focalPointCoordinates, RENDERED, test, textCollisions } from './helpers';
 
 /**
- * The A$ lesson, in a real browser.
+ * The AUD lesson, in a real browser.
  *
- * What only a browser can say: that the A$ market and the US$ market are two
+ * What only a browser can say: that the AUD market and the USD market are two
  * regions of one SVG drawn by one engine, that a curve written as quantity in
  * terms of the rate is dragged *sideways* and narrated as moving right, and that
  * the rate the diagram draws is the rate the lesson's sentences quote.
  */
 
-// The market in src/lessons/foreignExchange.ts: demand for A$ is
+// The market in src/lessons/foreignExchange.ts: demand for AUD is
 // Q = demand − 100(e − 0.65) and supply is Q = supply + 100(e − 0.65), both at
-// 50, so it clears at Q* = 50 and e* = US$0.65 — and the US$ side at A$1/0.65.
+// 50, so it clears at Q* = 50 and e* = USD 0.65 — and the USD side at AUD 1/0.65.
 const EQUILIBRIUM = { Q: 50, rate: 0.65 };
 
 // Read back through the tick labels. The rate axis runs 0.40 to 0.90 over the
@@ -45,7 +45,7 @@ async function toTheEnd(page: Page) {
 /**
  * A curve in the focal panel that takes a pointer, by which way it slopes.
  *
- * Demand for A$ runs down to the right and supply up to the right, and that is
+ * Demand for AUD runs down to the right and supply up to the right, and that is
  * the one thing that tells the two apart from outside: both are hit-areas the
  * size of the panel's diagonal. Read from the path's own ends rather than its
  * box, which is the same for both.
@@ -104,7 +104,7 @@ const lessonWords = (page: Page) =>
     page.getByRole('region', { name: 'Lesson' }).locator('[aria-live="polite"]').first();
 
 /**
- * The first question — the RBA, which moves demand for A$ — from a fresh load.
+ * The first question — the RBA, which moves demand for AUD — from a fresh load.
  *
  * The RBA is in the news report beside the diagram (P15), not on the card: the
  * card asks the question, and the report tells the story.
@@ -125,11 +125,11 @@ async function toTheFirstQuestion(page: Page) {
  * Dotted is the answer line's style and nothing else's in this lesson — a live
  * curve is solid and a question's start is dashed — so these are what "Show me"
  * drew. Each comes back as where its box is centred, in the axes' own units, and
- * which way it slopes: the rate axis runs US$0.40 to US$0.90, so the centre of a
- * straight line spanning it is where it crosses US$0.65, the rate every question
+ * which way it slopes: the rate axis runs USD 0.40 to USD 0.90, so the centre of a
+ * straight line spanning it is where it crosses USD 0.65, the rate every question
  * starts from, and the slope says whether it is a demand curve or a supply one —
  * which the centre alone cannot, since demand and supply shifted right by the
- * same amount cross US$0.65 at the same quantity.
+ * same amount cross USD 0.65 at the same quantity.
  */
 async function dottedLines(page: Page) {
     const drawn = page.locator(`.kg-container ${RENDERED.visibleCurve}`);
@@ -153,10 +153,10 @@ test.beforeEach(async ({ page }) => {
     await page.locator('.kg-container svg').waitFor();
 });
 
-test('opens the A$ lesson from its address', async ({ page }) => {
+test('opens the AUD lesson from its address', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();
     await page.getByRole('button', { name: 'Lessons' }).click();
-    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('link', { name: 'Exchange rates (AUD)' })).toHaveAttribute('aria-current', 'page');
 });
 
 // The cover's parts are the track's parts, drawn the same way: a student who
@@ -189,7 +189,7 @@ test('the picture step starts still, for a student who asked for less motion', a
     const under = (await svg.boundingBox())!;
 
     await page.getByRole('button', { name: 'Start lesson' }).click();
-    const sheet = page.getByRole('region', { name: 'Who needs A$' });
+    const sheet = page.getByRole('region', { name: 'Who needs AUD' });
     await expect(sheet.locator('img')).toHaveAttribute('src', /still/);
     expect(await svg.boundingBox()).toEqual(under);
 
@@ -207,7 +207,7 @@ test.describe('with motion', () => {
 
     test('the picture step moves, and pauses on its still', async ({ page }) => {
         await page.getByRole('button', { name: 'Start lesson' }).click();
-        const sheet = page.getByRole('region', { name: 'Who needs A$' });
+        const sheet = page.getByRole('region', { name: 'Who needs AUD' });
         await expect(sheet.locator('img')).not.toHaveAttribute('src', /still/);
 
         await sheet.getByRole('button', { name: 'Pause the animation' }).click();
@@ -222,7 +222,7 @@ test.describe('with motion', () => {
  * outcome are on the sheet: a right answer in the teal the screen gives right
  * answers, a shown one in grey, which is no verdict. Under the recap the
  * diagram is inert, so Tab passes over it — the rail's promote button for the
- * US$ market included.
+ * USD market included.
  */
 test('the last step looks back over the questions, and says how each went', async ({ page }) => {
     const markers = page.locator('button[data-kinds]');
@@ -230,7 +230,7 @@ test('the last step looks back over the questions, and says how each went', asyn
     await markers.nth(kinds.findIndex((k) => k.includes('ask'))).click();
 
     const question = page.getByRole('group', { name: 'Question' });
-    const demand = question.getByRole('slider', { name: 'Demand for A$' });
+    const demand = question.getByRole('slider', { name: 'Demand for AUD' });
     await demand.focus();
     for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
     await question.getByRole('button', { name: 'Check' }).click();
@@ -249,7 +249,7 @@ test('the last step looks back over the questions, and says how each went', asyn
     ]);
     const colour = (n: number) => outcomes.nth(n).evaluate(el => getComputedStyle(el).backgroundColor);
     expect(await colour(0)).not.toBe(await colour(1));
-    await expect(recap.getByText(/the A\$ appreciates, the reverse and it depreciates/)).toBeVisible();
+    await expect(recap.getByText(/the AUD appreciates, the reverse and it depreciates/)).toBeVisible();
 
     await page.locator('body').click({ position: { x: 1, y: 1 } });
     const inStage: boolean[] = [];
@@ -278,20 +278,20 @@ test('clears at the rate the lesson quotes, on both sides', async ({ page }) => 
     const market = await focalPointCoordinates(page);
     expect(Math.abs(market.x - EQUILIBRIUM.Q), `Q* drawn at ${market.x}`).toBeLessThan(TOLERANCE.Q);
     expect(Math.abs(market.y - EQUILIBRIUM.rate), `e* drawn at ${market.y}`).toBeLessThan(TOLERANCE.rate);
-    await expect(caption(page, 'market')).toContainText('A$1 = US$0.65');
+    await expect(caption(page, 'market')).toContainText('AUD 1 = USD 0.65');
 
     // The same trades from the US side: the same quantity, at the reciprocal.
-    await page.getByRole('button', { name: 'Show US$ market' }).click();
+    await page.getByRole('button', { name: 'Show USD market' }).click();
     const mirror = await focalPointCoordinates(page);
     expect(Math.abs(mirror.x - EQUILIBRIUM.Q), `Q* drawn at ${mirror.x}`).toBeLessThan(TOLERANCE.Q);
     expect(Math.abs(mirror.y - 1 / EQUILIBRIUM.rate), `1/e* drawn at ${mirror.y}`).toBeLessThan(0.02);
-    await expect(caption(page, 'mirror')).toContainText('US$1 = A$1.54');
+    await expect(caption(page, 'mirror')).toContainText('USD 1 = AUD 1.54');
 });
 
 /**
  * The Maths instrument, in this lesson's letters and currencies.
  *
- * Its labels are written to sit in front of a number — "A$1 =" — so the
+ * Its labels are written to sit in front of a number — "AUD 1 =" — so the
  * formulas take the diagram's own symbols instead: `e*` from the market's
  * dropline and `1/e*` from the mirror's. And every result is in the currency
  * the caption quotes it in, because the caption is beside it.
@@ -306,51 +306,51 @@ test('the maths instrument writes the rate as the diagram does', async ({ page }
     await expect(open.locator('[data-calc]')).toHaveCount(3);
     await expect(open.locator('.katex-error')).toHaveCount(0);
 
-    expect(await working('rate')).toMatch(/^e∗=0\.65\+200demand−supply=0\.65\+20050−50=US\$0\.65$/);
-    await expect(caption(page, 'market')).toContainText('A$1 = US$0.65');
+    expect(await working('rate')).toMatch(/^e∗=0\.65\+200demand−supply=0\.65\+20050−50=USD0\.65$/);
+    await expect(caption(page, 'market')).toContainText('AUD 1 = USD 0.65');
 
     // `1/e*` is the whole of its formula, so it is said once, not twice.
-    expect(await working('inverse')).toMatch(/^e∗1=0\.651=A\$1\.54$/);
-    await page.getByRole('button', { name: 'Show US$ market' }).click();
-    await expect(caption(page, 'mirror')).toContainText('US$1 = A$1.54');
+    expect(await working('inverse')).toMatch(/^e∗1=0\.651=AUD1\.54$/);
+    await page.getByRole('button', { name: 'Show USD market' }).click();
+    await expect(caption(page, 'mirror')).toContainText('USD 1 = AUD 1.54');
 
     expect(await working('Qe')).toMatch(/^Q∗=2demand\+supply=250\+50=50$/);
 
     // The words, upright and explained, rather than d·e·m·a·n·d in italics.
-    await expect(open.getByRole('definition')).toHaveText(['A$ demanded at US$0.65', 'A$ supplied at US$0.65']);
+    await expect(open.getByRole('definition')).toHaveText(['AUD demanded at USD 0.65', 'AUD supplied at USD 0.65']);
 });
 
-test('demand for A$ is dragged right, and the A$ appreciates', async ({ page, pageErrors }) => {
+test('demand for AUD is dragged right, and the AUD appreciates', async ({ page, pageErrors }) => {
     await toTheEnd(page);
     const before = await focalPointCoordinates(page);
 
     await dragSideways(page, 'down', 60);
 
     const after = await focalPointCoordinates(page);
-    expect(after.y, 'the A$ should have risen').toBeGreaterThan(before.y + 0.01);
-    expect(after.x, 'more A$ should change hands').toBeGreaterThan(before.x);
+    expect(after.y, 'the AUD should have risen').toBeGreaterThan(before.y + 0.01);
+    expect(after.x, 'more AUD should change hands').toBeGreaterThan(before.x);
 
-    // Sideways, said sideways — and the US$ side said with it, a line each.
+    // Sideways, said sideways — and the USD side said with it, a line each.
     const moved = page.getByRole('region', { name: 'What changed' }).locator('[data-part="movement"] > *');
-    await expect(moved).toHaveText(['demand for A$ shifts to the right', 'supply of US$ shifts to the right']);
+    await expect(moved).toHaveText(['demand for AUD shifts to the right', 'supply of USD shifts to the right']);
     await expect(caption(page, 'market')).toContainText('▲');
     await expect(caption(page, 'mirror')).toContainText('▼');
     expect(pageErrors).toEqual([]);
 });
 
-test('supply of A$ is dragged right, and the A$ depreciates', async ({ page }) => {
+test('supply of AUD is dragged right, and the AUD depreciates', async ({ page }) => {
     await toTheEnd(page);
     const before = await focalPointCoordinates(page);
 
     await dragSideways(page, 'up', 60);
 
     const after = await focalPointCoordinates(page);
-    expect(after.y, 'the A$ should have fallen').toBeLessThan(before.y - 0.01);
+    expect(after.y, 'the AUD should have fallen').toBeLessThan(before.y - 0.01);
     const card = page.getByRole('region', { name: 'What changed' });
     await expect(card.locator('[data-part="movement"] > *'))
-        .toHaveText(['supply of A$ shifts to the right', 'demand for US$ shifts to the right']);
+        .toHaveText(['supply of AUD shifts to the right', 'demand for USD shifts to the right']);
     // And what that is called, in the words the lesson taught.
-    await expect(card.locator('[data-part="effect"] > *').first()).toContainText('The A$ depreciates');
+    await expect(card.locator('[data-part="effect"] > *').first()).toContainText('The AUD depreciates');
     await expect(caption(page, 'market')).toContainText('▼');
 });
 
@@ -398,20 +398,20 @@ test('each slider is drawn in the colour of the curve it moves', async ({ page }
 
     const demand = await strokeOf(await curveSloping(page, 'down')),
         supply = await strokeOf(await curveSloping(page, 'up'));
-    expect(await sliderColours(question.getByRole('slider', { name: 'Demand for A$' }))).toEqual([demand, demand]);
-    expect(await sliderColours(question.getByRole('slider', { name: 'Supply of A$' }))).toEqual([supply, supply]);
+    expect(await sliderColours(question.getByRole('slider', { name: 'Demand for AUD' }))).toEqual([demand, demand]);
+    expect(await sliderColours(question.getByRole('slider', { name: 'Supply of AUD' }))).toEqual([supply, supply]);
 });
 
 test('a question about demand is answered by dragging it, and marked in its own words', async ({ page }) => {
     const question = await toTheFirstQuestion(page);
     // The prompt asks which curve, and does not say.
     await expect(lessonWords(page)).toContainText('Which curve moves, and which way?');
-    await expect(lessonWords(page)).not.toContainText(/demand for A\$/i);
+    await expect(lessonWords(page)).not.toContainText(/demand for AUD/i);
 
     await dragSideways(page, 'down', 50);
     await question.getByRole('button', { name: 'Check' }).click();
 
-    await expect(question.getByRole('status')).toContainText('You moved demand for A$ right, which is the right direction.');
+    await expect(question.getByRole('status')).toContainText('You moved demand for AUD right, which is the right direction.');
 });
 
 /**
@@ -429,7 +429,7 @@ test('dragging supply on a demand question is told so, in words', async ({ page,
     await question.getByRole('button', { name: 'Check' }).click();
 
     await expect(question.getByRole('status'))
-        .toContainText('This change moves demand for A$, so supply of A$ should stay where it was.');
+        .toContainText('This change moves demand for AUD, so supply of AUD should stay where it was.');
     await expect(question.getByRole('status')).not.toContainText('haven\'t moved');
     expect(pageErrors).toEqual([]);
 });
@@ -437,28 +437,28 @@ test('dragging supply on a demand question is told so, in words', async ({ page,
 test('the keyboard chooses a curve as the mouse does', async ({ page }) => {
     const question = await toTheFirstQuestion(page);
 
-    const supply = question.getByRole('slider', { name: 'Supply of A$' });
+    const supply = question.getByRole('slider', { name: 'Supply of AUD' });
     await supply.focus();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
 
     await expect(question.getByRole('status'))
-        .toContainText('This change moves demand for A$, so supply of A$ should stay where it was.');
+        .toContainText('This change moves demand for AUD, so supply of AUD should stay where it was.');
     // The supply curve really moved: two steps of two is two US cents off the rate.
-    await expect(caption(page, 'market')).toContainText('A$1 = US$0.63');
+    await expect(caption(page, 'market')).toContainText('AUD 1 = USD 0.63');
 });
 
 /**
  * "Show me" on a question with no target (P14) used to draw nothing. It now
  * draws the right curve shifted the right way by the question's `illustrate`,
  * and this is the one place that can say *how far*: read back through the
- * axes, demand for A$ shifted ten to the right crosses US$0.65 at 60.
+ * axes, demand for AUD shifted ten to the right crosses USD 0.65 at 60.
  */
-test('"Show me" draws demand for A$ shifted ten to the right', async ({ page, pageErrors }) => {
+test('"Show me" draws demand for AUD shifted ten to the right', async ({ page, pageErrors }) => {
     const question = await toTheFirstQuestion(page);
     await question.getByRole('button', { name: 'Check' }).click();
-    await expect(question.getByRole('status')).toContainText('You haven\'t moved demand for A$ or supply of A$ yet.');
+    await expect(question.getByRole('status')).toContainText('You haven\'t moved demand for AUD or supply of AUD yet.');
 
     // A wrong answer is a reason to offer the answer, not to show it.
     expect(await dottedLines(page)).toEqual([]);
@@ -468,7 +468,7 @@ test('"Show me" draws demand for A$ shifted ten to the right', async ({ page, pa
 
     const [answer] = await dottedLines(page);
     expect(answer.slopesDown, 'the answer should be a demand curve').toBe(true);
-    expect(Math.abs(answer.x - 60), `crosses US$0.65 at ${answer.x}`).toBeLessThan(TOLERANCE.Q);
+    expect(Math.abs(answer.x - 60), `crosses USD 0.65 at ${answer.x}`).toBeLessThan(TOLERANCE.Q);
     expect(Math.abs(answer.y - EQUILIBRIUM.rate), `centred at ${answer.y}`).toBeLessThan(TOLERANCE.rate);
 
     // And it goes with the question.
@@ -495,15 +495,15 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
     await dragSideways(page, 'down', 60);
     const strip = page.locator('[data-kind]');
     await expect(strip).toHaveAttribute('data-kind', 'settled');
-    // A ghost in each panel: the market's demand for A$ and, linked to it, the
-    // mirror's supply of US$.
+    // A ghost in each panel: the market's demand for AUD and, linked to it, the
+    // mirror's supply of USD.
     const ghosted = await page.locator(RENDERED.visibleCurve).count();
     expect(ghosted).toBeGreaterThan(curves);
     const chips = [await caption(page, 'market').innerText(), await caption(page, 'mirror').innerText()];
     expect(chips[0]).toContain('▲');
     expect(chips[1]).toContain('▼');
     const chain = await strip.locator('[data-chain]').textContent();
-    expect(chain).toContain('demand for A$ shifts to the right');
+    expect(chain).toContain('demand for AUD shifts to the right');
     await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
 
     const remembered = async (where: string) => {
@@ -538,7 +538,7 @@ test('no text on the stage lands on other text', async ({ page }) => {
 
     for (const arrangement of ['Focus', 'Grid']) {
         await page.getByText(arrangement, { exact: true }).click();
-        for (const scenario of ['Back to A$1 = US$0.65', 'Iron ore prices soar', 'Australians holiday abroad']) {
+        for (const scenario of ['Back to AUD 1 = USD 0.65', 'Iron ore prices soar', 'Australians holiday abroad']) {
             // Exact: a progress marker is named by its step's title, and a
             // title could share words with a scenario.
             await page.getByRole('button', { name: scenario, exact: true }).click();
@@ -549,7 +549,7 @@ test('no text on the stage lands on other text', async ({ page }) => {
 
 /**
  * The news report beside the first question (P15): a panel of the stage's, as
- * the US$ market is, drawn by the app rather than the engine.
+ * the USD market is, drawn by the app rather than the engine.
  *
  * Promoted from the keyboard it travels to the front, the diagram steps aside
  * for it, and it is read there; once the question is done it goes, and the
@@ -565,7 +565,7 @@ test('the first question has its news report beside it, as a panel of the stage'
     await page.keyboard.press('Enter');
     await expect.poll(async () => (await report.boundingBox())!.width).toBeGreaterThan(small.width * 1.5);
     await expect(report).toContainText('A made-up report, for this question');
-    await expect(page.getByRole('button', { name: 'Show A$ market' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Show AUD market' })).toBeVisible();
 
     await question.getByRole('button', { name: 'Check' }).click();
     await question.getByRole('button', { name: 'Show me' }).click();
@@ -620,9 +620,9 @@ test('the Lessons panel moves between lessons, and the back button returns', asy
     const market = page.getByRole('link', { name: 'Supply and demand' });
 
     // Put away until the rail brings it out, and out on the open lesson's topic.
-    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Exchange rates (AUD)' })).toHaveCount(0);
     await lessons.click();
-    await expect(page.getByRole('link', { name: 'Exchange rates (A$)' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Exchange rates (AUD)' })).toBeVisible();
     await expect(market).toHaveCount(0);
 
     // Another topic drops down to its own lessons.

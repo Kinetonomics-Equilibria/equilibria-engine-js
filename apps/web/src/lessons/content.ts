@@ -147,8 +147,11 @@ export interface ParamWords extends Reading {
      * it shifted; and the param's slider is drawn in it, wherever one is
      * handed out, so the control is tied to the same line. A name and not a value, because the engine is what knows
      * which blue `demand` is (`getColors()`), and a value written here would
-     * be a second palette. The chain says it of every curve the param
-     * moves, so every one of them should be drawn in it.
+     * be a second palette. The chain says it of the curves the param moves,
+     * beside the first of them, so every one it moves in the first panel that
+     * draws it should be drawn in it. A later panel showing the same trades
+     * from the other side may draw a curve of the other kind in that kind's
+     * colour, as the FX lesson's USD market does.
      */
     curve?: string;
 }

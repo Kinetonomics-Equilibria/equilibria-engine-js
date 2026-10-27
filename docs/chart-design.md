@@ -153,9 +153,11 @@ Colour carries meaning on the chart in the same way as on the cards (see
   palette is in `EconSchema` (`packages/engine/src/ts/KGAuthor/econ/schemas/econSchema.ts`).
   A concept with no name yet gets one, added there and to the table below,
   rather than borrowing a raw colour.
-- **A concept is the same colour on every chart.** Where the same people stand
-  behind a curve in two panels, the curve keeps its colour even when its name
-  changes, as the US$ market does with the A$ market's.
+- **A concept is the same colour on every chart.** Demand is blue and supply
+  is orange wherever they are drawn, even where two panels show the same trades
+  from either side: the USD market's supply is orange, though it is the AUD
+  market's blue demand seen from the other side. The lesson's words make that
+  link, not the colour.
 - **No more than four hues on one chart**, plus grey.
 - **Colour is never the only difference.** Every curve has a label. A ghost is
   dashed as well as faint. Never use red against green to mean opposites.
@@ -198,11 +200,11 @@ no chart draws in it; darken it the same way before one does.
 ## Axes
 
 - **Every axis has a title in words, with its unit:** "Price ($)", "Quantity
-  (coffees a day)", "US$ per A$". Never a lone letter like "P" or "Q". Use
+  (coffees a day)", "USD per AUD". Never a lone letter like "P" or "Q". Use
   sentence case. `$` inside a title is written `'\\$'` in the TypeScript
   string, because the engine typesets titles and a bare `$` would start maths.
-- **`$` on its own means Australian dollars.** Write A$ only when another
-  currency is on the same screen.
+- **`$` on its own means Australian dollars.** Where another currency is on
+  the same screen, write each by its code: AUD, USD.
 - **The unit is in the title, so tick numbers are bare**: 0, 5, 10, not $0, $5,
   $10.
 - **About five ticks** (the engine's default) at round steps of 1, 2 or 5 times a
@@ -223,7 +225,7 @@ Every chart has one, in the caption row across the top of its sheet, directly
 above the plot.
 
 - **Centred over the plot, the name.** One to three words, a noun phrase,
-  sentence case, in words: "Market", "Consumer surplus", "A$ market", "Café".
+  sentence case, in words: "Market", "Consumer surplus", "AUD market", "Café".
   It names what the chart is about, in a student's words. It is centred over
   the plot, as the x axis's title is centred under it, not over the sheet,
   whose left side holds the y axis's numbers and title. Where a long headline
@@ -378,8 +380,8 @@ point gives one price, P\*, and one quantity, Q\*."
 | P | A price a seller sets, where nothing clears a market | The price axis, at the end of a dropline or a price line |
 | P₁ | Where that price goes | The price axis, for the answer after a question |
 | Q<sub>d</sub> | The quantity demanded at P | The quantity axis, at the end of a dropline |
-| e\* | The equilibrium exchange rate, US$ per A$ | The A$ market's rate axis |
-| 1/e\* | Its reciprocal, A$ per US$ | The US$ market's rate axis |
+| e\* | The equilibrium exchange rate, USD per AUD | The AUD market's rate axis |
+| 1/e\* | Its reciprocal, AUD per USD | The USD market's rate axis |
 | A, B, C… | Points the lesson names | Beside the point |
 
 A new symbol is added here first, and only if a word won't fit where it has to
@@ -391,7 +393,7 @@ Never put any of these in front of a student:
 - Unexplained Greek letters (Δ) or shorthand: w/, &, approx., qty, eq'm.
 - Shortened units: write "thousands of tonnes", not "'000 t"; "a day", not "/d".
 
-Currency codes (A$, US$) are fine: that is how money is written.
+Currency codes (AUD, USD) are fine: that is how money is written.
 
 ## Numbers
 

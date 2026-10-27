@@ -255,26 +255,26 @@ describe('choosing a curve by keyboard', () => {
     it('names each slider by its curve, where it can be seen and where it is read', async () => {
         await askFx();
         expect(within(row()).getAllByRole('slider').map(s => s.getAttribute('aria-label')))
-            .toEqual(['Demand for A$', 'Supply of A$']);
+            .toEqual(['Demand for AUD', 'Supply of AUD']);
 
         // On screen, and hidden from the reader, who has it as the slider's
         // own name: heard once, not twice.
-        const visible = within(row()).getByText('Supply of A$');
+        const visible = within(row()).getByText('Supply of AUD');
         expect(visible.getAttribute('aria-hidden')).toBe('true');
 
-        expect(named('Demand for A$').getAttribute('tabindex')).toBe('0');
-        expect(named('Supply of A$').getAttribute('tabindex')).toBe('0');
+        expect(named('Demand for AUD').getAttribute('tabindex')).toBe('0');
+        expect(named('Supply of AUD').getAttribute('tabindex')).toBe('0');
     });
 
     it('commits from either slider, and names the curve in what it announces', async () => {
         await askFx();
-        const supply = named('Supply of A$');
+        const supply = named('Supply of AUD');
         supply.focus();
         fireEvent.keyDown(supply, { key: 'ArrowRight' });
         fireEvent.keyDown(supply, { key: 'Enter' });
 
         expect(announcement().textContent)
-            .toContain('This change moves demand for A$, so supply of A$ should stay where it was.');
+            .toContain('This change moves demand for AUD, so supply of AUD should stay where it was.');
         expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
         // Off the slider that stopped working, onto the first thing that replaced it.
         expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Try again' }));
@@ -282,13 +282,13 @@ describe('choosing a curve by keyboard', () => {
 
     it('freezes both sliders when the answer is taken', async () => {
         await askFx();
-        const demand = named('Demand for A$');
+        const demand = named('Demand for AUD');
         demand.focus();
         fireEvent.keyDown(demand, { key: 'ArrowRight' });
         fireEvent.keyDown(demand, { key: 'Enter' });
-        expect(announcement().textContent).toContain('You moved demand for A$ right, which is the right direction.');
+        expect(announcement().textContent).toContain('You moved demand for AUD right, which is the right direction.');
 
-        ['Demand for A$', 'Supply of A$'].forEach(name => {
+        ['Demand for AUD', 'Supply of AUD'].forEach(name => {
             const control = named(name), before = control.getAttribute('aria-valuetext');
             fireEvent.keyDown(control, { key: 'Home' });
             expect(control.getAttribute('aria-valuetext'), name).toBe(before);
@@ -297,7 +297,7 @@ describe('choosing a curve by keyboard', () => {
 
     it('lets the student move between the two without focus being taken', async () => {
         await askFx();
-        const demand = named('Demand for A$'), supply = named('Supply of A$');
+        const demand = named('Demand for AUD'), supply = named('Supply of AUD');
         supply.focus();
         fireEvent.keyDown(supply, { key: 'ArrowRight' });
         demand.focus();
@@ -307,7 +307,7 @@ describe('choosing a curve by keyboard', () => {
 
     it('announces a wrong curve in the question row, and not again in the narration', async () => {
         await askFx();
-        const supply = named('Supply of A$');
+        const supply = named('Supply of AUD');
         supply.focus();
         fireEvent.keyDown(supply, { key: 'ArrowLeft' });
         fireEvent.keyDown(supply, { key: 'Enter' });
@@ -317,6 +317,6 @@ describe('choosing a curve by keyboard', () => {
         expect(announcement().textContent).toContain('should stay where it was');
         expect(stripSays).not.toContain('should stay where it was');
         // It goes on doing its own job: saying what moved.
-        expect(stripSays).toContain('supply of A$');
+        expect(stripSays).toContain('supply of AUD');
     });
 });
