@@ -9,9 +9,9 @@
     padding-inline-end: var(--app-burger-room, 0px);
 }
 
-/* One line beside the stage, whatever the window: the tools' names go first
- * (`useNamesFit`), and the title is cut only once they have. On a phone it
- * wraps, as it always has: cut to fit there, it would be cut to a few words. */
+/* One line beside the stage, whatever the window: the tools are icons, as wide
+ * whatever the lesson, and the title is cut where it runs into them. On a phone
+ * it wraps, as it always has: cut to fit there, it would be cut to a few words. */
 .title {
     min-width: 0;
 }
@@ -30,18 +30,30 @@
 }
 
 /* On a phone every pixel the tools take is the title's, and a line the title
- * gains comes out of the stage. The `⋯` and the instruments' door are icons
- * as tall as the toggle (`input-xs`), closer together: at 390px, exploring,
- * that keeps the first lesson's title on the three lines it had before the
- * `⋯` arrived, and the shelf's glyphs at the 80px the browser test asks for.
- * In the lesson the `⋯` still costs the title a line. */
+ * gains comes out of the stage. The tools are closer together there: at 390px
+ * that keeps the first lesson's title on two lines, exploring or in the
+ * lesson, and the shelf's glyphs at the 80px the browser test asks for. */
 .line[data-stacked] .tools {
     gap: 6px;
+}
+
+/* Borderless, greyed or not: Mantine fills a disabled icon grey, which reads
+ * as a button with a border while the others have none. */
+.tool:disabled,
+.tool[data-disabled] {
+    background-color: transparent;
 }
 
 /* Between the stage's arrangement and what acts on it, as tall as the toggle. */
 .hairline {
     align-self: stretch;
+}
+
+/* The arrangement's tooltip: its name, then what a press does, quieter, as a
+ * shortcut sits beside a name. */
+.hint {
+    margin-inline-start: 6px;
+    opacity: 0.65;
 }
 
 /* On paper the title is whole, however long, and the tools are not there. */

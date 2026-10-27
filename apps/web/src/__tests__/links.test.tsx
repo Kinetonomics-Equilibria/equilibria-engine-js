@@ -104,7 +104,7 @@ describe('The address follows the view', () => {
         await user.click(screen.getByRole('button', { name: 'Show Revenue' }));
         await settles('?lesson=market&step=7&focus=revenue');
 
-        await user.click(screen.getByRole('radio', { name: 'Grid' }));
+        await user.click(screen.getByRole('button', { name: 'Switch to Grid' }));
         await settles('?lesson=market&step=7&arrange=grid&focus=revenue');
     });
 
@@ -150,7 +150,8 @@ describe('The address follows the view', () => {
         act(() => window.history.back());
 
         await screen.findByRole('heading', { name: 'A market, and what it does to everything else' });
-        expect(marketCaption()).toContain('Price $15.00');
+        // The caption reads the engine, which draws a beat after the heading is up.
+        await waitFor(() => expect(marketCaption()).toContain('Price $15.00'));
         expect(screen.getByRole('group', { name: 'Try it' })).toBeTruthy();
     });
 });
@@ -226,9 +227,8 @@ describe('A pasted link', () => {
         const user = userEvent.setup();
         open('?lesson=market&step=7&arrange=grid&focus=revenue');
         await settles('?lesson=market&step=7&arrange=grid&focus=revenue');
-        expect(screen.getByRole('radio', { name: 'Grid' })).toHaveProperty('checked', true);
-
-        await user.click(screen.getByRole('radio', { name: 'Focus' }));
+        // In the grid, so the toggle offers Focus.
+        await user.click(screen.getByRole('button', { name: 'Switch to Focus' }));
 
         // Revenue is in front, so it is the one panel with no button to bring it there.
         expect(screen.queryByRole('button', { name: 'Show Revenue' })).toBeNull();

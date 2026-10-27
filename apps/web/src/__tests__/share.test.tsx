@@ -79,7 +79,7 @@ function scan(code: Element): string | null {
 
 describe('Share', () => {
 
-    it('is at the far end of the title line, says its name, and works under the cover', () => {
+    it('is at the far end of the title line, and works under the cover', () => {
         open();
         const line = screen.getByRole('heading', { level: 2 }).parentElement!;
         const names = within(line).getAllByRole('button').map(b => b.getAttribute('aria-label') || b.textContent);
@@ -133,7 +133,7 @@ describe('Share', () => {
         expect(sheet.textContent).toContain('localhost');
         // A sheet over the stage, so its tools are put away; Share is not.
         expect(screen.getByRole('button', { name: 'Reset' })).toHaveProperty('disabled', true);
-        expect(screen.getByRole('radio', { name: 'Grid' })).toHaveProperty('disabled', true);
+        expect(screen.getByRole('button', { name: 'Switch to Grid' })).toHaveProperty('disabled', true);
         expect(share()).toHaveProperty('disabled', false);
 
         await user.click(within(sheet).getByRole('button', { name: 'Done' }));

@@ -81,33 +81,36 @@ attention on finding things.
 ## The title line
 
 ```
- The Australian dollar, and what moves it    Focus│Grid  ┊  ↺ Reset  ▭  ⇪ Share
+ The Australian dollar, and what moves it                 ◉  ┊  ↺  ▭  ⇪
 ```
 
 - The lesson's title, and at its end the tools that act on the whole stage:
-  Focus | Grid, a hairline, Reset and Present (`TitleLine`), then Share at
-  the far end, because it is the page's rather than the stage's.
+  the arrangement, a hairline, Reset and Present (`TitleLine`), then Share
+  at the far end, because it is the page's rather than the stage's.
 - Not over the stage, where a tool lands on a panel's caption, and not in
   the side column, whose cards each answer one question that none of these
   answers.
 - One line beside the stage, whatever the window, so the stage's height
-  never depends on it. Where the line runs short the tools' names go first,
-  measured against the lesson's own title rather than set at a breakpoint;
-  where even that leaves the title too long, it is cut with an ellipsis
-  rather than wrapped. Reset and Share say their names beside the A$
-  lesson's title from about 1140px, and the title is whole from about
-  1025px; at 900px it reads "The Australian dollar, a…".
-- Reset and Share say their names, and go together; Present is an icon,
-  with "Present to a class" as its label and its tooltip. Once the names
-  have gone, each icon has its name as a tooltip.
-- Under a sheet, Focus | Grid and Reset are disabled, not hidden. Present
+  never depends on it. Every tool is an icon, so the tools are as wide
+  whatever the lesson, and where the title is too long for what they leave
+  it is cut with an ellipsis rather than wrapped. The A$ lesson's title is
+  whole from about 965px.
+- Each icon has no border, a grey wash under the pointer, and its name as
+  its label and its tooltip: Reset, "Present to a class", Share. A greyed
+  one stays borderless rather than filling grey. Present shows pressed
+  while the page is presenting.
+- The arrangement is one icon, the arrangement the stage is in — an eye for
+  Focus, four squares for Grid — and a press switches to the other, icon and
+  all. Its tooltip names the arrangement and then, quieter, what a press does
+  ("Focus  Switch to Grid"); its label is the press ("Switch to Grid"), so a
+  screen reader says what it will do.
+- Under a sheet, the arrangement and Reset are disabled, not hidden. Present
   and Share still work: a cover is worth showing a class, and worth a link.
-- On a phone there is no room for the row: Focus | Grid stays, a `⋯` beside
-  it holds Reset and Share's items, and the title wraps, as it always has.
-  Present and the QR code are not offered there. The `⋯` and the
-  instruments' door are as tall as the toggle and 6px apart, which keeps the
-  first lesson's title to three lines while exploring; in the lesson the `⋯`
-  still costs the title a line, about 26px of the stage.
+- On a phone there is no room for the row: the arrangement stays, a `⋯`
+  beside it holds Reset and Share's items, and the title wraps, as it always
+  has. Present and the QR code are not offered there. The `⋯` and the
+  instruments' door are icons as tall as the arrangement and 6px apart, which
+  keeps the first lesson's title to two lines, exploring or in the lesson.
 
 ### Reset
 
@@ -320,7 +323,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 
 | Piece | Where | What it is |
 | --- | --- | --- |
-| Title line | `TitleLine.tsx` | The lesson's title and the stage's tools on one line that never wraps: the tools' names go first, then the title is cut. On a phone the tools but Focus \| Grid are in a `⋯`, and Present is not offered. |
+| Title line | `TitleLine.tsx` | The lesson's title and the stage's tools on one line that never wraps: the tools are borderless icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
 | QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close on a phone, "What changed"'s Undo). |

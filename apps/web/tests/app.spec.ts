@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { RENDERED, focalDragPathIndex, focalPointCoordinates, test, textCollisions } from './helpers';
+import { RENDERED, arrange, focalDragPathIndex, focalPointCoordinates, test, textCollisions } from './helpers';
 
 /**
  * The study screen, in a real browser.
@@ -159,7 +159,7 @@ test('renders the study screen', async ({ page }) => {
     await expect(
         page.getByRole('heading', { name: 'A market, and what it does to everything else' })
     ).toBeVisible();
-    await expect(page.getByRole('radiogroup', { name: 'Panel arrangement' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Switch to Grid' })).toBeVisible();
 });
 
 test('draws every panel in one engine', async ({ page, pageErrors }) => {
@@ -393,9 +393,7 @@ test('the grid toggle rearranges the same panels, and is not the landing state',
     // Focus is what the screen opens on: one panel large, the others small.
     const focal = (await page.locator('.kg-container g.axis').first().boundingBox())!;
 
-    // The radio itself is visually hidden, as a segmented control's always is;
-    // the label is the thing a student clicks.
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
 
     // In the grid nothing is a rail panel any more, so every panel can be
     // promoted and none is the focal one — from its caption, since nothing is
@@ -451,17 +449,17 @@ test('no text on the stage lands on other text, in any arrangement', async ({ pa
         texts.filter(t => t.textContent === '10' && getComputedStyle(t).visibility === 'hidden').length);
     expect(withheld, 'the 10 under Q*').toBeGreaterThan(0);
 
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
     await noTextCollides(page, 'grid');
 
     // Wide enough for the rail to stand beside the focal panel.
-    await page.getByText('Focus', { exact: true }).click();
+    await arrange(page, 'Focus');
     await page.setViewportSize({ width: 1800, height: 950 });
     await expect(page.locator('[data-role="rail"]')).toHaveCount(2);
     await noTextCollides(page, 'focus, with a rail');
 
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
     await noTextCollides(page, 'grid, wide');
 });
@@ -570,7 +568,7 @@ test("a nudge keeps the ghost's label off the live one", async ({ page }) => {
 });
 
 test('a curve can be dragged in the grid', async ({ page }) => {
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
 
     // The market panel's demand curve: the hit-area inside that panel's box
@@ -606,7 +604,7 @@ test('a curve can be dragged in the grid', async ({ page }) => {
 // The grid ignores which panel is focal, so a promotion that stayed in the
 // grid changed nothing a student could see.
 test('a grid caption brings its panel to the front, and leaves the grid', async ({ page }) => {
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
     await page.locator(panel('Revenue')).click();
 
     await expect(page.locator('[data-panel="revenue"]')).toHaveAttribute('data-role', 'focal');
@@ -622,7 +620,7 @@ test('a grid caption brings its panel to the front, and leaves the grid', async 
  * still carries it as its accessible name, which is how this finds the panels.
  */
 test('a narrow grid drops its names before its numbers', async ({ page }) => {
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
 
     // At the suite's size every grid caption has room for both.
     await expect(page.locator(panel('Consumer surplus'))).toContainText('Consumer surplus');
@@ -644,7 +642,7 @@ test('a narrow grid drops its names before its numbers', async ({ page }) => {
 // is where the student works.
 test('a lone panel stays workable in the grid', async ({ page }) => {
     await backToTheLesson(page);
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
     await stepMarker(page, 2).click();
 
     await expect(page.locator('[data-panel="market"]')).toHaveAttribute('data-role', 'focal');
@@ -1531,12 +1529,12 @@ test('on a phone the lesson goes under the diagram, at a height that does not ch
 /**
  * On a phone the burger floats in the top right corner, and the title's line
  * ends with the arrangement toggle and the instruments' door. Drawn in the same
- * corner, the burger sat on the door and half of "Grid", and took their taps.
+ * corner, the burger sat on the door and half of the toggle, and took their taps.
  */
 test('on a phone the burger leaves the title row its controls', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const burger = (await page.getByRole('button', { name: 'Toggle navigation' }).boundingBox())!;
-    const toggle = page.getByRole('radiogroup', { name: 'Panel arrangement' });
+    const toggle = page.getByRole('button', { name: 'Switch to Grid' });
     const door = page.getByRole('button', { name: 'Open instruments' });
 
     for (const [name, control] of [['the toggle', toggle], ['the door', door]] as const) {
@@ -1546,7 +1544,7 @@ test('on a phone the burger leaves the title row its controls', async ({ page })
 
     // Each takes its own tap, which Playwright makes only once nothing else is
     // over the point it taps.
-    await page.getByText('Grid', { exact: true }).click();
+    await arrange(page, 'Grid');
     await expect(page.locator('[data-role="grid"]')).toHaveCount(3);
     await door.click();
     await expect(page.getByRole('dialog', { name: 'Instruments' })).toBeVisible();

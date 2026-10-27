@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { test, textCollisions } from './helpers';
+import { arrange, test, textCollisions } from './helpers';
 
 /**
  * The Air Jordans lesson, in a real browser.
@@ -47,8 +47,8 @@ test('no text on the stage lands on other text', async ({ page }) => {
     await toTheEnd(page);
     await page.getByRole('tab', { name: 'Scenarios' }).click();
 
-    for (const arrangement of ['Focus', 'Grid']) {
-        await page.getByText(arrangement, { exact: true }).click();
+    for (const arrangement of ['Focus', 'Grid'] as const) {
+        await arrange(page, arrangement);
         for (const scenario of ['Back to the start', 'Part-time shifts dry up', 'Wages rise', 'Nike takes $50 off']) {
             // Exact: a progress marker is named by its step's title, and a
             // title could share words with a scenario.

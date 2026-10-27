@@ -40,6 +40,16 @@ export const test = base.extend<{ pageErrors: string[] }>({
     }
 });
 
+/**
+ * Put the stage in an arrangement. The toggle is one icon, named for the
+ * arrangement a press switches to, so it is pressed only where the stage is
+ * not there already.
+ */
+export async function arrange(page: Page, arrangement: 'Focus' | 'Grid'): Promise<void> {
+    const toggle = page.getByRole('button', { name: /^Switch to (Focus|Grid)$/ });
+    if (await toggle.getAttribute('aria-label') === `Switch to ${arrangement}`) await toggle.click();
+}
+
 interface TickPosition {
     value: number;
     x: number;

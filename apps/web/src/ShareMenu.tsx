@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActionIcon, Button, Menu, SegmentedControl, Tooltip } from '@mantine/core';
+import { ActionIcon, Menu, SegmentedControl, Tooltip } from '@mantine/core';
 import { IconCheck, IconLink, IconPhotoDown, IconPrinter, IconQrcode, IconSend, IconShare2 } from '@tabler/icons-react';
 import { typedLink } from './share';
 import classes from './ShareMenu.module.css';
@@ -156,23 +156,19 @@ export function ShareItems({
     );
 }
 
-/** Share, on the title line beside the stage: its name, or its icon where the line runs short. */
-export function ShareMenu({ named, ...actions }: ShareActions & { named: boolean }) {
+/** Share, on the title line beside the stage: a borderless icon, as the line's other tools are. */
+export function ShareMenu(actions: ShareActions) {
     const [opened, setOpened] = useState(false);
     const [opensAt, setOpensAt] = useState<OpensAt>('view');
 
-    const button = named ? (
-        <Button variant="default" size="xs" leftSection={<IconShare2 {...ICON} />}>Share</Button>
-    ) : (
-        <ActionIcon variant="default" size="input-xs" aria-label="Share">
-            <IconShare2 {...ICON} />
-        </ActionIcon>
-    );
-
     return (
         <Menu opened={opened} onChange={setOpened} position="bottom-end" shadow="sm" width={310}>
-            <Tooltip label="Share" withArrow transitionProps={{ duration: 0 }} disabled={named || opened}>
-                <Menu.Target>{button}</Menu.Target>
+            <Tooltip label="Share" withArrow transitionProps={{ duration: 0 }} disabled={opened}>
+                <Menu.Target>
+                    <ActionIcon variant="subtle" color="gray" size="input-xs" aria-label="Share">
+                        <IconShare2 {...ICON} />
+                    </ActionIcon>
+                </Menu.Target>
             </Tooltip>
             <Menu.Dropdown>
                 <Menu.Label>The link and QR code open at</Menu.Label>

@@ -100,7 +100,7 @@ describe('the cover', () => {
         const sheet = cover()!;
         expect(within(sheet).getByRole('heading', { name: 'Why do prices go up and down?' })).toBeTruthy();
         expect(document.querySelector('.kg-container')!.closest('[inert]')).toBeTruthy();
-        expect(screen.getByRole('radio', { name: 'Grid' })).toHaveProperty('disabled', true);
+        expect(screen.getByRole('button', { name: 'Switch to Grid' })).toHaveProperty('disabled', true);
     });
 
     it("lays out the lesson's parts the way the track will", () => {

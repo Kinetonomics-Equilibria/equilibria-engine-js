@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
-import { dataCoordinates, focalPointCoordinates, RENDERED, test, textCollisions } from './helpers';
+import { arrange, dataCoordinates, focalPointCoordinates, RENDERED, test, textCollisions } from './helpers';
 
 /**
  * The AUD lesson, in a real browser.
@@ -536,8 +536,8 @@ test('no text on the stage lands on other text', async ({ page }) => {
     await toTheEnd(page);
     await page.getByRole('tab', { name: 'Scenarios' }).click();
 
-    for (const arrangement of ['Focus', 'Grid']) {
-        await page.getByText(arrangement, { exact: true }).click();
+    for (const arrangement of ['Focus', 'Grid'] as const) {
+        await arrange(page, arrangement);
         for (const scenario of ['Back to AUD 1 = USD 0.65', 'Iron ore prices soar', 'Australians holiday abroad']) {
             // Exact: a progress marker is named by its step's title, and a
             // title could share words with a scenario.
@@ -584,8 +584,8 @@ test('no text lands on other text with the report beside the diagram', async ({ 
         await page.goto('/?lesson=fx');
         await page.locator('.kg-container svg').waitFor();
         await toTheFirstQuestion(page);
-        for (const arrangement of ['Focus', 'Grid']) {
-            await page.getByText(arrangement, { exact: true }).click();
+        for (const arrangement of ['Focus', 'Grid'] as const) {
+            await arrange(page, arrangement);
             await expect(page.locator('[data-host-panel="rbaReport"]')).toBeVisible();
             await expect.poll(() => textCollisions(page), { message: `${width}x${height}, ${arrangement}` })
                 .toEqual([]);
