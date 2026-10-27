@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActionIcon, Menu, SegmentedControl, Tooltip } from '@mantine/core';
+import { ActionIcon, Menu, Tooltip } from '@mantine/core';
 import {
     IconCheck, IconCode, IconLink, IconPhotoDown, IconPrinter, IconQrcode, IconSend, IconShare2
 } from '@tabler/icons-react';
@@ -10,17 +10,16 @@ import classes from './ShareMenu.module.css';
  * Share: one menu for everything that leaves the screen, at the far end of the
  * title line because it is the page's rather than the stage's.
  *
- * The link and the QR code open at this view or at the start of the lesson,
- * as the student chooses at the top; the picture and the page are always this
- * view. Each item says under its name what it does, and says it again when it
- * has done it, in the item: the line it is on never changes width, so nothing
- * on it moves.
+ * The link and the QR code open the lesson at its start: what a class needs
+ * is the lesson, and the view is in the address bar for anyone who wants it.
+ * The picture and the page are always this view. Each item is its name and
+ * nothing under it; an item that has done its job says so in its name, and
+ * one the browser refused says why under it. The menu is as wide whatever
+ * it says, and the line it is on never changes width, so nothing moves.
  *
  * On a phone the same items sit in the title line's `⋯`, less the QR code,
  * which is for a board, and with the phone's own share sheet beside Copy link.
  */
-
-export type OpensAt = 'view' | 'start';
 
 const ICON = { size: 16, stroke: 1.75 };
 
@@ -28,26 +27,27 @@ const ICON = { size: 16, stroke: 1.75 };
 const GLYPH = { size: 20, stroke: 1.75 };
 
 export interface ShareActions {
-    /** The links Share hands out, whole: this view's, and the lesson's start. */
-    links: Record<OpensAt, string>;
+    /** The link Share hands out, whole: the lesson's, at its start. */
+    link: string;
     /** The lesson's title, for a phone's share sheet. */
     title: string;
-    /** Put a QR code for one of the links over the stage. */
-    onShowQr(opensAt: OpensAt): void;
-    /** Open the embed dialog at one of the links. Not offered without it, nor on a phone. */
-    onEmbed?: (opensAt: OpensAt) => void;
+    /** Put a QR code for the link over the stage. */
+    onShowQr(): void;
+    /** Open the embed dialog, which asks where the embed opens. Not offered without it, nor on a phone. */
+    onEmbed?: () => void;
     /** Draw the stage and download it. Absent while a sheet hides the diagram. */
     onDownload?: () => Promise<void>;
     /** Print the view. Absent while a sheet hides the diagram. */
     onPrint?: () => void;
 }
 
-/** An item's name, and what it does under it. */
-function Says({ name, says }: { name: string; says: string }) {
+/** An item's name, and under it what went wrong, only when something did. */
+function Named({ name, trouble }: { name: string; trouble: string | null }) {
+    if (!trouble) return <>{name}</>;
     return (
         <>
             <span className={classes.name}>{name}</span>
-            <span className={classes.says}>{says}</span>
+            <span className={classes.trouble}>{trouble}</span>
         </>
     );
 }
@@ -56,7 +56,6 @@ function Says({ name, says }: { name: string; says: string }) {
 const canSend = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 interface ShareItemsProps extends ShareActions {
-    opensAt: OpensAt;
     phone: boolean;
     /** Put the menu away: once a picture has been drawn and saved. */
     onDone(): void;
@@ -67,12 +66,10 @@ interface ShareItemsProps extends ShareActions {
  * says it has done is forgotten when the menu is put away.
  */
 export function ShareItems({
-    links, title, onShowQr, onEmbed, onDownload, onPrint, opensAt, phone, onDone
+    link, title, onShowQr, onEmbed, onDownload, onPrint, phone, onDone
 }: ShareItemsProps) {
-    const link = links[opensAt];
     const [copied, setCopied] = useState<'yes' | 'no' | null>(null);
     const [drawing, setDrawing] = useState<'now' | 'failed' | null>(null);
-    const hidden = 'When the diagram is back on screen';
 
     const copy = () => {
         copyText(link).then(() => setCopied('yes'), () => setCopied('no'));
@@ -93,11 +90,9 @@ export function ShareItems({
                 closeMenuOnClick={false}
                 onClick={copy}
             >
-                <Says
-                    name="Copy link"
-                    says={copied === 'yes' ? 'Copied. Paste it wherever it is going.'
-                        : copied === 'no' ? `This browser would not copy it. It is ${typedLink(link)}`
-                            : 'To paste into a message or the class page'}
+                <Named
+                    name={copied === 'yes' ? 'Copied' : 'Copy link'}
+                    trouble={copied === 'no' ? `This browser would not copy it. It is ${typedLink(link)}` : null}
                 />
             </Menu.Item>
             {phone ? (
@@ -106,17 +101,17 @@ export function ShareItems({
                         leftSection={<IconSend {...ICON} />}
                         onClick={() => { navigator.share({ title, url: link }).catch(() => undefined); }}
                     >
-                        <Says name="Send with…" says="Through an app on this phone" />
+                        Send with…
                     </Menu.Item>
                 ) : null
             ) : (
                 <>
-                    <Menu.Item leftSection={<IconQrcode {...ICON} />} onClick={() => onShowQr(opensAt)}>
-                        <Says name="Show a QR code" says="For a class to scan from the board" />
+                    <Menu.Item leftSection={<IconQrcode {...ICON} />} onClick={onShowQr}>
+                        Show a QR code
                     </Menu.Item>
                     {onEmbed ? (
-                        <Menu.Item leftSection={<IconCode {...ICON} />} onClick={() => onEmbed(opensAt)}>
-                            <Says name="Embed…" says="In a class page, and still working there" />
+                        <Menu.Item leftSection={<IconCode {...ICON} />} onClick={onEmbed}>
+                            Embed…
                         </Menu.Item>
                     ) : null}
                 </>
@@ -129,19 +124,13 @@ export function ShareItems({
                 closeMenuOnClick={false}
                 onClick={download}
             >
-                <Says
-                    name="Download the diagram"
-                    says={!onDownload ? hidden
-                        : drawing === 'now' ? 'Drawing it…'
-                            : drawing === 'failed' ? 'This browser would not draw it. Print can save a PDF.'
-                                : 'For notes, slides or an assignment'}
+                <Named
+                    name={drawing === 'now' ? 'Drawing it…' : 'Download the diagram'}
+                    trouble={drawing === 'failed' ? 'This browser would not draw it. Print can save a PDF.' : null}
                 />
             </Menu.Item>
             <Menu.Item leftSection={<IconPrinter {...ICON} />} disabled={!onPrint} onClick={onPrint}>
-                <Says
-                    name="Print or save as PDF"
-                    says={onPrint ? 'The diagram, its settings and what changed' : hidden}
-                />
+                Print or save as PDF
             </Menu.Item>
         </>
     );
@@ -150,10 +139,9 @@ export function ShareItems({
 /** Share, on the title line beside the stage: a borderless icon, as the line's other tools are. */
 export function ShareMenu(actions: ShareActions) {
     const [opened, setOpened] = useState(false);
-    const [opensAt, setOpensAt] = useState<OpensAt>('view');
 
     return (
-        <Menu opened={opened} onChange={setOpened} position="bottom-end" shadow="sm" width={310}>
+        <Menu opened={opened} onChange={setOpened} position="bottom-end" shadow="sm" width={260}>
             <Tooltip label="Share" withArrow transitionProps={{ duration: 0 }} disabled={opened}>
                 <Menu.Target>
                     <ActionIcon variant="subtle" color="gray" size="input-xs" radius="xl" aria-label="Share">
@@ -162,25 +150,7 @@ export function ShareMenu(actions: ShareActions) {
                 </Menu.Target>
             </Tooltip>
             <Menu.Dropdown>
-                <Menu.Label>The link and QR code open at</Menu.Label>
-                <SegmentedControl
-                    className={classes.opensAt}
-                    fullWidth
-                    size="xs"
-                    value={opensAt}
-                    onChange={value => setOpensAt(value as OpensAt)}
-                    data={[{ label: 'This view', value: 'view' }, { label: 'The start of the lesson', value: 'start' }]}
-                    aria-label="The link and QR code open at"
-                />
-                <Menu.Divider />
-                {/* Keyed by what it opens at, so "Copied" is about the link it copied. */}
-                <ShareItems
-                    key={opensAt}
-                    {...actions}
-                    opensAt={opensAt}
-                    phone={false}
-                    onDone={() => setOpened(false)}
-                />
+                <ShareItems {...actions} phone={false} onDone={() => setOpened(false)} />
             </Menu.Dropdown>
         </Menu>
     );

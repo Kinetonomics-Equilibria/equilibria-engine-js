@@ -44,7 +44,7 @@ import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './nar
 import { useAddressFollows, writeLink } from './links';
 import type { Link } from './links';
 import { downloadPicture, linkHref, pictureName, usePrintFit } from './share';
-import type { OpensAt, ShareActions } from './ShareMenu';
+import type { ShareActions } from './ShareMenu';
 import { QrSheet } from './QrSheet';
 import { PrintedView } from './PrintedView';
 import classes from './StudyScreen.module.css';
@@ -1765,28 +1765,25 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     ) : null;
 
     /**
-     * Share's QR code, over the stage while it is up, for this view or for the
-     * start of the lesson as Share was asked. Done or Esc puts it away. A
-     * stage sheet like a cover, but Share's rather than the lesson's: the
-     * diagram under it is still the view, so "What changed" goes on saying
-     * what it said, and the picture is drawn from under it.
+     * Share's QR code, over the stage while it is up, for the lesson's start,
+     * which is what Share's link is. Done or Esc puts it away. A stage sheet
+     * like a cover, but Share's rather than the lesson's: the diagram under
+     * it is still the view, so "What changed" goes on saying what it said,
+     * and the picture is drawn from under it.
      */
-    const [qrFor, setQrFor] = useState<OpensAt | null>(null);
+    const [qrUp, setQrUp] = useState(false);
     useEffect(() => {
-        if (!qrFor) return;
-        const away = (event: KeyboardEvent) => { if (event.key === 'Escape') setQrFor(null); };
+        if (!qrUp) return;
+        const away = (event: KeyboardEvent) => { if (event.key === 'Escape') setQrUp(false); };
         window.addEventListener('keydown', away);
         return () => window.removeEventListener('keydown', away);
-    }, [qrFor]);
+    }, [qrUp]);
 
-    const links = useMemo(() => ({
-        view: linkHref(here || writeLink(content.id)),
-        start: linkHref(writeLink(content.id))
-    }), [here, content.id]);
+    /** The view's link, for the printed page, and the lesson's, for Share. */
+    const viewLink = useMemo(() => linkHref(here || writeLink(content.id)), [here, content.id]);
+    const lessonLink = useMemo(() => linkHref(writeLink(content.id)), [content.id]);
 
-    const covering = qrFor
-        ? <QrSheet href={links[qrFor]} start={qrFor === 'start'} onClose={() => setQrFor(null)} />
-        : sheet;
+    const covering = qrUp ? <QrSheet href={lessonLink} onClose={() => setQrUp(false)} /> : sheet;
 
     /**
      * The view in words, for the printed page and the picture's name: where
@@ -1827,13 +1824,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     usePrintFit(stageBox);
     const hidden = !!sheet;
     const share: ShareActions = useMemo(() => ({
-        links,
+        link: lessonLink,
         title: content.title,
-        onShowQr: setQrFor,
+        onShowQr: () => setQrUp(true),
         onDownload: hidden ? undefined
             : () => downloadPicture(stageLayer.current!, pictureName(content.label, inWords.short)),
         onPrint: hidden ? undefined : () => window.print()
-    }), [links, content.title, content.label, hidden, inWords.short]);
+    }), [lessonLink, content.title, content.label, hidden, inWords.short]);
 
     /**
      * A tab pressed beside the stage. Between two instruments it changes only
@@ -1918,7 +1915,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
                     where={inWords.where}
                     arrangement={inWords.arrangement}
                     moved={inWords.moved}
-                    href={links.view}
+                    href={viewLink}
                 />
 
                 <div ref={stageBox} className={classes.stageBox}>

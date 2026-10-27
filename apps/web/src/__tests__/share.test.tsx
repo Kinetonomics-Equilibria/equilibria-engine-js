@@ -10,8 +10,9 @@ import { theme } from '../theme';
  * Share: the menu at the far end of the title line, for everything that leaves
  * the screen — the link, a QR code, a picture of the diagram, a printed page.
  *
- * The whole app on the shipped market lesson, since what Share hands out is
- * the address's view. The browser's halves are stood in for where jsdom has
+ * The whole app on the shipped market lesson, since the picture and the page
+ * are of the address's view, and the link is the lesson's whatever the view
+ * is. The browser's halves are stood in for where jsdom has
  * none — the clipboard, drawing a picture, the print dialog — and the QR code
  * is read back from what is drawn, as a camera would.
  */
@@ -52,6 +53,8 @@ const open = (search = '') => {
 const href = (search: string) => window.location.origin + '/' + search;
 const share = () => screen.getByRole('button', { name: 'Share' });
 const item = (name: RegExp) => screen.getByRole('menuitem', { name });
+/** Copy link, which is named "Copied" once it has. */
+const copyLink = () => item(/^(Copy link|Copied)/);
 const qrSheet = () => screen.queryByRole('region', { name: 'QR code' });
 
 /**
@@ -88,19 +91,22 @@ describe('Share', () => {
         expect(screen.getByRole('button', { name: 'Reset' })).toHaveProperty('disabled', true);
     });
 
-    it('copies the link to this view, or to the start of the lesson, and says it has', async () => {
+    it('is each item\'s name alone, with nothing under it', async () => {
         const user = userEvent.setup();
         open('?lesson=market&step=6&a=28');
         await user.click(share());
-        await user.click(item(/^Copy link/));
+        expect(screen.getAllByRole('menuitem').map(i => i.textContent))
+            .toEqual(['Copy link', 'Show a QR code', 'Download the diagramPNG', 'Print or save as PDF']);
+        expect(screen.queryByRole('radio')).toBeNull();
+    });
 
-        await waitFor(() => expect(item(/^Copy link/).textContent).toContain('Copied'));
-        expect(await pasted()).toBe(href('?lesson=market&step=6&a=28'));
+    it('copies the link to the lesson at its start, whatever the view, and says it has', async () => {
+        const user = userEvent.setup();
+        open('?lesson=market&step=6&a=28');
+        await user.click(share());
+        await user.click(copyLink());
 
-        await user.click(screen.getByRole('radio', { name: 'The start of the lesson' }));
-        expect(item(/^Copy link/).textContent).not.toContain('Copied');
-        await user.click(item(/^Copy link/));
-        await waitFor(() => expect(item(/^Copy link/).textContent).toContain('Copied'));
+        await waitFor(() => expect(copyLink().textContent).toBe('Copied'));
         expect(await pasted()).toBe(href('?lesson=market'));
     });
 
@@ -111,25 +117,25 @@ describe('Share', () => {
         document.execCommand = copied;
         open('?lesson=market&step=6');
         await user.click(share());
-        await user.click(item(/^Copy link/));
-        await waitFor(() => expect(item(/^Copy link/).textContent).toContain('Copied'));
+        await user.click(copyLink());
+        await waitFor(() => expect(copyLink().textContent).toBe('Copied'));
         expect(copied).toHaveBeenCalledWith('copy');
 
         copied.mockReturnValue(false);
-        await user.click(item(/^Copy link/));
-        await waitFor(() => expect(item(/^Copy link/).textContent)
-            .toContain(`would not copy it. It is ${href('?lesson=market&step=6').replace(/^https?:\/\//, '')}`));
+        await user.click(copyLink());
+        await waitFor(() => expect(copyLink().textContent)
+            .toContain(`would not copy it. It is ${href('?lesson=market').replace(/^https?:\/\//, '')}`));
     });
 
-    it('shows a QR code over the stage that scans as the link, and Done or Esc puts it away', async () => {
+    it('shows a QR code over the stage that scans as the lesson\'s link, and Done or Esc puts it away', async () => {
         const user = userEvent.setup();
         open('?lesson=market&step=6&a=28');
         await user.click(share());
         await user.click(item(/^Show a QR code/));
 
         const sheet = qrSheet()!;
-        expect(scan(within(sheet).getByRole('img', { name: /^QR code\. Opens this view/ })))
-            .toBe(href('?lesson=market&step=6&a=28'));
+        expect(scan(within(sheet).getByRole('img', { name: /^QR code\. Opens the lesson at its start/ })))
+            .toBe(href('?lesson=market'));
         expect(sheet.textContent).toContain('localhost');
         // A sheet over the stage, so its tools are put away; Share is not.
         expect(screen.getByRole('button', { name: 'Reset' })).toHaveProperty('disabled', true);
@@ -140,10 +146,8 @@ describe('Share', () => {
         expect(qrSheet()).toBeNull();
 
         await user.click(share());
-        await user.click(screen.getByRole('radio', { name: 'The start of the lesson' }));
         await user.click(item(/^Show a QR code/));
-        expect(scan(within(qrSheet()!).getByRole('img', { name: /Opens the lesson at its start/ })))
-            .toBe(href('?lesson=market'));
+        expect(qrSheet()).not.toBeNull();
         await user.keyboard('{Escape}');
         expect(qrSheet()).toBeNull();
     });
@@ -154,7 +158,6 @@ describe('Share', () => {
         await user.click(share());
         expect(item(/^Download the diagram/)).toHaveProperty('disabled', true);
         expect(item(/^Print or save as PDF/)).toHaveProperty('disabled', true);
-        expect(item(/^Download the diagram/).textContent).toContain('When the diagram is back on screen');
         await user.keyboard('{Escape}');
 
         await user.click(screen.getByRole('button', { name: 'Start lesson' }));
@@ -222,11 +225,10 @@ describe('Share on a phone', () => {
     });
     afterAll(() => { window.matchMedia = matchMedia; });
 
-    /** The ⋯'s items, by their names: each says what it does under its name. */
+    /** The ⋯'s items, by their names. */
     const menu = async (user: ReturnType<typeof userEvent.setup>) => {
         await user.click(await screen.findByRole('button', { name: 'More' }));
-        const names = /^(Reset|Copy link|Send with…|Show a QR code|Download the diagram|Print or save as PDF)/;
-        return (await screen.findAllByRole('menuitem')).map(i => (names.exec(i.textContent || '') || [i.textContent])[0]);
+        return (await screen.findAllByRole('menuitem')).map(i => (i.textContent || '').replace(/PNG$/, ''));
     };
 
     it('is in the ⋯ with Reset: the link, the picture and the page, and no QR code', async () => {
@@ -235,9 +237,9 @@ describe('Share on a phone', () => {
         expect(await menu(user)).toEqual(['Reset', 'Copy link', 'Download the diagram', 'Print or save as PDF']);
         expect(screen.queryByRole('button', { name: 'Share' })).toBeNull();
 
-        await user.click(item(/^Copy link/));
-        await waitFor(() => expect(item(/^Copy link/).textContent).toContain('Copied'));
-        expect(await pasted()).toBe(href('?lesson=market&step=6&a=28'));
+        await user.click(copyLink());
+        await waitFor(() => expect(copyLink().textContent).toBe('Copied'));
+        expect(await pasted()).toBe(href('?lesson=market'));
     });
 
     it('hands the link to the phone\'s own share sheet where it has one', async () => {
@@ -250,7 +252,7 @@ describe('Share on a phone', () => {
             await user.click(item(/^Send with/));
             expect(sent).toHaveBeenCalledWith({
                 title: 'A market, and what it does to everything else',
-                url: href('?lesson=market&step=6&a=28')
+                url: href('?lesson=market')
             });
         } finally {
             delete (navigator as { share?: unknown }).share;

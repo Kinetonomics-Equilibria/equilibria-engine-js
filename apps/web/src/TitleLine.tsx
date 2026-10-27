@@ -142,7 +142,7 @@ export function TitleLine({
                                 Reset
                             </Menu.Item>
                             <Menu.Divider />
-                            <ShareItems {...share} opensAt="view" phone onDone={() => setMore(false)} />
+                            <ShareItems {...share} phone onDone={() => setMore(false)} />
                         </Menu.Dropdown>
                     </Menu>
                 ) : (

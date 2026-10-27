@@ -16,6 +16,29 @@ export function linkHref(search: string): string {
 }
 
 /**
+ * Onto the clipboard, by the browser's clipboard if it will, and by the older
+ * way of selecting text and copying it if not: a page in another site's frame
+ * is often refused the first and allowed the second.
+ */
+export async function copyText(text: string): Promise<void> {
+    try {
+        await navigator.clipboard.writeText(text);
+        return;
+    } catch {
+        const field = document.createElement('textarea');
+        field.value = text;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        const copied = document.execCommand('copy');
+        field.remove();
+        if (!copied) throw new Error('The browser would not copy it.');
+    }
+}
+
+/**
  * A link as someone would type it: no `https://`, which every browser adds
  * for itself. There is no shortener behind the app, so this is as short as a
  * link gets.

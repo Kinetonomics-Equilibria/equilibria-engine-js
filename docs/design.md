@@ -176,23 +176,25 @@ attention on finding things.
 One menu for everything that leaves the screen (`ShareMenu`):
 
 ```
- The link and QR code open at
- [ This view | The start of the lesson ]
- ──────────────────────────────
  Copy link
  Show a QR code
- ──────────────────────────────
- Download the diagram       PNG
+ ──────────────────────────
+ Download the diagram   PNG
  Print or save as PDF
 ```
 
-- Each item says under its name what it does, in a few plain words, and
-  says it again in the same place once it has: "Copied", "Drawing it…", or
-  that the browser would not. The line Share is on never changes width, so
-  nothing on it moves.
-- "Opens at" decides what the link and the QR code carry. The download and
-  the print are always this view. This view is [the link](#links) the
-  address bar already holds.
+- Each item is its name and nothing under it. A sentence under every name
+  made the menu twice as tall to read for no choice it helped with. Once an
+  item has done its job its name says so ("Copied", "Drawing it…"); where
+  the browser refuses, a small grey line under the name says what to do
+  instead. The menu is as wide whatever it says, and the line Share is on
+  never changes width, so nothing on it moves.
+- The link and the QR code open the lesson at its start: `?lesson=fx`. What
+  a class or a friend needs is the lesson, and a choice between this view
+  and the start, above the items, was one more thing to read before any of
+  them. Anyone who wants this view has it in the address bar, which always
+  holds [the link](#links) to it. The download and the print are always this
+  view, and the printed page's code goes back to it.
 - Copy link copies by the browser's clipboard, and by selecting and copying
   where that is refused, as it often is inside another site's frame. Where
   both are refused it says so and gives the link to type.
@@ -200,8 +202,7 @@ One menu for everything that leaves the screen (`ShareMenu`):
   class can scan it from the board, with the link beside it for anyone who
   would rather type (`QrSheet`). There is no shortener behind the app, so
   the link is written as typed, without `https://`. Done or Esc puts it
-  away. It shows the link as it is now, and while it is up the stage's
-  tools are disabled as under any sheet; "What changed" goes on saying what
+  away. While it is up the stage's tools are disabled as under any sheet; "What changed" goes on saying what
   it said, since the diagram under it is still the view.
 - Download gives the stage as drawn — sheets, curves, labels and captions,
   not the column beside it — as a PNG at twice the screen's pixels, for
@@ -215,12 +216,14 @@ One menu for everything that leaves the screen (`ShareMenu`):
   rail, tools or tabs. The browser's dialog saves it as a PDF, and printing
   from the browser's own menu gives the same page.
 - Download and Print are of the diagram, so they are greyed under the
-  lesson's own sheets — the cover, a picture, the recap — and say why.
+  lesson's own sheets — the cover, a picture, the recap — where there is
+  no diagram to give.
 - On a phone the `⋯` holds Reset, Copy link, the phone's own share sheet
-  ("Send with…") where it has one, Download and Print, each saying what it
-  does. A phone's link is this view.
-- Embed… joins the menu with [Embeds](#embeds), after Show a QR code, and
-  "Opens at" then speaks for the embed as well.
+  ("Send with…") where it has one, Download and Print. A phone's link is
+  the lesson's too.
+- Embed… joins the menu with [Embeds](#embeds), after Show a QR code. Where
+  an embed opens is asked in its own dialog, since a class page is where a
+  particular view is worth fixing.
 
 ## Links
 

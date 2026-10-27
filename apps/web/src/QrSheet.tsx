@@ -9,20 +9,18 @@ import classes from './QrSheet.module.css';
  * board: as large as the diagram was, with the link beside it for anyone who
  * would rather type.
  *
+ * The link is the lesson's, at its start, as every link Share hands out is.
  * A stage sheet like the cover, so the diagram waits under it at its size,
- * and Done or Esc puts it away. It shows the link as it is now, so a step
- * taken while it is up is the step it opens at.
+ * and Done or Esc puts it away.
  */
 export interface QrSheetProps {
     /** The link, whole. */
     href: string;
-    /** Whether it opens at this view or at the start of the lesson. */
-    start: boolean;
     onClose(): void;
 }
 
-export function QrSheet({ href, start, onClose }: QrSheetProps) {
-    const opens = start ? 'Opens the lesson at its start' : 'Opens this view';
+export function QrSheet({ href, onClose }: QrSheetProps) {
+    const opens = 'Opens the lesson at its start';
     return (
         <StageSheet
             label="QR code"
