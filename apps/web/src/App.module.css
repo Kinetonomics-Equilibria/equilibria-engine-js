@@ -38,3 +38,17 @@
      * rendered after the burger. */
     z-index: calc(var(--app-shell-navbar-z-index, 101) + 1);
 }
+
+/* On paper there is no rail and no burger, and the page's own margins are the
+ * paper's (index.css), so the shell's offsets for the rail go too. */
+@media print {
+    .shell {
+        --app-shell-navbar-offset: 0px;
+        --app-shell-padding: 0px;
+    }
+
+    .navbar,
+    .navbarToggle {
+        display: none;
+    }
+}

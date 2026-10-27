@@ -53,3 +53,12 @@
     display: flex;
     flex-direction: column;
 }
+
+/* On paper the diagram is printed, never a sheet over it: Share's QR code is
+ * there to scan from a board, and the page has a code of its own. Share does
+ * not offer Print under the lesson's sheets. */
+@media print {
+    .frame {
+        display: none;
+    }
+}

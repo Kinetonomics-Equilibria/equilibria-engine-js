@@ -1,0 +1,60 @@
+/* The code as large as the sheet allows, the link beside it.
+ *
+ * Sized from the sheet itself (a size container, StageSheet.module.css): its
+ * height less the head and the padding, and less the link's column across.
+ * Where the sheet is narrower than that leaves room for, the link goes under
+ * the code instead, and the code takes the width. */
+
+.body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--mantine-spacing-xl);
+    padding: var(--mantine-spacing-lg);
+}
+
+.code {
+    flex: none;
+    width: min(calc(100cqh - 88px), calc(100cqw - 360px));
+    height: auto;
+    aspect-ratio: 1;
+    min-width: 120px;
+}
+
+.beside {
+    flex: 0 1 280px;
+    min-width: 0;
+}
+
+.lead {
+    margin: 0 0 var(--mantine-spacing-xs);
+    font-size: var(--mantine-font-size-sm);
+    color: var(--mantine-color-dimmed);
+}
+
+/* Large enough to read from the back of a room, and broken anywhere, since a
+ * link has no spaces to break at. */
+.link {
+    margin: 0;
+    font-size: var(--mantine-font-size-xl);
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+@container (max-aspect-ratio: 5 / 4) {
+    .body {
+        flex-direction: column;
+        gap: var(--mantine-spacing-md);
+    }
+
+    .code {
+        width: min(calc(100cqw - 48px), calc(100cqh - 180px));
+    }
+
+    .beside {
+        flex: none;
+        text-align: center;
+    }
+}

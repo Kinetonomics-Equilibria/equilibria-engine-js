@@ -348,3 +348,56 @@
     flex: none;
     margin-top: var(--mantine-spacing-sm);
 }
+
+/* The lesson's own words under its title. On screen only: on paper the view
+ * says where it is in words of its own (PrintedView). */
+.intro {
+    margin: 0;
+}
+
+/* On paper: the lesson's title, the view in words, the diagram, and the chain
+ * from "What changed" — one column, top to bottom, with nothing in it to
+ * press. The two columns' screen heights go, and the stage keeps the size it
+ * has on screen, scaled down to the paper's width (`usePrintFit`, share.ts),
+ * because its panels are laid out in pixels for this screen and would not
+ * survive being laid out again at another width.
+ *
+ * Scaled as drawn, with a transform, so nothing in it is laid out again and
+ * the paper gets the diagram the screen had. A transform leaves the space the
+ * stage takes as it was, so the box is given the scaled size and the page
+ * flows round the diagram as it prints. */
+@media print {
+    .screen {
+        display: block;
+        height: auto;
+    }
+
+    .intro,
+    .dockBeside,
+    .lessonBelow,
+    .resumeBelow,
+    .icon,
+    .cornerIcon {
+        display: none;
+    }
+
+    .stageBox {
+        flex: none;
+        width: calc(var(--print-width, 100%) * var(--print-scale, 1));
+        height: calc(var(--print-height, 60vh) * var(--print-scale, 1));
+        break-inside: avoid;
+    }
+
+    .stageLayer {
+        width: var(--print-width, 100%);
+        height: var(--print-height, 60vh);
+        transform: scale(var(--print-scale, 1));
+        transform-origin: top left;
+    }
+
+    .side {
+        display: block;
+        width: auto;
+        margin-top: 12px;
+    }
+}

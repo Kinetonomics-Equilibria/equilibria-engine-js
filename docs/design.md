@@ -81,13 +81,12 @@ attention on finding things.
 ## The title line
 
 ```
- The Australian dollar, and what moves it       Focus│Grid  ┊  ↺ Reset  ▭
+ The Australian dollar, and what moves it    Focus│Grid  ┊  ↺ Reset  ▭  ⇪ Share
 ```
 
 - The lesson's title, and at its end the tools that act on the whole stage:
-  Focus | Grid, a hairline, Reset, then Present (`TitleLine`). Share goes
-  after Present when it is built (see "Reserved for later"), so none of
-  these has to move.
+  Focus | Grid, a hairline, Reset and Present (`TitleLine`), then Share at
+  the far end, because it is the page's rather than the stage's.
 - Not over the stage, where a tool lands on a panel's caption, and not in
   the side column, whose cards each answer one question that none of these
   answers.
@@ -95,17 +94,17 @@ attention on finding things.
   never depends on it. Where the line runs short the tools' names go first,
   measured against the lesson's own title rather than set at a breakpoint;
   where even that leaves the title too long, it is cut with an ellipsis
-  rather than wrapped. Reset says its name from about 1040px, and the A$
-  lesson's title is whole from about 985px; at 900px it reads "The
-  Australian dollar, and w…".
-- Reset says its name; Present is an icon, with "Present to a class" as its
-  label and its tooltip. Reset's icon has its name as a tooltip once the
-  name has gone.
+  rather than wrapped. Reset and Share say their names beside the A$
+  lesson's title from about 1140px, and the title is whole from about
+  1025px; at 900px it reads "The Australian dollar, a…".
+- Reset and Share say their names, and go together; Present is an icon,
+  with "Present to a class" as its label and its tooltip. Once the names
+  have gone, each icon has its name as a tooltip.
 - Under a sheet, Focus | Grid and Reset are disabled, not hidden. Present
-  still works: a cover is worth showing a class.
+  and Share still work: a cover is worth showing a class, and worth a link.
 - On a phone there is no room for the row: Focus | Grid stays, a `⋯` beside
-  it holds Reset, and the title wraps, as it always has. Present is not
-  offered there. The `⋯` and the
+  it holds Reset and Share's items, and the title wraps, as it always has.
+  Present and the QR code are not offered there. The `⋯` and the
   instruments' door are as tall as the toggle and 6px apart, which keeps the
   first lesson's title to three lines while exploring; in the lesson the `⋯`
   still costs the title a line, about 26px of the stage.
@@ -147,6 +146,57 @@ attention on finding things.
   leave behind.
 - Not offered on a phone, and not where the browser cannot go full screen
   (Safari on an iPhone).
+
+### Share
+
+One menu for everything that leaves the screen (`ShareMenu`):
+
+```
+ The link and QR code open at
+ [ This view | The start of the lesson ]
+ ──────────────────────────────
+ Copy link
+ Show a QR code
+ ──────────────────────────────
+ Download the diagram       PNG
+ Print or save as PDF
+```
+
+- Each item says under its name what it does, in a few plain words, and
+  says it again in the same place once it has: "Copied", "Drawing it…", or
+  that the browser would not. The line Share is on never changes width, so
+  nothing on it moves.
+- "Opens at" decides what the link and the QR code carry. The download and
+  the print are always this view. This view is [the link](#links) the
+  address bar already holds.
+- Copy link copies by the browser's clipboard, and by selecting and copying
+  where that is refused, as it often is inside another site's frame. Where
+  both are refused it says so and gives the link to type.
+- The QR code goes on a stage sheet, as large as the stage allows, so a
+  class can scan it from the board, with the link beside it for anyone who
+  would rather type (`QrSheet`). There is no shortener behind the app, so
+  the link is written as typed, without `https://`. Done or Esc puts it
+  away. It shows the link as it is now, and while it is up the stage's
+  tools are disabled as under any sheet; "What changed" goes on saying what
+  it said, since the diagram under it is still the view.
+- Download gives the stage as drawn — sheets, curves, labels and captions,
+  not the column beside it — as a PNG at twice the screen's pixels, for
+  notes, slides or an assignment. It is named for the view: "Exchange rates
+  (AUD), step 7.png".
+- Print is a print stylesheet, not an export of its own: the lesson's title;
+  the view in words (`PrintedView`) — where in the lesson, which panel is in
+  front, and each param moved from where the lesson puts it — with a QR
+  code back to the view and its link; the diagram, scaled as drawn to the
+  paper's 680px; and the chain from "What changed", left off at rest. No
+  rail, tools or tabs. The browser's dialog saves it as a PDF, and printing
+  from the browser's own menu gives the same page.
+- Download and Print are of the diagram, so they are greyed under the
+  lesson's own sheets — the cover, a picture, the recap — and say why.
+- On a phone the `⋯` holds Reset, Copy link, the phone's own share sheet
+  ("Send with…") where it has one, Download and Print, each saying what it
+  does. A phone's link is this view.
+- Embed… joins the menu with [Embeds](#embeds), after Show a QR code, and
+  "Opens at" then speaks for the embed as well.
 
 ## Links
 
@@ -271,6 +321,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Piece | Where | What it is |
 | --- | --- | --- |
 | Title line | `TitleLine.tsx` | The lesson's title and the stage's tools on one line that never wraps: the tools' names go first, then the title is cut. On a phone the tools but Focus \| Grid are in a `⋯`, and Present is not offered. |
+| QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close on a phone, "What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
@@ -351,53 +402,8 @@ first version of the screen did, so a lesson can gain them one at a time.
 Places kept for tools that are not built yet, so that the first one built
 lands where the rest expect it and none of them has to move another. Nothing
 in this section is on the screen today but the profile circle at the rail's
-foot, which the tools to come there are placed around.
-
-### The rest of the title line
-
-```
- The Australian dollar, and what moves it    Focus│Grid  ┊  ↺ Reset  ▭  ⇪ Share
-```
-
-- Share joins [the title line](#the-title-line) after Present, at the far
-  end because it is the page's, not the stage's.
-- Share says its name. Where the line runs short it goes with Reset's,
-  before the title is cut.
-- Under a sheet, Share still works.
-
-### Share
-
-One menu for everything that leaves the screen:
-
-```
- The link, QR code and embed open at
- [ This view | The start of the lesson ]
- ──────────────────────────────
- Copy link
- Show a QR code
- Embed…
- ──────────────────────────────
- Download the diagram       PNG
- Print or save as PDF
-```
-
-- Each item says under its name what it does, in a few plain words.
-- "Opens at" decides what the link, the QR code and the embed carry. The
-  download and the print are always this view. This view is [the
-  link](#links) the address bar already holds.
-- The QR code goes on a stage sheet (`StageSheet`), as large as the diagram
-  was, so a class can scan it from the board, with the short link beside it
-  for anyone who would rather type.
-- Embed opens a dialog: the whole lesson or the diagram only, where it opens,
-  and the code to copy.
-- Download gives the panels as drawn, as a picture for notes, slides or an
-  assignment.
-- Print is a print stylesheet, not an export of its own: the lesson's title,
-  the view's settings in words, the diagram, the chain from "What changed",
-  and a QR code back to the view. The browser's dialog saves it as a PDF.
-- On a phone there is no room for the row. Focus | Grid stays, and a `⋯`
-  beside it holds Reset, Copy link, the phone's own share sheet ("Send
-  with…"), Download and Print. QR, Embed and Present are for bigger screens.
+foot, which the tools to come there are placed around. Reset, Present, Share
+and Links were kept here once, and are built.
 
 ### The rail's foot
 
@@ -412,6 +418,8 @@ apart from the places to go.
 
 - `/embed/<lesson>?layout=full` or `layout=diagram`, plus the same view as a
   link. The code is an iframe whose `title` is the lesson's.
+- Embed… in [Share](#share) opens a dialog: the whole lesson or the diagram
+  only, where it opens, and the code to copy.
 - **The whole lesson** is the study screen less the rail: the title line, the
   stage and the side column. Share becomes "Open in Kinetonomics", which
   opens the app at the same view in a tab of its own. It wants about

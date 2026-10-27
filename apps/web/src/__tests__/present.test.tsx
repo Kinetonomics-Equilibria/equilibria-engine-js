@@ -59,11 +59,11 @@ const rail = () => screen.getByRole('button', { name: 'Lessons', hidden: true })
 
 describe('Present', () => {
 
-    it('is on the title\'s line after Reset, and works under the cover', () => {
+    it('is on the title\'s line between Reset and Share, and works under the cover', () => {
         mount();
         const line = screen.getByRole('heading', { level: 2 }).parentElement!;
         const names = within(line).getAllByRole('button').map(b => b.getAttribute('aria-label') || b.textContent);
-        expect(names.slice(-2)).toEqual(['Reset', 'Present to a class']);
+        expect(names.slice(-3)).toEqual(['Reset', 'Present to a class', 'Share']);
         expect(present()).toHaveProperty('disabled', false);
         expect(present().getAttribute('aria-pressed')).toBe('false');
     });

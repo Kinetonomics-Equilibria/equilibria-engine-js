@@ -58,3 +58,9 @@ body {
     margin: 0 0 var(--mantine-spacing-xl);
     color: var(--mantine-color-dimmed);
 }
+
+/* The paper's margins, which leave a printed diagram (`usePrintFit`, share.ts)
+ * its 680px across on A4 and on US Letter alike. */
+@page {
+    margin: 12mm;
+}

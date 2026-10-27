@@ -42,6 +42,10 @@ import { phraseRefusal } from './narration/phrasebook';
 import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
 import { useAddressFollows, writeLink } from './links';
 import type { Link } from './links';
+import { downloadPicture, linkHref, pictureName, usePrintFit } from './share';
+import type { OpensAt, ShareActions } from './ShareMenu';
+import { QrSheet } from './QrSheet';
+import { PrintedView } from './PrintedView';
 import classes from './StudyScreen.module.css';
 
 /**
@@ -1391,34 +1395,46 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }:
      * sheet down, with the lesson put away, since what was sent is the diagram
      * and the sheet would cover it.
      *
+     * Taken from the params as they were when the view last settled, which
+     * is the boundary the narration already keeps: a drag is one move, part
+     * of the view once it is let go, and not sixty a second while it is held.
+     *
      * Null until the engine has said what its params are, since a link
      * written before then would leave out every param the student moved.
      */
-    const here = useMemo(() => {
-        if (dockParams.length === 0) return null;
+    const settledParams = useRef(dockParams);
+    if (line.kind !== 'live') settledParams.current = dockParams;
+    const settled = settledParams.current;
+
+    const view = useMemo(() => {
+        if (settled.length === 0) return null;
         const tab = pane === 'explore' ? instrument : null,
             position = tab ? 0 : track.position,
             question = tab ? null : askAt(steps, position),
             answering = question ? candidatesOf(question) : [],
             lessonPuts: Record<string, number> = tab ? declared : { ...declared, ...paramsAt(steps, position) },
             front = (tab ? null : focusBetween(steps, 0, position)) || panels[0].key,
-            params: Record<string, number> = {};
-        dockParams.forEach(p => {
+            params: Record<string, number> = {},
+            moved: { info: ParamInfo; from: number }[] = [];
+        settled.forEach(p => {
             if (!p.presentation && answering.indexOf(p.name) < 0 && p.name in lessonPuts
-                && Math.abs(p.value - lessonPuts[p.name]) > 1e-9) params[p.name] = p.value;
+                && Math.abs(p.value - lessonPuts[p.name]) > 1e-9) {
+                params[p.name] = p.value;
+                moved.push({ info: p, from: lessonPuts[p.name] });
+            }
         });
         const shownAtFront = revealed.indexOf(focused) > -1 || focused === aside;
-        return writeLink(content.id, {
+        const link: Link = {
             step: position, tab, arrange: mode, focus: shownAtFront && focused !== front ? focused : null, params
-        });
-    }, [dockParams, pane, instrument, track.position, steps, declared, panels, revealed, focused, aside, mode,
-        content.id]);
+        };
+        return { link, moved, atFront: shownAtFront ? focused : revealed[0] };
+    }, [settled, pane, instrument, track.position, steps, declared, panels, revealed, focused, aside, mode]);
 
-    // Written when the view settles, which is the boundary the narration
-    // already keeps: a drag is one move, written when it is let go, and not
-    // sixty a second while it is held. Replaced rather than pushed, by the
-    // shell, so Back still goes to the last lesson rather than the last drag.
-    useAddressFollows(line.kind === 'live' ? null : here, onLinkChange);
+    const here = useMemo(() => (view ? writeLink(content.id, view.link) : null), [view, content.id]);
+
+    // Replaced rather than pushed, by the shell, so Back still goes to the
+    // last lesson rather than the last drag.
+    useAddressFollows(here, onLinkChange);
 
     // Deliberately not called for undo, which is the mirror case: undo restores
     // the params to what `prev` already holds, so leaving the snapshot alone is
@@ -1746,6 +1762,77 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }:
     ) : null;
 
     /**
+     * Share's QR code, over the stage while it is up, for this view or for the
+     * start of the lesson as Share was asked. Done or Esc puts it away. A
+     * stage sheet like a cover, but Share's rather than the lesson's: the
+     * diagram under it is still the view, so "What changed" goes on saying
+     * what it said, and the picture is drawn from under it.
+     */
+    const [qrFor, setQrFor] = useState<OpensAt | null>(null);
+    useEffect(() => {
+        if (!qrFor) return;
+        const away = (event: KeyboardEvent) => { if (event.key === 'Escape') setQrFor(null); };
+        window.addEventListener('keydown', away);
+        return () => window.removeEventListener('keydown', away);
+    }, [qrFor]);
+
+    const links = useMemo(() => ({
+        view: linkHref(here || writeLink(content.id)),
+        start: linkHref(writeLink(content.id))
+    }), [here, content.id]);
+
+    const covering = qrFor
+        ? <QrSheet href={links[qrFor]} start={qrFor === 'start'} onClose={() => setQrFor(null)} />
+        : sheet;
+
+    /**
+     * The view in words, for the printed page and the picture's name: where
+     * in the lesson, which panel is in front, and each param the student
+     * moved, from where the lesson puts it to where they put it, printed as
+     * the chain prints a number.
+     */
+    const inWords = useMemo(() => {
+        const tab = view && view.link.tab,
+            tabName = tab ? (instruments.filter(i => i.id === tab)[0] || { label: tab }).label : null,
+            position = view ? view.link.step : 0,
+            title = position > 0 ? steps[position - 1].title : undefined,
+            nameOf = (key: string) => {
+                const declared = panels.filter(p => p.key === key)[0];
+                return declared ? declared.name : asides && asides[key] ? asides[key].name : key;
+            },
+            onStage = revealed.length + hostPanels.length;
+        return {
+            where: tab ? `${tabName}, with the lesson put away`
+                : position === 0 ? 'The start of the lesson'
+                    : `Step ${position} of ${steps.length}${title ? `: ${title}` : ''}`,
+            short: tab ? tabName : position > 0 ? `step ${position}` : null,
+            arrangement: mode === 'grid' ? 'Every panel side by side, in a grid'
+                : view && onStage > 1 ? `${nameOf(view.atFront)} at the front` : null,
+            moved: view ? view.moved.map(m => `${m.info.label} ${formatValue(m.from, m.info.precision)} → ` +
+                formatValue(m.info.value, m.info.precision)) : []
+        };
+    }, [view, instruments, steps, panels, asides, revealed, hostPanels, mode]);
+
+    /**
+     * The picture and the page, which are both of the diagram: neither is
+     * offered while one of the lesson's sheets hides it. Printing from the
+     * browser's own menu fits the stage to the paper as Print does
+     * (`usePrintFit`).
+     */
+    const stageBox = useRef<HTMLDivElement>(null);
+    const stageLayer = useRef<HTMLDivElement>(null);
+    usePrintFit(stageBox);
+    const hidden = !!sheet;
+    const share: ShareActions = useMemo(() => ({
+        links,
+        title: content.title,
+        onShowQr: setQrFor,
+        onDownload: hidden ? undefined
+            : () => downloadPicture(stageLayer.current!, pictureName(content.label, inWords.short)),
+        onPrint: hidden ? undefined : () => window.print()
+    }), [links, content.title, content.label, hidden, inWords.short]);
+
+    /**
      * A tab pressed beside the stage. Between two instruments it changes only
      * which is open. Into the lesson's or out of it, it is the lesson taken up
      * again or put away — the same moves as Resume and Finish, so the diagram
@@ -1820,17 +1907,26 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }:
                         title={content.title}
                         mode={mode}
                         onModeChange={setMode}
-                        covered={!!sheet}
+                        covered={!!covering}
                         canReset={resetTo.length > 0}
                         onReset={onReset}
                         stacked={stacked}
                         onOpenInstruments={stacked && exploring ? () => setSheetOpen(true) : undefined}
+                        share={share}
                     />
-                    <Text c="dimmed" size="sm">{content.intro}</Text>
+                    <Text c="dimmed" size="sm" className={classes.intro}>{content.intro}</Text>
                 </Stack>
 
-                <div className={classes.stageBox}>
-                    <div className={classes.stageLayer} inert={!!sheet}>
+                {/* On paper only: the view in words, and a code back to it. */}
+                <PrintedView
+                    where={inWords.where}
+                    arrangement={inWords.arrangement}
+                    moved={inWords.moved}
+                    href={links.view}
+                />
+
+                <div ref={stageBox} className={classes.stageBox}>
+                    <div ref={stageLayer} className={classes.stageLayer} inert={!!covering}>
                         <Stage
                             config={config}
                             focused={focused}
@@ -1856,7 +1952,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }:
                             onError={error => console.error('Equilibria failed to mount:', error)}
                         />
                     </div>
-                    {sheet}
+                    {covering}
                 </div>
 
                 {/* Under the diagram, never moving, where there is no column

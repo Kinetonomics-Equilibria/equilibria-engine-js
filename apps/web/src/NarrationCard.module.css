@@ -200,3 +200,16 @@
     white-space: nowrap;
     border: 0;
 }
+
+/* On paper, the chain and nothing to press. At rest there is no chain, and a
+ * hint to drag a curve is no use on paper, so the card is left off. */
+@media print {
+    .card[data-kind="rest"],
+    .card button {
+        display: none;
+    }
+
+    .card {
+        break-inside: avoid;
+    }
+}

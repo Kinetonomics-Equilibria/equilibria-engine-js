@@ -3,20 +3,22 @@ import { ActionIcon, Button, Divider, Menu, SegmentedControl, Title, Tooltip } f
 import { IconDots, IconPresentation, IconRotate } from '@tabler/icons-react';
 import type { StageMode } from 'equilibria-react';
 import { canPresent, togglePresenting, usePresenting } from './present';
+import { ShareItems, ShareMenu } from './ShareMenu';
+import type { ShareActions } from './ShareMenu';
 import classes from './TitleLine.module.css';
 
 /**
  * The lesson's title, and at its end the tools that act on the whole stage.
  *
- * Focus | Grid, a hairline, Reset, then Present: the order the design language
- * keeps for them (`docs/design.md`), so that Share lands after Present without
- * moving either. Not over the stage, where a tool lands on a panel's caption,
- * and not in the side column, whose cards each answer a question none of
- * these answers.
+ * Focus | Grid, a hairline, Reset, Present, then Share at the far end,
+ * because it is the page's rather than the stage's: the order the design
+ * language keeps for them (`docs/design.md`). Not over the stage, where a tool
+ * lands on a panel's caption, and not in the side column, whose cards each
+ * answer a question none of these answers.
  *
  * On a phone there is no room for the row: Focus | Grid stays, and a `⋯`
- * beside it holds the rest. Present is not one of them: a phone is not what a
- * class watches.
+ * beside it holds Reset and Share's items. Present and the QR code are not
+ * among them: a phone is not what a class watches.
  */
 
 export interface TitleLineProps {
@@ -32,6 +34,8 @@ export interface TitleLineProps {
     stacked: boolean;
     /** The instruments' door, where the dock is a sheet with no edge to grab. */
     onOpenInstruments?: () => void;
+    /** What Share hands out, and how. */
+    share: ShareActions;
 }
 
 const ICON = { size: 16, stroke: 1.75 };
@@ -42,8 +46,9 @@ const ICON = { size: 16, stroke: 1.75 };
  * Where the line runs short the names go before anything wraps, so the line
  * keeps its height and the stage its size. Measured rather than set at a
  * breakpoint, because what fits depends on the title and every lesson has its
- * own: the A$ lesson's has 9px to spare at 900px without Reset, and Air
- * Jordans' a good deal more.
+ * own: Reset and Share say their names beside the A$ lesson's from about
+ * 1140px, beside Air Jordans' from about 1115px, and beside the café's from
+ * about 1235px.
  *
  * The tools are measured with their names, and that width is kept while they
  * are hidden, so the answer does not change because it was given. The title
@@ -82,11 +87,12 @@ function useNamesFit(stacked: boolean) {
 }
 
 export function TitleLine({
-    title, mode, onModeChange, covered, canReset, onReset, stacked, onOpenInstruments
+    title, mode, onModeChange, covered, canReset, onReset, stacked, onOpenInstruments, share
 }: TitleLineProps) {
     const { line, heading, tools, named } = useNamesFit(stacked);
     const resetDisabled = covered || !canReset;
     const presenting = usePresenting();
+    const [more, setMore] = useState(false);
 
     return (
         <div ref={line} className={classes.line} data-stacked={stacked || undefined}>
@@ -104,7 +110,7 @@ export function TitleLine({
                     aria-label="Panel arrangement"
                 />
                 {stacked ? (
-                    <Menu position="bottom-end" shadow="sm">
+                    <Menu opened={more} onChange={setMore} position="bottom-end" shadow="sm" width={260}>
                         <Menu.Target>
                             <ActionIcon variant="default" size="input-xs" aria-label="More">
                                 <IconDots {...ICON} />
@@ -118,6 +124,8 @@ export function TitleLine({
                             >
                                 Reset
                             </Menu.Item>
+                            <Menu.Divider />
+                            <ShareItems {...share} opensAt="view" phone onDone={() => setMore(false)} />
                         </Menu.Dropdown>
                     </Menu>
                 ) : (
@@ -164,6 +172,10 @@ export function TitleLine({
                                 </ActionIcon>
                             </Tooltip>
                         ) : null}
+                        {/* Names itself with Reset, and goes with it where the
+                          * line runs short. Works under a sheet: a cover is
+                          * worth a link too. */}
+                        <ShareMenu {...share} named={named} />
                     </>
                 )}
                 {/* Where the dock is a sheet it has no permanent edge to grab,

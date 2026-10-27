@@ -1,0 +1,24 @@
+/* An item is its name over what it does: the name at the item's weight, the
+ * words under it small and grey, as a card head's eyebrow is. */
+.name {
+    display: block;
+}
+
+.says {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--mantine-font-size-xs);
+    line-height: 1.35;
+    color: var(--mantine-color-dimmed);
+}
+
+/* The file it makes, at the item's end, as quiet as what the item says. */
+.format {
+    font-size: var(--mantine-font-size-xs);
+    color: var(--mantine-color-dimmed);
+}
+
+/* Under its label, inset as the menu's items are. */
+.opensAt {
+    margin: 0 var(--mantine-spacing-xs) var(--mantine-spacing-xs);
+}

@@ -121,3 +121,12 @@
     white-space: nowrap;
     border: 0;
 }
+
+/* On paper, as "What changed" is: the chain, nothing to press, and nothing at
+ * rest. */
+@media print {
+    .strip[data-kind="rest"],
+    .controls {
+        display: none;
+    }
+}

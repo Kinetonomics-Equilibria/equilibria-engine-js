@@ -43,3 +43,14 @@
 .hairline {
     align-self: stretch;
 }
+
+/* On paper the title is whole, however long, and the tools are not there. */
+@media print {
+    .tools {
+        display: none;
+    }
+
+    .line:not([data-stacked]) .title {
+        white-space: normal;
+    }
+}

@@ -1,0 +1,63 @@
+/* Not on screen, where the sliders, the tabs and the address already say all
+ * of this. */
+.printed {
+    display: none;
+}
+
+@media print {
+    .printed {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin: 0 0 12px;
+        break-inside: avoid;
+    }
+}
+
+.words {
+    min-width: 0;
+}
+
+.where {
+    margin: 0 0 4px;
+    font-weight: 600;
+}
+
+.line,
+.lead {
+    margin: 0 0 4px;
+    font-size: var(--mantine-font-size-sm);
+}
+
+.lead {
+    color: var(--mantine-color-dimmed);
+}
+
+.moved {
+    margin: 0;
+    padding-left: 18px;
+    font-size: var(--mantine-font-size-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+/* For anyone who would rather type, under what the view is. */
+.again {
+    margin: 8px 0 0;
+    font-size: var(--mantine-font-size-xs);
+    color: var(--mantine-color-dimmed);
+}
+
+.link {
+    color: var(--mantine-color-text);
+    overflow-wrap: anywhere;
+}
+
+/* Small enough to sit beside the words and large enough for a phone to read
+ * off the paper: 30mm. */
+.code {
+    flex: none;
+    display: block;
+    width: 30mm;
+    height: 30mm;
+}
