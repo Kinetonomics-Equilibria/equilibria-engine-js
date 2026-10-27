@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { ActionIcon, Menu, SegmentedControl, Tooltip } from '@mantine/core';
-import { IconCheck, IconLink, IconPhotoDown, IconPrinter, IconQrcode, IconSend, IconShare2 } from '@tabler/icons-react';
-import { typedLink } from './share';
+import {
+    IconCheck, IconCode, IconLink, IconPhotoDown, IconPrinter, IconQrcode, IconSend, IconShare2
+} from '@tabler/icons-react';
+import { copyText, typedLink } from './share';
 import classes from './ShareMenu.module.css';
 
 /**
@@ -22,6 +24,9 @@ export type OpensAt = 'view' | 'start';
 
 const ICON = { size: 16, stroke: 1.75 };
 
+/** Share's own glyph, as large as the title line's other tools'. */
+const GLYPH = { size: 20, stroke: 1.75 };
+
 export interface ShareActions {
     /** The links Share hands out, whole: this view's, and the lesson's start. */
     links: Record<OpensAt, string>;
@@ -29,6 +34,8 @@ export interface ShareActions {
     title: string;
     /** Put a QR code for one of the links over the stage. */
     onShowQr(opensAt: OpensAt): void;
+    /** Open the embed dialog at one of the links. Not offered without it, nor on a phone. */
+    onEmbed?: (opensAt: OpensAt) => void;
     /** Draw the stage and download it. Absent while a sheet hides the diagram. */
     onDownload?: () => Promise<void>;
     /** Print the view. Absent while a sheet hides the diagram. */
@@ -48,29 +55,6 @@ function Says({ name, says }: { name: string; says: string }) {
 /** Where a phone has a share sheet of its own to hand a link to. */
 const canSend = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
-/**
- * Onto the clipboard, by the browser's clipboard if it will, and by the older
- * way of selecting text and copying it if not: a page in another site's frame
- * is often refused the first and allowed the second.
- */
-async function copyText(text: string): Promise<void> {
-    try {
-        await navigator.clipboard.writeText(text);
-        return;
-    } catch {
-        const field = document.createElement('textarea');
-        field.value = text;
-        field.setAttribute('readonly', '');
-        field.style.position = 'fixed';
-        field.style.opacity = '0';
-        document.body.appendChild(field);
-        field.select();
-        const copied = document.execCommand('copy');
-        field.remove();
-        if (!copied) throw new Error('The browser would not copy the link.');
-    }
-}
-
 interface ShareItemsProps extends ShareActions {
     opensAt: OpensAt;
     phone: boolean;
@@ -83,7 +67,7 @@ interface ShareItemsProps extends ShareActions {
  * says it has done is forgotten when the menu is put away.
  */
 export function ShareItems({
-    links, title, onShowQr, onDownload, onPrint, opensAt, phone, onDone
+    links, title, onShowQr, onEmbed, onDownload, onPrint, opensAt, phone, onDone
 }: ShareItemsProps) {
     const link = links[opensAt];
     const [copied, setCopied] = useState<'yes' | 'no' | null>(null);
@@ -126,9 +110,16 @@ export function ShareItems({
                     </Menu.Item>
                 ) : null
             ) : (
-                <Menu.Item leftSection={<IconQrcode {...ICON} />} onClick={() => onShowQr(opensAt)}>
-                    <Says name="Show a QR code" says="For a class to scan from the board" />
-                </Menu.Item>
+                <>
+                    <Menu.Item leftSection={<IconQrcode {...ICON} />} onClick={() => onShowQr(opensAt)}>
+                        <Says name="Show a QR code" says="For a class to scan from the board" />
+                    </Menu.Item>
+                    {onEmbed ? (
+                        <Menu.Item leftSection={<IconCode {...ICON} />} onClick={() => onEmbed(opensAt)}>
+                            <Says name="Embed…" says="In a class page, and still working there" />
+                        </Menu.Item>
+                    ) : null}
+                </>
             )}
             <Menu.Divider />
             <Menu.Item
@@ -166,7 +157,7 @@ export function ShareMenu(actions: ShareActions) {
             <Tooltip label="Share" withArrow transitionProps={{ duration: 0 }} disabled={opened}>
                 <Menu.Target>
                     <ActionIcon variant="subtle" color="gray" size="input-xs" aria-label="Share">
-                        <IconShare2 {...ICON} />
+                        <IconShare2 {...GLYPH} />
                     </ActionIcon>
                 </Menu.Target>
             </Tooltip>

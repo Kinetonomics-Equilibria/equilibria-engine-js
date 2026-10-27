@@ -81,12 +81,14 @@ attention on finding things.
 ## The title line
 
 ```
- The Australian dollar, and what moves it                 ◉  ┊  ↺  ▭  ⇪
+ The Australian dollar, and what moves it                 ◉  ↺  ┊  ▭  ⇪
 ```
 
 - The lesson's title, and at its end the tools that act on the whole stage:
-  the arrangement, a hairline, Reset and Present (`TitleLine`), then Share
-  at the far end, because it is the page's rather than the stage's.
+  the arrangement and Reset, a hairline, then Present (`TitleLine`) and
+  Share at the far end, because it is the page's rather than the stage's.
+  The hairline parts what a sheet over the stage disables from what still
+  works under one.
 - Not over the stage, where a tool lands on a panel's caption, and not in
   the side column, whose cards each answer one question that none of these
   answers.
@@ -96,7 +98,9 @@ attention on finding things.
   it is cut with an ellipsis rather than wrapped. The A$ lesson's title is
   whole from about 965px.
 - Each icon has no border, a grey wash under the pointer, and its name as
-  its label and its tooltip: Reset, "Present to a class", Share. A greyed
+  its label and its tooltip: Reset, "Present to a class", Share. The glyphs
+  are 20px, larger than a menu item's 16px, since with no border the glyph
+  is all there is of the tool; the buttons stay 30px. A greyed
   one stays borderless rather than filling grey. Present shows pressed
   while the page is presenting.
 - The arrangement is one icon, the arrangement the stage is in — an eye for

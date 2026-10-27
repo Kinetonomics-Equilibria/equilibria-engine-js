@@ -10,9 +10,10 @@ import classes from './TitleLine.module.css';
 /**
  * The lesson's title, and at its end the tools that act on the whole stage.
  *
- * The arrangement, a hairline, Reset, Present, then Share at the far end,
- * because it is the page's rather than the stage's: the order the design
- * language keeps for them (`docs/design.md`). Not over the stage, where a tool
+ * The arrangement and Reset, a hairline, then Present and Share at the far
+ * end, because it is the page's rather than the stage's: the order the design
+ * language keeps for them (`docs/design.md`). The hairline parts what a sheet
+ * over the stage disables from what still works under one. Not over the stage, where a tool
  * lands on a panel's caption, and not in the side column, whose cards each
  * answer a question none of these answers.
  *
@@ -42,6 +43,9 @@ export interface TitleLineProps {
 }
 
 const ICON = { size: 16, stroke: 1.75 };
+
+/** A tool's glyph, larger than a menu item's: with no border, it is all there is of the tool. */
+const GLYPH = { size: 20, stroke: 1.75 };
 
 /** Every tool on the line: an icon with no border, as tall as an `xs` input. */
 const TOOL = { variant: 'subtle', color: 'gray', size: 'input-xs', className: classes.tool } as const;
@@ -75,7 +79,7 @@ function Arrangement({ mode, onModeChange, disabled }: {
                 disabled={disabled}
                 onClick={() => onModeChange(here.other)}
             >
-                <here.Icon {...ICON} />
+                <here.Icon {...GLYPH} />
             </ActionIcon>
         </Tooltip>
     );
@@ -100,7 +104,7 @@ export function TitleLine({
                     <Menu opened={more} onChange={setMore} position="bottom-end" shadow="sm" width={260}>
                         <Menu.Target>
                             <ActionIcon {...TOOL} aria-label="More">
-                                <IconDots {...ICON} />
+                                <IconDots {...GLYPH} />
                             </ActionIcon>
                         </Menu.Target>
                         <Menu.Dropdown>
@@ -117,12 +121,12 @@ export function TitleLine({
                     </Menu>
                 ) : (
                     <>
-                        <Divider orientation="vertical" className={classes.hairline} />
                         <Tooltip label="Reset" withArrow transitionProps={{ duration: 0 }}>
                             <ActionIcon {...TOOL} aria-label="Reset" disabled={resetDisabled} onClick={onReset}>
-                                <IconRotate {...ICON} />
+                                <IconRotate {...GLYPH} />
                             </ActionIcon>
                         </Tooltip>
+                        <Divider orientation="vertical" className={classes.hairline} />
                         {/* The page full screen with the rail put away, and
                           * pressed until the browser says it is not: Esc, which
                           * the browser takes for itself, or this again. Still
@@ -138,7 +142,7 @@ export function TitleLine({
                                     aria-pressed={presenting}
                                     onClick={togglePresenting}
                                 >
-                                    <IconPresentation {...ICON} />
+                                    <IconPresentation {...GLYPH} />
                                 </ActionIcon>
                             </Tooltip>
                         ) : null}
