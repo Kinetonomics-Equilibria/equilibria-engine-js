@@ -81,7 +81,7 @@ describe('Share', () => {
 
     it('is at the far end of the title line, and works under the cover', () => {
         open();
-        const line = screen.getByRole('heading', { level: 2 }).parentElement!;
+        const line = screen.getByRole('heading', { level: 2 }).parentElement!.parentElement!;
         const names = within(line).getAllByRole('button').map(b => b.getAttribute('aria-label') || b.textContent);
         expect(names[names.length - 1]).toBe('Share');
         expect(share()).toHaveProperty('disabled', false);

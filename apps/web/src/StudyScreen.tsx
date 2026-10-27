@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Badge, Group, Stack, Text, UnstyledButton, VisuallyHidden } from '@mantine/core';
+import { Badge, Group, Text, UnstyledButton, VisuallyHidden } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconArrowsDiagonal } from '@tabler/icons-react';
 import { STAGE_PAD, Stage } from 'equilibria-react';
@@ -23,6 +23,7 @@ import type { RecapCase } from './LessonRecap';
 import { PictureSheet } from './PictureSheet';
 import { StageSheet } from './StageSheet';
 import { TitleLine } from './TitleLine';
+import type { TitleTopic } from './TitleLine';
 import {
     AT_START, askAt, asideAt, focusBetween, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer,
     tryAt
@@ -381,6 +382,8 @@ export interface StudyScreenProps {
      * this one rebuilding its engine and its track under the student.
      */
     content?: StudyContent;
+    /** The topic the lesson is listed under, named over its title. */
+    topic?: TitleTopic | null;
     /**
      * The view to open at, from the address. Read once, when the screen
      * mounts; without it the lesson opens at its start.
@@ -394,7 +397,7 @@ export interface StudyScreenProps {
     onLinkChange?: (search: string) => void;
 }
 
-export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }: StudyScreenProps) {
+export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkChange }: StudyScreenProps) {
     const {
         diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, paramWords, explorePrompts,
         scenarios, questionApparatus, directionWords, asides
@@ -1892,19 +1895,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }:
                 {/* The stage's tools sit in the stage column's top right
                   * corner, on the title's line. Over the stage itself they
                   * would land on the top-right panel's caption — its number,
-                  * or its promote icon — whichever panel that is. The intro
-                  * goes under both, the column's whole width: beside the tools
-                  * too, it wrapped onto a second line that came out of the
-                  * stage's height. Both are inset by the stage's margin, so
-                  * they line up with the sheets below. */}
-                <Stack
-                    gap={0}
-                    mb="sm"
-                    className={classes.titleBlock}
-                    style={{ '--stage-pad': STAGE_PAD } as CSSProperties}
-                >
+                  * or its promote icon — whichever panel that is. Inset by the
+                  * stage's margin, so the title lines up with the sheets
+                  * below. */}
+                <div className={classes.titleBlock} style={{ '--stage-pad': STAGE_PAD } as CSSProperties}>
                     <TitleLine
                         title={content.title}
+                        topic={topic}
                         mode={mode}
                         onModeChange={setMode}
                         covered={!!covering}
@@ -1914,8 +1911,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }:
                         onOpenInstruments={stacked && exploring ? () => setSheetOpen(true) : undefined}
                         share={share}
                     />
-                    <Text c="dimmed" size="sm" className={classes.intro}>{content.intro}</Text>
-                </Stack>
+                </div>
 
                 {/* On paper only: the view in words, and a code back to it. */}
                 <PrintedView

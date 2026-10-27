@@ -884,8 +884,6 @@ export const PRODUCTION_POSSIBILITIES: StudyContent = {
     id: 'ppc',
     label: 'Production possibilities',
     title: 'What a café can make, and what each choice costs',
-    intro: 'Coffees up the side, toasties along the bottom. Follow the lesson, or drag the points ' +
-        'at any time.',
     goals: [
         'What a café can make with the staff and time it has',
         'What one more toastie really costs',

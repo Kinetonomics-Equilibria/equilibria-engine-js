@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { ActionIcon, Divider, Menu, Title, Tooltip } from '@mantine/core';
+import type { CSSProperties } from 'react';
+import { ActionIcon, Divider, Menu, Text, Title, Tooltip } from '@mantine/core';
 import { IconDots, IconEye, IconLayoutGrid, IconPresentation, IconRotate } from '@tabler/icons-react';
 import type { StageMode } from 'equilibria-react';
+import type { LessonTopic } from './lessons';
 import { canPresent, togglePresenting, usePresenting } from './present';
 import { ShareItems, ShareMenu } from './ShareMenu';
 import type { ShareActions } from './ShareMenu';
 import classes from './TitleLine.module.css';
 
 /**
- * The lesson's title, and at its end the tools that act on the whole stage.
+ * The lesson's title under its topic, and at its end the tools that act on
+ * the whole stage, in one capsule.
  *
  * The arrangement and Reset, a hairline, then Present and Share at the far
  * end, because it is the page's rather than the stage's: the order the design
@@ -25,8 +28,13 @@ import classes from './TitleLine.module.css';
  * among them: a phone is not what a class watches.
  */
 
+/** What the line names of the topic a lesson is listed under. */
+export type TitleTopic = Pick<LessonTopic, 'label' | 'color'>;
+
 export interface TitleLineProps {
     title: string;
+    /** The topic over the title, with its dot. Without one, the title stands alone. */
+    topic?: TitleTopic | null;
     mode: StageMode;
     onModeChange(mode: StageMode): void;
     /** A sheet is over the stage, so there is nothing to arrange or reset. */
@@ -47,8 +55,11 @@ const ICON = { size: 16, stroke: 1.75 };
 /** A tool's glyph, larger than a menu item's: with no border, it is all there is of the tool. */
 const GLYPH = { size: 20, stroke: 1.75 };
 
-/** Every tool on the line: an icon with no border, as tall as an `xs` input. */
-const TOOL = { variant: 'subtle', color: 'gray', size: 'input-xs', className: classes.tool } as const;
+/**
+ * Every tool on the line: an icon with no border, as tall as an `xs` input,
+ * and round inside the capsule. Share's own button (`ShareMenu`) matches it.
+ */
+const TOOL = { variant: 'subtle', color: 'gray', size: 'input-xs', radius: 'xl', className: classes.tool } as const;
 
 /** Each arrangement's name and icon, and the one a press turns it into. */
 const ARRANGEMENTS = {
@@ -86,7 +97,7 @@ function Arrangement({ mode, onModeChange, disabled }: {
 }
 
 export function TitleLine({
-    title, mode, onModeChange, covered, canReset, onReset, stacked, onOpenInstruments, share
+    title, topic, mode, onModeChange, covered, canReset, onReset, stacked, onOpenInstruments, share
 }: TitleLineProps) {
     const resetDisabled = covered || !canReset;
     const presenting = usePresenting();
@@ -94,7 +105,22 @@ export function TitleLine({
 
     return (
         <div className={classes.line} data-stacked={stacked || undefined}>
-            <Title order={2} size="h4" className={classes.title}>{title}</Title>
+            <div className={classes.heading}>
+                {/* The dot the Lessons panel draws before the topic's name, in
+                  * the topic's colour, so the two read as one place. */}
+                {topic ? (
+                    <Text
+                        size="xs"
+                        c="dimmed"
+                        className={classes.topic}
+                        style={{ '--topic-color': `var(--mantine-color-${topic.color}-filled)` } as CSSProperties}
+                    >
+                        <span className={classes.dot} aria-hidden />
+                        {topic.label}
+                    </Text>
+                ) : null}
+                <Title order={2} size="h4" className={classes.title}>{title}</Title>
+            </div>
             <div className={classes.tools}>
                 {/* Disabled under a sheet, where there is nothing to arrange —
                   * and not hidden, so nothing on the line moves. Reset, beside

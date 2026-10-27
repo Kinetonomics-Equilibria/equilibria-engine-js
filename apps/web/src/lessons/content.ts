@@ -25,9 +25,8 @@ export interface StudyContent {
     /** The navbar's word for it. Short — it sits in a column of links. */
     label: string;
 
-    /** The heading over the stage, and the sentence under it. */
+    /** The heading over the stage. */
     title: string;
-    intro: string;
 
     /**
      * What the stage shows before the first step, in place of an empty frame.

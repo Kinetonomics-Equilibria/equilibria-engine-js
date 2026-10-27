@@ -16,7 +16,6 @@ export const SUPPLY_AND_DEMAND: StudyContent = {
     id: 'market',
     label: 'Supply and demand',
     title: 'A market, and what it does to everything else',
-    intro: 'One market, seen three ways. Follow the lesson, or drag the demand curve at any time.',
     goals: [
         'How demand and supply set a price',
         'What changes when demand rises',

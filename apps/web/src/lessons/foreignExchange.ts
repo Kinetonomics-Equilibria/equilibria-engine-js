@@ -574,8 +574,6 @@ export const FOREIGN_EXCHANGE: StudyContent = {
     id: 'fx',
     label: 'Exchange rates (AUD)',
     title: 'The Australian dollar, and what moves it',
-    intro: 'The price on the diagram is what AUD 1 costs in US dollars. Follow the lesson, or ' +
-        'drag a curve at any time.',
     goals: [
         'Who buys Australian dollars, and who sells them',
         'Why the AUD rises and falls against the USD',

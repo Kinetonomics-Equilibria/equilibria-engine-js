@@ -16,11 +16,12 @@
     height: calc(100vh - 2 * var(--mantine-spacing-md));
 }
 
-/* The title and the intro under it, inset by the stage's own margin
- * (`STAGE_PAD`, a fraction of the stage's width, which is this column's), so
- * their edges are the edges of the sheets below them. */
+/* The title's line, inset by the stage's own margin (`STAGE_PAD`, a fraction
+ * of the stage's width, which is this column's), so its edges are the edges of
+ * the sheets below it. */
 .titleBlock {
     padding-inline: calc(var(--stage-pad) * 100%);
+    margin-bottom: var(--mantine-spacing-sm);
 }
 
 .stageBox {
@@ -349,12 +350,6 @@
     margin-top: var(--mantine-spacing-sm);
 }
 
-/* The lesson's own words under its title. On screen only: on paper the view
- * says where it is in words of its own (PrintedView). */
-.intro {
-    margin: 0;
-}
-
 /* On paper: the lesson's title, the view in words, the diagram, and the chain
  * from "What changed" — one column, top to bottom, with nothing in it to
  * press. The two columns' screen heights go, and the stage keeps the size it
@@ -372,7 +367,6 @@
         height: auto;
     }
 
-    .intro,
     .dockBeside,
     .lessonBelow,
     .resumeBelow,

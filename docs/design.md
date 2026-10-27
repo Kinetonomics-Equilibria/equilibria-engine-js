@@ -71,6 +71,7 @@ attention on finding things.
    | Teal | The reasoning | "Why" after a question; a right answer, in a verdict and in the recap; the recap's takeaway |
    | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts; an answer the student was shown, in the recap |
    | The curves' colours | The market itself | the diagram, the slider that moves each curve, and the chain's markers for what moved and the curves it moved |
+   | A topic's colour | Which topic, only ever as a dot before its name | the Lessons panel, and over the lesson's title. Beside the name, so a teal topic is never read as the reasoning |
 
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
    the depth one press away: "Why? See the maths" opens the formula behind the
@@ -81,26 +82,41 @@ attention on finding things.
 ## The title line
 
 ```
- The Australian dollar, and what moves it                 ◉  ↺  ┊  ▭  ⇪
+ ● International economics                              ╭─────────────────╮
+ The Australian dollar, and what moves it               │ ◉  ↺  ┊  ▭  ⇪   │
+                                                        ╰─────────────────╯
 ```
 
-- The lesson's title, and at its end the tools that act on the whole stage:
-  the arrangement and Reset, a hairline, then Present (`TitleLine`) and
-  Share at the far end, because it is the page's rather than the stage's.
-  The hairline parts what a sheet over the stage disables from what still
-  works under one.
+- The lesson's title under the topic the Lessons panel lists it in, and at
+  its end the tools that act on the whole stage: the arrangement and Reset,
+  a hairline, then Present (`TitleLine`) and Share at the far end, because
+  it is the page's rather than the stage's. The hairline parts what a sheet
+  over the stage disables from what still works under one.
+- The title is on the page, not on paper. Every sheet on the screen answers
+  a student's question; the title names the page they are all on, so it
+  sits on the desk above them, the one thing there. The tools are in a
+  capsule of paper, because they are things to press, and so they read as
+  one set rather than loose glyphs on the desk, a greyed one included.
+- The topic is small and grey over the title, after the dot the Lessons
+  panel draws before the topic's name, in the topic's colour, so the two
+  read as one place. A lesson no topic lists has its title alone.
+- No sentence under the title. It used to say how to read the price axis,
+  which the axis's own title says, and to follow the lesson or drag a curve,
+  which the cover and the lesson card say. It cost the stage a line.
 - Not over the stage, where a tool lands on a panel's caption, and not in
   the side column, whose cards each answer one question that none of these
   answers.
-- One line beside the stage, whatever the window, so the stage's height
-  never depends on it. Every tool is an icon, so the tools are as wide
+- The topic and the title are one block beside the stage, whatever the
+  window, so the stage's height never depends on them; the capsule is
+  centred on the two. Every tool is an icon, so the tools are as wide
   whatever the lesson, and where the title is too long for what they leave
   it is cut with an ellipsis rather than wrapped. The A$ lesson's title is
-  whole from about 965px.
-- Each icon has no border, a grey wash under the pointer, and its name as
-  its label and its tooltip: Reset, "Present to a class", Share. The glyphs
-  are 20px, larger than a menu item's 16px, since with no border the glyph
-  is all there is of the tool; the buttons stay 30px. A greyed
+  whole from about 945px.
+- Each icon has no border, a round grey wash under the pointer that follows
+  the capsule's ends, and its name as its label and its tooltip: Reset,
+  "Present to a class", Share. The glyphs are 20px, larger than a menu
+  item's 16px, since with no border the glyph is all there is of the tool;
+  the buttons stay 30px, 2px apart, with 3px of capsule round them. A greyed
   one stays borderless rather than filling grey. Present shows pressed
   while the page is presenting.
 - The arrangement is one icon, the arrangement the stage is in — an eye for
@@ -113,8 +129,9 @@ attention on finding things.
 - On a phone there is no room for the row: the arrangement stays, a `⋯`
   beside it holds Reset and Share's items, and the title wraps, as it always
   has. Present and the QR code are not offered there. The `⋯` and the
-  instruments' door are icons as tall as the arrangement and 6px apart, which
-  keeps the first lesson's title to two lines, exploring or in the lesson.
+  instruments' door are in the capsule beside the arrangement, as tall as
+  it and as close, which keeps the first lesson's title to two lines,
+  exploring or in the lesson.
 
 ### Reset
 
@@ -190,10 +207,10 @@ One menu for everything that leaves the screen (`ShareMenu`):
   not the column beside it — as a PNG at twice the screen's pixels, for
   notes, slides or an assignment. It is named for the view: "Exchange rates
   (AUD), step 7.png".
-- Print is a print stylesheet, not an export of its own: the lesson's title;
-  the view in words (`PrintedView`) — where in the lesson, which panel is in
-  front, and each param moved from where the lesson puts it — with a QR
-  code back to the view and its link; the diagram, scaled as drawn to the
+- Print is a print stylesheet, not an export of its own: the lesson's topic
+  and title; the view in words (`PrintedView`) — where in the lesson, which
+  panel is in front, and each param moved from where the lesson puts it —
+  with a QR code back to the view and its link; the diagram, scaled as drawn to the
   paper's 680px; and the chain from "What changed", left off at rest. No
   rail, tools or tabs. The browser's dialog saves it as a PDF, and printing
   from the browser's own menu gives the same page.
@@ -317,9 +334,9 @@ the controls that cause it. The strip's height went back to the diagram.
 The panels' sheets sit in from the stage's edge by `STAGE_PAD`, half the gap
 between two panels. The page has a margin of its own round the stage, and with
 both at the full gap a sheet stood about 43px off the side column, whose own
-cards are 12px apart. The title and the intro above the stage are inset by the
-same margin, so their edges are the sheets' edges and the stage reads as one
-block under its title.
+cards are 12px apart. The title line above the stage is inset by the same
+margin, so its edges are the sheets' edges and the stage reads as one block
+under its title.
 
 ## The kit
 
@@ -327,9 +344,9 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 
 | Piece | Where | What it is |
 | --- | --- | --- |
-| Title line | `TitleLine.tsx` | The lesson's title and the stage's tools on one line that never wraps: the tools are borderless icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
+| Title line | `TitleLine.tsx` | The lesson's topic over its title, and the stage's tools in a capsule of paper beside them; the title never wraps: the tools are borderless round icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
 | QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
-| Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
+| Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it, and so does the title line's capsule, with its own corner. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close on a phone, "What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. Drawn in its curve's colour where the lesson names one, the theme's blue where it does not. The gesture wiring is `ParamSlider`'s. |

@@ -51,7 +51,7 @@ describe('Reset', () => {
 
     it('is on the title\'s line, greyed and not hidden under the cover', () => {
         mount();
-        const line = screen.getByRole('heading', { level: 2 }).parentElement!;
+        const line = screen.getByRole('heading', { level: 2 }).parentElement!.parentElement!;
         expect(within(line).getByRole('button', { name: 'Reset' })).toBe(reset());
         expect(reset()).toHaveProperty('disabled', true);
     });

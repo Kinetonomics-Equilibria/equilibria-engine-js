@@ -4,7 +4,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { DoubleNavbar } from './components/DoubleNavbar';
 import type { NavPanel } from './components/DoubleNavbar';
 import { StudyScreen } from './StudyScreen';
-import { CURRICULUM, lessonById } from './lessons';
+import { CURRICULUM, lessonById, topicOfLesson } from './lessons';
 import { usePresenting } from './present';
 import { readLink, writeLink } from './links';
 import classes from './App.module.css';
@@ -165,7 +165,13 @@ export function App() {
                   * rather than one screen's state carried into a diagram it
                   * was never about. Opened at the view the address names, as a
                   * link opens. */}
-                <StudyScreen key={lesson.id} content={lesson} link={link} onLinkChange={followView} />
+                <StudyScreen
+                    key={lesson.id}
+                    content={lesson}
+                    topic={topicOfLesson(lesson.id)}
+                    link={link}
+                    onLinkChange={followView}
+                />
             </AppShell.Main>
         </AppShell>
     );

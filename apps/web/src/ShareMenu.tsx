@@ -156,7 +156,7 @@ export function ShareMenu(actions: ShareActions) {
         <Menu opened={opened} onChange={setOpened} position="bottom-end" shadow="sm" width={310}>
             <Tooltip label="Share" withArrow transitionProps={{ duration: 0 }} disabled={opened}>
                 <Menu.Target>
-                    <ActionIcon variant="subtle" color="gray" size="input-xs" aria-label="Share">
+                    <ActionIcon variant="subtle" color="gray" size="input-xs" radius="xl" aria-label="Share">
                         <IconShare2 {...GLYPH} />
                     </ActionIcon>
                 </Menu.Target>

@@ -68,4 +68,10 @@ export function lessonById(id: string | null | undefined): StudyContent {
     return LESSONS.filter(lesson => lesson.id === id)[0] || LESSONS[0];
 }
 
+/** The topic a lesson is listed under, or `null` for a lesson no topic holds. */
+export function topicOfLesson(id: string): LessonTopic | null {
+    const topics = CURRICULUM.flatMap(strand => strand.topics);
+    return topics.filter(topic => topic.lessons.some(lesson => lesson.id === id))[0] || null;
+}
+
 export type { StudyContent } from './content';

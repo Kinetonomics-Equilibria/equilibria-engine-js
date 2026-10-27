@@ -661,8 +661,6 @@ export const DEMAND_SHIFTERS: StudyContent = {
     id: 'demand',
     label: 'What shifts demand',
     title: 'Air Jordans, and what shifts demand',
-    intro: 'Price up the side, pairs along the bottom. Follow the lesson, or drag the curve or the ' +
-        'point at any time.',
     goals: [
         'Why each extra pair is worth less to you',
         'Moving along the demand curve, and shifting it',

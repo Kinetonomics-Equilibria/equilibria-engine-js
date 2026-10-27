@@ -1,12 +1,34 @@
-/* The title's line, with the stage's tools at its end. Below `sm` the app's
- * burger floats in the top right corner over whatever is there, so the line
- * stops short of it. */
+/* The title's line: the lesson's topic and title, with the stage's tools at its
+ * end. Below `sm` the app's burger floats in the top right corner over
+ * whatever is there, so the line stops short of it. The tools are centred on
+ * the topic and title together, so their capsule stands as tall as the two. */
 .line {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--mantine-spacing-xs);
     padding-inline-end: var(--app-burger-room, 0px);
+}
+
+/* The topic and the title, one over the other. */
+.heading {
+    min-width: 0;
+}
+
+/* The topic the lesson is listed under, small and grey over the title, after
+ * the dot the Lessons panel draws before the topic's name. */
+.topic {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--topic-color);
 }
 
 /* One line beside the stage, whatever the window: the tools are icons, as wide
@@ -22,19 +44,17 @@
     text-overflow: ellipsis;
 }
 
+/* The tools in one capsule of paper, so they read as one thing on the desk
+ * rather than loose glyphs, and a greyed one as part of the set. Each tool is
+ * round inside it, so the wash under the pointer follows the capsule's ends. */
 .tools {
+    composes: paper from './ui/paper.module.css';
     flex: none;
     display: flex;
     align-items: center;
-    gap: var(--mantine-spacing-xs);
-}
-
-/* On a phone every pixel the tools take is the title's, and a line the title
- * gains comes out of the stage. The tools are closer together there: at 390px
- * that keeps the first lesson's title on two lines, exploring or in the
- * lesson, and the shelf's glyphs at the 80px the browser test asks for. */
-.line[data-stacked] .tools {
-    gap: 6px;
+    gap: 2px;
+    padding: 3px;
+    --paper-radius: 999px;
 }
 
 /* Borderless, greyed or not: Mantine fills a disabled icon grey, which reads
@@ -44,9 +64,11 @@
     background-color: transparent;
 }
 
-/* Between the stage's arrangement and what acts on it, as tall as the toggle. */
+/* Between what a sheet over the stage disables and what still works under
+ * one, short of the capsule's edges. */
 .hairline {
     align-self: stretch;
+    margin: 6px 2px;
 }
 
 /* The arrangement's tooltip: its name, then what a press does, quieter, as a
