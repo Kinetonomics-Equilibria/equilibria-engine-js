@@ -39,7 +39,7 @@ const GOALS = ['How a price is set', 'What moves it'];
 
 const at = (position: number, resolved: number[] = []): TrackState => ({ position, resolved, outcomes: {} });
 
-function mount(over: { state?: TrackState; steps?: LessonStep[]; onReset?: () => void } = {}) {
+function mount(over: { state?: TrackState; steps?: LessonStep[] } = {}) {
     const onGoTo = vi.fn();
     const result = view(
         <LessonCard
@@ -47,7 +47,6 @@ function mount(over: { state?: TrackState; steps?: LessonStep[]; onReset?: () =>
             state={over.state ?? at(0)}
             goals={GOALS}
             onGoTo={onGoTo}
-            onReset={over.onReset}
         />
     );
     return { onGoTo, result };
@@ -266,35 +265,6 @@ describe('a question stops it', () => {
     it('says nothing when the question is the last step', () => {
         mount({ state: at(4) });
         expect(screen.queryByText(UNLOCK)).toBeNull();
-    });
-});
-
-describe('resetting the diagram to this step', () => {
-
-    const RESET = 'Reset the diagram to this step';
-
-    // The escape hatch the scrub-back rule requires: going back leaves the
-    // student's own values alone, so restoring the authored ones is a choice.
-    it('is offered where a step established something', () => {
-        mount({ state: at(3), onReset: vi.fn() });
-        expect(screen.getByRole('button', { name: RESET })).toBeTruthy();
-    });
-
-    it('is absent where nothing up to here set anything', () => {
-        mount({ state: at(2), onReset: vi.fn() });
-        expect(screen.queryByRole('button', { name: RESET })).toBeNull();
-    });
-
-    it('is absent when the screen offers no handler', () => {
-        mount({ state: at(3) });
-        expect(screen.queryByRole('button', { name: RESET })).toBeNull();
-    });
-
-    it('calls back when pressed', async () => {
-        const onReset = vi.fn();
-        mount({ state: at(3), onReset });
-        await userEvent.setup().click(screen.getByRole('button', { name: RESET }));
-        expect(onReset).toHaveBeenCalled();
     });
 });
 

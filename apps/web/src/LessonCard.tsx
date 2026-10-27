@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { ActionIcon, Anchor, Button, Text, Title } from '@mantine/core';
+import { ActionIcon, Button, Text, Title } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
-import { isBlocked, maxPosition, paramsAt, partAt, partsOf, stepKinds } from './track/track';
+import { isBlocked, maxPosition, partAt, partsOf, stepKinds } from './track/track';
 import type { LessonStep, TrackState } from './track/track';
 import classes from './LessonCard.module.css';
 
@@ -50,16 +50,6 @@ export interface LessonCardProps {
     onGoTo(position: number): void;
 
     /**
-     * Put the params back where this step established them.
-     *
-     * The escape hatch the scrub-back rule requires: going back un-draws and
-     * deliberately leaves the student's own values alone, so restoring the
-     * authored state has to be something they choose. Absent when no step up to
-     * here set anything.
-     */
-    onReset?(): void;
-
-    /**
      * The step's controls, under its words: the question, at a step that asks
      * one, or what a "see what happens" step hands the student to move.
      */
@@ -105,7 +95,7 @@ function markerName(step: LessonStep, position: number, total: number): string {
 }
 
 export function LessonCard({
-    steps, state, goals, onGoTo, onReset, children, className, onLeave, tabbed = false
+    steps, state, goals, onGoTo, children, className, onLeave, tabbed = false
 }: LessonCardProps) {
 
     const body = useRef<HTMLDivElement>(null);
@@ -123,7 +113,6 @@ export function LessonCard({
     const here = partAt(parts, state.position);
     const furthest = maxPosition(state, steps);
     const blocked = isBlocked(state, steps);
-    const resettable = Object.keys(paramsAt(steps, state.position)).length > 0;
     const step = state.position > 0 ? steps[state.position - 1] : null;
     const atEnd = state.position >= steps.length;
 
@@ -245,14 +234,6 @@ export function LessonCard({
                 </div>
 
                 {children}
-
-                {/* Only where a step actually established something. Offered
-                  * everywhere it would read as "start again", which it is not. */}
-                {onReset && resettable ? (
-                    <Anchor component="button" type="button" size="xs" className={classes.reset} onClick={onReset}>
-                        Reset the diagram to this step
-                    </Anchor>
-                ) : null}
             </div>
 
             <div className={classes.foot}>

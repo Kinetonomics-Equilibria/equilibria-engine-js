@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import {
-    ActionIcon, Badge, Group, SegmentedControl, Stack, Text, Title, UnstyledButton, VisuallyHidden
-} from '@mantine/core';
+import { Badge, Group, Stack, Text, UnstyledButton, VisuallyHidden } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconArrowsDiagonal } from '@tabler/icons-react';
 import { STAGE_PAD, Stage } from 'equilibria-react';
@@ -24,6 +22,7 @@ import { LessonRecap } from './LessonRecap';
 import type { RecapCase } from './LessonRecap';
 import { PictureSheet } from './PictureSheet';
 import { StageSheet } from './StageSheet';
+import { TitleLine } from './TitleLine';
 import {
     AT_START, askAt, asideAt, focusBetween, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer,
     tryAt
@@ -463,6 +462,18 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const held = useRef<{ before: Record<string, number>; after: Record<string, number> } | null>(null);
 
     /**
+     * The two markets Reset puts back besides a step's.
+     *
+     * `declared` is the diagram's own, as the engine read it — the market under
+     * every step that sets nothing — taken in `onReady` before anything is
+     * restored, which a remount makes the config's values again. `opened` is
+     * the market the instruments were handed when the lesson was put away.
+     * State rather than refs, since Reset is greyed or not by what they hold.
+     */
+    const [declared, setDeclared] = useState<Record<string, number>>({});
+    const [opened, setOpened] = useState<Record<string, number>>({});
+
+    /**
      * The other params' question apparatus, as the question being asked left it.
      *
      * A diagram with two askable params draws a "where it started" line for
@@ -662,6 +673,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     const onReady = useCallback((engine: KineticGraph) => {
         engineRef.current = engine;
         setReadout(engine.getCalcs() as Readout);
+        setDeclared(marketOf(engine.getParams()));
         // The engine says what a param is called and to how many places; the
         // lesson says what its rise and fall mean, where it has words for them,
         // and which colour its curve is drawn in — by name, since only the
@@ -1098,27 +1110,47 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     }, [attempt, steps, questionApparatus]);
 
     /**
-     * Put the params back where this step established them.
+     * What Reset would move, and to where: the params not yet back where the
+     * open tab or step began.
      *
-     * The escape hatch scrubbing back requires. Going back un-draws and
-     * deliberately leaves the student's own values alone — their work is never
-     * destroyed by navigation — so restoring the state the author described has
-     * to be something they ask for. It is every `set` up to here, not the last
-     * one written: the state at step 4 is what steps 1 to 4 between them said.
+     * During the lesson that is the step's own market — the diagram's, with
+     * every `set` up to here over it, so the state at step 4 is what steps 1
+     * to 4 between them said, and a curve no step sets goes back to where the
+     * diagram drew it. It is the escape hatch scrubbing back requires: going
+     * back un-draws and deliberately leaves the student's own values alone, so
+     * restoring the state the author described has to be something they ask
+     * for. A question's curves go back to where the question found them, which
+     * is where its grade is measured from and its "where it started" line is
+     * drawn; and a curve whose answer is in is left alone, because Reset does
+     * not forget an answer.
+     *
+     * Under an instrument it is the market the instruments were handed.
      */
-    const resetToStep = useCallback(() => {
-        const authored = paramsAt(steps, track.position);
-        const params = Object.keys(authored).map(name => ({ name, value: authored[name] }));
-        if (params.length === 0) return;
+    const resetTo = useMemo(() => {
+        const target: Record<string, number> = pane === 'explore' ? opened : {
+            ...declared, ...paramsAt(steps, track.position), ...(attempt ? attempt.starts : {})
+        };
+        return dockParams
+            .filter(p => !p.presentation && p.name in target && frozen.indexOf(p.name) < 0
+                && Math.abs(p.value - target[p.name]) > 1e-9)
+            .map(p => ({ name: p.name, value: target[p.name] }));
+    }, [pane, opened, declared, steps, track.position, attempt, dockParams, frozen]);
 
-        applyingStep.current = true;
-        try {
-            engineRef.current?.snapshot();
-            engineRef.current?.update({ params });
-        } finally {
-            applyingStep.current = false;
-        }
-    }, [steps, track.position]);
+    /**
+     * Reset: a move like any other.
+     *
+     * The snapshot comes first, as a scenario's does, so the move is measured
+     * from where the student had the diagram: "What changed" reports it and
+     * Undo brings their curves back. That is why it never asks "Are you sure?".
+     * It moves the market and nothing else — not the lesson's place, not an
+     * answer, not which panel is in front.
+     */
+    const onReset = useCallback(() => {
+        if (resetTo.length === 0) return;
+        endGesture();
+        engineRef.current?.snapshot();
+        updateParams(resetTo);
+    }, [resetTo, endGesture, updateParams]);
 
     /**
      * Put the lesson away and hand the student the instruments.
@@ -1167,6 +1199,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
         setAttempt(null);
         setReadout(engine.getCalcs() as Readout);
+        setOpened(market);
         latest.current = null;
         setLine(REST);
         setRefusal(null);
@@ -1498,11 +1531,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * the author's `among`, the same whichever is asked, so the first slider is
      * not the answer. No prompt: the step's words, above it on the card, are
      * the prompt.
-     *
-     * "Reset the diagram to this step" is withheld while an answer is frozen:
-     * it writes through `engine.update` directly, so offering it there would be
-     * a control that moves a curve the diagram is refusing to let the student
-     * move.
      */
     const tries = tryAt(steps, track.position);
     const lesson = (where: 'beside' | 'below') => (
@@ -1513,7 +1541,6 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             state={track}
             goals={content.goals}
             onGoTo={goTo}
-            onReset={frozen.length > 0 || sheet ? undefined : resetToStep}
             onLeave={leaveLesson}
         >
             {attempt ? (
@@ -1646,51 +1673,30 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     return (
         <div className={classes.screen}>
             <div className={classes.stageColumn}>
-                {/* The arrangement toggle is the stage's, so it sits in the
-                  * stage column's top right corner, on the title's line. Over
-                  * the stage itself it would land on the top-right panel's
-                  * caption — its number, or its promote icon — whichever panel
-                  * that is. The intro goes under both, the column's whole
-                  * width: beside the toggle too, it wrapped onto a second line
-                  * that came out of the stage's height. Both are inset by the
-                  * stage's margin, so they line up with the sheets below. */}
+                {/* The stage's tools sit in the stage column's top right
+                  * corner, on the title's line. Over the stage itself they
+                  * would land on the top-right panel's caption — its number,
+                  * or its promote icon — whichever panel that is. The intro
+                  * goes under both, the column's whole width: beside the tools
+                  * too, it wrapped onto a second line that came out of the
+                  * stage's height. Both are inset by the stage's margin, so
+                  * they line up with the sheets below. */}
                 <Stack
                     gap={0}
                     mb="sm"
                     className={classes.titleBlock}
                     style={{ '--stage-pad': STAGE_PAD } as CSSProperties}
                 >
-                    <Group justify="space-between" wrap="nowrap" className={classes.titleRow}>
-                        <Title order={2} size="h4">{content.title}</Title>
-                        <Group gap="xs" wrap="nowrap">
-                            {/* Disabled under a sheet, where there is nothing to
-                              * arrange — and not hidden, so the title's line
-                              * keeps its height and the stage its size. */}
-                            <SegmentedControl
-                                size="xs"
-                                disabled={!!sheet}
-                                value={mode}
-                                onChange={value => setMode(value as StageMode)}
-                                data={[{ label: 'Focus', value: 'focus' }, { label: 'Grid', value: 'grid' }]}
-                                aria-label="Panel arrangement"
-                            />
-                            {/* Where the dock is a sheet it has no permanent edge
-                              * to grab, so it needs a door. On a wide screen the
-                              * dock is simply there and this would be a button
-                              * that opens what is already open — and while a
-                              * lesson runs there are no instruments to open. */}
-                            {stacked && exploring ? (
-                                <ActionIcon
-                                    variant="default"
-                                    size="lg"
-                                    aria-label="Open instruments"
-                                    onClick={() => setSheetOpen(true)}
-                                >
-                                    &#9776;
-                                </ActionIcon>
-                            ) : null}
-                        </Group>
-                    </Group>
+                    <TitleLine
+                        title={content.title}
+                        mode={mode}
+                        onModeChange={setMode}
+                        covered={!!sheet}
+                        canReset={resetTo.length > 0}
+                        onReset={onReset}
+                        stacked={stacked}
+                        onOpenInstruments={stacked && exploring ? () => setSheetOpen(true) : undefined}
+                    />
                     <Text c="dimmed" size="sm">{content.intro}</Text>
                 </Stack>
 

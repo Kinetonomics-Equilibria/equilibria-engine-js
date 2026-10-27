@@ -78,6 +78,52 @@ attention on finding things.
    questions and marks nothing. A curve that reaches the end of its range just
    stops there: the slider already shows the number, so nothing is said.
 
+## The title line
+
+```
+ The Australian dollar, and what moves it          Focus│Grid  ┊  ↺ Reset
+```
+
+- The lesson's title, and at its end the tools that act on the whole stage:
+  Focus | Grid, a hairline, then Reset (`TitleLine`). Present and Share go
+  after Reset when they are built (see "Reserved for later"), so none of
+  these has to move.
+- Not over the stage, where a tool lands on a panel's caption, and not in
+  the side column, whose cards each answer one question that none of these
+  answers.
+- One line beside the stage, whatever the window, so the stage's height
+  never depends on it. Where the line runs short the tools' names go first,
+  measured against the lesson's own title rather than set at a breakpoint;
+  where even that leaves the title too long, it is cut with an ellipsis
+  rather than wrapped. At 900px the A$ lesson's title loses its last two
+  words; from about 1000px Reset says its name.
+- Under a sheet, Focus | Grid and Reset are disabled, not hidden.
+- On a phone there is no room for the row: Focus | Grid stays, a `⋯` beside
+  it holds Reset, and the title wraps, as it always has. The `⋯` and the
+  instruments' door are as tall as the toggle and 6px apart, which keeps the
+  first lesson's title to three lines while exploring; in the lesson the `⋯`
+  still costs the title a line, about 26px of the stage.
+
+### Reset
+
+- Puts the diagram back where the open tab or step began. During the lesson
+  that is the step's own market: the diagram's, with every step's `set` up
+  to here over it, so a curve no step sets goes back where the diagram drew
+  it. A question's curves go back where the question found them, which is
+  where it is marked from. Under an instrument, it is the market the
+  instruments were handed.
+- It is how a step's own market comes back after scrubbing back, which
+  un-draws and leaves the student's values alone. It took the place of the
+  lesson card's "Reset the diagram to this step", which put back only what
+  the steps had set.
+- A move like any other: it takes the engine's snapshot first, as a scenario
+  does, so "What changed" reports it and Undo brings the student's curves
+  back. That is why it never asks "Are you sure?".
+- Greyed, not hidden, when nothing would change.
+- It does not move the lesson's place or forget an answer: a curve whose
+  answer is in stays where it was answered. The lesson's own Back and track
+  move the lesson.
+
 ## The side column
 
 Beside the stage, the screen's full height, two cards 12px apart. It is 320px
@@ -153,6 +199,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 
 | Piece | Where | What it is |
 | --- | --- | --- |
+| Title line | `TitleLine.tsx` | The lesson's title and the stage's tools on one line that never wraps: the tools' names go first, then the title is cut. On a phone the tools but Focus \| Grid are in a `⋯`. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left; the card's one action at the right (the lesson's close on a phone, "What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
@@ -215,8 +262,8 @@ first version of the screen did, so a lesson can gain them one at a time.
 
 1. **Which question does it answer?** Put it on that card. If it answers a new
    question, it is a new card, placed where that question comes in the order.
-   A tool for the whole stage or page answers no card's question: look under
-   "Reserved for later" first, where it may already have a place.
+   A tool for the whole stage or page answers no card's question: it goes on
+   the title line, and "Reserved for later" may already have its place there.
 2. **Must it always be visible?** If not, put it behind a tab, a link or "Why?".
 3. **Does it change size?** The cards beside the stage do not, so it scrolls
    inside the card it is on. Put it below the controls whose effect it shows,
@@ -235,38 +282,19 @@ lands where the rest expect it and none of them has to move another. Nothing
 in this section is on the screen today but the profile circle at the rail's
 foot, which the tools to come there are placed around.
 
-### The title line
+### The rest of the title line
 
 ```
  The Australian dollar, and what moves it    Focus│Grid  ┊  ↺ Reset  ▭  ⇪ Share
 ```
 
-- The stage's controls already sit at the right of the title line (the
-  arrangement toggle, in `StudyScreen`), and the tools below act on the whole
-  stage or the whole page, so they join it in this order: Focus | Grid, a
-  hairline, Reset, Present, Share. Share goes at the far end because it is
-  the page's, not the stage's.
-- Not over the stage, where the toggle would have landed on a panel's
-  caption, and not in the side column, whose cards each answer one question
-  that none of these answers.
-- Reset and Share say their names; Present is an icon, with "Present to a
-  class" as its label. Where the line runs short the names go before
-  anything wraps, so the line keeps its height and the stage its size.
-- Under a sheet, Focus | Grid and Reset are disabled, not hidden, as the
-  toggle is now. Present and Share still work.
-
-### Reset
-
-- Puts the diagram back where the open tab or step began: during the lesson,
-  the step's own values; under an instrument, the values the instruments
-  opened with.
-- A move like any other: it takes the engine's snapshot first
-  (`engine.snapshot()`, as `resumeLesson` does), so Undo brings the changes
-  back, and "What changed" reports it. That is why it never asks "Are you
-  sure?".
-- Greyed, not hidden, when nothing has changed.
-- It does not restart the lesson or forget an answer. The lesson's own Back
-  and track do that.
+- Present and Share join [the title line](#the-title-line) after Reset, in
+  that order. Share goes at the far end because it is the page's, not the
+  stage's.
+- Share says its name; Present is an icon, with "Present to a class" as its
+  label. Where the line runs short Share's name goes with Reset's, before
+  the title is cut.
+- Under a sheet, Present and Share still work.
 
 ### Present
 

@@ -213,9 +213,16 @@ describe('committing takes the answer out of the student\'s hands', () => {
         expect(screen.queryByRole('tabpanel', { name: /^(Explore|Scenarios|Maths)$/ })).toBeNull();
     });
 
-    it('withholds "reset to this step", which would move the frozen curve', async () => {
+    // Reset puts the market back where the step began, and an answer is not
+    // part of that: the frozen curve is all that has moved, so there is
+    // nothing left for it to do.
+    it('leaves Reset nothing to move', async () => {
         await committed();
-        expect(screen.queryByRole('button', { name: /reset to this step/ })).toBeNull();
+        const before = shown(slider()), reset = screen.getByRole('button', { name: 'Reset' });
+
+        expect(reset).toHaveProperty('disabled', true);
+        fireEvent.click(reset);
+        expect(shown(slider())).toBe(before);
     });
 
     it('gives the control back on a retry', async () => {

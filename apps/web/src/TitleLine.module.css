@@ -1,0 +1,45 @@
+/* The title's line, with the stage's tools at its end. Below `sm` the app's
+ * burger floats in the top right corner over whatever is there, so the line
+ * stops short of it. */
+.line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mantine-spacing-xs);
+    padding-inline-end: var(--app-burger-room, 0px);
+}
+
+/* One line beside the stage, whatever the window: the tools' names go first
+ * (`useNamesFit`), and the title is cut only once they have. On a phone it
+ * wraps, as it always has: cut to fit there, it would be cut to a few words. */
+.title {
+    min-width: 0;
+}
+
+.line:not([data-stacked]) .title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tools {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-xs);
+}
+
+/* On a phone every pixel the tools take is the title's, and a line the title
+ * gains comes out of the stage. The `⋯` and the instruments' door are icons
+ * as tall as the toggle (`input-xs`), closer together: at 390px, exploring,
+ * that keeps the first lesson's title on the three lines it had before the
+ * `⋯` arrived, and the shelf's glyphs at the 80px the browser test asks for.
+ * In the lesson the `⋯` still costs the title a line. */
+.line[data-stacked] .tools {
+    gap: 6px;
+}
+
+/* Between the stage's arrangement and what acts on it, as tall as the toggle. */
+.hairline {
+    align-self: stretch;
+}

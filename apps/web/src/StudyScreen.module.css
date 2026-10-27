@@ -23,13 +23,6 @@
     padding-inline: calc(var(--stage-pad) * 100%);
 }
 
-/* The title's line, with the arrangement toggle (and, on a phone, the
- * instruments' door) at its end. Below `sm` the app's burger floats in the top
- * right corner over whatever is there, so the line stops short of it. */
-.titleRow {
-    padding-inline-end: var(--app-burger-room, 0px);
-}
-
 .stageBox {
     flex: 1;
     min-height: 0;

@@ -254,8 +254,8 @@ export function trackReducer(state: TrackState, action: TrackAction, steps: Less
  * The params every step up to `position` established, later steps winning.
  *
  * Derived rather than accumulated as the student moves, which is what makes
- * "reset to this step" mean what it says: the state the author described at
- * step 4 is every `set` from 1 to 4, not the last one they happened to write.
+ * Reset mean what it says: the state the author described at step 4 is every
+ * `set` from 1 to 4, not the last one they happened to write.
  */
 export function paramsAt(steps: LessonStep[], position: number): Record<string, number> {
     const out: Record<string, number> = {};
@@ -275,7 +275,7 @@ export function paramsAt(steps: LessonStep[], position: number): Record<string, 
  * compiled predicate is `params.step >= n` — while a student who has dragged the
  * curve since step 2 would have their work thrown away by a scrub that restored
  * the authored numbers. So going back un-draws and leaves the values alone, and
- * a step that needs its own state offers "reset to this step" as something the
+ * Reset, on the title's line, puts a step's own state back as something the
  * student chooses rather than something navigation does to them.
  *
  * It will feel wrong to somebody whichever way it goes, and it wants trying with
