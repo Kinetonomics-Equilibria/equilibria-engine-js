@@ -29,10 +29,10 @@ import classes from './Explore.module.css';
  */
 
 export interface ExploreProps extends InstrumentProps {
-    /** What each param stands for, from the lesson. See `StudyContent.paramWords`. */
+    /** What each param stands for, from the model. See `StudyModel.paramWords`. */
     words?: Record<string, ParamWords>;
 
-    /** Open questions to answer by moving things. See `StudyContent.explorePrompts`. */
+    /** Open questions to answer by moving things. See `StudyModel.explorePrompts`. */
     prompts?: string[];
 
     /**

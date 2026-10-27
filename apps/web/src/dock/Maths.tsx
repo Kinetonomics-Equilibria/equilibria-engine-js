@@ -129,7 +129,7 @@ export interface MathsProps extends InstrumentProps {
      * written as its own name, to one decimal.
      */
     narrated?: Record<string, NarratedCalc>;
-    /** What a param means, where its label does not say. See `StudyContent`. */
+    /** What a param means, where its label does not say. See `StudyModel`. */
     paramMeanings?: Record<string, string>;
     /**
      * The `prev` calc values, so a calc over `prev` substitutes the same numbers

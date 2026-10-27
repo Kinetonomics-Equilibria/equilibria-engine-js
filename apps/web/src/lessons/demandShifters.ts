@@ -1,6 +1,6 @@
 import type { LessonStep } from '../track/track';
 import type { Scenario } from '../dock/Scenarios';
-import type { StudyContent } from './content';
+import type { StudyContent, StudyModel } from './content';
 import coverPicture from './pictures/jordans-cover.svg';
 
 /**
@@ -395,8 +395,6 @@ const pair = (n: number) => {
 export const demandDiagram = {
     schema: 'EconSchema',
 
-    steps: DEMAND_LESSON,
-
     params: [
         // From $200 to $400 in steps of $10: at either end the student buys a
         // whole number of pairs, 3 or 1, and the market's point stays on the
@@ -657,39 +655,11 @@ const SCENARIOS: Scenario[] = [
     }
 ];
 
-export const DEMAND_SHIFTERS: StudyContent = {
-    id: 'demand',
-    label: 'What shifts demand',
-    title: 'Air Jordans, and what shifts demand',
-    goals: [
-        'Why each extra pair is worth less to you',
-        'Moving along the demand curve, and shifting it',
-        'The six things that shift demand: PETPIG'
-    ],
-    cover: {
-        question: 'What makes people want more Air Jordans?',
-        hook: 'A pair of Air Jordans costs the same in every shop, yet some months they sell out and ' +
-            'some months they sit on the shelf. Work out why and you can say which way demand will move.',
-        picture: 'cover'
-    },
-    pictures: {
-        cover: {
-            name: 'A sneaker shop',
-            src: coverPicture,
-            alt: 'A sneaker wall in a shop, with high-tops on its shelves and a red pair on the counter ' +
-                'under a $300 price tag.'
-        }
-    },
-    asides: {
-        wageNews: {
-            name: 'News report',
-            headline: 'Junior wages rise from 1 July',
-            body: 'Teenagers with part-time jobs will take home more each week.',
-            note: 'A made-up report, for this question'
-        }
-    },
+/** One fan's demand for Air Jordans and every fan's: what the PETPIG lesson is drawn on. */
+export const AIR_JORDANS: StudyModel = {
+    id: 'air-jordans',
+    name: 'Demand for Air Jordans',
     diagram: demandDiagram,
-    lesson: DEMAND_LESSON,
     panels: PANELS,
     narratedCalcs: NARRATED_CALCS,
     // Quantity demanded as the sum a student can do: what fans want at $300,
@@ -737,4 +707,39 @@ export const DEMAND_SHIFTERS: StudyContent = {
     directionWords: {
         demand: { up: 'right', down: 'left' }
     }
+};
+
+export const DEMAND_SHIFTERS: StudyContent = {
+    id: 'demand',
+    label: 'What shifts demand',
+    title: 'Air Jordans, and what shifts demand',
+    goals: [
+        'Why each extra pair is worth less to you',
+        'Moving along the demand curve, and shifting it',
+        'The six things that shift demand: PETPIG'
+    ],
+    cover: {
+        question: 'What makes people want more Air Jordans?',
+        hook: 'A pair of Air Jordans costs the same in every shop, yet some months they sell out and ' +
+            'some months they sit on the shelf. Work out why and you can say which way demand will move.',
+        picture: 'cover'
+    },
+    pictures: {
+        cover: {
+            name: 'A sneaker shop',
+            src: coverPicture,
+            alt: 'A sneaker wall in a shop, with high-tops on its shelves and a red pair on the counter ' +
+                'under a $300 price tag.'
+        }
+    },
+    asides: {
+        wageNews: {
+            name: 'News report',
+            headline: 'Junior wages rise from 1 July',
+            body: 'Teenagers with part-time jobs will take home more each week.',
+            note: 'A made-up report, for this question'
+        }
+    },
+    lesson: DEMAND_LESSON,
+    model: AIR_JORDANS
 };

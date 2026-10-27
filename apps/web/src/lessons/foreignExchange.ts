@@ -1,7 +1,7 @@
 import type { LessonStep } from '../track/track';
 import type { Scenario } from '../dock/Scenarios';
 import { explainable } from './content';
-import type { StudyContent } from './content';
+import type { StudyContent, StudyModel } from './content';
 import coverPicture from './pictures/fx-cover.svg';
 import tradePicture from './pictures/fx-trade.svg';
 import tradeStill from './pictures/fx-trade-still.svg';
@@ -396,8 +396,6 @@ const apparatusParam = (name: string) =>
 export const fxDiagram = {
     schema: 'EconSchema',
 
-    steps: FX_LESSON,
-
     params: [
         // From 30 to 70, which keeps the clearing rate between USD 0.45 and
         // USD 0.85 and every curve inside the panel at both ends of its range.
@@ -570,54 +568,11 @@ const SCENARIOS: Scenario[] = [
     }
 ];
 
-export const FOREIGN_EXCHANGE: StudyContent = {
-    id: 'fx',
-    label: 'Exchange rates (AUD)',
-    title: 'The Australian dollar, and what moves it',
-    goals: [
-        'Who buys Australian dollars, and who sells them',
-        'Why the AUD rises and falls against the USD',
-        'Four real-world cases to work out yourself'
-    ],
-    cover: {
-        question: 'Why does the Australian dollar rise and fall?',
-        hook: 'Every time the world buys Australian iron ore, a degree or a week on the Gold ' +
-            'Coast, someone has to buy AUD to pay for it. Follow those trades and you can work ' +
-            'out which way the AUD moves when the news changes.',
-        picture: 'cover'
-    },
-    pictures: {
-        cover: {
-            name: 'An ore carrier leaving port',
-            src: coverPicture,
-            alt: 'An ore carrier loaded with iron ore leaving an Australian port, with a ' +
-                'plane flying overhead.'
-        },
-        trade: {
-            name: 'Who needs AUD',
-            src: tradePicture,
-            still: tradeStill,
-            alt: 'Iron ore, beef, wine, degrees, holidays and shares leave Australia for buyers ' +
-                'overseas, who swap USD for AUD to pay for them. Every AUD they need is part of ' +
-                'the demand for AUD.'
-        },
-        rba: {
-            name: 'A central bank announcement',
-            src: rbaPicture,
-            alt: 'An office tower in a city centre, with a percentage sign and an arrow pointing up.'
-        }
-    },
-    asides: {
-        rbaReport: {
-            name: 'News report',
-            headline: 'The RBA lifts the cash rate above US interest rates',
-            body: 'Investors overseas buy Australian bonds to earn the higher return.',
-            note: 'A made-up report, for this question',
-            picture: 'rba'
-        }
-    },
+/** The AUD market and the USD market it mirrors: what the exchange-rate lesson is drawn on. */
+export const AUD_MARKET: StudyModel = {
+    id: 'aud',
+    name: 'The market for the Australian dollar',
     diagram: fxDiagram,
-    lesson: FX_LESSON,
     panels: PANELS,
     narratedCalcs: NARRATED_CALCS,
     explainedCalcs: explainable(calcs),
@@ -666,4 +621,54 @@ export const FOREIGN_EXCHANGE: StudyContent = {
         demand: { up: 'right', down: 'left' },
         supply: { up: 'right', down: 'left' }
     }
+};
+
+export const FOREIGN_EXCHANGE: StudyContent = {
+    id: 'fx',
+    label: 'Exchange rates (AUD)',
+    title: 'The Australian dollar, and what moves it',
+    goals: [
+        'Who buys Australian dollars, and who sells them',
+        'Why the AUD rises and falls against the USD',
+        'Four real-world cases to work out yourself'
+    ],
+    cover: {
+        question: 'Why does the Australian dollar rise and fall?',
+        hook: 'Every time the world buys Australian iron ore, a degree or a week on the Gold ' +
+            'Coast, someone has to buy AUD to pay for it. Follow those trades and you can work ' +
+            'out which way the AUD moves when the news changes.',
+        picture: 'cover'
+    },
+    pictures: {
+        cover: {
+            name: 'An ore carrier leaving port',
+            src: coverPicture,
+            alt: 'An ore carrier loaded with iron ore leaving an Australian port, with a ' +
+                'plane flying overhead.'
+        },
+        trade: {
+            name: 'Who needs AUD',
+            src: tradePicture,
+            still: tradeStill,
+            alt: 'Iron ore, beef, wine, degrees, holidays and shares leave Australia for buyers ' +
+                'overseas, who swap USD for AUD to pay for them. Every AUD they need is part of ' +
+                'the demand for AUD.'
+        },
+        rba: {
+            name: 'A central bank announcement',
+            src: rbaPicture,
+            alt: 'An office tower in a city centre, with a percentage sign and an arrow pointing up.'
+        }
+    },
+    asides: {
+        rbaReport: {
+            name: 'News report',
+            headline: 'The RBA lifts the cash rate above US interest rates',
+            body: 'Investors overseas buy Australian bonds to earn the higher return.',
+            note: 'A made-up report, for this question',
+            picture: 'rba'
+        }
+    },
+    lesson: FX_LESSON,
+    model: AUD_MARKET
 };

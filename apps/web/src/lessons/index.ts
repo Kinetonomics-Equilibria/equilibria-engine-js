@@ -74,4 +74,4 @@ export function topicOfLesson(id: string): LessonTopic | null {
     return topics.filter(topic => topic.lessons.some(lesson => lesson.id === id))[0] || null;
 }
 
-export type { StudyContent } from './content';
+export type { StudyContent, StudyModel } from './content';

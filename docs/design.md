@@ -368,8 +368,10 @@ top of a card's class, then only what is particular to that card.
 ## What a lesson supplies
 
 The components hold no economics. Everything a student reads comes from the
-lesson's `StudyContent` (`lessons/content.ts`), so a teacher's edit is a data
-change:
+lesson's `StudyContent` and the `StudyModel` it is drawn on
+(`lessons/content.ts`), so a teacher's edit is a data change. `paramWords`,
+`narratedCalcs`, `explorePrompts` and `scenarios` are the model's; the rest
+are the lesson's own:
 
 | Field | Read by | Write it as |
 | --- | --- | --- |
@@ -456,10 +458,12 @@ built, so the first one built lands where the others expect it.
   maths, its "Try this" prompts and its scenarios. A **lesson** is a cover,
   steps, questions and a recap over one model. A **story** is a real event,
   told against one model.
-- Today each lesson brings its own diagram and instruments in `StudyContent`,
-  so the first step is a split of that type, which no student sees: the
-  model's fields leave the lesson (see
-  [What each supplies](#what-each-supplies)), and the lesson names its model.
+- Built, though no student sees it: a lesson names its model
+  (`StudyContent.model`, a `StudyModel`), whose fields are listed under
+  [What each supplies](#what-each-supplies), and the screen adds the lesson's
+  steps to the model's config as it hands it to the engine, so the diagram is
+  the same whichever lesson draws it. For now each model sits beside its one
+  lesson, in that lesson's file.
 - Several lessons may share a model: demand's shifters, elasticity and a price
   ceiling are all one market. So the playground's list stays short as the
   lessons grow, which is the sign it is a list of something else.
@@ -666,8 +670,8 @@ Each of these sections is rewritten as the page it describes is built:
 - [The side column](#the-side-column): no tab row beside a lesson; three tabs
   in the playground; the phone's bottom sheet goes.
 - [Reset](#reset): its sentence about an instrument moves to the playground.
-- [What a lesson supplies](#what-a-lesson-supplies): split three ways, as
-  above.
+- [What a lesson supplies](#what-a-lesson-supplies): a story's fields,
+  beside the lesson's and the model's.
 - [Embeds](#embeds): the diagram-only embed is the playground's stage, and its
   link opens the Playground.
 - The rail, `DoubleNavbar.tsx`: its places and panels, as above.

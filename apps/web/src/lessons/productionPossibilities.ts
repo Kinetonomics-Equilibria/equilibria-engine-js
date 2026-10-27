@@ -1,6 +1,6 @@
 import type { LessonStep } from '../track/track';
 import type { Scenario } from '../dock/Scenarios';
-import type { StudyContent } from './content';
+import type { StudyContent, StudyModel } from './content';
 import coverPicture from './pictures/ppc-cover.svg';
 import crewPicture from './pictures/ppc-crew.svg';
 import crewStill from './pictures/ppc-crew-still.svg';
@@ -578,8 +578,6 @@ const calcs = {
 export const ppcDiagram = {
     schema: 'EconSchema',
 
-    steps: PPC_LESSON,
-
     params: [
         // From 10 to 30 hours, 5 to 15 coffees an hour and 2.5 to 7.5 toasties
         // an hour: any one of them at either end keeps the curve inside the
@@ -880,48 +878,11 @@ const SCENARIOS: Scenario[] = [
     }
 ];
 
-export const PRODUCTION_POSSIBILITIES: StudyContent = {
-    id: 'ppc',
-    label: 'Production possibilities',
-    title: 'What a café can make, and what each choice costs',
-    goals: [
-        'What a café can make with the staff and time it has',
-        'What one more toastie really costs',
-        'What the curve assumes, and what moves it'
-    ],
-    cover: {
-        question: 'Why does more of one thing mean less of another?',
-        hook: 'A café has five staff, four hours and one espresso machine for the Saturday rush. ' +
-            'Every hour spent toasting is an hour not spent making coffee. Follow that trade-off ' +
-            'and you can work out what every choice really costs.',
-        picture: 'cover'
-    },
-    pictures: {
-        cover: {
-            name: 'A café counter',
-            src: coverPicture,
-            alt: 'A café counter on a Saturday morning, with an espresso machine, a sandwich ' +
-                'press, cups of coffee and toasties waiting to go out.'
-        },
-        crew: {
-            name: 'The café\'s resources',
-            src: crewPicture,
-            still: crewStill,
-            alt: 'Five staff behind a café counter, with one espresso machine, one sandwich press ' +
-                'and a clock reading 7 to 11: everything the café has to make coffees and toasties with.'
-        }
-    },
-    asides: {
-        noticeboard: {
-            name: 'Staff noticeboard',
-            headline: 'New sandwich press arrives Friday',
-            body: 'It toasts six at a time instead of four, so the same staff can turn out half as ' +
-                'many toasties again in a morning.',
-            note: 'A made-up note, for this question'
-        }
-    },
+/** A café's Saturday morning, toasties against coffees: what the PPC lesson is drawn on. */
+export const CAFE: StudyModel = {
+    id: 'cafe',
+    name: 'Toasties and coffees at a café',
     diagram: ppcDiagram,
-    lesson: PPC_LESSON,
     panels: PANELS,
     narratedCalcs: NARRATED_CALCS,
     // The three a student can check by hand. A and B's own coordinates are
@@ -989,4 +950,48 @@ export const PRODUCTION_POSSIBILITIES: StudyContent = {
         T: { start: 'startT', answer: 'answerT' }
     },
     scenarios: SCENARIOS
+};
+
+export const PRODUCTION_POSSIBILITIES: StudyContent = {
+    id: 'ppc',
+    label: 'Production possibilities',
+    title: 'What a café can make, and what each choice costs',
+    goals: [
+        'What a café can make with the staff and time it has',
+        'What one more toastie really costs',
+        'What the curve assumes, and what moves it'
+    ],
+    cover: {
+        question: 'Why does more of one thing mean less of another?',
+        hook: 'A café has five staff, four hours and one espresso machine for the Saturday rush. ' +
+            'Every hour spent toasting is an hour not spent making coffee. Follow that trade-off ' +
+            'and you can work out what every choice really costs.',
+        picture: 'cover'
+    },
+    pictures: {
+        cover: {
+            name: 'A café counter',
+            src: coverPicture,
+            alt: 'A café counter on a Saturday morning, with an espresso machine, a sandwich ' +
+                'press, cups of coffee and toasties waiting to go out.'
+        },
+        crew: {
+            name: 'The café\'s resources',
+            src: crewPicture,
+            still: crewStill,
+            alt: 'Five staff behind a café counter, with one espresso machine, one sandwich press ' +
+                'and a clock reading 7 to 11: everything the café has to make coffees and toasties with.'
+        }
+    },
+    asides: {
+        noticeboard: {
+            name: 'Staff noticeboard',
+            headline: 'New sandwich press arrives Friday',
+            body: 'It toasts six at a time instead of four, so the same staff can turn out half as ' +
+                'many toasties again in a morning.',
+            note: 'A made-up note, for this question'
+        }
+    },
+    lesson: PPC_LESSON,
+    model: CAFE
 };

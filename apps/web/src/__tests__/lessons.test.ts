@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { ParamInfo } from 'equilibria-engine-js';
 import { LESSONS, lessonById } from '../lessons';
-import type { StudyContent } from '../lessons';
+import type { StudyModel } from '../lessons';
 import { paramsAt, partsOf, revealedPanels } from '../track/track';
 import { candidatesOf, nearestAchievable, validateChoice, validateQuestion } from '../quiz/grade';
 import { parkApparatus } from '../quiz/apparatus';
@@ -14,8 +14,8 @@ import {
 import type { NarratedCalc } from '../narration/narrate';
 
 /**
- * Every lesson, held to the things a lesson can get wrong without anything
- * failing on screen.
+ * Every lesson, and every model one is drawn on, held to the things either can
+ * get wrong without anything failing on screen.
  *
  * Each check here is a mistake that renders: a step revealing a name nothing
  * answers to does nothing, a scenario naming a param the diagram lacks is
@@ -36,10 +36,10 @@ interface ParamDef {
     label?: string;
 }
 
-const paramsOf = (lesson: StudyContent) => (lesson.diagram.params as ParamDef[]);
+const paramsOf = (model: StudyModel) => (model.diagram.params as ParamDef[]);
 
-const paramNamed = (lesson: StudyContent, name: string) =>
-    paramsOf(lesson).filter(p => p.name === name)[0];
+const paramNamed = (model: StudyModel, name: string) =>
+    paramsOf(model).filter(p => p.name === name)[0];
 
 /** What the engine would report for a declared param, near enough to mark against. */
 function infoOf(def: ParamDef, value = def.value): ParamInfo {
@@ -52,8 +52,8 @@ function infoOf(def: ParamDef, value = def.value): ParamInfo {
 }
 
 /** Every object name in every panel, and every panel key: what a step can reveal. */
-function revealable(lesson: StudyContent): Set<string> {
-    const layout = (lesson.diagram.layout as any).CustomLayout;
+function revealable(model: StudyModel): Set<string> {
+    const layout = (model.diagram.layout as any).CustomLayout;
     const names = new Set<string>();
     layout.panels.forEach((panel: any) => {
         names.add(panel.key);
@@ -90,12 +90,10 @@ const COVER_QUESTION_CHARACTERS = 60;
 
 describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" lesson', (_id, lesson) => {
 
-    it('hands the engine the very steps the screen walks', () => {
-        expect(lesson.diagram.steps).toBe(lesson.lesson);
-    });
+    const { model } = lesson;
 
     it('reveals only things that exist', () => {
-        const known = revealable(lesson);
+        const known = revealable(model);
         lesson.lesson.forEach((step, i) => {
             (step.reveal || []).forEach(name => {
                 expect(known.has(name), `step ${i + 1} reveals "${name}"`).toBe(true);
@@ -106,7 +104,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     it('sets only params it declares, inside their ranges and on their grid', () => {
         lesson.lesson.forEach((step, i) => {
             Object.keys(step.set || {}).forEach(name => {
-                const def = paramNamed(lesson, name), value = (step.set as Record<string, number>)[name];
+                const def = paramNamed(model, name), value = (step.set as Record<string, number>)[name];
                 expect(def, `step ${i + 1} sets "${name}"`).toBeDefined();
                 expect(value).toBeGreaterThanOrEqual(def.min);
                 expect(value).toBeLessThanOrEqual(def.max);
@@ -121,7 +119,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     it('hands the student only params it declares, and never beside a question', () => {
         lesson.lesson.forEach((step, i) => {
             (step.try || []).forEach(offered => {
-                expect(paramNamed(lesson, offered.param), `step ${i + 1} offers "${offered.param}"`).toBeDefined();
+                expect(paramNamed(model, offered.param), `step ${i + 1} offers "${offered.param}"`).toBeDefined();
                 expect(offered.label, `step ${i + 1} offers "${offered.param}" unnamed`).toBeTruthy();
             });
             expect(!!step.ask && !!step.try, `step ${i + 1} asks and offers controls too`).toBe(false);
@@ -242,7 +240,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     it('asks only questions a student can answer, about params it can draw', () => {
         lesson.lesson.forEach((step, i) => {
             if (!step.ask) return;
-            const def = paramNamed(lesson, step.ask.param);
+            const def = paramNamed(model, step.ask.param);
             // Where the question starts is wherever the steps up to it left
             // that param — which is the value the screen arms it from.
             const start = paramsAt(lesson.lesson, i + 1)[step.ask.param] ?? (def ? def.value : 0);
@@ -255,16 +253,16 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
             // where it was, and the dashed line is where it was (P14).
             const offered = candidatesOf(step.ask);
             const infos = offered
-                .map(name => paramNamed(lesson, name))
+                .map(name => paramNamed(model, name))
                 .filter(Boolean)
                 .map(def => infoOf(def, paramsAt(lesson.lesson, i + 1)[def.name] ?? def.value));
             expect(validateChoice(step.ask, infos), `question at step ${i + 1}`).toEqual([]);
 
             offered.forEach(param => {
-                const apparatus = lesson.questionApparatus[param];
+                const apparatus = model.questionApparatus[param];
                 expect(apparatus, `no apparatus draws "${param}"`).toBeDefined();
                 [apparatus.start, apparatus.answer].forEach(name => {
-                    const drawn = paramNamed(lesson, name);
+                    const drawn = paramNamed(model, name);
                     expect(drawn, `apparatus param "${name}"`).toBeDefined();
                     expect(drawn.presentation, `"${name}" must be presentation`).toBe(true);
                 });
@@ -288,7 +286,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
             const told = step.aside && lesson.asides ? lesson.asides[step.aside] : undefined;
             const prompt = [step.say, told && told.headline, told && told.body].filter(Boolean).join(' ');
             candidatesOf(step.ask).forEach(name => {
-                const def = paramNamed(lesson, name);
+                const def = paramNamed(model, name);
                 const label = (def && def.label ? def.label : name).toLowerCase();
                 expect(prompt.toLowerCase(), `step ${i + 1} names "${label}"`).not.toContain(label);
             });
@@ -298,7 +296,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     // A focus on a panel the stage has not arranged yet is quietly ignored:
     // the stage puts the first panel that has arrived at the front instead.
     it('brings to the front only a panel it has, once it has arrived', () => {
-        const keys = lesson.panels.map(p => p.key);
+        const keys = model.panels.map(p => p.key);
         lesson.lesson.forEach((step, i) => {
             if (!step.focus) return;
             expect(keys, `step ${i + 1} focuses "${step.focus}"`).toContain(step.focus);
@@ -316,8 +314,21 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
             if (told.picture) expect((lesson.pictures || {})[told.picture], `"${step.aside}"'s picture`).toBeDefined();
             // A report is a panel's name on the stage beside the diagram's own:
             // it cannot share a key with one.
-            expect(lesson.panels.some(p => p.key === step.aside), `"${step.aside}" is a panel's key`).toBe(false);
+            expect(model.panels.some(p => p.key === step.aside), `"${step.aside}" is a panel's key`).toBe(false);
         });
+    });
+});
+
+/** Every model a lesson is drawn on, once each, however many lessons share it. */
+const MODELS = LESSONS.map(lesson => lesson.model).filter((model, i, all) => all.indexOf(model) === i);
+
+describe.each(MODELS.map(model => [model.id, model] as const))('the "%s" model', (_id, model) => {
+
+    // The steps are a lesson's, and the screen adds them to the config it
+    // hands the engine. A model with steps of its own would hide what they
+    // reveal from a student who has the diagram with no lesson running.
+    it('leaves its steps to the lessons drawn on it', () => {
+        expect(model.diagram.steps).toBeUndefined();
     });
 
     // "What changed" marks a cause in its curve's colour, and the curves it
@@ -328,11 +339,11 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     // of the other kind in that kind's colour (the FX lesson's USD market):
     // still one of the lesson's curve colours, never a raw one.
     it('names, for each param it colours, the colour of everything that param draws first', () => {
-        const panels = (lesson.diagram.layout as any).CustomLayout.panels as any[];
-        const words = Object.values(lesson.paramWords || {});
+        const panels = (model.diagram.layout as any).CustomLayout.panels as any[];
+        const words = Object.values(model.paramWords || {});
         const curveColours = words.filter(w => w.curve).map(w => `colors.${w.curve}`);
-        Object.keys(lesson.paramWords || {}).forEach(name => {
-            const curve = lesson.paramWords![name].curve;
+        Object.keys(model.paramWords || {}).forEach(name => {
+            const curve = model.paramWords![name].curve;
             if (!curve) return;
             const mentions = new RegExp(`params\\.${name}\\b`);
             const drawnIn = panels
@@ -349,9 +360,9 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     });
 
     it('offers scenarios the diagram can apply', () => {
-        lesson.scenarios.forEach(scenario => {
+        model.scenarios.forEach(scenario => {
             Object.keys(scenario.params).forEach(name => {
-                const def = paramNamed(lesson, name), value = scenario.params[name];
+                const def = paramNamed(model, name), value = scenario.params[name];
                 expect(def, `scenario "${scenario.label}" sets "${name}"`).toBeDefined();
                 expect(value).toBeGreaterThanOrEqual(def.min);
                 expect(value).toBeLessThanOrEqual(def.max);
@@ -361,9 +372,9 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     });
 
     it('captions each panel with a number it narrates, and a change it computes', () => {
-        const calcs = lesson.diagram.calcs as Record<string, string>;
-        const narrated = lesson.narratedCalcs.map(c => c.name);
-        lesson.panels.forEach(panel => {
+        const calcs = model.diagram.calcs as Record<string, string>;
+        const narrated = model.narratedCalcs.map(c => c.name);
+        model.panels.forEach(panel => {
             expect(narrated, `panel "${panel.key}" headlines "${panel.headline}"`).toContain(panel.headline);
             expect(calcs[panel.delta], `panel "${panel.key}" delta "${panel.delta}"`).toBeDefined();
         });
@@ -377,7 +388,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     // typeset into nonsense would look, to everything but this, like maths.
     it('typesets every calc it explains, in its own symbols', () => {
         const narrated: Record<string, NarratedCalc> = {};
-        lesson.narratedCalcs.forEach(c => { narrated[c.name] = c });
+        model.narratedCalcs.forEach(c => { narrated[c.name] = c });
         const symbols = lessonSymbols(narrated);
         const ones = (expression: string) => {
             const out: Record<string, number> = {};
@@ -385,8 +396,8 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
             return out;
         };
 
-        Object.keys(lesson.explainedCalcs).forEach(name => {
-            const expression = lesson.explainedCalcs[name];
+        Object.keys(model.explainedCalcs).forEach(name => {
+            const expression = model.explainedCalcs[name];
             const formula = toSymbolicTex(expression, symbols);
             const substituted = toSubstitutedTex(expression, ones(expression), ones(expression), null, () => 2);
             expect(formula, `calc "${name}" parses`).not.toBeNull();
@@ -396,7 +407,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
             expect(() => katex.renderToString(tex, { throwOnError: true, displayMode: true }), tex).not.toThrow();
             // Every calc it uses is written as the lesson writes it, not by key.
             referencesOf(expression).filter(r => r.scope === 'calcs').forEach(r => {
-                expect(lesson.narratedCalcs.map(c => c.name), `calc "${name}" uses "${r.name}"`).toContain(r.name);
+                expect(model.narratedCalcs.map(c => c.name), `calc "${name}" uses "${r.name}"`).toContain(r.name);
             });
             expect(narrated[name], `calc "${name}" is named`).toBeDefined();
         });
@@ -406,10 +417,10 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     // nothing to say is left out of it, which is right for a param and wrong
     // for a lesson: it is a letter in a formula that nothing explains.
     it('says what every letter in its formulas means', () => {
-        const meanings = lesson.paramMeanings || {};
-        Object.keys(lesson.explainedCalcs).forEach(name => {
-            referencesOf(lesson.explainedCalcs[name]).filter(r => r.scope === 'params').forEach(r => {
-                const def = paramNamed(lesson, r.name);
+        const meanings = model.paramMeanings || {};
+        Object.keys(model.explainedCalcs).forEach(name => {
+            referencesOf(model.explainedCalcs[name]).filter(r => r.scope === 'params').forEach(r => {
+                const def = paramNamed(model, r.name);
                 expect(meanings[r.name] || (def.label !== undefined && def.label !== def.name),
                     `param "${r.name}" in calc "${name}"`).toBeTruthy();
             });
@@ -432,6 +443,26 @@ describe('finding a lesson by its address', () => {
     it('gives every lesson its own address', () => {
         const ids = LESSONS.map(l => l.id);
         expect(new Set(ids).size).toBe(ids.length);
+    });
+});
+
+describe('the models', () => {
+
+    it('gives every model its own id', () => {
+        const ids = MODELS.map(m => m.id);
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    // A list of models that read as the lessons over again would be a list
+    // nobody could choose from.
+    it('names every model for what it draws, never as a lesson is titled', () => {
+        MODELS.forEach(model => {
+            expect(model.name.trim(), `"${model.id}" has no name`).toBeTruthy();
+            LESSONS.forEach(lesson => {
+                expect(model.name, `"${model.id}"`).not.toBe(lesson.title);
+                expect(model.name, `"${model.id}"`).not.toBe(lesson.label);
+            });
+        });
     });
 });
 
@@ -465,8 +496,8 @@ describe('the other curves\' question apparatus', () => {
 describe('a verdict about a curve that moves sideways', () => {
 
     const fx = lessonById('fx');
-    const demand = infoOf(paramNamed(fx, 'demand'));
-    const words = fx.directionWords!.demand;
+    const demand = infoOf(paramNamed(fx.model, 'demand'));
+    const words = fx.model.directionWords!.demand;
     const RIGHT = { param: 'demand', direction: 'up' as const };
 
     it('says which way the student moved it in the lesson\'s words', () => {

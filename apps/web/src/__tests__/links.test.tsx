@@ -266,7 +266,7 @@ describe('The words of a link', () => {
     // A param by one of the address's own names could not be linked at all.
     it('are never a name a lesson gives a param', () => {
         LESSONS.forEach(lesson => {
-            const names = (lesson.diagram as { params: { name: string; presentation?: boolean }[] }).params
+            const names = (lesson.model.diagram as { params: { name: string; presentation?: boolean }[] }).params
                 .filter(p => !p.presentation).map(p => p.name);
             expect(names.filter(name => LINK_KEYS.indexOf(name) > -1), lesson.id).toEqual([]);
         });

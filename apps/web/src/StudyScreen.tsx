@@ -77,12 +77,12 @@ type Readout = Record<string, number>;
 /**
  * What the screen works out from its lesson, once per lesson.
  *
- * `steps` is the same array the config hands the engine, which is what keeps
- * one ordered list rather than two — `kg.steps()` would return it too, and is
- * there for a host rendering a config it did not write. This screen was handed
- * it, and needs it before the engine has mounted: the stage has to know at its
- * first render that only one panel has arrived, or three appear and then two
- * vanish.
+ * `steps` is the same array the screen puts in the config it hands the engine
+ * (`config`, below), which is what keeps one ordered list rather than two —
+ * `kg.steps()` would return it too, and is there for a host rendering a config
+ * it did not write. This screen was handed it, and needs it before the engine
+ * has mounted: the stage has to know at its first render that only one panel
+ * has arrived, or three appear and then two vanish.
  *
  * `narrated` is each narrated calc by name: what a number on this screen is
  * called, in what unit, to how many places. A panel's caption looks its
@@ -92,10 +92,10 @@ type Readout = Record<string, number>;
  */
 function prepare(content: StudyContent) {
     const narrated: Record<string, NarratedCalc> = {};
-    content.narratedCalcs.forEach(calc => { narrated[calc.name] = calc });
+    content.model.narratedCalcs.forEach(calc => { narrated[calc.name] = calc });
     return {
         steps: content.lesson,
-        panelKeys: content.panels.map(p => p.key),
+        panelKeys: content.model.panels.map(p => p.key),
         narrated
     };
 }
@@ -398,10 +398,11 @@ export interface StudyScreenProps {
 }
 
 export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkChange }: StudyScreenProps) {
+    const { asides } = content;
     const {
         diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, paramWords, explorePrompts,
-        scenarios, questionApparatus, directionWords, asides
-    } = content;
+        scenarios, questionApparatus, directionWords
+    } = content.model;
     const { steps, panelKeys, narrated } = useMemo(() => prepare(content), [content]);
 
     // Where a link opens, worked out once: everything below that a link
@@ -580,10 +581,11 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND, topic, link, onLinkCh
     const dragging = useRef(false);
     const before = useRef<Snapshot | null>(null);
 
-    // Memoised because `useEquilibria` remounts when the config's identity
-    // changes, and rebuilding the diagram on every keystroke elsewhere in the
-    // app would undo everything P7 does to avoid a remount.
-    const config = useMemo(() => diagram, [diagram]);
+    // The model's diagram with the lesson's steps in it, which the engine
+    // reveals and sets by. Memoised because `useEquilibria` remounts when the
+    // config's identity changes, and rebuilding the diagram on every keystroke
+    // elsewhere in the app would undo everything P7 does to avoid a remount.
+    const config = useMemo(() => ({ ...diagram, steps }), [diagram, steps]);
 
     // The lesson's pictures, fetched while the student reads the cover, so a
     // picture step opens on its picture rather than on an empty sheet that

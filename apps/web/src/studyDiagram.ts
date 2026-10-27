@@ -153,10 +153,11 @@ const axes = () => ({
 /**
  * The lesson, in order (P10).
  *
- * Inline beside the diagram, and that is a deliberate stopgap rather than a
- * design: a real content model would let several lessons address one diagram
- * and would live somewhere a teacher could edit. Expect this to move, and keep
- * it as data so that moving it is a cut and a paste.
+ * Beside the diagram, and no longer in it: the steps are the lesson's
+ * (`SUPPLY_AND_DEMAND.lesson`), and the screen adds them to the config it
+ * hands the engine, so the diagram is a model another lesson could be drawn
+ * on. A real content model would live somewhere a teacher could edit. Expect
+ * this to move, and keep it as data so that moving it is a cut and a paste.
  *
  * `reveal` and `set` are the engine's — `compileSteps` turns a reveal into
  * `show: 'params.step >= n'` on the objects or the panel it names, and hands
@@ -315,8 +316,6 @@ export const LESSON = [
 
 export const studyDiagram = {
     schema: 'EconSchema',
-
-    steps: LESSON,
 
     params: [
         { name: 'a', value: 20, min: 12, max: 28, round: 0.1 },

@@ -13,6 +13,11 @@ import type { Direction } from '../quiz/grade';
  * used to hard-code. What is new is that they travel together, so a second
  * lesson is a second object and not a second screen.
  *
+ * The diagram the lesson is drawn on, and everything said about that diagram,
+ * is its `model`, apart from it: what a lesson has of its own is a cover, its
+ * steps and what they show. So several lessons can share one diagram, and a
+ * student can have one to themselves with no lesson running.
+ *
  * Still not a content model. A real one would live somewhere a teacher could
  * edit, version and assign; this keeps the lessons as data so that moving them
  * there is a cut and a paste, which was the condition the first one was
@@ -63,11 +68,40 @@ export interface StudyContent {
      */
     goals: string[];
 
-    /** The engine config: params, calcs, `steps` and a `CustomLayout`. */
-    diagram: Record<string, unknown>;
-
-    /** The same array as `diagram.steps`, typed for the app's own keys. */
+    /**
+     * The steps, in order. The screen puts them in the model's config as its
+     * `steps`, so the engine reveals and sets by this very list.
+     */
     lesson: LessonStep[];
+
+    /** The diagram the lesson is drawn on, and everything said about it. */
+    model: StudyModel;
+}
+
+/**
+ * A diagram and everything said about it, whichever lesson it is drawn in.
+ *
+ * What a lesson, and in time the playground and a story in the news, are drawn
+ * on (docs/design.md, "Pages to come"). Not `Model`, which is the engine's
+ * name for the params and calcs once they are running.
+ */
+export interface StudyModel {
+    /** Its key, unique among the models. */
+    id: string;
+
+    /**
+     * What it draws, in plain words: "The market for the Australian dollar".
+     * Never a lesson's title, so a list of models never reads as the lessons
+     * listed again.
+     */
+    name: string;
+
+    /**
+     * The engine config: params, calcs and a `CustomLayout`. No `steps`: they
+     * are a lesson's, and the screen adds them to the config it hands the
+     * engine, so the diagram is the same whichever lesson draws it.
+     */
+    diagram: Record<string, unknown>;
 
     /** What each panel is called and which calc its caption headlines. */
     panels: readonly PanelSpec[];
@@ -103,9 +137,10 @@ export interface StudyContent {
      * is, under its control in Explore, and what its rise and fall mean, at
      * the head of the chain in "What changed", marked in its curve's colour.
      *
-     * The words a student is learning to use, so they are the lesson's own —
-     * "Demand for A$ increases" is a step title as well. Every field is
-     * optional, and a param with none is shown by its label, as it was.
+     * The words a student is learning to use, so a lesson drawn on the model
+     * uses them as its own — "Demand for A$ increases" is a step title as
+     * well. Every field is optional, and a param with none is shown by its
+     * label, as it was.
      */
     paramWords?: Record<string, ParamWords>;
 
@@ -127,7 +162,7 @@ export interface StudyContent {
     directionWords?: Record<string, Record<Direction, string>>;
 }
 
-/** A param, as a student is told about it. See `StudyContent.paramWords`. */
+/** A param, as a student is told about it. See `StudyModel.paramWords`. */
 export interface ParamWords extends Reading {
     /**
      * Who or what the param stands for: one short sentence, under the control
