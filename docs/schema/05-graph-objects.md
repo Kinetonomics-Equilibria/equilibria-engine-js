@@ -167,6 +167,9 @@ def:
   The text is printed on the axis at the point's value, and it outranks the tick labels there: a
   tick label whose box it covers is hidden (the tick mark stays) and comes back once the point
   moves off it. Without that, an equilibrium at Q* = 10 printed `Q^*` on top of the `10`.
+  An empty name (`vertical: ""`) draws the line and no label, leaving the value to the tick number
+  it lands on. `droplines.show` says when the droplines are drawn, on top of the point's own
+  `show` and reveal, so a point can keep its place on the chart after its droplines have gone.
 - **Draggability**: Setting `draggable: true` allows the user to click and pull the point, changing the underlying `params` indirectly.
 
 ## `Line` and `Segment`

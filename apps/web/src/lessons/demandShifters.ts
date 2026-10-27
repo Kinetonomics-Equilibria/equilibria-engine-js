@@ -379,15 +379,31 @@ const calcs = {
     dMine: 'calcs.mine - prev.calcs.mine'
 };
 
-/** One of the student's four pairs, at what it is worth to them. */
+/** The position of the step that puts `name` on the chart. */
+const revealing = (name: string) => DEMAND_LESSON.findIndex(step => (step.reveal || []).includes(name)) + 1;
+
+/**
+ * One of the student's four pairs, at what it is worth to them.
+ *
+ * Its step says where it goes, "1 pair and $400", so it has droplines to read
+ * that off the axes at that step and no other: the next pair takes them over,
+ * and after the fourth the price's step counts points against its line.
+ *
+ * The droplines are not named on the axes, against the house rule. Each pair
+ * lands on a tick, 1 to 4 pairs and $100 to $400, so the tick number is the
+ * value its step says, and a symbol there would hide it. Nor is there one on
+ * the list for what a pair is worth to you.
+ */
 const pair = (n: number) => {
     const worth = FIRST_PAIR - EACH_PAIR_LESS * (n - 1);
+    const name = 'pair' + n;
     return {
         type: 'Point',
         def: {
-            name: 'pair' + n, title: '',
+            name, title: '',
             x: n, y: worth,
             color: 'colors.demand',
+            droplines: { vertical: '', horizontal: '', show: `params.step == ${revealing(name)}` },
             srTitle: `Pair ${n}, worth $${worth} to you`
         }
     };

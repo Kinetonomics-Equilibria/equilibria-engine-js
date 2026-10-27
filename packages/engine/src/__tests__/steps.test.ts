@@ -149,6 +149,75 @@ describe('steps and hand-written show', () => {
 
 });
 
+/**
+ * A point read off the axes at the step that brings it in, and kept on the
+ * chart without its droplines at the steps after.
+ */
+describe('droplines with a show of their own', () => {
+
+    /** The droplines, or their axis labels, hanging off the point `name`. */
+    const parts = (r: any, name: string, type: string) => r.kg.view.viewObjects
+        .filter((o: any) => o.def && o.def.partOf === name && o.constructor.name === type);
+    const droplinesShown = (r: any, name: string) => parts(r, name, 'Segment').filter((o: any) => o.show).length;
+
+    it('draws them only while their show holds, and leaves the point', () => {
+        const r = build([
+            {
+                type: 'Point',
+                def: {
+                    name: 'first', coordinates: [5, 5],
+                    droplines: { vertical: 'x', horizontal: 'y', show: 'params.step == 1' }
+                }
+            },
+            { type: 'Point', def: { name: 'second', coordinates: [10, 10] } }
+        ], [{ reveal: ['first'] }, { reveal: ['second'] }]);
+
+        step(r, 1);
+        expect(droplinesShown(r, 'first')).toBe(2);
+
+        step(r, 2);
+        expect(shown(r, 'first')).toBe(true);
+        expect(droplinesShown(r, 'first')).toBe(0);
+
+        step(r, 1);
+        expect(droplinesShown(r, 'first')).toBe(2);
+        r.destroy();
+    });
+
+    // Conjoined with the point's own show, as a reveal is, so a show that
+    // holds before the point is on the chart draws no droplines to nothing.
+    it('never draws them without their point', () => {
+        const r = build([{
+            type: 'Point',
+            def: {
+                name: 'first', coordinates: [5, 5],
+                droplines: { vertical: 'x', horizontal: 'y', show: 'params.step <= 1' }
+            }
+        }], [{ reveal: ['first'] }]);
+
+        expect(shown(r, 'first')).toBe(false);
+        expect(droplinesShown(r, 'first')).toBe(0);
+
+        step(r, 1);
+        expect(droplinesShown(r, 'first')).toBe(2);
+        r.destroy();
+    });
+
+    // An empty name leaves the value to the tick number already there,
+    // which an axis label would hide.
+    it('names no axis whose dropline is given an empty name', () => {
+        const r = build([{
+            type: 'Point',
+            def: { name: 'first', coordinates: [5, 5], droplines: { vertical: '', horizontal: 'P' } }
+        }], []);
+
+        expect(parts(r, 'first', 'Segment')).toHaveLength(2);
+        expect(parts(r, 'first', 'Label')).toHaveLength(1);
+        r.destroy();
+    });
+
+});
+
 describe('steps report what they cannot do', () => {
 
     // The failure this warning exists for: a step that reveals a misspelled name

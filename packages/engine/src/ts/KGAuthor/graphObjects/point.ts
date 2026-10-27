@@ -8,6 +8,7 @@ import { Graph } from "../positionedObjects/graph";
 import { Tree } from "../positionedObjects/tree";
 import { GraphObjectDefinition, GraphObject } from "./graphObject";
 import { anonymizeCopy } from "../parsers/nameRegistry";
+import { combineShow } from "../parsers/steps";
 import { EdgeDefinition, Edge, Segment } from "./segment";
 
 
@@ -18,7 +19,12 @@ export interface PointDefinition extends GraphObjectDefinition {
     x?: any;
     y?: any;
     coordinates?: any[];
-    droplines?: { horizontal?: string; vertical?: string; top?: string; right?: string; };
+    /**
+     * `vertical` and `horizontal` draw a dropline to that axis and name it
+     * there; an empty name draws the line and leaves the axis to its tick
+     * number. `show` is when the droplines are drawn, as well as the point.
+     */
+    droplines?: { horizontal?: string; vertical?: string; top?: string; right?: string; show?: string; };
     r?: any;
 }
 
@@ -60,8 +66,21 @@ export class Point extends GraphObject {
         }
 
         if (def.hasOwnProperty('droplines')) {
+
+            // A dropline is a copy of its point, `show` and all, so it comes
+            // and goes with the point. A `show` of the droplines' own is
+            // conjoined with that rather than replacing it, as a reveal is:
+            // a point read off the axes at one step and kept on the chart at
+            // the next can lose its droplines, but no dropline outlives its
+            // point.
+            const droplineDef = function () {
+                const copy = anonymizeCopy(copyJSON(def));
+                if (def.droplines.show !== undefined) copy.show = combineShow(copy.show, def.droplines.show);
+                return copy;
+            };
+
             if (def.droplines.hasOwnProperty('vertical')) {
-                let verticalDroplineDef = anonymizeCopy(copyJSON(def));
+                let verticalDroplineDef = droplineDef();
 
                 // only drag vertical droplines horizontally
                 if (verticalDroplineDef.hasOwnProperty('drag')) {
@@ -83,16 +102,18 @@ export class Point extends GraphObject {
                 verticalDroplineDef.a = [verticalDroplineDef.x, graph.xScale.intercept];
                 verticalDroplineDef.b = [verticalDroplineDef.x, verticalDroplineDef.y];
                 p.subObjects.push(new Segment(verticalDroplineDef, graph));
-                let xAxisLabelDef = anonymizeCopy(copyJSON(verticalDroplineDef));
-                xAxisLabelDef.y = 'AXIS';
-                setDefaults(xAxisLabelDef, {
-                    text: def.droplines.vertical,
-                    fontSize: LABEL_SIZE
-                });
-                p.subObjects.push(new Label(xAxisLabelDef, graph));
+                if (def.droplines.vertical !== '') {
+                    let xAxisLabelDef = anonymizeCopy(copyJSON(verticalDroplineDef));
+                    xAxisLabelDef.y = 'AXIS';
+                    setDefaults(xAxisLabelDef, {
+                        text: def.droplines.vertical,
+                        fontSize: LABEL_SIZE
+                    });
+                    p.subObjects.push(new Label(xAxisLabelDef, graph));
+                }
             }
             if (def.droplines.hasOwnProperty('horizontal')) {
-                let horizontalDroplineDef = anonymizeCopy(copyJSON(def));
+                let horizontalDroplineDef = droplineDef();
 
                 // only drag horizontal droplines vertically
                 if (horizontalDroplineDef.hasOwnProperty('drag')) {
@@ -105,13 +126,15 @@ export class Point extends GraphObject {
                 horizontalDroplineDef.b = [horizontalDroplineDef.x, horizontalDroplineDef.y];
                 p.subObjects.push(new Segment(horizontalDroplineDef, graph));
 
-                let yAxisLabelDef = anonymizeCopy(copyJSON(horizontalDroplineDef));
-                yAxisLabelDef.x = 'AXIS';
-                setDefaults(yAxisLabelDef, {
-                    text: def.droplines.horizontal,
-                    fontSize: LABEL_SIZE
-                });
-                p.subObjects.push(new Label(yAxisLabelDef, graph));
+                if (def.droplines.horizontal !== '') {
+                    let yAxisLabelDef = anonymizeCopy(copyJSON(horizontalDroplineDef));
+                    yAxisLabelDef.x = 'AXIS';
+                    setDefaults(yAxisLabelDef, {
+                        text: def.droplines.horizontal,
+                        fontSize: LABEL_SIZE
+                    });
+                    p.subObjects.push(new Label(yAxisLabelDef, graph));
+                }
             }
         }
 
