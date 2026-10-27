@@ -148,6 +148,53 @@ attention on finding things.
 - Not offered on a phone, and not where the browser cannot go full screen
   (Safari on an iPhone).
 
+## Links
+
+```
+ ?lesson=fx&step=7&arrange=grid&focus=mirror&supply=56
+```
+
+- A link is a view: the lesson, the open tab or the lesson's step, each
+  param the student can move that is not where the lesson puts it, the
+  arrangement and the panel at the front (`links.ts`). "The start of the
+  lesson" is just `?lesson=fx`.
+- Readable query parameters beside `?lesson=`, named after the params, so a
+  teacher can see what a link will open before sending it: `step` or `tab`,
+  then `arrange=grid` and `focus` where they are not the lesson's own, then
+  the params. Where the lesson puts a param is the step's market, as Reset
+  has it; under an instrument, the diagram's own.
+- The address follows the view. A lesson change is pushed, as the lesson
+  alone; anything else replaces, so Back goes to the last lesson rather than
+  the last drag, and the address bar is always the link to this view. Each
+  history entry is left at the view its lesson was left at, so Back opens
+  that lesson there.
+- Written when the view settles, the boundary the narration keeps: a drag is
+  written once, when it is let go. A held arrow key commits on every repeat,
+  so writes are at least 350ms apart, the newest replacing one that waits,
+  because a browser stops taking them past a rate.
+- Opening at a link is a restore, in the order every restore uses: the
+  market back, then the engine's snapshot. Nothing is drawn or said for a
+  move nobody made: no ghost, no change chip, "What changed" at rest. Reset
+  puts back the step's market, or under an instrument the one the link
+  opened with.
+- **A link never carries an answer.** A question a link opens at is
+  unanswered, whoever sent it, and its curves are where the step puts them,
+  which is where it is marked from, so the student's answer is never
+  written. A link to a step past a question opens at the first unanswered
+  one, as the lesson puts it, without the link's params: they were the
+  market after the answer, and could be it.
+- A link that names a param the lesson no longer has opens without it, and
+  so does one whose value is not a number or whose param is not the
+  student's to move; a step past the end is the end, and a lesson that has
+  gone opens the first lesson at its start. Lessons change, and links handed
+  out last term should still open. The address then says what did.
+- A phone writes what a laptop does, so one link opens on either: the open
+  instrument is the tab, sheet up or down. A phone opened at a tab leaves
+  the sheet down with the lesson put away, since what was sent is the
+  diagram and the sheet would cover it.
+- No lesson may give a param one of the address's own names: `lesson`,
+  `step`, `tab`, `arrange`, `focus`. A test checks.
+
 ## The side column
 
 Beside the stage, the screen's full height, two cards 12px apart. It is 320px
@@ -336,7 +383,8 @@ One menu for everything that leaves the screen:
 
 - Each item says under its name what it does, in a few plain words.
 - "Opens at" decides what the link, the QR code and the embed carry. The
-  download and the print are always this view.
+  download and the print are always this view. This view is [the
+  link](#links) the address bar already holds.
 - The QR code goes on a stage sheet (`StageSheet`), as large as the diagram
   was, so a class can scan it from the board, with the short link beside it
   for anyone who would rather type.
@@ -359,24 +407,6 @@ in a menu. Once there are accounts the circle shows the student's initials,
 the menu opens with their name, and Sign out goes at its end, under Settings.
 All of it is about the app rather than the diagram, so it belongs to the rail,
 apart from the places to go.
-
-### Links
-
-- A link is a view: the lesson, the open tab or the lesson's step, each
-  param the student can move that is not where the lesson puts it, the
-  arrangement and the focused panel. "The start of the lesson" is just
-  `?lesson=fx`.
-- Written as readable query parameters beside `?lesson=`, named after the
-  params, so that a teacher can see what a link will open before sending it.
-- The address follows the view. A lesson change is pushed, as now; anything
-  else replaces, so Back still goes to the last lesson rather than the last
-  drag, and the address bar is always the link to this view. Copy link copies
-  it.
-- **A link never carries an answer.** A question a link opens at is
-  unanswered, whoever sent it, so a link cannot pass answers round a class.
-- A link that names a param the lesson no longer has opens without it,
-  rather than failing: lessons change, and links handed out last term should
-  still open.
 
 ### Embeds
 

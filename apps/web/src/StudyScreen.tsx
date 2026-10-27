@@ -27,7 +27,7 @@ import {
     AT_START, askAt, asideAt, focusBetween, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer,
     tryAt
 } from './track/track';
-import type { LessonQuestion, Outcome, TrackState } from './track/track';
+import type { LessonQuestion, LessonStep, Outcome, TrackState } from './track/track';
 import { attemptReducer, frozenParams, isFrozen, isResolved, resetsOnRetry } from './quiz/attempt';
 import type { Attempt } from './quiz/attempt';
 import { candidatesOf, gradeChoice, validateChoice, validateQuestion } from './quiz/grade';
@@ -40,6 +40,8 @@ import type { Instrument, InstrumentProps } from './dock/types';
 import { REST, calcPrecision, formatValue, narrate, undoParams } from './narration/narrate';
 import { phraseRefusal } from './narration/phrasebook';
 import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
+import { useAddressFollows, writeLink } from './links';
+import type { Link } from './links';
 import classes from './StudyScreen.module.css';
 
 /**
@@ -161,6 +163,47 @@ function marketOf(params: { name: string; value: number; presentation?: boolean 
 
 const entries = (values: Record<string, number>) =>
     Object.keys(values).map(name => ({ name, value: values[name] }));
+
+/** The instruments' tabs, which a link may open at: the ids `instruments` gives them. */
+const TABS = ['explore', 'scenarios', 'maths'];
+
+/**
+ * Where a screen opened at a link starts: the tab or the step, the market,
+ * the arrangement and the panel at the front.
+ *
+ * **A link never carries an answer**, so the track starts with nothing
+ * answered, whoever sent it, and stops where it always does: at the first
+ * question. A link to a step past one opens at that question, as the lesson
+ * puts it. The link's params went with the step it named: they are the
+ * market after the question, which can be its answer, and a link must not
+ * pass answers round a class. A question's own curves are never taken from a
+ * link either — they are where the step puts them, which is where it is marked
+ * from — so a link cannot start one at its answer.
+ *
+ * A step beyond the lesson's end is its end, with its params: the lesson has
+ * lost steps since the link was made, and no question stands between.
+ *
+ * The market is what the lesson puts at that step with the link's params over
+ * it — under an instrument, the diagram's own with them over it. Names the
+ * lesson no longer has are left in, and the engine leaves them out: only it
+ * knows what its params are (`onReady`).
+ */
+function arrival(link: Link, steps: LessonStep[], panelKeys: string[], asideKeys: string[]) {
+    const tab = link.tab && TABS.indexOf(link.tab) > -1 ? link.tab : null,
+        track = tab ? AT_START : trackReducer(AT_START, { type: 'goTo', position: link.step }, steps),
+        stopped = track.position < Math.min(link.step, steps.length),
+        question = tab ? null : askAt(steps, track.position),
+        answering = question ? candidatesOf(question) : [],
+        market = tab ? {} : paramsAt(steps, track.position);
+    if (!stopped) {
+        Object.keys(link.params).forEach(name => {
+            if (answering.indexOf(name) < 0) market[name] = link.params[name];
+        });
+    }
+    const known = link.focus && (panelKeys.indexOf(link.focus) > -1 || asideKeys.indexOf(link.focus) > -1),
+        front = (tab ? null : focusBetween(steps, 0, track.position)) || panelKeys[0];
+    return { tab, track, market, mode: link.arrange, focused: known ? link.focus as string : front };
+}
 
 /**
  * The white between a sheet's edge and the furthest thing its panel draws.
@@ -334,17 +377,32 @@ export interface StudyScreenProps {
      * this one rebuilding its engine and its track under the student.
      */
     content?: StudyContent;
+    /**
+     * The view to open at, from the address. Read once, when the screen
+     * mounts; without it the lesson opens at its start.
+     */
+    link?: Link;
+    /**
+     * The address for this view, each time it settles somewhere new: the
+     * screen's half of the address following the view. The shell owns the
+     * address, so it is the one that writes it.
+     */
+    onLinkChange?: (search: string) => void;
 }
 
-export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
+export function StudyScreen({ content = SUPPLY_AND_DEMAND, link, onLinkChange }: StudyScreenProps) {
     const {
         diagram, panels, narratedCalcs, explainedCalcs, paramMeanings, paramWords, explorePrompts,
         scenarios, questionApparatus, directionWords, asides
     } = content;
     const { steps, panelKeys, narrated } = useMemo(() => prepare(content), [content]);
 
-    const [focused, setFocused] = useState<string>(panels[0].key);
-    const [mode, setMode] = useState<StageMode>('focus');
+    // Where a link opens, worked out once: everything below that a link
+    // decides starts from it.
+    const [opening] = useState(() => link ? arrival(link, steps, panelKeys, Object.keys(asides || {})) : null);
+
+    const [focused, setFocused] = useState<string>(opening ? opening.focused : panels[0].key);
+    const [mode, setMode] = useState<StageMode>(opening ? opening.mode : 'focus');
     const [readout, setReadout] = useState<Readout>({});
     const [line, setLine] = useState<NarrationLine>(REST);
 
@@ -360,12 +418,12 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * screen starts with the lesson; the student leaves it from the card, and
      * Finish at the last step does the same.
      */
-    const [pane, setPane] = useState<Pane>('lesson');
+    const [pane, setPane] = useState<Pane>(opening && opening.tab ? 'explore' : 'lesson');
 
     // Which instrument is open, and whether it was opened *at* something. Both
     // live here rather than in the dock because "why?" — which is under the
     // stage, not in the dock — has to be able to set them.
-    const [instrument, setInstrument] = useState('explore');
+    const [instrument, setInstrument] = useState(opening && opening.tab ? opening.tab : 'explore');
     const [focus, setFocus] = useState<{ calc?: string } | undefined>(undefined);
     const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -379,7 +437,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * lesson card shows the step's words for as long as the student is at that
      * step, whatever they do to the diagram in the meantime.
      */
-    const [track, setTrack] = useState<TrackState>(AT_START);
+    const [track, setTrack] = useState<TrackState>(opening ? opening.track : AT_START);
 
     /**
      * The last move the diagram would not make (P12).
@@ -439,14 +497,26 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
      * thrown away — so the last ones it reported are kept here. Refs rather than
      * state throughout, so `onReady` keeps one identity: it is called from an
      * effect keyed on its own identity, and a changing one would re-run it.
+     *
+     * A screen opened at a link is restored the same way, from the market the
+     * link names: the first engine is a remount of a view it never saw.
      */
-    const lastParams = useRef<Record<string, number>>({});
+    const lastParams = useRef<Record<string, number>>(opening ? opening.market : {});
     const trackAt = useRef<TrackState>(AT_START);
     const asking = useRef<Attempt | null>(null);
     const paneAt = useRef<Pane>(pane);
     trackAt.current = track;
     asking.current = attempt;
     paneAt.current = pane;
+
+    /**
+     * What a screen opened at a link still has to do once its engine is ready:
+     * ask the step's question, or note the market the instruments were handed,
+     * which is the one the link names. Once: a later remount is repaired from
+     * state like any other.
+     */
+    const arriving = useRef(opening);
+    const arm = useRef<((question: LessonQuestion | null, index: number) => void) | null>(null);
 
     /**
      * The lesson's diagram, as the student left it for the instruments.
@@ -734,30 +804,39 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
             restoring.push(...parked.current);
         }
 
-        if (restoring.length === 0) return;
+        if (restoring.length > 0) {
+            applyingStep.current = true;
+            try {
+                engine.update({ params: restoring });
+                engine.snapshot();
+            } finally {
+                applyingStep.current = false;
+            }
 
-        applyingStep.current = true;
-        try {
-            engine.update({ params: restoring });
-            engine.snapshot();
-        } finally {
-            applyingStep.current = false;
+            // Read the calcs *after* the snapshot, not from the events the restore
+            // raised. Those were computed against a `prev` still holding the
+            // authored baseline, so every delta chip came back reading the whole
+            // distance from the config — a panel announcing "+11.0" for a resize.
+            setReadout(engine.getCalcs() as Readout);
+            setDockParams(engine.getParams());
+
+            // The chain described a movement against a snapshot this engine never
+            // took. It comes back the moment the student touches anything.
+            latest.current = null;
+            setLine(REST);
+            // And a rebuilt engine has refused nothing yet: its `blocked` bookkeeping
+            // went with the old one, so a refusal left on screen would be the only
+            // party still remembering a boundary.
+            setRefusal(null);
         }
 
-        // Read the calcs *after* the snapshot, not from the events the restore
-        // raised. Those were computed against a `prev` still holding the
-        // authored baseline, so every delta chip came back reading the whole
-        // distance from the config — a panel announcing "+11.0" for a resize.
-        setReadout(engine.getCalcs() as Readout);
-
-        // The chain described a movement against a snapshot this engine never
-        // took. It comes back the moment the student touches anything.
-        latest.current = null;
-        setLine(REST);
-        // And a rebuilt engine has refused nothing yet: its `blocked` bookkeeping
-        // went with the old one, so a refusal left on screen would be the only
-        // party still remembering a boundary.
-        setRefusal(null);
+        // Opened at a link, the question is asked as arriving at it asks it:
+        // after the market is back and snapshotted, so it starts where the
+        // step puts it and nothing has been answered.
+        const arrived = arriving.current;
+        arriving.current = null;
+        if (arrived && arrived.tab) setOpened(marketOf(engine.getParams()));
+        else if (arrived && arm.current) arm.current(askAt(steps, position), position - 1);
     }, [questionApparatus, steps, paramWords]);
 
     /**
@@ -969,6 +1048,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         // now agrees with itself, and comes back as rest.
         retell(false);
     }, [attempt, retell, questionApparatus]);
+    arm.current = armQuestion;
 
     const goTo = useCallback((position: number) => {
         const next = trackReducer(track, { type: 'goTo', position }, steps);
@@ -1290,6 +1370,55 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
         passedFrom.current = track.position;
         if (front) setFocused(front);
     }, [steps, track.position]);
+
+    /**
+     * This view, as a link: what the address says while the screen is here.
+     *
+     * The tab, or the step; each param the student can move that is not where
+     * the lesson puts it — at the step, the diagram's own with every step's
+     * `set` up to here over it, as Reset has it; under an instrument, the
+     * diagram's own; the arrangement; and the panel at the front, where it is
+     * on the stage and not the one the lesson would put there.
+     *
+     * Never a question's own curves: where the student has them is their
+     * answer, given or on its way, and a question a link opens at is asked as
+     * the lesson puts it. And never the answers: the track's record of them is
+     * not in a link at all.
+     *
+     * A phone writes what a laptop does, so one link opens on either. Its
+     * instruments are a sheet rather than a column, but the one open in it is
+     * still the tab, sheet up or down; and a phone opened at a tab leaves the
+     * sheet down, with the lesson put away, since what was sent is the diagram
+     * and the sheet would cover it.
+     *
+     * Null until the engine has said what its params are, since a link
+     * written before then would leave out every param the student moved.
+     */
+    const here = useMemo(() => {
+        if (dockParams.length === 0) return null;
+        const tab = pane === 'explore' ? instrument : null,
+            position = tab ? 0 : track.position,
+            question = tab ? null : askAt(steps, position),
+            answering = question ? candidatesOf(question) : [],
+            lessonPuts: Record<string, number> = tab ? declared : { ...declared, ...paramsAt(steps, position) },
+            front = (tab ? null : focusBetween(steps, 0, position)) || panels[0].key,
+            params: Record<string, number> = {};
+        dockParams.forEach(p => {
+            if (!p.presentation && answering.indexOf(p.name) < 0 && p.name in lessonPuts
+                && Math.abs(p.value - lessonPuts[p.name]) > 1e-9) params[p.name] = p.value;
+        });
+        const shownAtFront = revealed.indexOf(focused) > -1 || focused === aside;
+        return writeLink(content.id, {
+            step: position, tab, arrange: mode, focus: shownAtFront && focused !== front ? focused : null, params
+        });
+    }, [dockParams, pane, instrument, track.position, steps, declared, panels, revealed, focused, aside, mode,
+        content.id]);
+
+    // Written when the view settles, which is the boundary the narration
+    // already keeps: a drag is one move, written when it is let go, and not
+    // sixty a second while it is held. Replaced rather than pushed, by the
+    // shell, so Back still goes to the last lesson rather than the last drag.
+    useAddressFollows(line.kind === 'live' ? null : here, onLinkChange);
 
     // Deliberately not called for undo, which is the mirror case: undo restores
     // the params to what `prev` already holds, so leaving the snapshot alone is

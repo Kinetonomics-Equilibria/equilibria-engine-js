@@ -36,4 +36,7 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 // RTL cannot register its own auto-cleanup hook. Do it here.
 afterEach(() => {
     cleanup();
+    // The app writes its view into the address, and the next test's app would
+    // open at it. Each starts at the root, as a student's first visit does.
+    window.history.replaceState(null, '', '/');
 });

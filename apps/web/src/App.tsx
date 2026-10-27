@@ -6,6 +6,7 @@ import type { NavPanel } from './components/DoubleNavbar';
 import { StudyScreen } from './StudyScreen';
 import { CURRICULUM, lessonById } from './lessons';
 import { usePresenting } from './present';
+import { readLink, writeLink } from './links';
 import classes from './App.module.css';
 
 /** The lesson the address names: `?lesson=fx`. */
@@ -65,7 +66,8 @@ export function App() {
      * The address is what makes a lesson something a teacher can hand out, and
      * it is read once at load and written on every change — pushed rather than
      * replaced, so the browser's back button goes back to the last lesson
-     * rather than out of the app.
+     * rather than out of the app. A lesson chosen opens at its start, so it is
+     * pushed as the lesson alone.
      */
     const [lessonId, setLessonId] = useState(() => lessonById(lessonInUrl()).id);
     const lesson = lessonById(lessonId);
@@ -79,7 +81,7 @@ export function App() {
     const selectLesson = useCallback((id: string) => {
         if (id !== lessonId) {
             const url = new URL(window.location.href);
-            url.searchParams.set('lesson', id);
+            url.search = writeLink(id);
             window.history.pushState(null, '', url);
             setLessonId(id);
         }
@@ -88,6 +90,25 @@ export function App() {
         // covers the lesson just chosen. The rail's Lessons icon brings it back.
         changePanel(null);
     }, [lessonId, changePanel]);
+
+    /**
+     * The rest of the view, which follows it in the address (`links.ts`).
+     *
+     * Replaced, never pushed: Back goes to the last lesson, not the last drag,
+     * and the address bar is always the link to the view on screen. Each
+     * history entry is so left at the view its lesson was left at, and Back
+     * opens that lesson there, as a link would.
+     */
+    const followView = useCallback((search: string) => {
+        if (search === window.location.search) return;
+        const url = new URL(window.location.href);
+        url.search = search;
+        window.history.replaceState(window.history.state, '', url);
+    }, []);
+
+    // The view the address names, for the lesson it names. An address naming
+    // a lesson there is not opens the first lesson at its start.
+    const link = lessonInUrl() === lesson.id ? readLink(window.location.search) : undefined;
 
     return (
         // No `header` config and no AppShell.Header: the navbar is the only
@@ -142,8 +163,9 @@ export function App() {
                   * Keyed by lesson, so another lesson is another screen: a new
                   * engine, a track at its start and no question half-asked,
                   * rather than one screen's state carried into a diagram it
-                  * was never about. */}
-                <StudyScreen key={lesson.id} content={lesson} />
+                  * was never about. Opened at the view the address names, as a
+                  * link opens. */}
+                <StudyScreen key={lesson.id} content={lesson} link={link} onLinkChange={followView} />
             </AppShell.Main>
         </AppShell>
     );
