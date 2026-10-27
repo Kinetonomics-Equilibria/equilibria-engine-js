@@ -30,8 +30,9 @@
      * from KaTeX's own spacing between lines: with less of that, a fraction's
      * denominator crowded the numerator of the one under it. */
     font-size: 13px;
-    /* A display formula does not wrap, and the dock is a fixed 320px on
-     * purpose. Scroll the maths, not the page. */
+    /* A display formula does not wrap, and the dock's width is set by the
+     * window, not by what it holds, on purpose. Scroll the maths, not the
+     * page. */
     overflow-x: auto;
     /* The scroll box clips at its own edge, and a fraction's bar or a
      * subscript can sit a pixel or two outside the formula's box. Above only:

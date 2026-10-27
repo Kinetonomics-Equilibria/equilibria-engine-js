@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { densityIndex } from 'equilibria-engine-js';
 import {
     arrange, layoutParams, rectParamName, toCustomLayout, pixelBox, revealedCount,
-    FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM
+    FILMSTRIP_BELOW_PX, FOCUS_PARAM, FURNITURE, MODE_PARAM, MODE_VALUE, REVEALED_PARAM, STAGE_PAD
 } from '../arrangement';
 import type { ArrangeInput } from '../arrangement';
 
@@ -155,8 +155,8 @@ describe('the grid takes the shape that holds the largest panels', () => {
         expect(second.x).toBeGreaterThan(first.x + first.width);
 
         // And larger than the two-by-two they used to get.
-        const cell = (1016 * (1 - 2 * 0.018) - 0.018 * 1016) / 2,
-            row = ((607 - 2 * 0.018 * 1016) - 0.018 * 1016) / 2;
+        const cell = (1016 * (1 - 2 * STAGE_PAD) - 0.018 * 1016) / 2,
+            row = ((607 - 2 * STAGE_PAD * 1016) - 0.018 * 1016) / 2;
         expect(first.width).toBeGreaterThan(Math.min(cell, row));
     });
 
@@ -358,7 +358,7 @@ describe('slots', () => {
     it('keeps every rail panel the size an equal share gave it', () => {
         const a = arrange({ ...STAGE, panels: KEYS, chrome: CHROME, furniture: FURNITURE });
         const rail = a.panels.filter(p => p.role === 'rail');
-        const share = (1 / a.aspectRatio - 2 * 0.018 - (rail.length - 1) * 0.018) / rail.length;
+        const share = (1 / a.aspectRatio - 2 * STAGE_PAD - (rail.length - 1) * 0.018) / rail.length;
         const room = (CHROME.rail.top + FURNITURE.indicator.top + FURNITURE.indicator.bottom) / STAGE.width;
         const across = 0.2 - (FURNITURE.indicator.left + FURNITURE.indicator.right) / STAGE.width;
 
@@ -438,7 +438,8 @@ describe('a filmstrip too narrow for its captions', () => {
         const { shelf, ...noShelf } = CHROME;
         const strip = at(NARROW, noShelf);
         expect(strip.panels[1].role).toBe('strip');
-        expect(px(strip, 'surplus', NARROW).width).toBeLessThan(1);
+        // 0px then; under 2px since the stage's margin was halved.
+        expect(px(strip, 'surplus', NARROW).width).toBeLessThan(2);
 
         const a = at(NARROW);
         expect(a.panels.map(p => p.role)).toEqual(['focal', 'shelf', 'shelf']);
@@ -462,14 +463,14 @@ describe('a filmstrip too narrow for its captions', () => {
 
     it('gives the strip the height the focal panel cannot use, and none it can', () => {
         const a = at(NARROW), focal = px(a, 'market', NARROW), shelf = a.panels[1];
-        const pad = 0.018 * NARROW.width;
+        const pad = STAGE_PAD * NARROW.width, gap = 0.018 * NARROW.width;
         const room = (side: 'top' | 'right' | 'bottom' | 'left') => CHROME.focal[side] + FURNITURE.full[side];
 
         // As wide as the stage allows: the width bounds it, as it did before.
         expect(focal.width).toBeCloseTo(NARROW.width - 2 * pad - room('left') - room('right'), 6);
         // And the strip starts where the focal panel's room ends, a gap below.
         expect(shelf.slot.y * NARROW.height)
-            .toBeCloseTo(focal.y + focal.height + room('bottom') + pad, 6);
+            .toBeCloseTo(focal.y + focal.height + room('bottom') + gap, 6);
         // Which is more than the strip's share of the stage's height.
         expect(shelf.slot.height).toBeGreaterThan(0.22);
     });
@@ -515,7 +516,7 @@ describe('degenerate inputs', () => {
         const b = pixelBox(a, 'only', STAGE.width)!;
         expect(isSquare(b)).toBe(true);
         // The whole stage less its padding, which is a fraction of the width.
-        expect(b.height).toBeCloseTo(STAGE.height - 2 * 0.018 * STAGE.width, 4);
+        expect(b.height).toBeCloseTo(STAGE.height - 2 * STAGE_PAD * STAGE.width, 4);
     });
 
     it('returns an empty arrangement rather than throwing on no panels', () => {

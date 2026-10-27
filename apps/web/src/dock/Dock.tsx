@@ -84,8 +84,8 @@ function Instruments({ instruments, open, onOpenChange, context, focus, lesson }
         // the colours are this file's: a track with the open tab raised out of
         // it, as the stage's Focus/Grid control is, rather than a blue pill.
         //
-        // Not `grow`, which shares the track in equal parts: four names in a
-        // 320px column do not fit in quarters of it. Each tab is its name's
+        // Not `grow`, which shares the track in equal parts: four names in the
+        // column at its narrowest, 320px, do not fit in quarters of it. Each tab is its name's
         // width and the room left over is shared out, which the dock's CSS
         // keeps still by giving the open tab no heavier a weight than the rest.
         <Tabs

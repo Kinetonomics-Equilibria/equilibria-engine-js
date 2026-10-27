@@ -53,11 +53,11 @@ attention on finding things.
    third from the first page, and until the lesson has drawn something that
    could change, it says what it is waiting for.
 
-5. **Nothing moves under the pointer.** The side column has a fixed width, so
-   nothing in it can resize the diagram, and its two cards have fixed heights,
-   so nothing in one can move the other: a slider never slides out from under
-   the student who is holding it. Content that cannot fit scrolls inside its
-   card, never the page.
+5. **Nothing moves under the pointer.** The side column's width is set by the
+   window alone, so nothing in it can resize the diagram, and its two cards
+   have fixed heights, so nothing in one can move the other: a slider never
+   slides out from under the student who is holding it. Content that cannot
+   fit scrolls inside its card, never the page.
 
 6. **Colour means one thing.** A colour that always means the same thing can be
    read without reading. Numbers never get a verdict colour: a falling price is
@@ -80,7 +80,13 @@ attention on finding things.
 
 ## The side column
 
-Beside the stage, 320px wide, the screen's full height, two cards 12px apart:
+Beside the stage, the screen's full height, two cards 12px apart. It is 320px
+wide on a laptop and grows with the window to 380px (`clamp(320px, 20vw,
+380px)`): at 320 a line of the lesson is about 42 characters, short of
+comfortable reading, and on a large screen the focal panel is held by the
+stage's height, so the width the column takes there was slack beside it. Grid,
+whose panels sit side by side and are held by the stage's width, pays for it,
+which is why the column stops at 380.
 
 ```
  While a lesson runs                 With the lesson put away
@@ -131,6 +137,15 @@ lesson's words left the strip for the same reason (see `LessonCard`). Beside the
 stage the column's width is already the stage's loss, so the chain costs the
 diagram nothing there, gets the room to be read whole, and sits directly under
 the controls that cause it. The strip's height went back to the diagram.
+
+### The stage's margin
+
+The panels' sheets sit in from the stage's edge by `STAGE_PAD`, half the gap
+between two panels. The page has a margin of its own round the stage, and with
+both at the full gap a sheet stood about 43px off the side column, whose own
+cards are 12px apart. The title and the intro above the stage are inset by the
+same margin, so their edges are the sheets' edges and the stage reads as one
+block under its title.
 
 ## The kit
 

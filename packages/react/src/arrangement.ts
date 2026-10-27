@@ -165,14 +165,20 @@ export const FILMSTRIP_BELOW_PX = 900;
 /**
  * Every measurement below is a fraction of the canvas *width*, including the
  * vertical ones — that is what "normalised" means here, and it is why they can
- * be compared with each other. On a 900px stage `PAD` is 16px.
+ * be compared with each other. On a 900px stage `GAP` is 16px and `PAD` 8px.
  *
  * They are fractions rather than pixels so the arrangement is scale-free, and
  * the screen was tuned with them as they are. They became fractions to stop a
  * window drag rebuilding the diagram on every pixel, which a resize no longer
  * does whatever they are.
+ *
+ * `PAD` is half the gap between panels. The page has a margin of its own
+ * around the stage, and at the gap's width the two together held the sheets
+ * about 43px off the side column on a large screen, whose own cards are 12px
+ * apart; in Grid, where two panels side by side are held by the stage's width,
+ * that was width both of them went without.
  */
-const PAD = 0.018;
+const PAD = 0.009;
 const GAP = 0.018;
 
 /**

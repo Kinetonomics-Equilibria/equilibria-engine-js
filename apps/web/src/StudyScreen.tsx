@@ -5,7 +5,7 @@ import {
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconArrowsDiagonal } from '@tabler/icons-react';
-import { Stage } from 'equilibria-react';
+import { STAGE_PAD, Stage } from 'equilibria-react';
 import type { PanelRole, Room, StageMode, StagePanel } from 'equilibria-react';
 import { STEP_PARAM } from 'equilibria-engine-js';
 import type {
@@ -1629,11 +1629,11 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
     // the lesson as well, and the side column gets the height it took — two
     // thirds of it for the tabs' card, one for "What changed", whatever either
     // holds. The row is the whole of how the side column affects the stage's
-    // size: it takes its fixed width, the stage's own `ResizeObserver`
-    // notices, and the arrangement re-runs. Nobody passes a width to anybody.
-    // What keeps the stage *still* while a student moves through the lesson or
-    // switches tabs is that the column's width depends on none of them — and
-    // the stage's height on nothing in it.
+    // size: it takes the width the window gives it, the stage's own
+    // `ResizeObserver` notices, and the arrangement re-runs. Nobody passes a
+    // width to anybody. What keeps the stage *still* while a student moves
+    // through the lesson or switches tabs is that the column's width depends on
+    // none of them — and the stage's height on nothing in it.
     return (
         <div className={classes.screen}>
             <div className={classes.stageColumn}>
@@ -1643,8 +1643,14 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                   * caption — its number, or its promote icon — whichever panel
                   * that is. The intro goes under both, the column's whole
                   * width: beside the toggle too, it wrapped onto a second line
-                  * that came out of the stage's height. */}
-                <Stack gap={0} mb="sm">
+                  * that came out of the stage's height. Both are inset by the
+                  * stage's margin, so they line up with the sheets below. */}
+                <Stack
+                    gap={0}
+                    mb="sm"
+                    className={classes.titleBlock}
+                    style={{ '--stage-pad': STAGE_PAD } as CSSProperties}
+                >
                     <Group justify="space-between" wrap="nowrap" className={classes.titleRow}>
                         <Title order={2} size="h4">{content.title}</Title>
                         <Group gap="xs" wrap="nowrap">

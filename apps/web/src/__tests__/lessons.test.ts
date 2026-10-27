@@ -73,7 +73,7 @@ const onGrid = (def: ParamDef, value: number) =>
  * One idea per step, said in a short title and at most two short paragraphs —
  * what happens, then what it means. The limits are generous for a sentence
  * and tight for a lecture: a paragraph of 220 characters is about six lines of
- * the card at its 320px width, and two of them, a title and a key term still
+ * the card at its narrowest, 320px, and two of them, a title and a key term still
  * fit a laptop's column without scrolling. A step that needs more is two
  * steps. A title is read on the progress bar's markers as well as over the
  * words, so it is a few words, not a sentence.

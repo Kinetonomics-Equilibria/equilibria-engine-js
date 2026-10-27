@@ -5,14 +5,22 @@
  * full height.
  *
  * The row is the entire mechanism by which the side column affects the stage:
- * it takes its fixed width, the stage gets what is left, and the stage's own
- * ResizeObserver does the rest. Nothing here tells the stage anything. */
+ * it takes the width the window gives it, the stage gets what is left, and the
+ * stage's own ResizeObserver does the rest. Nothing here tells the stage
+ * anything. */
 .screen {
     display: flex;
     gap: var(--mantine-spacing-md);
     /* The stage measures the element it renders, so something above it has to
      * have a height for it to take a share of. This is that something. */
     height: calc(100vh - 2 * var(--mantine-spacing-md));
+}
+
+/* The title and the intro under it, inset by the stage's own margin
+ * (`STAGE_PAD`, a fraction of the stage's width, which is this column's), so
+ * their edges are the edges of the sheets below them. */
+.titleBlock {
+    padding-inline: calc(var(--stage-pad) * 100%);
 }
 
 /* The title's line, with the arrangement toggle (and, on a phone, the
@@ -277,13 +285,19 @@
  * Top to bottom is the order a student works in: where they are and what they
  * can do, then what it did. The two split the column's height two to one and
  * keep it whatever they hold, so a long step, a long chain or a change of tab
- * re-divides nothing: what does not fit scrolls inside its own card. */
+ * re-divides nothing: what does not fit scrolls inside its own card.
+ *
+ * 320px on a laptop, where the stage has none to spare, and wider with the
+ * window up to 380px. At 320 a line of the lesson is about 42 characters, short
+ * of comfortable reading; on a large screen the focal panel is held by the
+ * stage's height and the width it gives up was slack beside it. The window is
+ * all that sets it, so nothing in the column can resize the stage. */
 .side {
     display: flex;
     flex: none;
     flex-direction: column;
     gap: var(--mantine-spacing-sm);
-    width: 320px;
+    width: clamp(320px, 20vw, 380px);
     min-height: 0;
 }
 
