@@ -82,17 +82,41 @@
 
 /* Across the top of the sheet, for the panels that are read. Under them is
  * where their tick labels and axis titles go, and a caption there was printed
- * across `0`, `Q*` and `10`. One line on purpose, the name at one end and the
- * number at the other: the band is as tall as one line and no taller. */
+ * across `0`, `Q*` and `10`. One line on purpose, the name over the plot and
+ * the number at the right end: the band is as tall as one line and no taller. */
 .focal,
 .grid {
     align-items: center;
     flex-wrap: nowrap;
 }
 
+/* The name's box is whatever the number, its chip and the icon leave of the
+ * line. In a rail, strip or shelf the name has no box of its own. */
+.nameBox {
+    display: contents;
+}
+
+.focal .nameBox,
+.grid .nameBox {
+    display: block;
+    flex: 1 1 0;
+    min-width: 0;
+    container-type: inline-size;
+}
+
+/* Centred over the plot, as the x axis's title is centred under it: at
+ * `--plot-centre`, which the caption is given because the plot is not in the
+ * middle of the sheet. In a grid panel a long number can reach past that
+ * centre, and the number never gives way, so there the name slides left just
+ * far enough to end where its box does, and at the box's left edge it stops
+ * and takes an ellipsis instead. A transform places it because a translate's
+ * percentages are of the name's own width, the one number this needs that
+ * nothing else knows. */
 .focal .panelName,
 .grid .panelName {
-    margin-right: auto;
+    display: block;
+    width: fit-content;
+    transform: translateX(max(0px, min(calc(var(--plot-centre) - 50%), calc(100cqw - 100%))));
 }
 
 .focal .panelName {

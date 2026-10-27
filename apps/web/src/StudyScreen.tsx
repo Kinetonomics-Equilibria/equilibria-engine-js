@@ -174,7 +174,7 @@ const entries = (values: Record<string, number>) =>
  */
 const SHEET_PAD = 12;
 
-/** A caption across the top of a sheet: one line, name at one end and number at the other. */
+/** A caption across the top of a sheet: one line, the name over the plot's centre and the number at the right. */
 const HEADER_PX = 28;
 
 /**
@@ -275,7 +275,10 @@ const REPORT_GLYPH_PX = 96;
  * A caption across the top of a sheet runs from one side of it to the other,
  * a padding in, and the rail's two lines and the shelf's three sit in the same
  * place — the whole width, since the number and chip need it; only the name's
- * line leaves the corner to the promote icon. The strip's column is beside the
+ * line leaves the corner to the promote icon. The plot is not in the middle of
+ * that width, with the y axis's numbers and title on its left, so a caption
+ * across the top is also told where the plot's centre is, from its own left
+ * edge, for the name to be centred over it. The strip's column is beside the
  * box, as wide as the room the stage kept for it, so the caption and the room
  * are one number.
  */
@@ -292,8 +295,9 @@ function captionBox(panel: StagePanel, sheet: Room): CSSProperties {
         default:
             return {
                 top: -sheet.top + SHEET_PAD, left: -sheet.left + HEADER_INSET,
-                right: -sheet.right + HEADER_INSET, height: HEADER_PX
-            };
+                right: -sheet.right + HEADER_INSET, height: HEADER_PX,
+                '--plot-centre': `${sheet.left - HEADER_INSET + panel.box.width / 2}px`
+            } as CSSProperties;
     }
 }
 
@@ -1325,8 +1329,13 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
 
         const body = (
             <>
+                {/* Its own box in a caption across the top, the room the
+                  * number leaves, for the name to be centred over the plot in;
+                  * nothing of its own anywhere else. */}
                 {named ? (
-                    <Text component="span" className={classes.panelName}>{name}</Text>
+                    <span className={classes.nameBox}>
+                        <Text component="span" className={classes.panelName}>{name}</Text>
+                    </span>
                 ) : null}
                 {/* On a phone a panel beside the diagram is its caption, more
                   * or less — its glyph a few pixels tall, too short for the
@@ -1337,7 +1346,7 @@ export function StudyScreen({ content = SUPPLY_AND_DEMAND }: StudyScreenProps) {
                 ) : null}
                 {typeof level === 'number' ? (
                     <>
-                        {/* At the other end of the sheet's top from the name,
+                        {/* At the right end of the sheet's top, past the name,
                           * or under it in a column. Either way the space
                           * separates them; a dot between them is not needed. */}
                         <Group gap={6} wrap="nowrap" className={classes.values}>

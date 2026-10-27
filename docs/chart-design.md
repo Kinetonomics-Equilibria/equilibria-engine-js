@@ -56,7 +56,7 @@ When one is fixed, delete its line.
 
 | Part | Where | Drawn by |
 | --- | --- | --- |
-| Chart title | Caption row across the top of the sheet, left end | The app, from the panel's `name` in `PANELS` |
+| Chart title | Caption row across the top of the sheet, centred over the plot | The app, from the panel's `name` in `PANELS` |
 | Headline number and change chip | Caption row, right end | The app, from the panel's `headline` and `delta` calcs |
 | Plot | Under the caption | The engine |
 | Axis titles | 44px under the x axis, centred; 56px left of the y axis, rotated, centred | The engine, from `xAxis.title` and `yAxis.title` |
@@ -222,10 +222,16 @@ no chart draws in it; darken it the same way before one does.
 Every chart has one, in the caption row across the top of its sheet, directly
 above the plot.
 
-- **At the left, the name.** One to three words, a noun phrase, sentence case,
-  in words: "Market", "Consumer surplus", "A$ market", "Café". It names what
-  the chart is about, in a student's words. A grid caption is one line, and a
-  longer name is cut to "Marke…".
+- **Centred over the plot, the name.** One to three words, a noun phrase,
+  sentence case, in words: "Market", "Consumer surplus", "A$ market", "Café".
+  It names what the chart is about, in a student's words. It is centred over
+  the plot, as the x axis's title is centred under it, not over the sheet,
+  whose left side holds the y axis's numbers and title. Where a long headline
+  number reaches past the plot's centre, as in a narrow grid panel, the name
+  slides left only as far as it must to clear it. A grid caption is one line,
+  and a name with no room left is cut to "Marke…". A rail panel's small
+  caption keeps its name at the left, over its number, so the name can use the
+  width the corner icon leaves.
 - **At the right, the headline number**, labelled in words with its unit:
   "Price $7.60", not "P\* $7.60". The label is the narrated calc's `label`, the
   same one the chain under the stage uses, so the words have to make sense
