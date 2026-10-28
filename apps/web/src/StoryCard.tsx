@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ActionRow } from './dock/Scenarios';
 import classes from './StoryCard.module.css';
 
@@ -9,7 +10,7 @@ import classes from './StoryCard.module.css';
  * lesson: the question it answers is "what does this news do to the market?",
  * and its answer is the reasoning — who, which curve, which way — as an action
  * row. Pressing it makes the move, as a scenario does, so "What changed"
- * under it tells the chain; it is greyed once the market is where the move
+ * at its foot tells the chain; it is greyed once the market is where the move
  * puts it, as Reset is when nothing would change. Under it, a way out to the
  * Playground at the market the move made.
  *
@@ -27,29 +28,37 @@ export interface StoryCardProps {
     onOpenPlayground(): void;
     /** Where the card sits and how tall it may be: the screen's call. */
     className?: string;
+    /** "What changed", beside the stage, under the rows. */
+    whatChanged?: ReactNode;
 }
 
-export function StoryCard({ reasoning, canMove, onMove, playground, onOpenPlayground, className }: StoryCardProps) {
+export function StoryCard({
+    reasoning, canMove, onMove, playground, onOpenPlayground, className, whatChanged
+}: StoryCardProps) {
     return (
         <section className={[classes.card, className].filter(Boolean).join(' ')} aria-labelledby="story-card-head">
             <div className={classes.head}>
                 <p className={classes.eyebrow} id="story-card-head">What it moves</p>
             </div>
-            <div className={classes.body}>
-                <div className={classes.list}>
-                    <ActionRow
-                        label="Show it on the diagram"
-                        description={reasoning}
-                        disabled={!canMove}
-                        onPress={onMove}
-                    />
-                    <ActionRow
-                        label="Open in the Playground"
-                        description="The market as this news left it, yours to move."
-                        href={playground}
-                        onPress={onOpenPlayground}
-                    />
+            <div className={classes.stack}>
+                <div className={classes.body}>
+                    <div className={classes.list}>
+                        <ActionRow
+                            label="Show it on the diagram"
+                            description={reasoning}
+                            disabled={!canMove}
+                            onPress={onMove}
+                        />
+                        <ActionRow
+                            label="Open in the Playground"
+                            description="The market as this news left it, yours to move."
+                            href={playground}
+                            onPress={onOpenPlayground}
+                        />
+                    </div>
                 </div>
+
+                {whatChanged}
             </div>
         </section>
     );

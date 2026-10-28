@@ -1,8 +1,8 @@
 /* The dock. Everything here exists to keep one promise: the stage does not move
  * when the open instrument changes. */
 
-/* The playground's first card, holding the instruments under one row of
- * tabs: the same paper as the panels' sheets and "What changed" under it, so
+/* The playground's card, holding the instruments under one row of tabs and
+ * "What changed" at its foot: the same paper as the panels' sheets, so
  * everything a student reads or moves sits on one kind of thing.
  *
  * How tall it is is the screen's (`.dockBeside`, `.dockBelow`), and depends on
@@ -64,6 +64,12 @@
     --tab-bg: light-dark(var(--mantine-color-white), var(--mantine-color-dark-4));
     color: var(--mantine-color-text);
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1), 0 0 0 1px light-dark(rgba(16, 24, 40, 0.04), transparent);
+}
+
+/* The open instrument and "What changed" under it: the room the foot's
+ * sheet rises into, under the tabs. */
+.stack {
+    composes: stack from '../ui/paper.module.css';
 }
 
 .panel {

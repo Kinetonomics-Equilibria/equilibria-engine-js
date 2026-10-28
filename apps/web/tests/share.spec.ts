@@ -79,7 +79,9 @@ test('on paper: the title, the view in words, the diagram fitted to the page, an
     await expect(page.getByText('Step 8 of 15: Up is stronger, down is weaker')).toBeVisible();
     await expect(page.getByText('Supply of AUD 50 → 56')).toBeVisible();
     await expect(page.getByRole('img', { name: /back to this view, for the printed page/ })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'What changed' })).toBeVisible();
+    // The whole chain, since paper has no "See all" to press.
+    await expect(page.locator('[data-printed] [data-part="effect"]')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'What changed' })).toBeHidden();
     // Nothing to press: no rail, no tools, no tabs.
     await expect(page.locator('nav').first()).toBeHidden();
     await expect(share(page)).toBeHidden();

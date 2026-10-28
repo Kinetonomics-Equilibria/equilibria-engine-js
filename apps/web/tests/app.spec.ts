@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { RENDERED, arrange, focalDragPathIndex, focalPointCoordinates, test, textCollisions } from './helpers';
+import {
+    RENDERED, arrange, focalDragPathIndex, focalPointCoordinates, inWholeChain, test, textCollisions, wholeChainText
+} from './helpers';
 
 /**
  * The study screen, in a real browser.
@@ -719,9 +721,11 @@ test('promotes from the keyboard', async ({ page }) => {
  */
 const STRIP = '[data-kind]';
 
-/** The chain, with the whitespace the layout supplies rather than the markup. */
-const chainText = (page: Page) =>
-    page.locator(`${STRIP} [data-chain]`).textContent();
+/**
+ * The chain, with the whitespace the layout supplies rather than the markup:
+ * the whole of it, as "See all" opens it, since the foot says only its ends.
+ */
+const chainText = wholeChainText;
 
 test('"What changed" is at rest until something moves', async ({ page }) => {
     // At rest. The lesson has just finished and been put away for Explore.
@@ -740,8 +744,8 @@ test('before the lesson begins, nothing offers a curve to drag', async ({ page }
     await page.goto('/lessons/market');
     await page.locator('.kg-container svg').waitFor();
 
-    // Beside the stage "What changed" holds its third of the column, and says
-    // what it is waiting for.
+    // Beside the stage "What changed" holds its place at the foot of the
+    // lesson's card, and says what it is waiting for.
     await expect(page.getByRole('button', { name: 'Start lesson' })).toBeVisible();
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
     await expect(page.locator(STRIP)).toContainText('Start the lesson, and what each step changes will show here.');
@@ -955,9 +959,9 @@ test('a slider scrub is one interaction, not one per frame', async ({ page }) =>
 /**
  * Nothing moves under the pointer that is holding it.
  *
- * "What changed" is the bottom third of the column whatever its chain says,
- * so a scrub that settles fills it without growing it, and the slider that
- * moved it stays where the student is holding it.
+ * "What changed" is the foot of the column's card, one height whatever its
+ * chain says, so a scrub that settles fills it without growing it, and the
+ * slider that moved it stays where the student is holding it.
  */
 test('"What changed" keeps its height, and the slider that moved it stays put', async ({ page }) => {
     const slider = page.getByRole('slider', { name: 'a' });
@@ -977,6 +981,8 @@ test('"What changed" keeps its height, and the slider that moved it stays put', 
 
 test('the maths instrument shows the calc the strip named', async ({ page }) => {
     await dragDemandDown(page);
+    // "Why?" is under the whole chain, on the sheet "See all" opens.
+    await page.locator(STRIP).getByRole('button', { name: /^See all/ }).click();
     await page.getByRole('button', { name: 'Why?' }).click();
 
     // "Why?" is answered by the instrument the strip pointed at, opened on the
@@ -1092,8 +1098,9 @@ test('a scenario applies every param it names', async ({ page }) => {
  * it from the end — and the end is the effects, what the student moved
  * something to find out. Before that, the chain wrapped, the second line took
  * its height from the stage, and the engine was rebuilt under it. In "What
- * changed" it is read whole, in a column whose width the stage already gave
- * up, so the stage neither changes shape nor rebuilds.
+ * changed" it is read whole, on the sheet "See all" opens over the column's
+ * card, in a column whose width the stage already gave up, so the stage
+ * neither changes shape nor rebuilds.
  */
 test('the longest chain is read whole, and the diagram does not move for it', async ({ page }) => {
     const stage = await stageBox(page);
@@ -1106,17 +1113,19 @@ test('the longest chain is read whole, and the diagram does not move for it', as
     // A rebuild followed a resize within a frame or two, unthrottled; give it ten.
     await frames(page);
 
-    const card = page.locator(STRIP);
-    await expect(card).toHaveAttribute('data-kind', 'settled');
-    await expect(card.locator('[data-part="cause"] > *')).toHaveCount(2);
-    await expect(card.locator('[data-part="movement"] > *')).toHaveCount(2);
-    await expect(card.locator('[data-part="effect"] > *')).toHaveCount(4);
+    await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'settled');
+    await inWholeChain(page, async chain => {
+        await expect(chain.locator('[data-part="cause"] > *')).toHaveCount(2);
+        await expect(chain.locator('[data-part="movement"] > *')).toHaveCount(2);
+        await expect(chain.locator('[data-part="effect"] > *')).toHaveCount(4);
 
-    // With room to spare at this size: nothing scrolls inside the card.
-    const body = await card.locator('[data-chain]').evaluate(el => ({
-        client: el.parentElement!.clientHeight, scroll: el.parentElement!.scrollHeight
-    }));
-    expect(body.scroll, `chain ${body.scroll}px in ${body.client}px`).toBeLessThanOrEqual(body.client);
+        // With room to spare at this size: nothing scrolls on the sheet.
+        const body = await chain.locator('[data-chain]').evaluate(el => ({
+            client: el.parentElement!.clientHeight, scroll: el.parentElement!.scrollHeight
+        }));
+        expect(body.scroll, `chain ${body.scroll}px in ${body.client}px`).toBeLessThanOrEqual(body.client);
+    });
+    await frames(page);
 
     const after = await stageBox(page);
     expect(after.width).toBeCloseTo(stage.width, 0);
@@ -1469,11 +1478,12 @@ test('moving through the lesson never changes the diagram\'s size', async ({ pag
 });
 
 /**
- * The lesson's card and the playground's instruments are each the top two
- * thirds of the column and "What changed" the rest, whichever tab is open and
- * whatever either holds, so going from one page to the other is as still as
- * moving through either. At the end of the lesson the two draw the same
- * diagram, so the stage has nothing at all to rearrange.
+ * The lesson's card and the playground's instruments are each the column's
+ * height, with "What changed" at the foot of either at one height of its own,
+ * whichever tab is open and whatever either holds, so going from one page to
+ * the other is as still as moving through either. At the end of the lesson
+ * the two draw the same diagram, so the stage has nothing at all to
+ * rearrange.
  */
 test('the lesson and the instruments take one place beside the stage, and moving between them moves nothing', async ({ page }) => {
     const instruments = page.getByRole('complementary', { name: 'Instruments' });
@@ -1482,15 +1492,26 @@ test('the lesson and the instruments take one place beside the stage, and moving
     const column = async () => {
         const top = (await instruments.count()) > 0 ? instruments : lesson;
         const [upper, bottom] = [(await top.boundingBox())!, (await changed.boundingBox())!];
-        return { top: upper, bottom, whole: bottom.y + bottom.height - upper.y };
+        return { top: upper, bottom };
+    };
+    // Inside the card, at its foot: the instruments' last thing, and the
+    // lesson's last but Back and Next.
+    const atTheFoot = async (at: { top: { y: number; height: number }; bottom: { y: number; height: number } }) => {
+        const end = at.bottom.y + at.bottom.height;
+        expect(at.bottom.y).toBeGreaterThan(at.top.y);
+        expect(end).toBeLessThanOrEqual(at.top.y + at.top.height);
+        if ((await instruments.count()) > 0) {
+            expect(end).toBeCloseTo(at.top.y + at.top.height - 1, 0);
+        } else {
+            const next = (await lesson.getByRole('button', { name: /Next|Finish/ }).boundingBox())!;
+            expect(next.y).toBeGreaterThan(end);
+        }
     };
 
     const exploring = await column();
     const stage = await stageBox(page);
     expect(exploring.top.x).toBeGreaterThan(stage.x + stage.width);
-    // Two thirds of the column, less two thirds of the gap between the cards.
-    expect(exploring.top.height).toBeCloseTo((exploring.whole - 12) * 2 / 3, 0);
-    expect(exploring.bottom.y).toBeGreaterThan(exploring.top.y + exploring.top.height);
+    await atTheFoot(exploring);
 
     await backToTheLesson(page);
     await expect(lesson).toBeVisible();
@@ -1504,6 +1525,7 @@ test('the lesson and the instruments take one place beside the stage, and moving
     await page.getByRole('group', { name: 'Question' }).getByRole('button', { name: 'Check' }).click();
     const asking = await column();
 
+    await atTheFoot(asking);
     for (const at of [finished, asking]) {
         expect(at.top.height).toBeCloseTo(exploring.top.height, 0);
         expect(at.bottom.height).toBeCloseTo(exploring.bottom.height, 0);

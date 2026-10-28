@@ -17,10 +17,10 @@ import classes from './Explore.module.css';
  * `about`: a slider called "Demand for A$" moves a number until something says
  * it is the world buying Australian exports.
  *
- * What a move did is not said here. It is said in "What changed", beside this
- * card rather than inside it, because a scenario or a drag on the diagram
- * changes the market just as much — and a chain that lived in this tab would be
- * gone the moment a student opened another.
+ * What a move did is not said here. It is said in "What changed", at the
+ * card's foot rather than inside this tab, because a scenario or a drag on the
+ * diagram changes the market just as much — and a chain that lived in this tab
+ * would be gone the moment a student opened another.
  *
  * Presentation params are filtered out for the same reason the narration
  * ignores them: which panel is focal is something the *screen* does, and a

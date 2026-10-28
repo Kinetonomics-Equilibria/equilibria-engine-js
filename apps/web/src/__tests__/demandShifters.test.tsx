@@ -43,7 +43,15 @@ const chrome = (key: string) =>
 
 const caption = (key: string) => (chrome(key) && chrome(key)!.textContent) || '';
 
-const chain = () => screen.getByRole('region', { name: 'What changed' }).textContent || '';
+/**
+ * "What changed" with its whole chain open, as "See all" leaves it: the foot
+ * says only the chain's two ends, and these steps are held to every clause.
+ */
+const chain = () => {
+    const all = screen.queryByRole('button', { name: /^See (all \d+ changes|the numbers)/ });
+    if (all) fireEvent.click(all);
+    return screen.getByRole('region', { name: 'What changed' }).textContent || '';
+};
 
 const at = (title: string) => DEMAND_LESSON.findIndex(step => step.title === title) + 1;
 const FIRST_QUESTION = DEMAND_LESSON.findIndex(step => !!step.ask) + 1;

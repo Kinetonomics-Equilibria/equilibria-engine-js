@@ -1,6 +1,7 @@
 /* A story's card: paper, as the lesson card beside a lesson is, with a card
- * head saying what it is and its rows under it. Fixed in height by the screen,
- * as every card in the column is, so what does not fit scrolls inside it. */
+ * head saying what it is, its rows under it, and beside the stage "What
+ * changed" at its foot. Fixed in height by the screen, as every card in the
+ * column is, so what does not fit scrolls inside it. */
 
 .card {
     composes: paper from './ui/paper.module.css';
@@ -17,6 +18,12 @@
 
 .eyebrow {
     composes: eyebrow from './ui/paper.module.css';
+}
+
+/* The rows and "What changed" under them: the room the foot's sheet rises
+ * into, under the head. */
+.stack {
+    composes: stack from './ui/paper.module.css';
 }
 
 .body {

@@ -589,9 +589,15 @@ describe('the colour of what changed', () => {
     function move(curve: Curve) {
         const before = new Map(liveCurves().map(c => [c.path, c.d]));
         press(curve, 'ArrowRight', 2);
+        // The curves' movement is on the whole chain, a press away; the foot
+        // says only its two ends.
         const card = screen.getByRole('region', { name: 'What changed' });
+        const all = within(card).queryByRole('button', { name: /^See all/ });
+        if (all) fireEvent.click(all);
+        const less = within(card).getByRole('button', { name: /^Show less/ });
+        const sheet = document.getElementById(less.getAttribute('aria-controls')!)!;
         const curveOf = (part: string) =>
-            (card.querySelector(`[data-part="${part}"]`) as HTMLElement).style.getPropertyValue('--curve');
+            (sheet.querySelector(`[data-part="${part}"]`) as HTMLElement).style.getPropertyValue('--curve');
         return {
             strokes: liveCurves().filter(c => before.has(c.path) && before.get(c.path) !== c.d).map(c => c.stroke),
             cause: curveOf('cause'),

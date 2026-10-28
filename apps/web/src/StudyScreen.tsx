@@ -15,7 +15,7 @@ import { STORY_NOTE, dateWords } from './news';
 import type { Story } from './news';
 import { StoryCard } from './StoryCard';
 import { NarrationStrip } from './NarrationStrip';
-import { NarrationCard } from './NarrationCard';
+import { NarrationFoot, NarrationPrinted } from './NarrationFoot';
 import { QuestionRow } from './QuestionRow';
 import { TryRow } from './TryRow';
 import { LessonCard } from './LessonCard';
@@ -1737,6 +1737,7 @@ export function StudyScreen({
             goals={lesson ? lesson.goals : []}
             onGoTo={goTo}
             onFinish={finish}
+            whatChanged={where === 'beside' ? whatChanged : undefined}
         >
             {attempt ? (
                 <QuestionRow
@@ -1779,6 +1780,7 @@ export function StudyScreen({
             onMove={makeMove}
             playground={linkHref(movedMarket)}
             onOpenPlayground={openPlayground}
+            whatChanged={where === 'beside' ? whatChanged : undefined}
         />
     ) : null;
 
@@ -1794,6 +1796,7 @@ export function StudyScreen({
             onOpenChange={setInstrument}
             context={dockContext}
             focus={focus}
+            whatChanged={where === 'beside' ? whatChanged : undefined}
         />
     );
 
@@ -1912,16 +1915,17 @@ export function StudyScreen({
     /**
      * What the student's last move did, said in one of two places.
      *
-     * Beside the stage it is "What changed", the bottom third of the side
-     * column, under the tabs whichever is open, and the same card under all of
-     * them. Where there is no column it is the strip under the stage: one line,
-     * which is what a phone has room for. Never both, and they announce the
-     * same sentence.
+     * Beside the stage it is "What changed", at the foot of the column's card
+     * — the lesson's, a story's, or the instruments' whichever tab is open —
+     * and the same foot under all of them. Where there is no column it is the
+     * strip under the stage: one line, which is what a phone has room for.
+     * Never both, and they announce the same sentence.
      *
      * Before the lesson has begun nothing is drawn, so nothing can change, and
      * both say what they are waiting for rather than advise a drag. Both hold
-     * their place whatever they say: a card that came and went would re-divide
-     * the column, and a strip that did would resize the diagram.
+     * their place and their height whatever they say: a foot that grew would
+     * cover the slider a student is holding, and a strip that did would resize
+     * the diagram.
      *
      * "Why?" opens the Maths instrument, and beside a lesson there is none
      * to open, so neither form offers it there.
@@ -1938,11 +1942,33 @@ export function StudyScreen({
         onWhy: instrumented ? onWhy : undefined
     };
 
+    // The foot of the column's card. Its sheet goes down when the student
+    // moves on: to another step, or another tab.
+    const whatChanged = (
+        <NarrationFoot
+            {...narration}
+            place={lesson ? track.position : story ? 'story' : instrument}
+            restHint={notStarted
+                ? 'Start the lesson, and what each step changes will show here.'
+                : under === 'picture'
+                    ? 'This step is a picture, so nothing on the diagram changes. ' +
+                        'The diagram is back at the next step.'
+                    : under === 'recap'
+                        ? 'This step looks back, so nothing on the diagram changes. ' +
+                            'Finish, and this market is yours in the Playground.'
+                        : story
+                            ? 'Press Show it on the diagram to see what this news changes, or drag a ' +
+                                'curve yourself.'
+                            : exploring
+                                ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
+                                : undefined}
+        />
+    );
+
     // Two columns, and the side one is the screen's whole height: the title is
     // the diagram's, so it heads the stage's column rather than running over
-    // the lesson as well, and the side column gets the height it took — two
-    // thirds of it for the tabs' card, one for "What changed", whatever either
-    // holds. The row is the whole of how the side column affects the stage's
+    // the lesson as well, and the side column gets the height it took, all of
+    // it for one card, with "What changed" at its foot. The row is the whole of how the side column affects the stage's
     // size: it takes the width the window gives it, the stage's own
     // `ResizeObserver` notices, and the arrangement re-runs. Nobody passes a
     // width to anybody. What keeps the stage *still* while a student moves
@@ -2033,24 +2059,9 @@ export function StudyScreen({
             {!stacked ? (
                 <div className={classes.side}>
                     {lesson ? lessonCard('beside') : story ? storyCard('beside') : dock('beside')}
-                    <NarrationCard
-                        {...narration}
-                        className={classes.narrationBeside}
-                        restHint={notStarted
-                            ? 'Start the lesson, and what each step changes will show here.'
-                            : under === 'picture'
-                                ? 'This step is a picture, so nothing on the diagram changes. ' +
-                                    'The diagram is back at the next step.'
-                                : under === 'recap'
-                                    ? 'This step looks back, so nothing on the diagram changes. ' +
-                                        'Finish, and this market is yours in the Playground.'
-                                    : story
-                                        ? 'Press Show it on the diagram to see what this news changes, or drag a ' +
-                                            'curve yourself.'
-                                        : exploring
-                                            ? 'Drag a curve, move a slider or try a scenario to see what it changes.'
-                                            : undefined}
-                    />
+                    {/* On paper only, where the card is not printed and there
+                      * is no press to open the whole chain. */}
+                    <NarrationPrinted line={narration.line} />
                 </div>
             ) : null}
         </div>

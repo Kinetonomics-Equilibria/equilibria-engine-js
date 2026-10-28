@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
-import { arrange, dataCoordinates, focalPointCoordinates, RENDERED, test, textCollisions } from './helpers';
+import {
+    arrange, dataCoordinates, focalPointCoordinates, inWholeChain, RENDERED, test, textCollisions, wholeChainText
+} from './helpers';
 
 /**
  * The AUD lesson, in a real browser.
@@ -331,8 +333,8 @@ test('demand for AUD is dragged right, and the AUD appreciates', async ({ page, 
     expect(after.x, 'more AUD should change hands').toBeGreaterThan(before.x);
 
     // Sideways, said sideways — and the USD side said with it, a line each.
-    const moved = page.getByRole('region', { name: 'What changed' }).locator('[data-part="movement"] > *');
-    await expect(moved).toHaveText(['demand for AUD shifts to the right', 'supply of USD shifts to the right']);
+    await inWholeChain(page, chain => expect(chain.locator('[data-part="movement"] > *'))
+        .toHaveText(['demand for AUD shifts to the right', 'supply of USD shifts to the right']));
     await expect(caption(page, 'market')).toContainText('▲');
     await expect(caption(page, 'mirror')).toContainText('▼');
     expect(pageErrors).toEqual([]);
@@ -346,11 +348,12 @@ test('supply of AUD is dragged right, and the AUD depreciates', async ({ page })
 
     const after = await focalPointCoordinates(page);
     expect(after.y, 'the AUD should have fallen').toBeLessThan(before.y - 0.01);
-    const card = page.getByRole('region', { name: 'What changed' });
-    await expect(card.locator('[data-part="movement"] > *'))
-        .toHaveText(['supply of AUD shifts to the right', 'demand for USD shifts to the right']);
-    // And what that is called, in the words the lesson taught.
-    await expect(card.locator('[data-part="effect"] > *').first()).toContainText('The AUD depreciates');
+    await inWholeChain(page, async chain => {
+        await expect(chain.locator('[data-part="movement"] > *'))
+            .toHaveText(['supply of AUD shifts to the right', 'demand for USD shifts to the right']);
+        // And what that is called, in the words the lesson taught.
+        await expect(chain.locator('[data-part="effect"] > *').first()).toContainText('The AUD depreciates');
+    });
     await expect(caption(page, 'market')).toContainText('▼');
 });
 
@@ -365,10 +368,10 @@ async function strokeOf(dragPath: Locator) {
 
 /** The colour of a part's marker on "What changed": a ring for what moved, a dot for the curves. */
 const markerColour = (page: Page, part: 'cause' | 'movement') =>
-    page.getByRole('region', { name: 'What changed' }).locator(`[data-part="${part}"]`).evaluate((li, which) => {
+    inWholeChain(page, chain => chain.locator(`[data-part="${part}"]`).evaluate((li, which) => {
         const marker = getComputedStyle(li, '::before');
         return which === 'cause' ? marker.borderTopColor : marker.backgroundColor;
-    }, part);
+    }, part));
 
 test('the chain is marked in the colour of the curve that moved', async ({ page }) => {
     await toTheEnd(page);
@@ -502,7 +505,7 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
     const chips = [await caption(page, 'market').innerText(), await caption(page, 'mirror').innerText()];
     expect(chips[0]).toContain('▲');
     expect(chips[1]).toContain('▼');
-    const chain = await strip.locator('[data-chain]').textContent();
+    const chain = await wholeChainText(page);
     expect(chain).toContain('demand for AUD shifts to the right');
     await page.locator('.kg-container svg').evaluate(el => el.setAttribute('data-witness', '1'));
 
@@ -517,7 +520,7 @@ test('a change of shape keeps the last move: its ghost, its deltas and its chain
         expect([await caption(page, 'market').innerText(), await caption(page, 'mirror').innerText()],
             `${where}: the deltas`).toEqual(chips);
         await expect(strip, `${where}: the strip`).toHaveAttribute('data-kind', 'settled');
-        expect(await strip.locator('[data-chain]').textContent(), `${where}: the chain`).toBe(chain);
+        expect(await wholeChainText(page), `${where}: the chain`).toBe(chain);
         await expect(page.locator('.kg-container svg[data-witness="1"]'), `${where}: the same diagram`).toHaveCount(1);
     };
 

@@ -294,3 +294,28 @@ export async function textCollisions(page: Page): Promise<string[]> {
         return found;
     });
 }
+
+/**
+ * The whole of "What changed", read as a student opens it: the foot beside the
+ * stage says only the chain's two ends, and "See all" lays the rest on a sheet
+ * over the card. `fn` reads the sheet, and the sheet is put back after it, so
+ * the card under it is there for whatever the test does next. Where there is
+ * nothing more to open — at rest, mid-gesture, or on a phone's strip — `fn`
+ * reads the foot as it is.
+ */
+export async function inWholeChain<T>(page: Page, fn: (chain: Locator) => Promise<T>): Promise<T> {
+    const foot = page.locator('[data-kind]');
+    const seeAll = foot.getByRole('button', { name: /^See (all \d+ changes|the numbers)/ });
+    if ((await seeAll.count()) === 0) return fn(foot);
+    await seeAll.click();
+    const sheet = foot.locator('[data-sheet]');
+    try {
+        return await fn(sheet);
+    } finally {
+        await foot.getByRole('button', { name: /^Show less/ }).click();
+    }
+}
+
+/** The whole chain's text, without the whitespace the layout supplies. */
+export const wholeChainText = (page: Page) =>
+    inWholeChain(page, chain => chain.locator('[data-chain]').first().textContent());

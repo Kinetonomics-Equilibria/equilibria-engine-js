@@ -1,6 +1,6 @@
 /* Paper: the one surface everything a student reads or moves sits on.
  *
- * The panels' sheets, the lesson card, the instruments and "What changed" are
+ * The panels' sheets, the lesson card, the instruments and a story's card are
  * all this, on a page a shade darker, so the screen reads as a few sheets of
  * one kind laid on a desk — and a new thing on the screen is a new sheet, not a
  * new kind of box. See docs/design.md.
@@ -37,4 +37,28 @@
     font-size: var(--mantine-font-size-xs);
     line-height: 1.4;
     color: var(--mantine-color-dimmed);
+}
+
+/* A card's body and "What changed" under it (`NarrationFoot`), between the
+ * card's head and its way on: the room the foot's sheet rises into. While the
+ * sheet is up, what is under it is hidden as well as covered, so the keyboard
+ * and a screen reader do not reach words nobody can see. Once the sheet has
+ * risen, so the words stay until it covers them. */
+.stack {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.stack:has(> [data-open]) > :not([data-open]) {
+    visibility: hidden;
+    transition: visibility 0s 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stack:has(> [data-open]) > :not([data-open]) {
+        transition: none;
+    }
 }

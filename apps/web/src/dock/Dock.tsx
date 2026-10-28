@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ScrollArea, Tabs } from '@mantine/core';
 import type { Instrument, InstrumentFocus, InstrumentProps } from './types';
 import classes from './Dock.module.css';
@@ -16,9 +17,9 @@ import classes from './Dock.module.css';
  *
  * The playground's: a lesson has none beside it, since a student halfway
  * through a question has no use for three ways out of it (docs/design.md,
- * "Pages to come"). The card is the same height whichever is open, so moving
- * from one to another hands neither the stage nor "What changed" under it
- * anything to re-arrange for.
+ * "Pages to come"). The card is the same height whichever is open, and so is
+ * "What changed" at its foot, so moving from one to another hands neither the
+ * stage nor the foot anything to re-arrange for.
  *
  * On a phone the same card is under the stage, where a lesson's card would
  * be, at the height a lesson's has, tabs and all: there is no lesson to hold
@@ -41,9 +42,17 @@ export interface DockProps {
 
     /** Where the screen puts the card and how tall it is: the screen's call. */
     className?: string;
+
+    /**
+     * "What changed", beside the stage: under the open instrument, whichever
+     * it is, since a scenario and a slider move the market alike. Its sheet
+     * rises over the instrument and not the tabs, so a student can always
+     * open another.
+     */
+    whatChanged?: ReactNode;
 }
 
-export function Dock({ instruments, open, onOpenChange, context, focus, className }: DockProps) {
+export function Dock({ instruments, open, onOpenChange, context, focus, className, whatChanged }: DockProps) {
     // `keepMounted={false}` is the "one at a time" claim made literal: an
     // inactive instrument is not in the DOM, so it cannot be read by a screen
     // reader, tabbed into, or found by a test that believes it.
@@ -72,22 +81,26 @@ export function Dock({ instruments, open, onOpenChange, context, focus, classNam
                     ))}
                 </Tabs.List>
 
-                {instruments.map(i => (
-                    <Tabs.Panel key={i.id} value={i.id} className={classes.panel}>
-                        {/* `hover`: a scrollbar when the student is pointing at the
-                          * instrument, and none otherwise. `auto` showed one for as
-                          * long as the content overflowed at all, so the maths sat
-                          * beside a permanent bar for want of fourteen pixels. */}
-                        <ScrollArea.Autosize className={classes.scroll} type="hover">
-                            <div className={classes.panelInner}>
-                                <i.Component
-                                    {...context}
-                                    focus={open === i.id ? focus : undefined}
-                                />
-                            </div>
-                        </ScrollArea.Autosize>
-                    </Tabs.Panel>
-                ))}
+                <div className={classes.stack}>
+                    {instruments.map(i => (
+                        <Tabs.Panel key={i.id} value={i.id} className={classes.panel}>
+                            {/* `hover`: a scrollbar when the student is pointing at the
+                              * instrument, and none otherwise. `auto` showed one for as
+                              * long as the content overflowed at all, so the maths sat
+                              * beside a permanent bar for want of fourteen pixels. */}
+                            <ScrollArea.Autosize className={classes.scroll} type="hover">
+                                <div className={classes.panelInner}>
+                                    <i.Component
+                                        {...context}
+                                        focus={open === i.id ? focus : undefined}
+                                    />
+                                </div>
+                            </ScrollArea.Autosize>
+                        </Tabs.Panel>
+                    ))}
+
+                    {whatChanged}
+                </div>
             </Tabs>
         </aside>
     );

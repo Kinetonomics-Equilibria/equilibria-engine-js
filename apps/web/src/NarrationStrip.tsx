@@ -14,8 +14,9 @@ import classes from './NarrationStrip.module.css';
  * sometimes on the chart, sometimes in a sidebar and sometimes in a toast cost
  * a student the attention they should be spending reading them.
  *
- * Beside the stage, that home is `NarrationCard`, which has the room to say
- * the chain in words and in full; this line is what a phone has room for. One
+ * Beside the stage, that home is `NarrationFoot`, at the foot of the column's
+ * card, which says the chain in words and opens it in full; this line is what
+ * a phone has room for. One
  * or the other is on screen, never both, and they announce the same sentence.
  *
  * Nothing here decides what to say. `narrate()` produces the chain and this

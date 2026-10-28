@@ -24,8 +24,8 @@ attention on finding things.
 ## Principles
 
 1. **One question per card.** The lesson card answers *what is this step
-   saying?*; the instruments, *what can I change?*; "What changed", *what did
-   that do?*; each panel's sheet, *what does this market look like now?* A new
+   saying?*; the instruments, *what can I change?*; "What changed", at the
+   foot of either, *what did that do?*; each panel's sheet, *what does this market look like now?* A new
    piece of information goes on the card whose question it answers. If it
    answers none of them, it is a new card — or it is not needed. Before the
    first step the stage answers *what is this lesson about?*, on a cover over
@@ -49,16 +49,19 @@ attention on finding things.
 4. **One home for each kind of information.** The chain lives in "What
    changed" and nowhere else on that screen; a number is printed once per place
    it appears, by one formatter, with one label and unit. A home keeps its
-   place when it has nothing to say: "What changed" is the column's bottom
-   third from the first page, and until the lesson has drawn something that
-   could change, it says what it is waiting for.
+   place when it has nothing to say: "What changed" is the foot of the
+   column's card from the first page, as tall at rest as after a move, and
+   until the lesson has drawn something that could change, it says what it
+   is waiting for.
 
 5. **Nothing moves under the pointer.** The side column's width is set by the
    window alone (and by Present, which changes the window too), so nothing in
-   it can resize the diagram, and its two cards
-   have fixed heights, so nothing in one can move the other: a slider never
-   slides out from under the student who is holding it. Content that cannot
-   fit scrolls inside its card, never the page.
+   it can resize the diagram. Its card is the column's height and "What
+   changed" at its foot one height of its own, whatever either says, so
+   nothing in one can move the other: a slider never slides out from under
+   the student who is holding it. Content that cannot fit scrolls inside its
+   place, never the page; what the foot cannot say is a press away, on a
+   sheet the student asked for.
 
 6. **Colour means one thing.** A colour that always means the same thing can be
    read without reading. Numbers never get a verdict colour: a falling price is
@@ -75,8 +78,9 @@ attention on finding things.
    | A topic's colour | Which topic, only ever as a dot: before its name, or before a story's headline | the Lessons and Playground panels, and over the page's title; before each headline in the In the news panel and Home's feed, with the topic's name there for a screen reader. Beside words, so a teal topic is never read as the reasoning |
 
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
-   the depth one press away: "Why? See the maths" opens the formula behind the
-   first effect; a scenario carries its reasoning in one line; "Try this" offers
+   the depth one press away: "What changed" says what moved and what followed
+   first, and "See all" opens the rest of the chain; "Why? See the maths"
+   opens the formula behind the first effect; a scenario carries its reasoning in one line; "Try this" offers
    questions and marks nothing. A curve that reaches the end of its range just
    stops there: the slider already shows the number, so nothing is said.
 
@@ -115,8 +119,8 @@ attention on finding things.
   which the axis's own title says, and to follow the lesson or drag a curve,
   which the cover and the lesson card say. It cost the stage a line.
 - Not over the stage, where a tool lands on a panel's caption, and not in
-  the side column, whose cards each answer one question that none of these
-  answers.
+  the side column, whose card and its foot each answer a question that none
+  of these answers.
 - The topic and the title are one block beside the stage, whatever the
   window, so the stage's height never depends on them; the capsule is
   centred on the two. Every tool is an icon, so the tools are as wide
@@ -187,7 +191,7 @@ attention on finding things.
   - **The side column**, width and all. Everything in it grows together, so
     a line holds the words it did and the card is the one students know. At
     1280×800 the column is 480px and the stage keeps about 750px; a long step
-    scrolls after about six lines. See [The side column](#the-side-column).
+    scrolls after about eight lines. See [The side column](#the-side-column).
   - **The topic and title** above the stage, but not the tools beside them.
     A long title wraps; see [The title line](#the-title-line).
   - **A report's words** (`AsidePanel`), when it is at the front of Focus,
@@ -257,8 +261,9 @@ One menu for everything that leaves the screen (`ShareMenu`):
   and title; the view in words (`PrintedView`) — where in the lesson, which
   panel is in front, and each param moved from where the lesson puts it —
   with a QR code back to the view and its link; the diagram, scaled as drawn to the
-  paper's 680px; and the chain from "What changed", left off at rest. No
-  rail, tools or tabs. The browser's dialog saves it as a PDF, and printing
+  paper's 680px; and the whole chain from "What changed", as its sheet says
+  it, since paper has no "See all" to press (`NarrationPrinted`), left off at
+  rest. No rail, tools or tabs. The browser's dialog saves it as a PDF, and printing
   from the browser's own menu gives the same page.
 - Download and Print are of the diagram, so they are greyed under the
   lesson's own sheets — the cover, a picture, the recap — where there is
@@ -344,7 +349,8 @@ One menu for everything that leaves the screen (`ShareMenu`):
 
 ## The side column
 
-Beside the stage, the screen's full height, two cards 12px apart. It is 320px
+Beside the stage, the screen's full height, one card with "What changed" at its
+foot. It is 320px
 wide on a laptop and grows with the window to 380px (`clamp(320px, 20vw,
 380px)`): at 320 a line of the lesson is about 42 characters, short of
 comfortable reading, and on a large screen the focal panel is held by the
@@ -360,38 +366,72 @@ from 480px to 570px (see [Present](#present)).
  │ Lesson                 │          │ Explore Scenarios Maths│ │ where you are,
  │ Part 2 of 3 · …        │          │ Demand for AUD      50 │ │ what you can do
  │ ▬▬▬▬ ▬▬▬▬▬ ▬▬▬▬        │          │ who it is              │ │
- │ Demand for AUD …       │          │ ━━━━━━━○━━━━━━━━━━━━━━ │ │ two thirds
- │ step words, key term,  │          │ Try this               │ │
+ │ Demand for AUD …       │          │ ━━━━━━━○━━━━━━━━━━━━━━ │ │ the rest of
+ │ step words, key term,  │          │ Try this               │ │ the column
  │ the question or try-it │          │ ○ …                    │ │
- │ Back      1 of 5  Next │          │                        │ │
+ │                        │          │                        │ │
  ├────────────────────────┤          ├────────────────────────┤ ┼
  │ What changed     Undo  │          │ What changed     Undo  │ │ what it did
- │ ○ Demand … increases   │          │ ○ ·  ●  …              │ │
- │ ● The AUD appreciates  │          │                        │ │ one third
- └────────────────────────┘          └────────────────────────┘ ┴
+ │ ○ Demand … increases   │          │ ○ Demand … increases   │ │
+ │ ● The AUD appreciates  │          │ ● The AUD appreciates  │ │ 142px
+ │      0.65 → 0.70       │          │      0.65 → 0.70       │ │
+ │ See all 5 changes ⌃    │          │ See all 6 changes ⌃    │ │
+ ├────────────────────────┤          └────────────────────────┘ ┴
+ │ Back      1 of 5  Next │
+ └────────────────────────┘
 ```
 
-- Beside a lesson the top card is the lesson's, with a card head of its own,
+- Beside a lesson the card is the lesson's, with a card head of its own,
   "Lesson", as "What changed" has. Nothing on it leads out of the lesson but
   Finish, at the last step, which opens the playground (see
   [Lessons](#lessons)); the rail is the other way out.
-- In the playground the top card holds the instruments under one row of
+- In the playground the card holds the instruments under one row of
   tabs, Explore, Scenarios and Maths, Explore open first, one open at a time
   and only the open one mounted.
-- Beside a story the top card is the story's, "What it moves" (`StoryCard`):
+- Beside a story the card is the story's, "What it moves" (`StoryCard`):
   the move as an action row, its reasoning under it, and "Open in the
   Playground" under that. See [In the news](#in-the-news).
-- The top card is two thirds of the column and "What changed" the bottom
-  third, whatever either holds and whichever tab is open. A long step
-  scrolls between the lesson's head and its Back and Next, which hold still;
-  an instrument scrolls inside its tab; a long chain scrolls under "What
-  changed"'s head. Four calcs of maths fit their tab at 1440×900; below
-  about 875px tall the Maths tab scrolls.
+- The card is the column's height, and "What changed" is its foot,
+  `NarrationFoot`: under the step's words and controls, or the open
+  instrument, and over Back and Next where a lesson has them, so the eye
+  passes it on the way on. The foot is one height whatever it says — about
+  142px, four lines of the chain under its head — at rest, mid-drag and
+  after a move. A long step scrolls between the lesson's head and the foot,
+  which hold still with Back and Next; an instrument scrolls inside its
+  tab. At 1440×900 a step has 585px, where it had about 420 while "What
+  changed" was a card of its own. Four calcs of maths fit their tab at
+  1440×900.
+- The foot says the chain's two ends: what moved, in words, and the effect
+  the lesson ranks first, with its numbers. The cause's numbers are the
+  slider's own, and the curve a student dragged has no number they set; on
+  the sheet they are said. Mid-drag the two are readings, the label and the
+  number now, as the strip's are. A refusal (P12) takes the ends' place on
+  the foot, since it is the newer news, and is said above the chain on the
+  sheet.
+- "See all 6 changes" counts every clause the chain has, and opens it on a
+  sheet that rises from the foot over the card's body, up to the card's
+  head — the lesson's place, or the tabs — and no further, so the lesson's
+  way on and the other tabs are always there. "Show less" is on the sheet's
+  last line, where "See all" was, so a second press in the same place puts
+  it back, and focus follows the press to it. Esc puts it back too, and so
+  does moving on, to another step or another tab, since what the student
+  moved to is on the card under it. Under the sheet the body is hidden as
+  well as covered (`.stack` in `ui/paper.module.css`), so neither the
+  keyboard nor a screen reader reaches words nobody can see. "Why? See the
+  maths" is on the sheet, under the chain. Where the ends are the whole
+  chain the press is "See the numbers"; where it would show nothing more it
+  is not offered.
+- After a move made all at once — a step's, a scenario's, Reset, a story's
+  move — what moved is there at once and what followed comes after it in
+  turn: the curves at 160ms, the effects at 360ms. The order the chain is
+  read in is said a second time by when. After a drag it is all there when
+  the student lets go, since the chain has already unfolded under their
+  hand; with reduced motion it is always all there at once.
 - The tabs are each as wide as their name, sharing out what is left, and the
   open one is no bolder than the rest, so opening one moves no other.
 - On a phone there is no column: the lesson, a story's card, or in the
   playground the instruments, tabs and all, go under the stage at one fixed
-  height, and the
+  height, with no foot, and the
   chain into the one-line strip under the stage (`NarrationStrip`) — the same
   narration, at the density a phone has room for. The two never appear
   together and announce the same sentence. Nothing is in a bottom sheet: a
@@ -408,6 +448,23 @@ lesson's words left the strip for the same reason (see `LessonCard`). Beside the
 stage the column's width is already the stage's loss, so the chain costs the
 diagram nothing there, gets the room to be read whole, and sits directly under
 the controls that cause it. The strip's height went back to the diagram.
+
+### Why the chain became a foot
+
+"What changed" was a card of its own, the column's bottom third, and that was
+the wrong shape for what it says. Most of the time in a lesson it has nothing
+to say, and it held a third of the column to say "drag a curve"; when something
+did move, six lines landed at once in the corner, away from the diagram where
+the student was looking, in a third too short to read them with any room. A
+place, for something that is an event.
+
+So it became the foot of the one card: the chain's two ends, which are the
+chain a new learner needs, in a few lines that never change height, on the way
+from the step's words to Next; and the whole chain one press away, with more
+room than the third ever had. It gave the step back about 160px at 1440×900 and
+the gap and padding of a second card. A collapsed line alone was weighed and
+left: the chain is what the screen exists to teach, and a student who has to
+press to see any of it mostly will not.
 
 ### The stage's margin
 
@@ -427,16 +484,17 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Title line | `TitleLine.tsx` | The lesson's topic over its title, and the stage's tools in a capsule of paper beside them; the title never wraps but when presenting: the tools are borderless round icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
 | QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it, and so does the title line's capsule, with its own corner. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
+| Stack | `ui/paper.module.css` `.stack` | A card's body and "What changed" under it, between the card's head and its way on: the room the foot's sheet rises into. While the sheet is up the body is hidden as well as covered, once the sheet has risen over it. |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left ("Lesson" beside the stage, "What changed"); the card's one action at the right ("What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. Drawn in its curve's colour where the lesson names one, the theme's blue where it does not. The gesture wiring is `ParamSlider`'s. |
-| The chain | `NarrationCard.tsx` | Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine. Rendered from `narrate()`; decides nothing. |
+| The chain | `NarrationFoot.tsx` | "What changed", at the foot of the column's card: the chain's two ends at one height whatever they say, and the whole chain on a sheet that rises over the card ("See all"). Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine; what followed comes in turn after a move made at once. `NarrationPrinted` is the whole chain on paper. Rendered from `narrate()`; decides nothing. |
 | Action row | `dock/Scenarios.tsx` `ActionRow` | Something to press that needs its reason beside it: the name, the reasoning under it, an arrow — all one button. A row that opens a page is a real link; a row that is a place has the rail's icon before its name. Scenarios, a story's move and Home's places use it. |
 | Prompt list | `dock/Explore.tsx` | Suggestions under a "Try this" eyebrow, with hollow markers: things to do, not tasks to tick. |
 | Stage sheet | `StageSheet.tsx` | A sheet over the whole stage, for a moment with no diagram to show: paper, inset by the stage's own margin (`STAGE_PAD`), with the card head and a body that scrolls. The stage stays mounted under it, inert and at its size. |
 | Picture sheet | `PictureSheet.tsx` | A step's picture on a stage sheet, as large as the sheet allows and never cropped, with Pause/Play in the head when it moves. Pausing shows its still; reduced motion starts there. |
 | Report panel | `AsidePanel.tsx` | A report beside the diagram, as a panel of the stage's own (`hostPanels`): captioned by its name, read at the front with its picture and note, words first as a glyph. Where its glyph is too short for the words, its caption says the headline. A story's names its source, linked where it is read. |
-| Story card | `StoryCard.tsx` | A story's top card beside the stage: "What it moves", its move as an action row, greyed once made, and "Open in the Playground" under it. |
+| Story card | `StoryCard.tsx` | A story's card beside the stage: "What it moves", its move as an action row, greyed once made, and "Open in the Playground" under it, with "What changed" at its foot. |
 | Home | `Home.tsx` | The page the app opens on: its title on the desk, then "Where to go", the three places as action rows, and "Latest in the news", the newest stories as a feed. |
 | Recap | `LessonRecap.tsx` | The lesson's questions looked back over: a card each with its title, its cause marked in its curve's colour, its explanation and how it went; then the takeaway in the `why` callout. Presentational — the screen builds the cases. |
 | Track bars | `ui/track.module.css` `.bar` | A step drawn as a bar, yellow when it asks a question. The cover's parts use it; the lesson card's markers restate it, because a `::before` cannot compose. |
@@ -680,21 +738,23 @@ Built, at `/` (`Home.tsx`).
  ┌────────────────────────┐ ┬
  │ Lesson                 │ │
  │ Part 2 of 3 · …        │ │
- │ ▬▬▬▬ ▬▬▬▬▬ ▬▬▬▬        │ │ two thirds
- │ step words, key term,  │ │
+ │ ▬▬▬▬ ▬▬▬▬▬ ▬▬▬▬        │ │
+ │ step words, key term,  │ │ the column
  │ the question or try-it │ │
- │ Back      1 of 5  Next │ │
- ├────────────────────────┤ ┼
- │ What changed     Undo  │ │ one third
+ ├────────────────────────┤ │
+ │ What changed     Undo  │ │
  │ ○ Demand … increases   │ │
+ │ ● The AUD appreciates  │ │
+ ├────────────────────────┤ │
+ │ Back      1 of 5  Next │ │
  └────────────────────────┘ ┴
 ```
 
 Built, at `lessons/<id>`.
 
 - The study screen less Explore, Scenarios and Maths. The lesson card has the
-  column's top two thirds to itself, with a card head of its own where the
-  tab row was. "What changed" keeps the bottom third, since the lesson's
+  column to itself, with a card head of its own where the tab row was.
+  "What changed" is its foot, over Back and Next, since the lesson's steps,
   try-its and questions move curves.
 - Nothing on the lesson page leads out of the lesson but the rail. A student
   who wants the market to themselves finishes the lesson or takes the rail;
@@ -719,12 +779,12 @@ Built, at `lessons/<id>`.
  ┌────────────────────────┐ ┬
  │ Explore Scenarios Maths│ │
  │ Demand for A$       50 │ │
- │ who it is              │ │ two thirds
+ │ who it is              │ │ the column
  │ ━━━━━━━○━━━━━━━━━━━━━━ │ │
  │ Try this               │ │
  │ ○ …                    │ │
- ├────────────────────────┤ ┼
- │ What changed     Undo  │ │ one third
+ ├────────────────────────┤ │
+ │ What changed     Undo  │ │
  │ ○ ·  ●  …              │ │
  └────────────────────────┘ ┴
 ```
@@ -737,8 +797,9 @@ Built, at `playground/<id>`.
   them in step by step; a student who has come to play has nothing to be
   brought to.
 - The column is one card of three tabs, Explore, Scenarios and Maths, with
-  Explore open first, and "What changed" under it, at the same heights and
-  scrolling the same way as a lesson's.
+  Explore open first, and "What changed" at its foot, at the same height and
+  scrolling the same way as a lesson's. Its sheet rises over the open
+  instrument and not the tabs, and opening another tab puts it back.
 - "Why? See the maths" opens the Maths tab at the calc.
 - Reset puts back the market the page opened with: the model's own, or the
   one a link, a lesson's Finish or a story handed it.
@@ -755,12 +816,12 @@ Built, at `playground/<id>`.
  ┌─────────────────────────────────┐ ┌──────────┐ ┌────────────────────────┐ ┬
  │           News report           │ │AUD market│ │ What it moves          │ │
  │ The RBA raises the cash rate …  │ │          │ │ Show it on the       → │ │
- │ The Reserve Bank lifted the …   │ └──────────┘ │ diagram                │ │ two thirds
+ │ The Reserve Bank lifted the …   │ └──────────┘ │ diagram                │ │ the column
  │ Source: Reserve Bank of Austr…  │ ┌──────────┐ │ Higher interest rates… │ │
  │ The diagram shows which way …   │ │USD market│ │ Open in the          → │ │
  │                                 │ │          │ │ Playground             │ │
- │                                 │ └──────────┘ ├────────────────────────┤ ┼
- │                                 │              │ What changed     Undo  │ │ one third
+ │                                 │ └──────────┘ ├────────────────────────┤ │
+ │                                 │              │ What changed     Undo  │ │
  └─────────────────────────────────┘              └────────────────────────┘ ┴
 ```
 
@@ -775,7 +836,7 @@ Built, at `news/<id>`, with its stories in `apps/web/src/news/`.
   the playground has it, with the story at the front as a report panel
   (`AsidePanel`, captioned "News report"), drawn as a lesson's aside is; the
   model's panels are on the rail beside it, a press away.
-- The column's top card is "What it moves" (`StoryCard`). Its action row is
+- The column's card is "What it moves" (`StoryCard`). Its action row is
   "Show it on the diagram", with the reasoning under it — who, which curve,
   which way — and pressing it makes the move, as a scenario does: the
   snapshot, then every param it names in one update, so "What changed"

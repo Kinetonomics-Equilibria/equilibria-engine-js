@@ -297,13 +297,14 @@
     min-height: 0;
 }
 
-/* The tabs' card — the lesson, or an instrument — and under it "What changed",
- * at a width that depends on neither.
+/* One card — the lesson, a story's, or the instruments — with "What changed"
+ * at its foot, at a width that depends on neither.
  *
  * Top to bottom is the order a student works in: where they are and what they
- * can do, then what it did. The two split the column's height two to one and
- * keep it whatever they hold, so a long step, a long chain or a change of tab
- * re-divides nothing: what does not fit scrolls inside its own card.
+ * can do, then what it did. The card is the column's height whatever it holds,
+ * and its foot is a height of its own, so a long step, a long chain or a
+ * change of tab re-divides nothing: what does not fit scrolls inside its
+ * place, and the whole chain is a press away on a sheet over the card.
  *
  * 320px on a laptop, where the stage has none to spare, and wider with the
  * window up to 380px. At 320 a line of the lesson is about 42 characters, short
@@ -341,19 +342,11 @@
     zoom: var(--present-zoom);
 }
 
-/* The top two thirds of the column, from the top of the screen: the lesson's
- * card, or the playground's instruments. A height rather than a flex ratio,
- * which would share out only what the two cards' padding left and give "What
- * changed" its padding on top of its third. */
+/* The column's whole height, from the top of the screen: the lesson's card,
+ * a story's, or the playground's instruments, each with "What changed" at its
+ * foot (`NarrationFoot`). */
 .lessonBeside,
 .dockBeside {
-    flex: none;
-    height: calc((100% - var(--mantine-spacing-sm)) * 2 / 3);
-}
-
-/* The bottom third: whatever the tabs leave. Below the controls whose effect
- * it shows, so however much it has to say, nothing a student is holding moves. */
-.narrationBeside {
     flex: 1 1 0;
 }
 

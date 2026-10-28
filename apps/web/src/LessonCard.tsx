@@ -9,7 +9,7 @@ import classes from './LessonCard.module.css';
  * The lesson, as something to read: where the student is, what this step says,
  * and the way on.
  *
- * It sits beside the diagram, the side column's top two thirds, because that
+ * It sits beside the diagram, the side column's whole height, because that
  * is where there is room to say something properly. The lesson has the page
  * to itself: the instruments are the playground's, and the only controls here
  * are the ones a step hands the student — a question's, or a "see what
@@ -57,11 +57,18 @@ export interface LessonCardProps {
     className?: string;
 
     /**
-     * With a card head of its own, "Lesson", as "What changed" under it has:
-     * beside the stage, where the card is one of the column's two. Under the
-     * stage on a phone it is the only card, and the line goes to its words.
+     * With a card head of its own, "Lesson", as "What changed" has: beside the
+     * stage, where the card is the column. Under the stage on a phone it is
+     * one of two cards, and the line goes to its words.
      */
     headed?: boolean;
+
+    /**
+     * "What changed", beside the stage: under the step and its controls, over
+     * Back and Next, where the eye passes on its way on. Its sheet rises over
+     * the body and no further, so the way on is always there.
+     */
+    whatChanged?: ReactNode;
 
     /**
      * The lesson done: Finish, in place of Next at the last step. The screen
@@ -88,7 +95,7 @@ function markerName(step: LessonStep, position: number, total: number): string {
 }
 
 export function LessonCard({
-    steps, state, goals, onGoTo, children, className, onFinish, headed = false
+    steps, state, goals, onGoTo, children, className, onFinish, headed = false, whatChanged
 }: LessonCardProps) {
 
     const body = useRef<HTMLDivElement>(null);
@@ -177,40 +184,44 @@ export function LessonCard({
                 </div>
             </div>
 
-            <div className={classes.body} ref={body}>
-                {/* Polite and atomic: a step's heading and its words are one
-                  * thing to hear, and they change only when the student moves
-                  * along, which they asked for. On a sighted screen the step
-                  * changes under the button they pressed; this is the same news
-                  * for someone who cannot see it change. */}
-                <div className={classes.words} aria-live="polite" aria-atomic="true">
-                    {step ? (
-                        <>
-                            {step.title ? (
-                                <Title order={3} className={classes.title}>{step.title}</Title>
-                            ) : null}
-                            {step.say ? paragraphs(step.say).map((p, i) => (
-                                <p key={i} className={classes.para}>{p}</p>
-                            )) : null}
-                            {step.term ? (
-                                <div className={classes.term}>
-                                    <span className={classes.termLabel}>Key term</span>
-                                    <span className={classes.termWord}>{step.term.word}</span>
-                                    <span className={classes.termMeaning}>{step.term.meaning}</span>
-                                </div>
-                            ) : null}
-                        </>
-                    ) : (
-                        <>
-                            <Title order={3} className={classes.title}>In this lesson</Title>
-                            <ul className={classes.goals}>
-                                {goals.map(goal => <li key={goal}>{goal}</li>)}
-                            </ul>
-                        </>
-                    )}
+            <div className={classes.stack}>
+                <div className={classes.body} ref={body}>
+                    {/* Polite and atomic: a step's heading and its words are one
+                      * thing to hear, and they change only when the student moves
+                      * along, which they asked for. On a sighted screen the step
+                      * changes under the button they pressed; this is the same news
+                      * for someone who cannot see it change. */}
+                    <div className={classes.words} aria-live="polite" aria-atomic="true">
+                        {step ? (
+                            <>
+                                {step.title ? (
+                                    <Title order={3} className={classes.title}>{step.title}</Title>
+                                ) : null}
+                                {step.say ? paragraphs(step.say).map((p, i) => (
+                                    <p key={i} className={classes.para}>{p}</p>
+                                )) : null}
+                                {step.term ? (
+                                    <div className={classes.term}>
+                                        <span className={classes.termLabel}>Key term</span>
+                                        <span className={classes.termWord}>{step.term.word}</span>
+                                        <span className={classes.termMeaning}>{step.term.meaning}</span>
+                                    </div>
+                                ) : null}
+                            </>
+                        ) : (
+                            <>
+                                <Title order={3} className={classes.title}>In this lesson</Title>
+                                <ul className={classes.goals}>
+                                    {goals.map(goal => <li key={goal}>{goal}</li>)}
+                                </ul>
+                            </>
+                        )}
+                    </div>
+
+                    {children}
                 </div>
 
-                {children}
+                {whatChanged}
             </div>
 
             <div className={classes.foot}>

@@ -1,39 +1,115 @@
-/* "What changed": paper, at the foot of the column beside the stage.
+/* "What changed": the foot of the card beside the stage, over its way on.
  *
- * As tall as the screen makes it (see `.narrationBeside`), whatever the chain
- * says: its head holds still and the chain scrolls under it past that. */
+ * The same height whatever it says — at rest, mid-drag and after a move — so
+ * nothing on the card above it moves while a student is holding a slider
+ * (`--ledge`, four lines of the chain and the head). The whole chain is on a
+ * sheet that rises from it over the card's body, inside the card's `.stack`
+ * (ui/paper.module.css), which hides the body under it. */
 
-.card {
-    composes: paper from './ui/paper.module.css';
+.foot {
+    --line: calc(var(--mantine-font-size-sm) * 1.45);
+    --ledge: calc(60px + 4 * var(--line));
+    flex: none;
+    border-top: 1px solid var(--mantine-color-default-border);
+}
+
+/* The foot's own lines: the head, then the chain's two ends, then "See all".
+ * The rows take what "See all" leaves and are cut there, so it is always on
+ * the foot's last line, where "Show less" is on the sheet. */
+.ledge {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    min-height: 0;
-    padding: 12px 14px;
+    height: var(--ledge);
+    padding: 10px 14px;
+}
+
+.foot[data-open] > .ledge {
+    visibility: hidden;
+    transition: visibility 0s 200ms;
 }
 
 .head {
     composes: head from './ui/paper.module.css';
+    flex: none;
 }
 
 .eyebrow {
     composes: eyebrow from './ui/paper.module.css';
 }
 
-.body {
-    display: flex;
+.ledgeBody {
+    display: grid;
     flex: 1 1 auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    row-gap: 6px;
+    min-height: 0;
+    margin-top: 6px;
+}
+
+.ledgeRows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* The whole chain, over the card's body from its head down to the foot's
+ * last line, rising from the foot as it opens. Its head holds still, and the
+ * chain scrolls under it past what fits. */
+.sheet {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    row-gap: 6px;
+    padding: 10px 14px;
+    background: var(--mantine-color-body);
+    border-top: 1px solid var(--mantine-color-default-border);
+    border-radius: 0 0 calc(var(--paper-radius) - 1px) calc(var(--paper-radius) - 1px);
+    animation: rise 200ms ease-out;
+}
+
+@keyframes rise {
+    from {
+        clip-path: inset(calc(100% - var(--ledge)) 0 0 0);
+    }
+
+    to {
+        clip-path: inset(0);
+    }
+}
+
+.sheetBody {
+    display: flex;
     flex-direction: column;
     gap: 10px;
     min-height: 0;
-    margin-top: 6px;
     overflow-y: auto;
 }
 
+/* "See all" and "Show less": one line, the last on the foot and on the sheet,
+ * so the one is where the other was. */
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    align-self: end;
+    justify-self: start;
+    gap: 4px;
+    line-height: 1.45;
+}
+
 .hint {
+    display: -webkit-box;
     margin: 0;
+    overflow: hidden;
     font-size: var(--mantine-font-size-sm);
-    line-height: 1.5;
+    line-height: 1.45;
     color: var(--mantine-color-dimmed);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
 }
 
 /* A curve that reached the end of its range. A note, with an information mark
@@ -41,6 +117,7 @@
  * the strip's reasoning, kept (P12). */
 .note {
     display: flex;
+    flex: none;
     align-items: flex-start;
     gap: 6px;
     margin: 0;
@@ -55,17 +132,36 @@
     color: var(--mantine-color-blue-6);
 }
 
+/* On the foot the note has three lines at most, and "See all" says the rest. */
+.ledgeRows .note > span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
 /* The chain: what moved, what that did to the curves, what followed — three
  * parts down a rail, each marked where it starts, in the order it happened.
  * The rail is what makes three short lists one sequence, without a word of
- * "therefore" between them. */
+ * "therefore" between them. On the foot, two ends of it, closer together. */
 .parts {
+    --gap: 10px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--gap);
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+.ledgeRows .parts {
+    --gap: 6px;
+}
+
+/* On the sheet, with the card's height to fill, further apart: the room to
+ * read one part at a time that the bottom third never had. */
+.sheetBody .parts {
+    --gap: 16px;
 }
 
 .part {
@@ -75,11 +171,10 @@
     gap: 3px;
     padding-left: 16px;
     /* The marker is centred on the part's first line. */
-    --line: calc(var(--mantine-font-size-sm) * 1.45);
     --marker: 9px;
 }
 
-/* `--curve` is the colour of the curves a part is about, where the card has
+/* `--curve` is the colour of the curves a part is about, where the foot has
  * one: what moved is marked in the colour of the line it shifted, so "Demand
  * for A$ increases" is tied to the blue curve on the diagram. Grey, as before,
  * where there is no one colour to give it. */
@@ -101,7 +196,7 @@
     position: absolute;
     left: 4px;
     top: calc((var(--line) + var(--marker)) / 2 + 2px);
-    bottom: calc(2px - 10px - (var(--line) - var(--marker)) / 2);
+    bottom: calc(2px - var(--gap) - (var(--line) - var(--marker)) / 2);
     width: 1px;
     background: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
@@ -117,10 +212,31 @@
 
 /* What followed is the outcome — what the student moved something to see — so
  * its marker is filled. Its first clause is the one the lesson ranks first, and
- * the one "Why?" explains, so its words are the strongest on the card. */
+ * the one "Why?" explains, so its words are the strongest on the foot. */
 .part[data-part='effect']::before {
     border-color: var(--mantine-color-text);
     background: var(--mantine-color-text);
+}
+
+/* After a move made all at once, what moved is there at once, and what
+ * followed comes after it in turn: the curves, then the market's answer. The
+ * order the chain is read in, said a second time by when. */
+.parts[data-arrive] > [data-part='movement'] {
+    animation: arrive 220ms ease-out 160ms both;
+}
+
+.parts[data-arrive] > [data-part='effect'] {
+    animation: arrive 220ms ease-out 360ms both;
+}
+
+@keyframes arrive {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* Words at the left, numbers at the right; the numbers drop under the words,
@@ -137,6 +253,14 @@
 .words {
     flex: 1 1 auto;
     min-width: 0;
+}
+
+/* On the foot a clause's words are one line, cut where they must be, so its
+ * rows are never more than the foot holds. */
+.ledgeRows .words {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .part[data-part='cause'] .words {
@@ -201,15 +325,33 @@
     border: 0;
 }
 
-/* On paper, the chain and nothing to press. At rest there is no chain, and a
- * hint to drag a curve is no use on paper, so the card is left off. */
+/* The whole chain on paper, under the diagram: a sheet of its own there,
+ * since the card it is the foot of on screen is not printed. */
+.printed {
+    composes: paper from './ui/paper.module.css';
+    --line: calc(var(--mantine-font-size-sm) * 1.45);
+    display: none;
+    padding: 12px 14px;
+}
+
+.printed > .head {
+    margin-bottom: 6px;
+}
+
 @media print {
-    .card[data-kind="rest"],
-    .card button {
-        display: none;
+    .printed {
+        display: block;
+        break-inside: avoid;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sheet,
+    .parts[data-arrive] > [data-part] {
+        animation: none;
     }
 
-    .card {
-        break-inside: avoid;
+    .foot[data-open] > .ledge {
+        transition: none;
     }
 }

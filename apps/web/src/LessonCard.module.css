@@ -3,7 +3,9 @@
  *
  * Three bands. The head (where the student is) and the foot (the way on) hold
  * still; the body between them scrolls when a question and its verdict outgrow
- * it, so Back and Next never scroll out of reach. */
+ * it, so Back and Next never scroll out of reach. Beside the stage "What
+ * changed" is at the foot of the body, over Back and Next, at a height of its
+ * own, and its sheet rises over the body alone (`.stack`). */
 
 .card {
     composes: paper from './ui/paper.module.css';
@@ -122,6 +124,10 @@
 .marker:focus-visible {
     outline: 2px solid var(--mantine-color-blue-6);
     outline-offset: 1px;
+}
+
+.stack {
+    composes: stack from './ui/paper.module.css';
 }
 
 .body {
