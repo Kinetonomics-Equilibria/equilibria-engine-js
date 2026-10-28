@@ -321,13 +321,14 @@
 }
 
 /* Presenting, the column is read from across a classroom, so everything in it
- * is drawn 1.3 times as large: its width with it, so a line of the lesson
+ * is drawn 1.5 times as large: its width with it, so a line of the lesson
  * holds the words it did, and its slider, icons and maths with its text, so
  * the card is the one the class has seen on their own laptops. 15px body text
- * is about 20px, a little larger than the chart's 16px labels, as running text
- * should be; the 12px heads are about 16px. At 1280×800, a common classroom
- * projector, the column is 416px and the stage, with the rail away, keeps
- * about 830px. The column is no taller, so a long step scrolls sooner.
+ * is about 22px, larger than the chart's 16px labels, and the 12px heads are
+ * 18px; 1.3 was tried first and was still hard to read on a projector. At
+ * 1280×800, a common classroom projector, the column is 480px and the stage,
+ * with the rail away, keeps about 750px. The column is no taller, so a long
+ * step scrolls sooner: there, after about six lines.
  *
  * `:fullscreen` rather than a class, because whether the page is presenting
  * is the browser's to say (`present.ts`). `zoom` rather than larger tokens,
@@ -336,7 +337,7 @@
  * positions are measured in the zoomed box, so a slider still lands where it
  * is pressed. */
 :fullscreen .side {
-    zoom: 1.3;
+    zoom: 1.5;
 }
 
 /* The top two thirds of the column, from the top of the screen: the lesson's
