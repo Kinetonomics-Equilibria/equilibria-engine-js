@@ -1035,6 +1035,10 @@ export function StudyScreen({
      * about it until the engine offers a batched update. The study diagram
      * declares no restrictions, so nothing here can trip today; that is luck,
      * not design.
+     *
+     * It is an arrival, so what the step brings in is animated in where its
+     * config asks: this, and not a restore of the same step, is the student
+     * moving through the lesson.
      */
     const applyStep = useCallback((
         params: { name: string; value: number }[], position: number, rebase: boolean
@@ -1045,7 +1049,7 @@ export function StudyScreen({
         applyingStep.current = true;
         try {
             if (params.length > 0 || rebase) engine.snapshot();
-            engine.update({ params: [{ name: STEP_PARAM, value: position }, ...params] });
+            engine.update({ params: [{ name: STEP_PARAM, value: position }, ...params] }, { arrive: true });
         } finally {
             applyingStep.current = false;
         }

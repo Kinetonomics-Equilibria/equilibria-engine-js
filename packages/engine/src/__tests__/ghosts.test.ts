@@ -319,6 +319,19 @@ describe('a ghost is not a second address', () => {
         expect(dragged).toEqual([false, true]);
         r.destroy();
     });
+
+    // A ghost is where something was: nothing new, so nothing to animate in
+    // when a step shows it.
+    it('does not inherit arriving', () => {
+        const r = build([{ ...DEMAND, def: { ...DEMAND.def, arrive: true } }]);
+
+        const arriving = objectsIn(r)
+            .filter((o: any) => o.constructor.name === 'Curve')
+            .map((o: any) => !!o.arrive);
+
+        expect(arriving).toEqual([false, true]);
+        r.destroy();
+    });
 });
 
 describe('the shift arrow', () => {

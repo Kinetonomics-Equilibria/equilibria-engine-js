@@ -1,6 +1,7 @@
 import { setDefaults, setProperties } from "../../util";
 import { Sample } from "../movement";
 import { ViewObjectDefinition, ViewObject } from "./viewObject";
+import { ARRIVAL, POP_MS, popEase } from "../arrival";
 
 
 
@@ -65,12 +66,22 @@ import { ViewObjectDefinition, ViewObject } from "./viewObject";
             let p = this;
             p.updateScreenReaderDescriptions();
             p.rootElement.attr('transform', `translate(${p.xScale.scale(p.x)} ${p.yScale.scale(p.y)})`);
+            p.circle.interrupt(ARRIVAL);
             p.circle.attr('r', p.r);
             p.circle.style('fill', p.fill);
             p.circle.style('fill-opacity', p.opacity);
             p.circle.style('stroke', p.stroke);
             p.circle.style('stroke-width', `${p.drawnStrokeWidth()}px`);
             p.circle.style('stroke-opacity', p.strokeOpacity);
+            return p;
+        }
+
+        // A pop: from nothing to its size, a little past it and back.
+        drawArrival() {
+            let p = this;
+            p.circle.attr('r', 0)
+                .transition(ARRIVAL).duration(POP_MS).ease(popEase)
+                .attr('r', p.r);
             return p;
         }
     

@@ -5,6 +5,7 @@ import { UpdateListenerDefinition, IUpdateListener, UpdateListener } from "../..
 import { setDefaults, setProperties } from "../../util";
 import { Sample } from "../movement";
 import { Scale } from "../scale";
+import { reducedMotion } from "../arrival";
 
 
 
@@ -46,6 +47,11 @@ export interface ViewObjectDefinition extends UpdateListenerDefinition {
     interactive?: boolean;
     alwaysUpdate?: boolean;
     inDef?: boolean;
+    /**
+     * Animated in when a lesson step shows it: a point pops, a segment is
+     * drawn out from `a`, or from `b` if this says `'b'`. See `view/arrival.ts`.
+     */
+    arrive?: boolean | 'b';
 
     color?: string;
     fill?: string;
@@ -144,6 +150,10 @@ export class ViewObject extends UpdateListener implements IViewObject {
     public strokeOpacity;
     public lineStyle;
     public clearColor;
+    public arrive;
+
+    /** Whether `show` held at the last update; undefined before the first, which arrives nothing. */
+    private shownBefore: boolean | undefined;
 
     constructor(def: ViewObjectDefinition) {
         setDefaults(def, {
@@ -162,7 +172,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
         });
 
         setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'strokeScale', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc']);
-        setProperties(def, 'constants', ['xScale', 'yScale', 'clipPath', 'clipPath2', 'interactive', 'alwaysUpdate', 'inDef', 'checkOnGraph', 'tabbable', 'view']);
+        setProperties(def, 'constants', ['xScale', 'yScale', 'clipPath', 'clipPath2', 'interactive', 'alwaysUpdate', 'inDef', 'checkOnGraph', 'tabbable', 'view', 'arrive']);
         setProperties(def, 'colorAttributes', ['stroke', 'fill', 'color']);
 
         if (def.inDef) {
@@ -284,6 +294,14 @@ export class ViewObject extends UpdateListener implements IViewObject {
     }
 
     /**
+     * Animate in what `redraw` has just drawn where it belongs. Only a point
+     * and a segment have a way to arrive; anything else simply appears.
+     */
+    drawArrival() {
+        return this;
+    }
+
+    /**
      * The width to draw a stroke at: what the author asked for, times the
      * panel's density factor. Every site that writes a stroke width goes
      * through here so the factor cannot be applied in some places and not
@@ -387,11 +405,20 @@ export class ViewObject extends UpdateListener implements IViewObject {
 
     update(force) {
         let vo = super.update(force);
+
+        // Arriving is `show` turning on, not the object coming back onto the
+        // plot: a point dragged off the edge and back has been there all along.
+        const shown = !!vo.show,
+            arriving = vo.arrive && vo.shownBefore === false && shown
+                && vo.model.arriving && !reducedMotion();
+        vo.shownBefore = shown;
+
         if ((vo.show && vo.onGraph()) || vo.inDef) {
             vo.displayElement(true);
             if (vo.hasChanged || vo.scalesMoved()) {
                 vo.redraw();
             }
+            if (arriving) vo.drawArrival();
         }
         else {
             vo.displayElement(false);

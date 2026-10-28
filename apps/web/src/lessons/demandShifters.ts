@@ -393,6 +393,9 @@ const revealing = (name: string) => DEMAND_LESSON.findIndex(step => (step.reveal
  * lands on a tick, 1 to 4 pairs and $100 to $400, so the tick number is the
  * value its step says, and a symbol there would hide it. Nor is there one on
  * the list for what a pair is worth to you.
+ *
+ * Each arrives: the point pops in, then its droplines are drawn out from it
+ * to the axes, the way the step has the student read it.
  */
 const pair = (n: number) => {
     const worth = FIRST_PAIR - EACH_PAIR_LESS * (n - 1);
@@ -404,6 +407,7 @@ const pair = (n: number) => {
             x: n, y: worth,
             color: 'colors.demand',
             droplines: { vertical: '', horizontal: '', show: `params.step == ${revealing(name)}` },
+            arrive: true,
             srTitle: `Pair ${n}, worth $${worth} to you`
         }
     };

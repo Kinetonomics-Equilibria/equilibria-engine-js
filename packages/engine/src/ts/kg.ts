@@ -153,18 +153,30 @@ export class KineticGraph extends EventEmitter {
         throw err;
     }
 
-    public update(newConfig: any) {
+    /**
+     * `arrive` says this update is a lesson step bringing things in, so an
+     * object that `arrive`s and is shown by it is animated in. The host says
+     * so because only it knows: to the engine, a step and a link restoring
+     * step 3 are the same param moving. See `view/arrival.ts`.
+     */
+    public update(newConfig: any, opts?: { arrive?: boolean }) {
         this.config = { ...this.config, ...newConfig };
 
         if (this.view) {
-            // Update params explicitly if they were passed
-            if (newConfig.params) {
-                newConfig.params.forEach((param: any) => {
-                    (this.view as any).model.updateParam(param.name, param.value);
-                });
-            } else {
-                // Generic update if underlying structure changed
-                (this.view as any).model.update(true);
+            const model = (this.view as any).model;
+            model.arriving = !!(opts && opts.arrive);
+            try {
+                // Update params explicitly if they were passed
+                if (newConfig.params) {
+                    newConfig.params.forEach((param: any) => {
+                        model.updateParam(param.name, param.value);
+                    });
+                } else {
+                    // Generic update if underlying structure changed
+                    model.update(true);
+                }
+            } finally {
+                model.arriving = false;
             }
         }
     }

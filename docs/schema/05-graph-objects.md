@@ -170,6 +170,9 @@ def:
   An empty name (`vertical: ""`) draws the line and no label, leaving the value to the tick number
   it lands on. `droplines.show` says when the droplines are drawn, on top of the point's own
   `show` and reveal, so a point can keep its place on the chart after its droplines have gone.
+- **Arriving**: `arrive: true` pops the point in when a lesson step shows it, and draws its droplines
+  out from it. See [steps](./02-parameters-and-interactions.md#declared-build-up-order-steps) for
+  when it plays.
 - **Draggability**: Setting `draggable: true` allows the user to click and pull the point, changing the underlying `params` indirectly.
 
 ## `Line` and `Segment`

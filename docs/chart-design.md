@@ -342,6 +342,34 @@ For all three:
 - The only arrow is the engine's shift arrow, which a point's `ghost: true`
   draws from where it was to where it is. Don't draw decorative arrows.
 
+## Motion
+
+A chart moves for one reason: to show a student where to look when a step
+brings something onto it. Otherwise it holds still (principle 5).
+
+- **A point a step brings in can arrive.** It pops, growing from nothing to a
+  little past its size and back in 200ms. Then its droplines are drawn out
+  from it to each axis in 300ms, the way a student's eye reads the value off.
+  Set `arrive: true` on the point, and its droplines arrive with it. The
+  Air Jordans lesson's pairs do this.
+- **Only for what the step is about**: the thing the student reads next, not
+  everything the step reveals. A panel coming onto the stage is movement
+  enough, and what is in it doesn't pop as well.
+- **Only at a step.** Not when a lesson opens at a step from a link, when the
+  view is put back after a remount, when a question is set, or while a
+  student drags. Going back a step plays it again. The app says which updates
+  are steps (`update(config, { arrive: true })`), because to the engine each
+  one is a param moving.
+- **Half a second at most, and never in the way.** Nothing waits for it: the
+  next step can come at any time, and a redraw puts everything where it
+  belongs.
+- **What a step takes away goes at once**, so the eye stays on what arrived.
+  A ghost never arrives: it is where something was, nothing new.
+- **Nothing loops, bounces or shakes**, and nothing moves to say an answer is
+  right or wrong.
+- **No motion for a student who has asked for less.** With reduced motion set
+  on their device, everything simply appears, and the chart reads the same.
+
 ## Keys and legends
 
 - **No legend box.** Everything is labelled where it is (principle 1).
@@ -431,12 +459,14 @@ Currency codes (AUD, USD) are fine: that is how money is written.
    question. Never two P\*s.
 7. **Annotations.** Plain text at the default size in the thing's colour, readouts
    at the top right, no more than three at a time.
-8. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
+8. **Motion.** `arrive: true` only on the point a step brings in for the student
+   to read.
+9. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
    hand-set `strokeWidth`.
-9. **Words.** Every symbol is in the list above, and the lesson says it in words
-   first.
-10. **Contrast.** Any new colour clears 3:1 as a line and 4.5:1 as text.
-11. **Look at it.** Check it in focus and in the grid, at 1440×900 and on a phone.
+10. **Words.** Every symbol is in the list above, and the lesson says it in words
+    first.
+11. **Contrast.** Any new colour clears 3:1 as a line and 4.5:1 as text.
+12. **Look at it.** Check it in focus and in the grid, at 1440×900 and on a phone.
     The defects in `NOTES.md` that no test caught were found by looking at a
     screenshot.
 

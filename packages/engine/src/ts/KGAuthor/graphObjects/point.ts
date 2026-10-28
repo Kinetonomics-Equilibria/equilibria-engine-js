@@ -73,9 +73,13 @@ export class Point extends GraphObject {
             // a point read off the axes at one step and kept on the chart at
             // the next can lose its droplines, but no dropline outlives its
             // point.
+            //
+            // A dropline runs from the axis, `a`, to its point, `b`, so one
+            // that arrives is drawn out from `b`: from the point to the axis.
             const droplineDef = function () {
                 const copy = anonymizeCopy(copyJSON(def));
                 if (def.droplines.show !== undefined) copy.show = combineShow(copy.show, def.droplines.show);
+                if (def.arrive) copy.arrive = 'b';
                 return copy;
             };
 

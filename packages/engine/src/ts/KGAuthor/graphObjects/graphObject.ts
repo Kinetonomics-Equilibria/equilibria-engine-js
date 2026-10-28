@@ -21,6 +21,11 @@ export interface GraphObjectDefinition extends GraphObjectGeneratorDefinition {
     drag?: any;
     click?: any;
     show?: string;
+    /**
+     * Animated in when a lesson step shows it: a point pops, and its
+     * droplines are drawn out from it. See `view/arrival.ts`.
+     */
+    arrive?: boolean | 'b';
     clipPaths?: any[];
 
     /**

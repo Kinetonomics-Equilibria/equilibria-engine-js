@@ -299,6 +299,15 @@ step 2 *and* written `show: params.showMR` is making two claims, and both have
 to hold for it to appear. Honouring one by discarding the other would be a
 silent wrong answer.
 
+**An object can arrive.** With `arrive: true`, a point pops in when a step shows
+it and its droplines are drawn out from it to the axes; a segment is drawn out
+from `a`, or from `b` with `arrive: 'b'`. It plays only in an update the host
+calls an arrival, `kg.update({ params }, { arrive: true })`, because to the
+engine a lesson step and a link restoring step 3 are the same param moving. It
+never plays at mount, for a ghost, or for a viewer who has asked for reduced
+motion, and a redraw mid-way puts the object where it belongs. See
+[`chart-design.md`](../chart-design.md#motion) for when a chart should use it.
+
 > [!WARNING]
 > Expressions are mathjs, which spells logical operators `and`, `or` and `not`.
 > **`&&`, `||` and `!` do not parse** — and an expression that does not parse is

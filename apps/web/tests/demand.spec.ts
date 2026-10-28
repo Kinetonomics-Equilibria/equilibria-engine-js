@@ -57,3 +57,78 @@ test('no text on the stage lands on other text', async ({ page }) => {
         }
     }
 });
+
+/**
+ * Each of the student's pairs arrives at its step: the point pops in, then its
+ * droplines are drawn out from it to the axes.
+ *
+ * Every other check asks for less motion, so it sees each pair land in one
+ * frame. These ask for motion back, and sample in the page a frame at a time,
+ * since anything read back through Playwright arrives a few frames late.
+ */
+test.describe('with motion', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('a pair pops in at its step, and its droplines are drawn out from it', async ({ page, pageErrors }) => {
+        await page.getByRole('button', { name: 'Start lesson' }).click();
+        await expect(page.getByText('Your first pair', { exact: true })).toBeVisible();
+
+        const frames = await page.evaluate(() => new Promise<{ r: number; lengths: number[] }[]>(resolve => {
+            const seen: { r: number; lengths: number[] }[] = [];
+            // The dotted lines on screen: the newest pair's droplines, and
+            // nothing else this early in the lesson.
+            const droplines = () => Array.from(document.querySelectorAll<SVGLineElement>('line[class^="line-"]'))
+                .filter(l => (l.closest('g') as SVGGElement).style.display !== 'none'
+                    && l.style.strokeDasharray.startsWith('0'))
+                .map(l => Math.hypot(+l.getAttribute('x2')! - +l.getAttribute('x1')!,
+                    +l.getAttribute('y2')! - +l.getAttribute('y1')!));
+            const begun = performance.now();
+            Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Next')!.click();
+            // Found by its title once the step has drawn it: a point not yet
+            // on the chart has not been given one.
+            const pair = Array.from(document.querySelectorAll('circle'))
+                .find(c => (c.querySelector('title')?.textContent || '').startsWith('Pair 2,'))!;
+            requestAnimationFrame(function sample(now) {
+                seen.push({ r: +pair.getAttribute('r')!, lengths: droplines() });
+                if (now - begun < 800) requestAnimationFrame(sample);
+                else resolve(seen);
+            });
+        }));
+
+        const first = frames[0], last = frames[frames.length - 1];
+        const radii = frames.map(f => Math.round(f.r * 10) / 10);
+        expect(first.r, `radii: ${radii}`).toBeLessThan(last.r);
+        expect(frames.some(f => f.r > first.r && f.r < last.r), `radii: ${radii}`).toBe(true);
+
+        // Both droplines, starting at the point and ending at the axes.
+        expect(last.lengths).toHaveLength(2);
+        expect(first.lengths).toEqual([0, 0]);
+        const drawing = frames.filter(f => f.lengths.every((length, i) => length > 0 && length < last.lengths[i]));
+        expect(drawing.length, `lengths: ${frames.map(f => f.lengths.map(Math.round).join('/'))}`).toBeGreaterThan(0);
+        expect(pageErrors).toEqual([]);
+    });
+
+    // A link to a step, or the view put back after a remount, is not the
+    // student moving through the lesson: everything is simply there.
+    test('a link to a step draws its pair in place', async ({ page }) => {
+        await page.addInitScript(() => {
+            const radii: string[] = [];
+            (window as any).pairRadii = radii;
+            requestAnimationFrame(function watch() {
+                const pair = Array.from(document.querySelectorAll('circle'))
+                    .find(c => (c.querySelector('title')?.textContent || '').startsWith('Pair 2,'));
+                if (pair && (pair.closest('g') as SVGGElement).style.display !== 'none') {
+                    radii.push(pair.getAttribute('r')!);
+                }
+                requestAnimationFrame(watch);
+            });
+        });
+        await page.goto('/lessons/demand?step=2');
+        await expect(page.getByText('Your second pair', { exact: true })).toBeVisible();
+        await page.waitForTimeout(800);
+
+        const radii: string[] = await page.evaluate(() => (window as any).pairRadii);
+        expect(radii.length).toBeGreaterThan(0);
+        expect(new Set(radii)).toEqual(new Set([radii[radii.length - 1]]));
+    });
+});

@@ -134,6 +134,13 @@ export class Model implements IModel {
     public snapshotSeq: number = 0;
 
     /**
+     * True for the length of an update the host says is an arrival, a lesson
+     * step: what it shows of an object that `arrive`s is animated in. See
+     * `view/arrival.ts`.
+     */
+    public arriving: boolean = false;
+
+    /**
      * Open gestures. A counter rather than a boolean so multi-touch and a host
      * gesture nesting inside a diagram gesture both behave: only the 0→1
      * transition snapshots.

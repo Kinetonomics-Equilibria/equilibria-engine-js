@@ -117,7 +117,9 @@ const NOT_INHERITED = [
     // drawn on the diagram, where a second dashed curve is only a memory. An
     // author who wants them says `ghost: { droplines: {...} }` and chooses what
     // the second pair are called.
-    'droplines'
+    'droplines',
+    // A ghost is where something was, which is nothing new to arrive.
+    'arrive'
 ];
 
 /**

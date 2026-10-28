@@ -2,6 +2,7 @@ import { setDefaults, setProperties } from "../../util";
 import { Sample } from "../movement";
 import { Scale } from "../scale";
 import { ViewObjectDefinition, ViewObject, LINE_WEIGHT } from "./viewObject";
+import { ARRIVAL, DROP_DELAY_MS, DROP_MS, dropEase } from "../arrival";
 
 
 
@@ -100,6 +101,7 @@ export class Segment extends ViewObject {
         const [ix, iy] = insetVector(x2 - x1, y2 - y1, +segment.inset || 0);
         x1 += ox + ix; x2 += ox - ix;
         y1 += oy + iy; y2 += oy - iy;
+        segment.line.interrupt(ARRIVAL);
         segment.dragLine
             .attr("x1", x1)
             .attr("y1", y1)
@@ -111,6 +113,21 @@ export class Segment extends ViewObject {
             .attr("x2", x2)
             .attr("y2", y2);
         segment.drawStroke(segment.line);
+        return segment;
+    }
+
+    // Drawn out from one end, `a` or the `b` that `arrive` names: the end it
+    // grows from stays put and the other starts on top of it. A dropline
+    // grows from its point, after the point's own pop has mostly played.
+    drawArrival() {
+        let segment = this;
+        const line = segment.line,
+            [from, to] = segment.arrive == 'b' ? ['2', '1'] : ['1', '2'],
+            x = +line.attr('x' + to),
+            y = +line.attr('y' + to);
+        line.attr('x' + to, +line.attr('x' + from)).attr('y' + to, +line.attr('y' + from))
+            .transition(ARRIVAL).delay(DROP_DELAY_MS).duration(DROP_MS).ease(dropEase)
+            .attr('x' + to, x).attr('y' + to, y);
         return segment;
     }
 
