@@ -91,6 +91,36 @@
     }
 }
 
+/* Back down into the foot the way it came, and as quick to start: the curve
+ * played backwards would set off slowly, under a press that asked it to go.
+ * Nearly down, it fades into the foot under it, so the sheet's rows give way
+ * to the foot's own rather than swapping for them in a frame. It holds there,
+ * faded, until it is taken away, so it does not flash up again for the frame
+ * before it goes. */
+.foot[data-closing] > .sheet {
+    animation: fall var(--sheet-rise) var(--sheet-ease) forwards;
+}
+
+@keyframes fall {
+    from {
+        transform: none;
+        clip-path: inset(0);
+    }
+
+    /* By here it is within 10px of the foot, so the two heads, fading one
+     * into the other, are all but one. */
+    65% {
+        opacity: 1;
+        animation-timing-function: linear;
+    }
+
+    to {
+        transform: translateY(calc(100% - var(--ledge) - 1px));
+        clip-path: inset(0 0 calc(100% - var(--ledge) - 1px) 0);
+        opacity: 0;
+    }
+}
+
 .sheetBody {
     display: flex;
     flex-direction: column;
@@ -356,6 +386,7 @@
 
 @media (prefers-reduced-motion: reduce) {
     .sheet,
+    .foot[data-closing] > .sheet,
     .parts[data-arrive] > [data-part] {
         animation: none;
     }

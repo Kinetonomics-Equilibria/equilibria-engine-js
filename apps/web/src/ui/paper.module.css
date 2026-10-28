@@ -57,16 +57,17 @@
     transition: visibility 0s var(--sheet-rise);
 }
 
-/* The sheet comes up from below the foot, so as it rises most of it is lower
- * than the stack. Cut there, and with nothing to scroll to it: moving focus to
- * "Show less" on the way up scrolled the page down to find it. And the body is
- * a layer of its own under the sheet, so nothing on it is drawn over the sheet
- * as it rises: a slider's thumb, raised over its track, was. */
-.stack:has(> [data-open]) {
+/* The sheet comes up from below the foot and goes back down there
+ * (`data-closing` while it does), so on its way most of it is lower than the
+ * stack. Cut there, and with nothing to scroll to it: moving focus to "Show
+ * less" on the way up scrolled the page down to find it. And the body is a
+ * layer of its own under the sheet, so nothing on it is drawn over the sheet
+ * as it moves: a slider's thumb, raised over its track, was. */
+.stack:has(> [data-open], > [data-closing]) {
     overflow: clip;
 }
 
-.stack:has(> [data-open]) > :not([data-open]) {
+.stack:has(> [data-open], > [data-closing]) > :not([data-open], [data-closing]) {
     isolation: isolate;
 }
 

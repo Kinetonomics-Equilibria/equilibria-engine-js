@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import { Anchor, Button } from '@mantine/core';
 import {
@@ -182,9 +182,36 @@ export function NarrationFoot({
     const [open, setOpen] = useState(false);
     const [openedAt, setOpenedAt] = useState(0);
     const [where, setWhere] = useState(place);
+
+    // Put away, the sheet is still drawn while it slides back down into the
+    // foot, out of reach, and goes once it is there. The card's words under it
+    // are back as it starts down. Where nothing moves — with reduced motion,
+    // or in a test's DOM, which has no animations — it goes at once.
+    const sheet = useRef<HTMLDivElement>(null);
+    const [closing, setClosing] = useState(false);
+    const putAway = () => {
+        setOpen(false);
+        setClosing(true);
+    };
+    useLayoutEffect(() => {
+        if (!closing) return;
+        const going = sheet.current?.getAnimations?.() ?? [];
+        if (going.length === 0) {
+            setClosing(false);
+            return;
+        }
+        let live = true;
+        Promise.all(going.map(a => a.finished)).then(
+            () => { if (live) setClosing(false); },
+            // Cut short: opened again on the way down, or gone with the foot.
+            () => {}
+        );
+        return () => { live = false; };
+    }, [closing]);
+
     if (where !== place) {
         setWhere(place);
-        if (open) setOpen(false);
+        if (open) putAway();
     }
 
     // Focus follows the press to the toggle in the same place on the other
@@ -205,7 +232,12 @@ export function NarrationFoot({
     const toggle = (to: boolean) => {
         handOff.current = true;
         setOpenedAt(seen.count);
-        setOpen(to);
+        if (to) {
+            setOpen(true);
+            setClosing(false);
+        } else {
+            putAway();
+        }
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -255,6 +287,7 @@ export function NarrationFoot({
             data-kind={line.kind}
             data-refusal={refusal ? 'true' : undefined}
             data-open={open ? 'true' : undefined}
+            data-closing={closing ? 'true' : undefined}
         >
             {/* Under the sheet while it is up, and out of reach there: its
               * Undo and "See all" are the sheet's own now. */}
@@ -300,8 +333,16 @@ export function NarrationFoot({
                 </div>
             </div>
 
-            {open ? (
-                <div className={classes.sheet} id={sheetId} data-sheet onKeyDown={onKeyDown}>
+            {open || closing ? (
+                <div
+                    ref={sheet}
+                    className={classes.sheet}
+                    id={sheetId}
+                    data-sheet
+                    inert={closing}
+                    aria-hidden={closing ? true : undefined}
+                    onKeyDown={onKeyDown}
+                >
                     <div className={classes.head}>
                         <span className={classes.eyebrow} aria-hidden="true">What changed</span>
                         {undo}

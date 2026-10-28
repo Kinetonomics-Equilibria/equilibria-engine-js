@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import type { ReactElement } from 'react';
@@ -62,6 +62,30 @@ const opened = async (ui: ReactElement) => {
     await userEvent.setup().click(seeAll());
     return result;
 };
+
+/**
+ * The sheet's way back down, which a test's DOM has no animations to play:
+ * a stand-in on the sheet while it goes, that lands when `land` is called.
+ * Returns the way to take the stand-in away again.
+ */
+const goingDown = () => {
+    let land!: () => void;
+    const finished = new Promise<void>(resolve => { land = resolve; });
+    const had = Object.getOwnPropertyDescriptor(Element.prototype, 'getAnimations');
+    Object.defineProperty(Element.prototype, 'getAnimations', {
+        configurable: true,
+        value(this: Element) {
+            return this.matches('[data-closing] > [data-sheet]') ? [{ finished } as unknown as Animation] : [];
+        }
+    });
+    const restore = () => {
+        if (had) Object.defineProperty(Element.prototype, 'getAnimations', had);
+        else Reflect.deleteProperty(Element.prototype, 'getAnimations');
+    };
+    return { land: () => act(async () => { land(); await finished; }), restore };
+};
+
+const sheetDrawn = () => foot().querySelector('[data-sheet]');
 
 describe('the foot', () => {
     it('says the chain\'s two ends: what moved, and what followed first', () => {
@@ -143,6 +167,47 @@ describe('the whole chain', () => {
         await userEvent.setup().click(showLess());
         expect(foot().getAttribute('data-open')).toBeNull();
         expect(screen.queryByRole('button', { name: /^Show less/ })).toBeNull();
+    });
+
+    // Where it moves, it slides back into the foot before it goes: still
+    // drawn, and out of reach, with the card's words back and focus on "See
+    // all" as it starts down.
+    it('slides back down into the foot before it goes, out of reach', async () => {
+        const { land, restore } = goingDown();
+        try {
+            await opened(<NarrationFoot line={chain()} />);
+            await userEvent.setup().click(showLess());
+
+            expect(foot().getAttribute('data-open')).toBeNull();
+            expect(foot().getAttribute('data-closing')).toBe('true');
+            expect(sheetDrawn()!.hasAttribute('inert')).toBe(true);
+            expect(screen.queryByRole('button', { name: /^Show less/ })).toBeNull();
+            expect(document.activeElement).toBe(seeAll());
+
+            await land();
+            expect(sheetDrawn()).toBeNull();
+        } finally {
+            restore();
+        }
+    });
+
+    it('comes back up if "See all" is pressed on its way down', async () => {
+        const { land, restore } = goingDown();
+        try {
+            await opened(<NarrationFoot line={chain()} />);
+            await userEvent.setup().click(showLess());
+            await userEvent.setup().click(seeAll());
+
+            expect(foot().getAttribute('data-open')).toBe('true');
+            expect(foot().getAttribute('data-closing')).toBeNull();
+
+            // The way down it was on lands, and the sheet stays up.
+            await land();
+            expect(sheetDrawn()).not.toBeNull();
+            expect(showLess().getAttribute('aria-expanded')).toBe('true');
+        } finally {
+            restore();
+        }
     });
 
     // The two are in the same place, so a keyboard keeps its place too.
