@@ -39,7 +39,11 @@ export interface AsidePanelProps {
 export function AsidePanel({ aside, picture, source, panel, style }: AsidePanelProps) {
     const reads = panel.level !== 'indicator';
     return (
-        <div className={[classes.aside, reads ? classes.read : classes.glyph].join(' ')} style={style}>
+        <div
+            className={[classes.aside, reads ? classes.read : classes.glyph].join(' ')}
+            data-level={panel.level}
+            style={style}
+        >
             {picture ? (
                 <img className={classes.picture} src={picture.still || picture.src} alt={picture.alt} />
             ) : null}

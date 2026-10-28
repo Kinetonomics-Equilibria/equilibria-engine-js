@@ -80,6 +80,20 @@
     }
 }
 
+/* Presenting, the words are drawn as large as the side column's
+ * (`--present-zoom`), for a class at the back of the room: the sentence is
+ * about 22px, as the lesson's is. The picture and the sheet stay the stage's
+ * size, and the caption stays a caption, as every chart's does.
+ *
+ * Only at `full`: the report at the front of Focus, which is how a story opens
+ * and where a teacher shows one. In Grid it is `compact`, at 1280×800 and
+ * 1920×1080 alike, and at 1280 its words at this size lose the note (a
+ * lesson's note is the line that says the report is made up), so in Grid it
+ * stays as it is. */
+:fullscreen .aside[data-level='full'] .words {
+    zoom: var(--present-zoom);
+}
+
 /* A glyph, on the rail or a shelf: the words first, since they are what the
  * question needs, and the picture only where the panel has height to spare.
  * The note is read where the report is — promoted — and a glyph's is clipped

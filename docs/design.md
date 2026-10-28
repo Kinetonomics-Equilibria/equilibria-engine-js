@@ -180,16 +180,20 @@ attention on finding things.
   projector. The rail is about the app, and a class has no use for it, so
   the stage gets its width; it is inert while it is away, so the keyboard
   cannot reach it.
-- The side column and the title above the stage are drawn 1.5 times as
-  large (`--present-zoom` in `index.css`, a CSS `zoom` under `:fullscreen`),
-  the column's width and all, because a class reads them from across the
-  room; see [The title line](#the-title-line) for how a long title wraps. The
+- The words a class reads from across the room are drawn 1.5 times as large
+  (`--present-zoom` in `index.css`, a CSS `zoom` under `:fullscreen`). The
   chart's text was made large enough for a projector, and the column's 15px
   body and 12px heads were not. 1.3 was tried first and was still too small.
-  Everything in the column grows together, so a line holds the words it did
-  and the card is the one students know. At 1280×800 the column is 480px
-  and the stage keeps about 750px; a long step scrolls after about six
-  lines. See [The side column](#the-side-column).
+  - **The side column**, width and all. Everything in it grows together, so
+    a line holds the words it did and the card is the one students know. At
+    1280×800 the column is 480px and the stage keeps about 750px; a long step
+    scrolls after about six lines. See [The side column](#the-side-column).
+  - **The topic and title** above the stage, but not the tools beside them.
+    A long title wraps; see [The title line](#the-title-line).
+  - **A report's words** (`AsidePanel`), when it is at the front of Focus,
+    the panel's `full` level. Its picture, its sheet and its caption stay the
+    stage's, as every chart's do. In Grid a report is `compact`, and its words
+    at this size would lose the note under them, so there it stays as it is.
 - Nothing else changes: the stage notices its new size and arranges itself,
   as it does when the window changes, and the lesson, what is in the side
   column and whatever the student had done stay as they were.

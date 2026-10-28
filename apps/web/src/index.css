@@ -16,9 +16,10 @@
 :root {
     --paper-radius: 12px;
     --paper-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
-    /* How much larger the side column and the title are drawn while the page
-     * is presenting, read from across a classroom. One number, so the two
-     * stay alike; see StudyScreen's `.side` and TitleLine's `.heading`. */
+    /* How much larger the side column, the title and a report's words are
+     * drawn while the page is presenting, read from across a classroom. One
+     * number, so they stay alike; see StudyScreen's `.side`, TitleLine's
+     * `.heading` and AsidePanel's `.words`. */
     --present-zoom: 1.5;
 }
 
