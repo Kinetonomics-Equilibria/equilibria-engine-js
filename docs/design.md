@@ -417,9 +417,13 @@ from 480px to 570px (see [Present](#present)).
 - "See all 6 changes" counts every clause the chain has, and opens it on a
   sheet that rises from the foot over the card's body, up to the card's
   head — the lesson's place, or the tabs — and no further, so the lesson's
-  way on and the other tabs are always there. "Show less" is on the sheet's
-  last line, where "See all" was, so a second press in the same place puts
-  it back, and focus follows the press to it. Esc puts it back too, and so
+  way on and the other tabs are always there. It rises as one sheet: at
+  first it is the foot, head and all, in the foot's place, and it slides up
+  over the body with its head on its top edge, quick to start and slowing
+  as it lands (`--sheet-rise`, 340ms); with reduced motion it is there at
+  once. "Show less" is on the sheet's last line, where "See all" was, so a
+  second press in the same place puts it back, and focus follows the press
+  to it. Esc puts it back too, and so
   does moving on, to another step or another tab, since what the student
   moved to is on the card under it. Nothing else does: a student who opened
   it is reading what the next move does, so through a drag on the diagram
@@ -494,7 +498,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Title line | `TitleLine.tsx` | The lesson's topic over its title, and the stage's tools in a capsule of paper beside them; the title never wraps but when presenting: the tools are borderless round icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
 | QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it, and so does the title line's capsule, with its own corner. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
-| Stack | `ui/paper.module.css` `.stack` | A card's body and "What changed" under it, between the card's head and its way on: the room the foot's sheet rises into. While the sheet is up the body is hidden as well as covered, once the sheet has risen over it. |
+| Stack | `ui/paper.module.css` `.stack` | A card's body and "What changed" under it, between the card's head and its way on: the room the foot's sheet rises into. While the sheet is up the body is hidden as well as covered, once the sheet has risen over it, and is a layer under the sheet, so nothing on it is drawn over the sheet as it rises; the stack is cut at its edge, since the sheet comes up from below it. |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left ("Lesson" beside the stage, "What changed"); the card's one action at the right ("What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. Drawn in its curve's colour where the lesson names one, the theme's blue where it does not. The gesture wiring is `ParamSlider`'s. |

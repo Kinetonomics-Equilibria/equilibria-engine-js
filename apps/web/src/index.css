@@ -21,6 +21,12 @@
      * number, so they stay alike; see StudyScreen's `.side`, TitleLine's
      * `.heading` and AsidePanel's `.words`. */
     --present-zoom: 1.5;
+    /* How a sheet rises over a card's body: "What changed"'s, from its foot.
+     * Long enough to watch it come up from where it was, quick to start and
+     * slowing as it lands. The card hides the body once the sheet has risen
+     * over it, so the two must agree (paper.module.css `.stack`). */
+    --sheet-rise: 340ms;
+    --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* A word in a diagram's label (`\text{PPC}`) in the theme's font, which the

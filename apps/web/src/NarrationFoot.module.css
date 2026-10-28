@@ -26,7 +26,7 @@
 
 .foot[data-open] > .ledge {
     visibility: hidden;
-    transition: visibility 0s 200ms;
+    transition: visibility 0s var(--sheet-rise);
 }
 
 .head {
@@ -69,15 +69,24 @@
     background: var(--mantine-color-body);
     border-top: 1px solid var(--mantine-color-default-border);
     border-radius: 0 0 calc(var(--paper-radius) - 1px) calc(var(--paper-radius) - 1px);
-    animation: rise 200ms ease-out;
+    animation: rise var(--sheet-rise) var(--sheet-ease);
 }
 
+/* Up from the foot as one sheet. It starts as the foot, in the foot's place
+ * and cut to its height (`--ledge` and the hairline over it), with its head
+ * where the foot's is, and slides up over the body with its head on its top
+ * edge and the chain riding under it. It used to be uncovered in place from
+ * the foot up, which cut through a line of the chain at every frame, with no
+ * edge between the chain and the words it was covering, and left the head
+ * to land last, at the top. */
 @keyframes rise {
     from {
-        clip-path: inset(calc(100% - var(--ledge)) 0 0 0);
+        transform: translateY(calc(100% - var(--ledge) - 1px));
+        clip-path: inset(0 0 calc(100% - var(--ledge) - 1px) 0);
     }
 
     to {
+        transform: none;
         clip-path: inset(0);
     }
 }

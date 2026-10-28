@@ -54,7 +54,20 @@
 
 .stack:has(> [data-open]) > :not([data-open]) {
     visibility: hidden;
-    transition: visibility 0s 200ms;
+    transition: visibility 0s var(--sheet-rise);
+}
+
+/* The sheet comes up from below the foot, so as it rises most of it is lower
+ * than the stack. Cut there, and with nothing to scroll to it: moving focus to
+ * "Show less" on the way up scrolled the page down to find it. And the body is
+ * a layer of its own under the sheet, so nothing on it is drawn over the sheet
+ * as it rises: a slider's thumb, raised over its track, was. */
+.stack:has(> [data-open]) {
+    overflow: clip;
+}
+
+.stack:has(> [data-open]) > :not([data-open]) {
+    isolation: isolate;
 }
 
 @media (prefers-reduced-motion: reduce) {
