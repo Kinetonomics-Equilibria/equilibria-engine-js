@@ -421,7 +421,11 @@ from 480px to 570px (see [Present](#present)).
   last line, where "See all" was, so a second press in the same place puts
   it back, and focus follows the press to it. Esc puts it back too, and so
   does moving on, to another step or another tab, since what the student
-  moved to is on the card under it. Under the sheet the body is hidden as
+  moved to is on the card under it. Nothing else does: a student who opened
+  it is reading what the next move does, so through a drag on the diagram
+  it says each thing the foot would — what it is waiting for as the drag
+  starts, the readings as it goes, the whole chain when it lands — and after
+  Undo it says what it is waiting for. Under the sheet the body is hidden as
   well as covered (`.stack` in `ui/paper.module.css`), so neither the
   keyboard nor a screen reader reaches words nobody can see. "Why? See the
   maths" is on the sheet, under the chain. Where the ends are the whole

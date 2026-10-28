@@ -166,10 +166,47 @@ describe('the whole chain', () => {
         expect(foot().getAttribute('data-open')).toBeNull();
     });
 
-    it('goes down when there is no chain left to show', async () => {
+    // A drag on the diagram goes through rest as it starts, then readings,
+    // then a chain. A student who opened the sheet is reading what the next
+    // move does, so it stays up through all of it and says each.
+    it('stays up through a drag on the diagram, and says each part of it', async () => {
+        const { rerender } = await opened(<NarrationFoot line={chain()} restHint="Drag something." />);
+        const again = (line: NarrationLine) => rerender(
+            <MantineProvider theme={theme} env="test"><NarrationFoot line={line} restHint="Drag something." /></MantineProvider>
+        );
+
+        again(REST);
+        expect(foot().getAttribute('data-open')).toBe('true');
+        expect(sheet().textContent).toContain('Drag something.');
+
+        again(chain({ live: true }));
+        expect(foot().getAttribute('data-open')).toBe('true');
+        expect(inSheet('cause')!.textContent).toBe('a24.0');
+
+        again(chain());
+        expect(foot().getAttribute('data-open')).toBe('true');
+        expect(inSheet('movement')!.textContent).toBe('demand shifts up');
+    });
+
+    it('stays up after Undo, and says what it is waiting for', async () => {
+        const onUndo = vi.fn();
+        const { rerender } = await opened(<NarrationFoot line={chain()} onUndo={onUndo} restHint="Drag something." />);
+        await userEvent.setup().click(screen.getByRole('button', { name: 'Undo' }));
+        expect(onUndo).toHaveBeenCalledTimes(1);
+
+        rerender(<MantineProvider theme={theme} env="test"><NarrationFoot line={REST} restHint="Drag something." /></MantineProvider>);
+        expect(foot().getAttribute('data-open')).toBe('true');
+        expect(sheet().textContent).toContain('Drag something.');
+    });
+
+    // With no "See all" to come back to, focus goes to the foot rather than
+    // to nowhere.
+    it('hands focus to the foot when it goes down at rest', async () => {
         const { rerender } = await opened(<NarrationFoot line={chain()} />);
         rerender(<MantineProvider theme={theme} env="test"><NarrationFoot line={REST} /></MantineProvider>);
+        await userEvent.setup().click(showLess());
         expect(foot().getAttribute('data-open')).toBeNull();
+        expect(document.activeElement).toBe(foot());
     });
 
     it('reads top to bottom in the order it happened: what moved, the curves, what followed', async () => {

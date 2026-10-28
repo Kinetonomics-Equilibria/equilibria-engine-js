@@ -173,8 +173,12 @@ export function NarrationFoot({
         });
     }
 
-    // The sheet: open on a press, and down again when the student moves on, or
-    // when there is no chain left to show.
+    // The sheet: open on a press, and down again on a press of "Show less" or
+    // when the student moves on to another step or tab — and on nothing else.
+    // A drag on the diagram goes through rest as it starts (the engine's new
+    // snapshot, with nothing moved from it yet), then readings, then a chain;
+    // the sheet stays up through all of it and says each, as the foot does,
+    // since a student who opened it is reading what the next move does.
     const [open, setOpen] = useState(false);
     const [openedAt, setOpenedAt] = useState(0);
     const [where, setWhere] = useState(place);
@@ -182,18 +186,20 @@ export function NarrationFoot({
         setWhere(place);
         if (open) setOpen(false);
     }
-    if (open && line.kind === 'rest') setOpen(false);
 
     // Focus follows the press to the toggle in the same place on the other
-    // side, so a keyboard keeps its place; when the sheet goes down because
-    // the student moved on, focus is on what they pressed, and stays.
+    // side, so a keyboard keeps its place, or to the foot itself where the
+    // chain has gone to rest and there is no "See all" to come back to; when
+    // the sheet goes down because the student moved on, focus is on what they
+    // pressed, and stays.
+    const foot = useRef<HTMLElement>(null);
     const seeAll = useRef<HTMLButtonElement>(null);
     const showLess = useRef<HTMLButtonElement>(null);
     const handOff = useRef(false);
     useEffect(() => {
         if (!handOff.current) return;
         handOff.current = false;
-        (open ? showLess : seeAll).current?.focus();
+        ((open ? showLess : seeAll).current || foot.current)?.focus();
     }, [open]);
 
     const toggle = (to: boolean) => {
@@ -242,6 +248,8 @@ export function NarrationFoot({
 
     return (
         <section
+            ref={foot}
+            tabIndex={-1}
             className={classes.foot}
             aria-label="What changed"
             data-kind={line.kind}
@@ -302,11 +310,15 @@ export function NarrationFoot({
                     <div className={classes.sheetBody}>
                         {note}
                         <div data-chain aria-hidden="true">
-                            <Chain
-                                key={seen.count}
-                                line={line}
-                                arrive={seen.arrive && seen.count > openedAt}
-                            />
+                            {line.kind === 'rest' ? (
+                                refusal ? null : <p className={classes.hint}>{restHint}</p>
+                            ) : (
+                                <Chain
+                                    key={seen.count}
+                                    line={line}
+                                    arrive={seen.arrive && seen.count > openedAt}
+                                />
+                            )}
                         </div>
 
                         {/* "Why?" is the maths behind the first effect — the

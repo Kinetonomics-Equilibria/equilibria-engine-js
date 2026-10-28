@@ -652,3 +652,36 @@ test('the Lessons panel moves between lessons, and the back button returns', asy
     await page.goBack();
     await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();
 });
+
+/**
+ * The whole chain, once a student has opened it, stays open while they work
+ * the diagram: a drag goes through rest as it starts, then readings, then a
+ * chain, and the sheet says each. It goes down when they press "Show less", or
+ * when Next takes them on.
+ */
+test('the whole chain stays open through drags, and goes down on Show less or Next', async ({ page }) => {
+    await page.goto('/lessons/fx?step=5');
+    await page.locator('.kg-container svg').waitFor();
+    const foot = page.getByRole('region', { name: 'What changed' });
+    const sheet = foot.locator('[data-sheet]');
+
+    await dragSideways(page, 'down', 40);
+    await foot.getByRole('button', { name: /^See all/ }).click();
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toContainText('Demand for AUD increases');
+
+    // Another curve, and the sheet is still up, telling the new move.
+    await dragSideways(page, 'up', 40);
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toContainText('Supply of AUD increases');
+    await expect(sheet.locator('[data-part="movement"] > *'))
+        .toHaveText(['supply of AUD shifts to the right', 'demand for USD shifts to the right']);
+
+    await foot.getByRole('button', { name: /^Show less/ }).click();
+    await expect(sheet).toHaveCount(0);
+
+    await foot.getByRole('button', { name: /^See all/ }).click();
+    await expect(sheet).toBeVisible();
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(sheet).toHaveCount(0);
+});
