@@ -321,7 +321,8 @@
 }
 
 /* Presenting, the column is read from across a classroom, so everything in it
- * is drawn 1.5 times as large: its width with it, so a line of the lesson
+ * is drawn 1.5 times as large (`--present-zoom`, which the title above the
+ * stage is drawn at too): its width with it, so a line of the lesson
  * holds the words it did, and its slider, icons and maths with its text, so
  * the card is the one the class has seen on their own laptops. 15px body text
  * is about 22px, larger than the chart's 16px labels, and the 12px heads are
@@ -337,7 +338,7 @@
  * positions are measured in the zoomed box, so a slider still lands where it
  * is pressed. */
 :fullscreen .side {
-    zoom: 1.5;
+    zoom: var(--present-zoom);
 }
 
 /* The top two thirds of the column, from the top of the screen: the lesson's

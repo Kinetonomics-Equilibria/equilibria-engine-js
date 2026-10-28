@@ -123,6 +123,13 @@ attention on finding things.
   whatever the lesson, and where the title is too long for what they leave
   it is cut with an ellipsis rather than wrapped. The A$ lesson's title is
   whole from about 945px.
+- Presenting, the topic and title are drawn as large as the side column
+  (`--present-zoom`, 1.5; see [Present](#present)), and the tools stay as
+  they are. At that size a cut title would lose its last words on a
+  1280-wide projector, so it wraps instead, onto two lines of about the same
+  length (`text-wrap: balance`). That makes the stage a line shorter on that
+  page, the one place its height depends on the title: a title is the same at
+  every step, so nothing moves under a pointer for it.
 - Each icon has no border, a round grey wash under the pointer that follows
   the capsule's ends, and its name as its label and its tooltip: Reset,
   "Present to a class", Share. The glyphs are 20px, larger than a menu
@@ -173,14 +180,16 @@ attention on finding things.
   projector. The rail is about the app, and a class has no use for it, so
   the stage gets its width; it is inert while it is away, so the keyboard
   cannot reach it.
-- The side column is drawn 1.5 times as large (`:fullscreen .side`, a CSS
-  `zoom`), width and all, because a class reads it from across the room: the
+- The side column and the title above the stage are drawn 1.5 times as
+  large (`--present-zoom` in `index.css`, a CSS `zoom` under `:fullscreen`),
+  the column's width and all, because a class reads them from across the
+  room; see [The title line](#the-title-line) for how a long title wraps. The
   chart's text was made large enough for a projector, and the column's 15px
   body and 12px heads were not. 1.3 was tried first and was still too small.
-  Everything in it grows together, so a line holds the words it did and the
-  card is the one students know. At 1280×800 the column is 480px and the
-  stage keeps about 750px; a long step scrolls after about six lines. See
-  [The side column](#the-side-column).
+  Everything in the column grows together, so a line holds the words it did
+  and the card is the one students know. At 1280×800 the column is 480px
+  and the stage keeps about 750px; a long step scrolls after about six
+  lines. See [The side column](#the-side-column).
 - Nothing else changes: the stage notices its new size and arranges itself,
   as it does when the window changes, and the lesson, what is in the side
   column and whatever the student had done stay as they were.
@@ -411,7 +420,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 
 | Piece | Where | What it is |
 | --- | --- | --- |
-| Title line | `TitleLine.tsx` | The lesson's topic over its title, and the stage's tools in a capsule of paper beside them; the title never wraps: the tools are borderless round icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
+| Title line | `TitleLine.tsx` | The lesson's topic over its title, and the stage's tools in a capsule of paper beside them; the title never wraps but when presenting: the tools are borderless round icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
 | QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it, and so does the title line's capsule, with its own corner. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left ("Lesson" beside the stage, "What changed"); the card's one action at the right ("What changed"'s Undo). |

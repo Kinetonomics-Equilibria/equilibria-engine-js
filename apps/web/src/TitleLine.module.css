@@ -44,6 +44,23 @@
     text-overflow: ellipsis;
 }
 
+/* Presenting, the topic and title are drawn as large as the side column
+ * (`--present-zoom`), for a class at the back of the room; the tools stay as
+ * they are, since only the teacher presses them. At that size a long title
+ * would lose its last words on a 1280-wide projector ("The US Federal Reserve
+ * raises its interest…"), so it wraps instead, onto two lines of about the
+ * same length. The stage is a line shorter for it, on
+ * that page alone: a title is the same at every step, so nothing it does
+ * moves under a pointer. */
+:fullscreen .heading {
+    zoom: var(--present-zoom);
+}
+
+:fullscreen .line:not([data-stacked]) .title {
+    white-space: normal;
+    text-wrap: balance;
+}
+
 /* The tools in one capsule of paper, so they read as one thing on the desk
  * rather than loose glyphs, and a greyed one as part of the set. Each tool is
  * round inside it, so the wash under the pointer follows the capsule's ends. */
