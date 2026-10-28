@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { AffectedObject } from 'equilibria-engine-js';
 import {
-    CALC_PRECISION, announcement, calcPrecision, curveColor, formatValue, narrate, toSentence, undoParams
+    CALC_PRECISION, REST, announcement, calcPrecision, curveColor, formatValue, leaveOut, narrate, toSentence,
+    undoParams
 } from '../narration/narrate';
 import type { NarratedCalc, NarratedParam, NarrateInput, Snapshot } from '../narration/narrate';
 import { phraseMechanism, phraseMovement, phraseMovements, phraseRefusal } from '../narration/phrasebook';
@@ -183,6 +184,50 @@ describe('the rest state', () => {
         // "has the student done anything" a second time.
         const result = narrate({ before: null, after: market(24), params: PARAMS, calcs: CALCS });
         expect(result.kind).toBe('rest');
+    });
+});
+
+/**
+ * A panel the lesson has not brought in yet: its number is left out of the
+ * chain, as the engine leaves its curves out, so the chain never names a
+ * picture the student cannot see.
+ */
+describe('what the stage is not drawing', () => {
+    it('leaves out the effects on calcs it names, and keeps the rest', () => {
+        const result = leaveOut(line(), ['Pe']);
+        expect(result.causes.map(c => c.name)).toEqual(['a']);
+        expect(result.effects.map(c => c.name)).toEqual(['Qe']);
+    });
+
+    it('sends "why?" to the first effect left', () => {
+        expect(line().whyTarget).toBe('Pe');
+        expect(leaveOut(line(), ['Pe']).whyTarget).toBe('Qe');
+        expect(leaveOut(line(), ['Pe', 'Qe']).whyTarget).toBeNull();
+    });
+
+    it('keeps no "why?" mid-gesture, where there was none', () => {
+        expect(leaveOut(line({ live: true }), ['Pe']).whyTarget).toBeNull();
+    });
+
+    it('hands back the same line where nothing is left out', () => {
+        const same = line();
+        expect(leaveOut(same, [])).toBe(same);
+        expect(leaveOut(same, ['nothing'])).toBe(same);
+    });
+
+    it('is at rest where nothing it can show moved', () => {
+        const effectsOnly = narrate({
+            before: market(20), after: market(24), params: [], calcs: CALCS.slice(0, 1)
+        });
+        expect(effectsOnly.kind).toBe('settled');
+        expect(leaveOut(effectsOnly, ['Pe'])).toBe(REST);
+    });
+
+    it('keeps a cause whose effects are all out of sight', () => {
+        const result = leaveOut(line(), ['Pe', 'Qe']);
+        expect(result.kind).toBe('settled');
+        expect(result.causes).toHaveLength(1);
+        expect(result.effects).toEqual([]);
     });
 });
 

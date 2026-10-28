@@ -408,6 +408,12 @@ from 480px to 570px (see [Present](#present)).
   number now, as the strip's are. A refusal (P12) takes the ends' place on
   the foot, since it is the newer news, and is said above the chain on the
   sheet.
+- The chain says only what the stage draws. The engine leaves out a curve it
+  is not drawing, and the screen leaves out a panel's headline number until
+  the lesson has brought that panel in (`leaveOut`): in the A$ lesson's first
+  part a move has no "The USD depreciates", since there is no USD market on
+  the screen to see it in. The foot, the strip, the printed page and the
+  sentence a screen reader hears all say the same chain.
 - "See all 6 changes" counts every clause the chain has, and opens it on a
   sheet that rises from the foot over the card's body, up to the card's
   head — the lesson's place, or the tabs — and no further, so the lesson's

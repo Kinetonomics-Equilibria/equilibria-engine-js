@@ -653,3 +653,42 @@ describe('the colour of what changed', () => {
         expect(demand.strokes).toEqual([...supply.strokes].reverse());
     });
 });
+
+/**
+ * "What changed" says only what the stage draws. Until the lesson brings in
+ * the USD market, a move has no "The USD depreciates": that is the USD
+ * market's number, and there is no USD market on the screen to see it in.
+ */
+describe('a market not drawn yet', () => {
+    const USD_MARKET = FX_LESSON.findIndex(step => (step.reveal || []).indexOf('mirror') > -1) + 1;
+    const USD_MOVES = /the USD (appreciates|depreciates)/i;
+
+    /** The whole chain, as "See all" opens it, and the sentence a screen reader hears. */
+    const chain = () => {
+        const all = screen.queryByRole('button', { name: /^See (all \d+ changes|the numbers)/ });
+        if (all) fireEvent.click(all);
+        return screen.getByRole('region', { name: 'What changed' }).textContent || '';
+    };
+
+    it('is left out of the chain until the lesson brings it in', async () => {
+        const user = userEvent.setup();
+        mount();
+
+        // Demand for AUD up, with the USD market on the stage: said.
+        await user.click(marker(USD_MARKET + 1));
+        expect(caption('mirror')).not.toBe('');
+        expect(chain()).toMatch(USD_MOVES);
+
+        // Back before it, and Reset: the AUD falls back, and the USD market,
+        // gone from the stage, is gone from the chain.
+        await user.click(marker(USD_MARKET - 1));
+        expect(caption('mirror')).toBe('');
+        await user.click(screen.getByRole('button', { name: 'Reset' }));
+        expect(chain()).toContain('The AUD depreciates');
+        expect(chain()).not.toMatch(USD_MOVES);
+
+        // And it is said again from the step that draws it.
+        await user.click(marker(USD_MARKET));
+        expect(chain()).toMatch(USD_MOVES);
+    });
+});

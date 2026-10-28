@@ -308,6 +308,33 @@ export function narrate(input: NarrateInput): NarrationLine {
 }
 
 /**
+ * The line, less what it says about numbers the stage is not drawing.
+ *
+ * A lesson brings its panels in a few at a time, and a calc that is a panel's
+ * headline is that panel's number: "The USD depreciates" is the USD market's,
+ * and before the lesson has drawn that market it is a clause about a picture
+ * the student cannot see. The engine already leaves out the curves it is not
+ * drawing (`whatMoved` narrates only what is shown); this does the same for
+ * the numbers. "Why?" goes to the first effect left, as it went to the first.
+ *
+ * The same line, the same object, where nothing is left out, so a screen that
+ * asks on every render hands its components nothing new.
+ */
+export function leaveOut(line: NarrationLine, calcs: string[]): NarrationLine {
+    if (calcs.length === 0) return line;
+    const effects = line.effects.filter(c => calcs.indexOf(c.name) < 0);
+    if (effects.length === line.effects.length) return line;
+
+    // As `narrate` has it: with neither a cause nor an effect, nothing moved.
+    if (line.causes.length === 0 && effects.length === 0) return REST;
+    return {
+        ...line,
+        effects,
+        whyTarget: line.whyTarget !== null && effects.length > 0 ? effects[0].name : null
+    };
+}
+
+/**
  * The colour the chain's curves are drawn in, where that is one colour: every
  * cause has one and they agree. `null` otherwise, and at rest.
  *

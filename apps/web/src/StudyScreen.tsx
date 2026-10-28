@@ -41,7 +41,7 @@ import { Explore } from './dock/Explore';
 import { Maths } from './dock/Maths';
 import { Scenarios } from './dock/Scenarios';
 import type { Instrument, InstrumentProps } from './dock/types';
-import { REST, calcPrecision, formatValue, narrate, undoParams } from './narration/narrate';
+import { REST, calcPrecision, formatValue, leaveOut, narrate, undoParams } from './narration/narrate';
 import { phraseRefusal } from './narration/phrasebook';
 import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
 import { AT_THE_START, useAddressFollows, writeLink } from './links';
@@ -1339,6 +1339,25 @@ export function StudyScreen({
     );
 
     /**
+     * The chain as the stage can show it: less the number of each panel the
+     * lesson has not brought in yet. A panel's headline is its number, so
+     * before the USD market is drawn there is no "The USD depreciates" to
+     * point at. The foot, the strip, the printed page and the screen reader
+     * all say this one.
+     *
+     * Kept as one string, so a step that brings nothing new in hands the foot
+     * the line it already has, rather than a copy it would take for news.
+     */
+    const unseen = useMemo(() => {
+        const drawn = panels.filter(p => revealed.indexOf(p.key) > -1).map(p => p.headline);
+        return panels
+            .filter(p => revealed.indexOf(p.key) < 0 && drawn.indexOf(p.headline) < 0)
+            .map(p => p.headline)
+            .join(',');
+    }, [panels, revealed]);
+    const said = useMemo(() => leaveOut(line, unseen ? unseen.split(',') : []), [line, unseen]);
+
+    /**
      * The report beside the diagram at this step, if it has one: a panel of
      * the stage's for as long as the step is on screen, drawn by this screen
      * rather than by the engine.
@@ -1936,7 +1955,7 @@ export function StudyScreen({
     // something else — and say what they are waiting for.
     const under = sheet && !notStarted && slide ? slide.kind : null;
     const narration = {
-        line: sheet ? REST : line,
+        line: sheet ? REST : said,
         refusal: sheet ? null : refusal,
         onUndo,
         onWhy: instrumented ? onWhy : undefined
