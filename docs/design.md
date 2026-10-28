@@ -54,7 +54,8 @@ attention on finding things.
    could change, it says what it is waiting for.
 
 5. **Nothing moves under the pointer.** The side column's width is set by the
-   window alone, so nothing in it can resize the diagram, and its two cards
+   window alone (and by Present, which changes the window too), so nothing in
+   it can resize the diagram, and its two cards
    have fixed heights, so nothing in one can move the other: a slider never
    slides out from under the student who is holding it. Content that cannot
    fit scrolls inside its card, never the page.
@@ -172,9 +173,16 @@ attention on finding things.
   projector. The rail is about the app, and a class has no use for it, so
   the stage gets its width; it is inert while it is away, so the keyboard
   cannot reach it.
+- The side column is drawn 1.3 times as large (`:fullscreen .side`, a CSS
+  `zoom`), width and all, because a class reads it from across the room: the
+  chart's text was made large enough for a projector, and the column's 15px
+  body and 12px heads were not. Everything in it grows together, so a line
+  holds the words it did and the card is the one students know. At 1280×800
+  the column is 416px and the stage keeps about 830px. See
+  [The side column](#the-side-column).
 - Nothing else changes: the stage notices its new size and arranges itself,
-  as it does when the window changes, and the lesson, the side column and
-  whatever the student had done stay as they were.
+  as it does when the window changes, and the lesson, what is in the side
+  column and whatever the student had done stay as they were.
 - Esc comes back, and so does Present again, which shows pressed (light
   blue, "where you are") while the page is presenting. Whether it is
   presenting is the browser's to say (`present.ts`): Esc is the browser's
@@ -328,7 +336,8 @@ wide on a laptop and grows with the window to 380px (`clamp(320px, 20vw,
 comfortable reading, and on a large screen the focal panel is held by the
 stage's height, so the width the column takes there was slack beside it. Grid,
 whose panels sit side by side and are held by the stage's width, pays for it,
-which is why the column stops at 380.
+which is why the column stops at 380. Presenting, it is all 1.3 times as large,
+from 416px to 494px (see [Present](#present)).
 
 ```
  A lesson                            The playground

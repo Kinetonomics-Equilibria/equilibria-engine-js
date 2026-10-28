@@ -308,8 +308,9 @@
  * 320px on a laptop, where the stage has none to spare, and wider with the
  * window up to 380px. At 320 a line of the lesson is about 42 characters, short
  * of comfortable reading; on a large screen the focal panel is held by the
- * stage's height and the width it gives up was slack beside it. The window is
- * all that sets it, so nothing in the column can resize the stage. */
+ * stage's height and the width it gives up was slack beside it. The window,
+ * and whether the page is presenting, are all that set it, so nothing in the
+ * column can resize the stage. */
 .side {
     display: flex;
     flex: none;
@@ -317,6 +318,25 @@
     gap: var(--mantine-spacing-sm);
     width: clamp(320px, 20vw, 380px);
     min-height: 0;
+}
+
+/* Presenting, the column is read from across a classroom, so everything in it
+ * is drawn 1.3 times as large: its width with it, so a line of the lesson
+ * holds the words it did, and its slider, icons and maths with its text, so
+ * the card is the one the class has seen on their own laptops. 15px body text
+ * is about 20px, a little larger than the chart's 16px labels, as running text
+ * should be; the 12px heads are about 16px. At 1280×800, a common classroom
+ * projector, the column is 416px and the stage, with the rail away, keeps
+ * about 830px. The column is no taller, so a long step scrolls sooner.
+ *
+ * `:fullscreen` rather than a class, because whether the page is presenting
+ * is the browser's to say (`present.ts`). `zoom` rather than larger tokens,
+ * because the column also sets text in pixels and its maths in KaTeX's em,
+ * and its slider, icons and spacing should grow with its words. Pointer
+ * positions are measured in the zoomed box, so a slider still lands where it
+ * is pressed. */
+:fullscreen .side {
+    zoom: 1.3;
 }
 
 /* The top two thirds of the column, from the top of the screen: the lesson's
