@@ -3,8 +3,9 @@ import type { Page } from '@playwright/test';
 import { test } from './helpers';
 
 /**
- * Present, in a real browser: the page full screen, the rail put away and the
- * stage given its width, and back to the page as it was.
+ * Present, in a real browser: the page full screen, the rail put away and its
+ * room given to the stage, the side column drawn 1.5 times as large, and back
+ * to the page as it was.
  *
  * Only a browser can say it, because full screen is the browser's: jsdom has
  * none, and the unit tests stand in for it with a page that says it has gone
@@ -26,23 +27,36 @@ test('Present puts the page full screen with the rail away, and comes back', asy
     const present = page.getByRole('button', { name: 'Present to a class' });
     const rail = page.locator('nav').first();
     const stage = page.locator('[class*="stageBox"]');
-    const width = async () => (await stage.boundingBox())!.width;
-    const before = await width();
+    const column = page.locator('[class*="lessonBeside"]').locator('..');
+    const where = async () => {
+        const [s, c] = [(await stage.boundingBox())!, (await column.boundingBox())!];
+        return { left: s.x, right: s.x + s.width, width: s.width, column: c.width, gap: c.x - (s.x + s.width) };
+    };
+    const before = await where();
 
     const presenting = async () => {
         await expect.poll(() => fullScreen(page)).toBe(true);
         await expect(present).toHaveAttribute('aria-pressed', 'true');
         await expect(rail).toHaveAttribute('inert', '');
         await expect(rail).not.toBeInViewport();
-        // The rail's width is the stage's, and the stage arranged itself for it.
-        await expect.poll(width).toBeGreaterThan(before + 60);
+        // The rail's room is the stage's: it starts where the rail was.
+        await expect.poll(async () => (await where()).left).toBeLessThan(before.left - 60);
+        // The column is drawn 1.5 times as large, its width with it, and the
+        // stage takes what is left beside it, at the same gap as before. So
+        // the stage can come out narrower than it went in: the column grows by
+        // more than the rail gave back (docs/design.md, "Present").
+        const now = await where();
+        expect(now.column).toBeCloseTo(before.column * 1.5, 0);
+        expect(now.gap).toBeCloseTo(before.gap, 0);
     };
     const back = async () => {
         await expect.poll(() => fullScreen(page)).toBe(false);
         await expect(present).toHaveAttribute('aria-pressed', 'false');
         await expect(rail).not.toHaveAttribute('inert', '');
         await expect(rail).toBeInViewport();
-        await expect.poll(width).toBe(before);
+        await expect.poll(async () => (await where()).width).toBe(before.width);
+        expect((await where()).left).toBe(before.left);
+        expect((await where()).column).toBe(before.column);
     };
 
     await present.click();
