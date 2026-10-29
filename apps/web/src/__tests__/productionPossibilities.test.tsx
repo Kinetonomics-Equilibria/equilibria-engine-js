@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
-import { PPC_LESSON, PRODUCTION_POSSIBILITIES } from '../lessons/productionPossibilities';
+import { PPC_LESSON, PRODUCTION_POSSIBILITIES } from '../lessons/ppc';
 import { theme } from '../theme';
 
 /**

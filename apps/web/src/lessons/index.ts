@@ -1,7 +1,7 @@
 import type { StudyContent, StudyModel } from './content';
 import { SUPPLY_AND_DEMAND } from './market';
 import { FOREIGN_EXCHANGE } from './fx';
-import { PRODUCTION_POSSIBILITIES } from './productionPossibilities';
+import { PRODUCTION_POSSIBILITIES } from './ppc';
 import { DEMAND_SHIFTERS } from './demand';
 import { SUPPLY_SHIFTERS } from './supply';
 
