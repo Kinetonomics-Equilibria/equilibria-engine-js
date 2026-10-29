@@ -490,4 +490,4 @@ object whose `breaksRule` names it, and holds every such object to a line here.
   tick number is the value its step says, and a symbol there would hide it.
   Nor is there one on the list for what a pair is worth to you, or the fare a
   flight needs. The reason is in the `breaksRule` of `pair` in `lessons/demand/chart.ts`
-  and of `flight` in `supplyShifters.ts`.
+  and of `flight` in `lessons/supply/chart.ts`.
