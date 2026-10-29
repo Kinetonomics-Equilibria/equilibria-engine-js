@@ -5,9 +5,9 @@
 P15 (the stage beyond charts). It packages what they built rather than adding to it ·
 **Unblocks:** the fifth lesson and every one after it, written by a person or an AI session from a
 short guide ·
-**Status:** ✅ **Phases 1–5 done** (2026-10-29), in fourteen commits from `409298e` to `2e61fe8`.
-Phase 6, a lesson written from the guide by a fresh session, is still to come, on a topic of the
-user's choosing. Read against the code before building — see
+**Status:** ✅ **Done** (2026-10-29). Phases 1–5 in fourteen commits from `409298e` to `2e61fe8`;
+phase 6, the price elasticity lesson written from the guide by a fresh session, after them, with
+its findings at the end of [Findings](#findings). Read against the code before building — see
 [Read against the code](#read-against-the-code-2026-10-29) — and [Findings](#findings) for what
 building it turned up.
 
@@ -394,7 +394,7 @@ Phase 6: the fifth lesson passes every lesson test and its own, and its findings
 - [x] Phase 4: no lesson defines its own demand, supply, equilibrium, start line, answer line or
   axis; each lesson in a folder of its own; the snapshots deleted.
 - [x] Phase 5: the template, the guide, the skill and the line in `CLAUDE.md`.
-- [ ] Phase 6: a sixth lesson, written from the guide, and its findings.
+- [x] Phase 6: a sixth lesson, written from the guide, and its findings: price elasticity of demand.
 
 ## Out of scope
 
@@ -460,3 +460,103 @@ Phase 6: the fifth lesson passes every lesson test and its own, and its findings
   alone: lesson files were being rewritten while it ran, and the dev server served them half
   written. Nothing is edited while the browser suite runs.
 
+
+### Phase 6 — the elasticity lesson
+
+The topic was the user's: price elasticity of demand, told with a school canteen's sausage rolls
+(`lessons/elasticity/`). One $1 rise from $4.50, told twice, on a demand curve that pivots about
+where the canteen starts: with students kept in at lunch, 10% fewer sales for a 20% rise, 0.50,
+and revenue up $100.00; with a bakery across the road, 40% fewer, 2.00, and revenue down $175.00.
+Two panels, the canteen's demand headlined by the elasticity and its revenue, 13 steps and three
+questions. It was written from the guide, the design docs and the other lessons; where that was
+not enough, the kit's source or the app's was read, and each time is below.
+
+**What a test caught.**
+
+- **Two texts too long for the screen.** A question's explanation at 204 characters, and the
+  recap's takeaway at 278. `lessons.test.ts` holds them to 200 and 220, and the guide named
+  neither limit, nor any of the others. They are a table in the guide's "The words" now.
+- **The colour test failed the revenue area, and the test was wrong.** It holds everything that
+  names a param to the param's curve colour, and the revenue rectangle names `params.price`, so
+  it was held to the price's orange. `chart-design.md` says an area takes the colour of what it
+  belongs to, revenue's green, and the market lesson's green revenue passed only because its
+  shape goes through calcs. The proxy that was right for the Jordans' point (above) was wrong
+  for an area. The test leaves areas out.
+
+**What no test caught, and printing the screen did.** Before the lesson's own test had an
+assertion, a run that printed each caption and "What changed" at every step, in jsdom. None of
+these failed anything; the first two are tests now.
+
+- **The price printed as 4.5.** A price in 10c steps took one decimal from its `round`, so "What
+  changed" said "The canteen raises its price 4.5 → 5.5" under a step that said $5.50. The
+  engine has always read a param's `precision`; the kit's `ParamDefinition` did not offer one.
+  It does now, and the lesson's price is printed to the cent. A test holds a price a step sets,
+  and says in dollars and cents, to print that way: it fails the lesson as first written.
+- **The question's lines were drawn twice, and only the console said so.** The guide says every
+  curve a question offers is drawn `asked: true`, and the lesson's demand is in both panels. The
+  kit names a question's lines for the param (`questionStartResponse`), so both panels drew the
+  same four objects; the engine kept the first and warned. The lines are in the revenue panel,
+  which is at the front through the questions, and a test holds every object in a model to a
+  name of its own. The guide says a param is asked about in one panel.
+- **The percentages were nowhere on screen at the step that reads them.** They were held back
+  with `fromStep` until "Changes as percentages", which moves nothing, and "What changed" says
+  what the last move changed, which was before them. They are there from the start, 0 at $4.50.
+  The guide says a number a step reads must be on the screen at it.
+- **A negative prints with a hyphen**: "% change in quantity demanded 0 → -10".
+  `chart-design.md`'s "Numbers" asks for a true minus. `formatValue` writes JavaScript's hyphen
+  for every lesson; this is the first whose chain prints a negative. Not fixed here: it is the
+  app's formatter, which the Maths tab's TeX goes through as well.
+- **No thousands separator**: revenue at $5.50 is "$1045.00". The step says "rises by $100.00"
+  rather than quote it, and the guide says to keep a quoted number under 1,000 where the model
+  allows. The formatter is the same follow-up as the minus.
+
+**What only a screenshot caught.** At 1440×900 and 390×844, in Focus and the grid, and walking
+the steps in the browser, since a link to a step draws no ghost and no chip.
+
+- **A step about the bakery led "What changed" with a price cut.** The bakery step put the price
+  back to $4.50 and turned the curve, in one `set`, so the caption's chip said ▼$100.00 and the
+  chain's foot "The canteen cuts its price", under words about a flatter curve. The cut back is a
+  step of its own now, "Inelastic: a cut brings in less", the other half of the revenue rule, and
+  the bakery step moves only the curve. A test holds every step before the questions to params
+  of one curve colour, as "What changed" can only mark one; on its first run it found the café
+  doing the same at "Full employment", which put the faster espresso machine back as it moved Z.
+  That step moves Z alone now, which is inside the curve for any machine the step before allows.
+- **The Maths tab writes a param by its name**: "210 − response · (price − 4.5)", where the slider
+  says "Sales lost per $1". `response` is a word, so it stays, and `paramMeanings` says what it
+  is; the guide says a param's name is read by students. The price's 4.5 is the expression's
+  literal, which the parser normalises, so it cannot be written 4.50.
+- Nothing else. Every label stayed on its plot at both ends of both sliders, in the browser
+  suite and by eye; the price point drags, so "Drag a curve" at rest does not promise what is not
+  there.
+
+**What the guide did not say, and was read in the source.**
+
+- **What each kit helper takes.** The guide names them; the lessons that use them said how. The
+  guide has a table now, helper by helper, with a lesson to read for each, and says the types
+  answer the rest. That `pricePoint` draws P on the price axis itself, so a panel with a point
+  needs no `priceLine`, came from the Jordans' market.
+- **Whether `stepTitled` counts from 0 or 1** (`kit/lesson.ts`). From 1, the value
+  `params.step` has at that step; the guide says so, and that every `fromStep` is true in the
+  Playground.
+- **Whether a param can be printed to the cent**: the kit's `ParamDefinition`, `defineLesson`
+  handing params to the engine as they are, and the engine's `param.ts`, which reads
+  `precision`. Now a field of the kit's, and in the guide's first step.
+- **What a narrated calc's `unit` does** (`narration/narrate.ts`): it is put in front of the
+  number, so there is no `%` after one, and the label carries it. In the guide. That the Maths
+  tab escapes a `%` in a label came from `dock/mathsText.ts`.
+- **Why "What changed" said nothing of the curve turning** in the lesson's test
+  (`narration/phrasebook.ts`): the test had jumped to the step from the cover, where no curve
+  is drawn yet, so there was nothing to measure the turn against. The engine says "gets
+  flatter" when it has. In the guide's "The tests", with the keyboard's chip, which says only
+  the last press.
+- **Where the browser suite and the screenshot script look.** Both use a dev server already on
+  their port, or start one. In this checkout 5173 was the main checkout's, so both would have
+  tested and photographed code without the lesson in it, and said nothing. The guide gives
+  each a port of its own.
+
+The guide was enough for the shape: the order, the files, what the kit works out, and the
+sections of the two design docs to read at each step. Every gap above was a fact about how a
+number reaches the screen, or a limit a test holds and the guide did not say. Three tests are
+new in `lessons.test.ts` — a price printed as a step says it, a name of its own for every
+object, one curve's params a step — and the lesson's own, `priceElasticity.test.tsx`, was
+checked by breaking five of the numbers its steps state, each of which it failed.

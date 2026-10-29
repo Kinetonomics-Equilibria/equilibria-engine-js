@@ -19,8 +19,9 @@ as a panel of its own. It is the first plan since P7 to change `Stage`'s surface
 
 P16 is about writing a lesson rather than showing one. Five lessons in, each wrote its own copy of
 the question's wiring and of the chart's house rules; P16 put both in a kit, checks the chart rules
-in tests, and gives an AI session a template and a guide. Its last phase, a lesson written from the
-guide by a fresh session, is still to come.
+in tests, and gives an AI session a template and a guide. Its last phase was the test of that: a
+session that had not seen the kit wrote the price elasticity lesson from the guide, and what the
+guide left out is now in it.
 
 ## Settle these first
 
@@ -53,7 +54,7 @@ plans reshuffle. **Two are now settled** — Fork 1 by decision, Fork 3 by measu
 | [P13](P13-ghost-authoring-shorthand.md) | `ghost:` authoring shorthand ✅ **done** | bindings | P5, P6 |
 | [P14](P14-which-curve-moves.md) | Which curve moves, and showing a direction-only answer ✅ **done** | app | P11, the A$ lesson |
 | [P15](P15-the-stage-beyond-charts.md) | The stage, when it isn't a chart: a cover, pictures, a recap ✅ **done** | app + bindings | P7, P10, P11, P14 |
-| [P16](P16-lesson-kit.md) | A lesson kit: the house rules as code ✅ **phases 1–5 done**, phase 6 to come | app | P10, P11, P13, P14, P15 |
+| [P16](P16-lesson-kit.md) | A lesson kit: the house rules as code ✅ **done** | app | P10, P11, P13, P14, P15 |
 
 Both of the plans that were only outlines inside P5 have now been written out and landed: P12, and
 P13, which was the last of them.
@@ -103,9 +104,9 @@ itself rather than a second copy of it.
 - Putting more than a diagram on the stage: ~~**P15**~~ (done). A sheet laid over the stage for a
   moment with no diagram — the cover, a picture, the recap — and `hostPanels` for a panel the app
   draws itself, arranged with the diagram's. Read its "Why this shape" before adding a fifth kind.
-- Writing the next lesson: **P16** (phases 1–5 done). A kit for the question's wiring and the
-  chart's house rules, the chart rules as tests, and a template and guide for an AI session: start
-  from [`docs/lesson-authoring.md`](../lesson-authoring.md).
+- Writing the next lesson: ~~**P16**~~ (done). A kit for the question's wiring and the chart's
+  house rules, the chart rules as tests, and a template and guide for an AI session, tried on the
+  price elasticity lesson: start from [`docs/lesson-authoring.md`](../lesson-authoring.md).
 
 ## Findings that cut across the set
 

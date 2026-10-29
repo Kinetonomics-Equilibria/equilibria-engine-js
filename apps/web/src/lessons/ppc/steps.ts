@@ -199,8 +199,13 @@ export const PPC_LESSON: LessonStep[] = [
                 'out of the same resources.'
         }
     },
+    // Z alone. The faster espresso machine stays from the step before, or
+    // wherever the student left its slider: at 30 toasties and 80 coffees Z
+    // is inside the curve for any coffees an hour from 5 to 15. Putting the
+    // machine back here as well led "What changed" with coffee-making
+    // getting slower, under words about Z.
     {
-        set: { ...BASELINE, pt: 30, pc: 80 },
+        set: { pt: 30, pc: 80 },
         title: 'Full employment',
         say: 'Every point on the curve assumes all the café\'s resources are working, and working ' +
             'well. Real cafés have slow patches, with staff standing around.\n\n' +

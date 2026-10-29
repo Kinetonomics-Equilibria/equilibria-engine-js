@@ -84,7 +84,7 @@ describe('the cover', () => {
         const parts = within(within(sheet).getByRole('list')).getAllByRole('listitem');
         expect(parts.map(part => part.textContent)).toEqual([
             '1 · How much buyers respond5 steps',
-            '2 · Elasticity and revenue2 steps',
+            '2 · Elasticity and revenue3 steps',
             '3 · When students have a choice5 steps',
             '4 · Your turn3 questions'
         ]);

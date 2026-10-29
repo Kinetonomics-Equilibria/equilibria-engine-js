@@ -135,6 +135,28 @@ describe.each([...LESSONS, TEMPLATE].map(lesson => [lesson.id, lesson] as const)
         });
     });
 
+    // "What changed" says the step's move, its foot leads with the first
+    // cause, and it marks the curves moved in the causes' colour, or in none
+    // where their colours differ (`curveColor`). A step that moved the price
+    // back to the start and turned the curve led with the price, in orange,
+    // under words about the blue curve. So a step before the questions moves
+    // params of one colour, as the café's Z moves its two coordinates, and a
+    // move back to the start is a step of its own. A question's `set` is
+    // where it starts, not a move.
+    it('moves params of one colour a step, before the questions', () => {
+        const words = model.paramWords || {};
+        const coloured = paramsOf(model).filter(def => !def.presentation && words[def.name] && words[def.name].curve);
+        lesson.lesson.forEach((step, i) => {
+            if (step.ask || step.recap || lesson.lesson.slice(0, i).some(earlier => !!earlier.ask)) return;
+            const before = paramsAt(lesson.lesson, i), after = paramsAt(lesson.lesson, i + 1);
+            const colours = coloured
+                .filter(def => (before[def.name] ?? def.value) !== (after[def.name] ?? def.value))
+                .map(def => words[def.name].curve)
+                .filter((colour, j, all) => all.indexOf(colour) === j);
+            expect(colours.length, `step ${i + 1}, "${step.title}", moves ${colours.join(' and ')}`).toBeLessThanOrEqual(1);
+        });
+    });
+
     // The card holds no instruments, so what a step hands the student is all
     // they can move from it: it has to be a param the diagram has, named in
     // words, and not a second set of controls beside a question's own.

@@ -108,15 +108,27 @@ export const ELASTICITY_LESSON: LessonStep[] = [
             'the canteen gains on the rolls it still sells is more than it loses on the ones it ' +
             'doesn\'t.'
     },
-    // The same rise again, on a flatter curve through the same point. Back
-    // at the start first, so the dashed curve is the one the first rise was
-    // on and the next step's rise is from $4.50, as the first was.
+    // Back to the start, as a step of its own: it is the other half of what
+    // inelastic demand does to revenue, and it leaves the next step moving
+    // only the curve. Once, that step moved the price back as well, and its
+    // chip and "What changed" led with the price cut, not the bakery.
+    {
+        set: { price: START_PRICE },
+        title: 'Inelastic: a cut brings in less',
+        say: 'Cut the price back to $4.50 and the canteen sells 210 a day again, but its revenue ' +
+            'falls by $100.00.\n\n' +
+            'With inelastic demand, a price cut wins sales by a smaller percentage than the price ' +
+            'falls, so it brings in less.'
+    },
+    // The same rise again, on a flatter curve through the same point, so the
+    // dashed curve is the one the first rise was on and the next step's rise
+    // is from $4.50, as the first was.
     {
         part: 'When students have a choice',
-        set: { ...BAKERY_OPEN },
+        set: { response: BAKERY },
         title: 'A bakery opens across the road',
-        say: 'Back at $4.50, say a bakery opens across the road, selling sausage rolls for $4.50 ' +
-            'too, and the school lets students out at lunch.\n\n' +
+        say: 'Now say a bakery opens across the road, selling sausage rolls for $4.50 too, and ' +
+            'the school lets students out at lunch.\n\n' +
             'The canteen still sells 210 a day at $4.50. But its demand curve is flatter than the ' +
             'dashed one, where it was: each dollar on the price now loses 70 sales, not 20.',
         try: [{ param: 'response', label: 'Sales lost per $1' }],
