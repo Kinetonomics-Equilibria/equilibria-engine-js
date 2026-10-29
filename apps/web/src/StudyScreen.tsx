@@ -10,7 +10,7 @@ import type {
     KineticGraph, ParamBlockedEvent, ParamChangedEvent, ParamInfo
 } from 'equilibria-engine-js';
 import type { Aside, StudyContent, StudyModel } from './lessons/content';
-import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
+import { SUPPLY_AND_DEMAND } from './lessons/market';
 import { questionState } from './lessons/kit/question';
 import { STORY_NOTE, dateWords } from './news';
 import type { Story } from './news';

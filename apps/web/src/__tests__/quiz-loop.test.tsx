@@ -41,7 +41,7 @@ const marker = (position: number) =>
 /** The lesson card's way on: "Start lesson" on its first page, "Next" after. */
 const next = () => screen.getByRole('button', { name: /^(Next|Start lesson)$/ });
 
-/** The question step in `lessons/supplyAndDemand.ts`: "move demand to where it belongs". */
+/** The question step in `lessons/market/steps.ts`: "move demand to where it belongs". */
 const ASK = 8;
 
 const row = () => screen.queryByRole('group', { name: 'Question' });

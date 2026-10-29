@@ -1,4 +1,4 @@
-import { MARKET } from '../lessons/supplyAndDemand';
+import { MARKET } from '../lessons/market';
 import { AUD_MARKET } from '../lessons/fx';
 import type { Story } from './story';
 
