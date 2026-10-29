@@ -255,8 +255,9 @@ above the plot.
 ### Curves
 
 - **Every curve is labelled**, on the plot, in its own colour, just beside its
-  line. The engine's halo keeps the line from running through the letters.
-  Never set a `bgcolor` box.
+  line. The engine's halo keeps the line from running through the letters, and
+  it fills the inside of each letter, so a line through a D doesn't show in its
+  bowl. Never set a `bgcolor` box.
 - **Demand and supply are labelled at their right-hand ends**: D near the bottom
   right, S near the top right. That is where students' textbooks put them, and
   it keeps the labels clear of the price axis, where P\* and the surplus areas

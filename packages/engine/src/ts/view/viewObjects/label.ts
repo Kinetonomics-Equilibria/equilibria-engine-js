@@ -5,6 +5,7 @@ import { AXIS_TITLE } from "../../KGAuthor/graphObjects/axis";
 import * as katex from "katex";
 import * as d3 from "d3";
 import { readableOn } from "../readable";
+import { fillInsideLetters } from "../letterFill";
 import { LABEL_SIZE } from "../typeScale";
 
 
@@ -70,6 +71,10 @@ const LABEL_GAP = 2;
  * A halo follows glyphs only, so the rules KaTeX draws as borders, such as
  * fraction bars, get none. An author who sets `bgcolor` gets a box in that
  * colour, and no halo.
+ *
+ * Two pixels does not reach the middle of a 14pt D's bowl, which is 4px from
+ * its ink, so a line running on through the D showed inside it. The inside is
+ * filled instead of the halo being doubled; see `view/letterFill.ts`.
  */
 const HALO_OFFSETS = [[-2, 0], [2, 0], [0, -2], [0, 2], [-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4]];
 
@@ -487,6 +492,11 @@ export class Label extends ViewObject {
         label.rootElement.style('top', y + 'px');
         const width = label.rootElement.node().clientWidth,
             height = label.rootElement.node().clientHeight;
+
+        // Under the halo, the insides of the letters, so a line through the
+        // label does not show in the bowl of its D. Not in a box, which covers
+        // them already, nor on a rotated label. See `view/letterFill.ts`.
+        fillInsideLetters(label.rootElement.node(), boxed || +label.rotate ? null : label.halo);
 
         // The size is only known now, after the text has been typeset, and
         // whether a label fits depends on it — so a label that slides is placed
