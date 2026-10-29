@@ -56,11 +56,15 @@ npm run typecheck
 ```
 
 ```bash
-npm run test:browser
+PORT=5181 npm run test:browser
 ```
 
+On a port of its own: the suite, and the screenshot script, use whatever dev server is already
+on theirs, which may be another checkout's. Edit nothing under `apps/web` while it runs.
+
 Then look at it, in Focus and in the grid, at 1440×900 and on a phone: a link opens a lesson
-at a step, `lessons/<id>?step=4`. `docs/lesson-authoring.md` has the screenshot command.
+at a step, `lessons/<id>?step=4`, but draws no ghost and no chip, so walk the steps that move
+something in the browser as well. `docs/lesson-authoring.md` has the screenshot command.
 
 When something in the guide was wrong, or you had to read the kit's source to find out how to
 do a thing, fix the guide too.

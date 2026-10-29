@@ -239,6 +239,12 @@ Look at it, in Focus and in the grid, at 1440×900 and on a phone
 ([Adding a chart](./chart-design.md#adding-a-chart)). A link opens a lesson at
 a step: `lessons/<id>?step=4`, and `&arrange=grid` for the grid.
 
+A link draws no ghost, no chip and nothing in "What changed": a move nobody
+made is not shown. So walk each step that moves something from the step
+before it, in the browser, and read the caption and "What changed" there.
+That is where the elasticity lesson's bakery step was found leading with a
+price cut.
+
 From the repo's root, through the workspace so npm passes the flags on. The
 script uses a dev server already at the URL's port, or starts one there, so
 give it a port no other checkout is serving: on 5173 it may photograph
