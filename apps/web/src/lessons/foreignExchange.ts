@@ -94,6 +94,8 @@ const curve = (
         // and gets the engine's default sampling instead.
         ...(fn.indexOf('1/(y)') < 0 ? { samplePoints: 2 } : {}),
         color, label,
+        // What a screen reader calls it: its title, as a heading would say it.
+        srTitle: title[0].toUpperCase() + title.slice(1),
         drag: dragging(drag),
         ghost: GHOST
     }

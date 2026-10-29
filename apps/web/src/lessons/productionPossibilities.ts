@@ -668,6 +668,7 @@ export const ppcDiagram = {
                                     text: '\\text{PPC}', t: 1.35, position: 'bl',
                                     show: `params.step < ${CHOICES} or params.step >= ${SHIFTS}`
                                 },
+                                srTitle: 'Production possibility curve',
                                 // Grabbed anywhere and pulled out or in, the
                                 // curve passes through the pointer: the hours it
                                 // would take for it to. Held still while the

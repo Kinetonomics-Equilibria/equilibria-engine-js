@@ -539,6 +539,7 @@ export const supplyDiagram = {
                                 fn: supplyAt('params.supply'), samplePoints: 2, min: LOWEST_FARE_DRAWN,
                                 color: 'colors.supply',
                                 label: { text: 'S', y: LABEL_AT },
+                                srTitle: 'Supply',
                                 drag: DRAG_SUPPLY,
                                 // S₀ is where the curve was, and stands down
                                 // while a question is on screen, where the

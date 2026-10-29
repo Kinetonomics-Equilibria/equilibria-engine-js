@@ -493,6 +493,7 @@ export const demandDiagram = {
                                 fn: demandAt('params.demand'), samplePoints: 2,
                                 color: 'colors.demand',
                                 label: { text: 'D', y: labelAt('params.demand') },
+                                srTitle: 'Demand',
                                 drag: DRAG_DEMAND,
                                 // D₀ is where the curve was, and stands down
                                 // while a question is on screen, where the

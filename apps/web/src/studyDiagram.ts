@@ -43,6 +43,7 @@ const demand = (panel: string, draggable = false, ghost = false) => ({
         name: 'demand_' + panel, title: 'demand',
         yIntercept: 'params.a', slope: -1,
         color: 'colors.demand',
+        srTitle: 'Demand',
         // Positioned by x along the line: a `Line` builds a univariate function
         // before it reaches `Curve`, so a label with an x lands on the curve.
         //
@@ -79,6 +80,7 @@ const supply = (panel: string) => ({
         name: 'supply_' + panel, title: 'supply',
         yIntercept: 'params.c', slope: 1,
         color: 'colors.supply',
+        srTitle: 'Supply',
         // At its upper-right end, a price of 18 whatever `c` is. At x = 16 a
         // `c` over 4 put the label above the top of the panel.
         //
