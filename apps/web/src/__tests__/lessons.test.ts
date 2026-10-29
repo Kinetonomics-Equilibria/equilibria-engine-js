@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { ParamInfo } from 'equilibria-engine-js';
 import { CURRICULUM, LESSONS, MODELS, lessonById, modelById, modelsOf, topicOfModel } from '../lessons';
 import type { StudyModel } from '../lessons';
+import { TEMPLATE } from '../lessons/_template';
 import { paramsAt, partsOf, revealedPanels } from '../track/track';
 import { candidatesOf, nearestAchievable, validateChoice, validateQuestion } from '../quiz/grade';
 import { parkApparatus } from '../quiz/apparatus';
@@ -24,6 +25,9 @@ import type { NarratedCalc } from '../narration/narrate';
  * cut off at an ellipsis. None of them throws. So they are checked over the
  * lesson as data, for every lesson the app offers — the second lesson is the
  * reason this exists, and the third will be the reason it pays.
+ *
+ * And for the template (`lessons/_template`), which no student sees: it is the
+ * lesson a new one is copied from, so it is held to everything a listed one is.
  */
 
 interface ParamDef {
@@ -88,7 +92,7 @@ const ALT_CHARACTERS = 250;
 /** A cover's question is its headline: one line at a laptop's stage width. */
 const COVER_QUESTION_CHARACTERS = 60;
 
-describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" lesson', (_id, lesson) => {
+describe.each([...LESSONS, TEMPLATE].map(lesson => [lesson.id, lesson] as const))('the "%s" lesson', (_id, lesson) => {
 
     const { model } = lesson;
 
@@ -319,7 +323,7 @@ describe.each(LESSONS.map(lesson => [lesson.id, lesson] as const))('the "%s" les
     });
 });
 
-describe.each(MODELS.map(model => [model.id, model] as const))('the "%s" model', (_id, model) => {
+describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as const))('the "%s" model', (_id, model) => {
 
     // The steps are a lesson's, and the screen adds them to the config it
     // hands the engine. A model with steps of its own would hide what they
@@ -448,6 +452,15 @@ describe('finding a lesson by its address', () => {
     it('gives every lesson its own address', () => {
         const ids = LESSONS.map(l => l.id);
         expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    // The template is for an author to copy, and nothing a student should
+    // find: no strand lists it, so neither the Lessons panel nor the
+    // Playground does, and its address opens the first lesson.
+    it('lists the template nowhere a student looks', () => {
+        expect(LESSONS.map(l => l.id)).not.toContain(TEMPLATE.id);
+        expect(MODELS.map(m => m.id)).not.toContain(TEMPLATE.model.id);
+        expect(lessonById(TEMPLATE.id)).toBe(LESSONS[0]);
     });
 });
 

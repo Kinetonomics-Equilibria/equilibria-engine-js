@@ -17,6 +17,10 @@ repo breaks a rule today are listed at the end, under
 [Where today's charts differ](#where-todays-charts-differ). Don't copy them.
 When one is fixed, delete its line.
 
+The lesson kit (`apps/web/src/lessons/kit/chart.ts`) draws most of what follows
+by default, and `chartRules.test.ts` checks every rule here a machine can.
+[`lesson-authoring.md`](./lesson-authoring.md) says how a lesson uses them.
+
 ## The idea in one line
 
 > **The same thing is drawn the same way, called by the same name, in the same

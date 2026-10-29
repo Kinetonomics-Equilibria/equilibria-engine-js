@@ -1,6 +1,6 @@
 # 01 - Getting Started with Equilibria Schema
 
-> The examples in these guides are YAML because it is short to read. The engine reads the same keys as a plain object and parses no YAML itself, so write them in JavaScript or TypeScript, or load them from JSON. The study app's lessons write them in TypeScript (`apps/web/src/lessons/`).
+> The examples in these guides are YAML because it is short to read. The engine reads the same keys as a plain object and parses no YAML itself, so write them in JavaScript or TypeScript, or load them from JSON. The study app's lessons write them in TypeScript, with a kit that writes the house rules for them: see [`docs/lesson-authoring.md`](../lesson-authoring.md).
 
 The Equilibria Engine uses one configuration object to define interactive diagrams, graphs, and economic models. The engine reads this object and transpiles it into an interactive view.
 

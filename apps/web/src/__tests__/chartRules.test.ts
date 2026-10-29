@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { MODELS } from '../lessons';
+import { TEMPLATE } from '../lessons/_template';
 import type { StudyModel } from '../lessons';
 import { ANSWER_SUFFIX, AXIS_SYMBOLS, CURVE_SYMBOLS, GHOST_SUFFIX, MEANINGS } from '../lessons/kit/chart';
 
@@ -151,7 +152,8 @@ describe('the rules themselves', () => {
     });
 });
 
-describe.each(MODELS.map(model => [model.id, model] as const))('the "%s" model\'s charts', (_id, model) => {
+// The template's too, which no student sees, because a new lesson starts as a copy of it.
+describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as const))('the "%s" model\'s charts', (_id, model) => {
 
     const drawn = drawnIn(model);
 
