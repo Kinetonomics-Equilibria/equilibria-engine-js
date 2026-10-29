@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { MODELS } from '../lessons';
 import type { StudyModel } from '../lessons';
+import { ANSWER_SUFFIX, AXIS_SYMBOLS, CURVE_SYMBOLS, GHOST_SUFFIX, MEANINGS } from '../lessons/kit/chart';
 
 /**
  * The house rules for a chart (`docs/chart-design.md`), checked over every
@@ -38,17 +39,11 @@ section('Colour').forEach(line => {
 });
 
 /**
- * The symbols a curve, a dropline or a price line may be labelled with, as the
- * engine is given them. The doc's table writes them as a student reads them;
- * `asRead` turns one into the other, and a test below holds the two lists to
- * each other, so a symbol added to the doc and not here fails, and the other
- * way round.
+ * The kit's symbols are written as the engine is given them, and the doc's
+ * table as a student reads them; `asRead` turns one into the other, and a test
+ * below holds the two lists to each other, so a symbol added to the doc and
+ * not the kit fails, and the other way round.
  */
-const CURVE_SYMBOLS = ['D', 'S', '\\text{PPC}'];
-const GHOST_SUFFIX = '_0';
-const ANSWER_SUFFIX = '_1';
-const AXIS_SYMBOLS = ['P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*'];
-
 const asRead = (tex: string) => tex
     .replace('\\text{PPC}', 'PPC')
     .replace('^*', '\\*')
@@ -59,16 +54,6 @@ const asRead = (tex: string) => tex
 /** The letters a point may never be given, because the symbol list has them. */
 const NOT_A_POINT = ['P', 'Q', 'D', 'S', 'E'];
 
-/**
- * Where a chart breaks a rule today, and says why beside its config: each one
- * listed under "Where today's charts differ" too. The rule is skipped for
- * that object and no other, and a test below holds each line here to a line
- * in the doc.
- */
-const DEPARTURES: { model: string; objects: string[]; rule: string }[] = [
-    { model: 'air-jordans', objects: ['pair1', 'pair2', 'pair3', 'pair4'], rule: 'Droplines' },
-    { model: 'plane-tickets', objects: ['flight1', 'flight2', 'flight3', 'flight4'], rule: 'Droplines' }
-];
 
 interface Drawn {
     panel: string;
@@ -85,8 +70,13 @@ const drawnIn = (model: StudyModel): Drawn[] => panelsOf(model).flatMap(panel =>
         panel: panel.key, type: object.type, name: object.def.name, def: object.def
     })));
 
+/**
+ * Whether an object breaks `rule` on purpose: it said so, and why, in its
+ * `breaksRule`, which the kit keeps on the model. The rule is skipped for
+ * that object and no other.
+ */
 const departs = (model: StudyModel, drawn: Drawn, rule: string) =>
-    DEPARTURES.some(d => d.model === model.id && d.rule === rule && d.objects.indexOf(drawn.name) > -1);
+    (model.brokenRules || []).some(b => b.object === drawn.name && b.rule === rule);
 
 /** Every value of a key anywhere in a definition, however deep. */
 const valuesOf = (key: string, value: unknown): unknown[] => {
@@ -107,9 +97,11 @@ const labelOf = (drawn: Drawn): { text: string; plainText?: boolean } | undefine
     return drawn.def.label && typeof drawn.def.label.text === 'string' ? drawn.def.label : undefined;
 };
 
+const AXIS: readonly string[] = AXIS_SYMBOLS, CURVES: readonly string[] = CURVE_SYMBOLS;
+
 const isSymbol = (text: string) =>
-    AXIS_SYMBOLS.indexOf(text) > -1 ||
-    CURVE_SYMBOLS.some(s => text === s || text === s + GHOST_SUFFIX || text === s + ANSWER_SUFFIX);
+    AXIS.indexOf(text) > -1 ||
+    CURVES.some(s => text === s || text === s + GHOST_SUFFIX || text === s + ANSWER_SUFFIX);
 
 /** A point's letter: a lone capital, or the one before a state ("Z · inefficient"). */
 const letterIn = (text: string): string | undefined => {
@@ -123,9 +115,10 @@ const where = (drawn: Drawn) => `"${drawn.name}" in the ${drawn.panel} panel`;
 
 describe('the rules themselves', () => {
 
-    it('name every colour the doc\'s table lists, with its hue', () => {
+    it('name every colour the doc\'s table lists, with its hue, and the kit draws in those', () => {
         expect(Object.keys(HUES).length).toBeGreaterThan(0);
         Object.keys(HUES).forEach(name => expect(HUES[name], name).toMatch(/^[a-z]+$/));
+        expect([...MEANINGS].sort()).toEqual(Object.keys(HUES).sort());
     });
 
     it('know exactly the symbols the doc\'s list has', () => {
@@ -135,18 +128,25 @@ describe('the rules themselves', () => {
             // "A, B, C…" is the points' letters, which are not symbols.
             .filter(row => row[1].indexOf('…') < 0)
             .flatMap(row => row[1].split(', ').map(s => s.trim()));
-        const known = AXIS_SYMBOLS
-            .concat(CURVE_SYMBOLS, CURVE_SYMBOLS.map(s => s + GHOST_SUFFIX), CURVE_SYMBOLS.map(s => s + ANSWER_SUFFIX))
+        const known = AXIS.concat(CURVES, CURVES.map(s => s + GHOST_SUFFIX), CURVES.map(s => s + ANSWER_SUFFIX))
             .map(asRead);
         expect([...known].sort()).toEqual([...listed].sort());
     });
 
-    it('skip a rule only where the doc says a chart differs', () => {
+    // An object that breaks a rule on purpose names the rule's section and
+    // says why, and the doc lists it where the charts differ: both ways, so a
+    // line in the doc outlives no reason in the config, nor the other way.
+    it('skip a rule only where the config says why, and the doc says the chart differs', () => {
         const differs = section('Where today\'s charts differ').join('\n');
-        DEPARTURES.forEach(d => {
-            expect(MODELS.some(m => m.id === d.model), d.model).toBe(true);
-            expect(section(d.rule.split('/')[0]).length, d.rule).toBeGreaterThan(0);
-            d.objects.forEach(name => expect(differs, `"${name}" breaks "${d.rule}"`).toContain('`' + name + '`'));
+        const broken = MODELS.flatMap(m => m.brokenRules || []);
+        broken.forEach(b => {
+            expect(section(b.rule).length, `"${b.object}" breaks "${b.rule}"`).toBeGreaterThan(0);
+            expect(b.why.trim(), `"${b.object}" says why`).toBeTruthy();
+            expect(differs, `"${b.object}" breaks "${b.rule}"`).toContain('`' + b.object + '`');
+        });
+        const objects = new Set(MODELS.flatMap(drawnIn).map(d => d.name));
+        (differs.match(/`[^`]+`/g) || []).map(name => name.slice(1, -1)).filter(name => objects.has(name)).forEach(name => {
+            expect(broken.map(b => b.object), `the doc says "${name}" differs`).toContain(name);
         });
     });
 });
@@ -211,12 +211,12 @@ describe.each(MODELS.map(model => [model.id, model] as const))('the "%s" model\'
             expect(valuesOf('bgcolor', d.def), `${where(d)} has a box`).toEqual([]);
             if (isCurve(d) && d.def.lineStyle === undefined) {
                 const label = labelOf(d);
-                expect(label && CURVE_SYMBOLS.indexOf(label.text) > -1, `${where(d)} is labelled ${label && label.text}`)
+                expect(label && CURVES.indexOf(label.text) > -1, `${where(d)} is labelled ${label && label.text}`)
                     .toBe(true);
             }
             if (isCurve(d) && d.def.lineStyle === 'dotted') {
                 const label = labelOf(d);
-                expect(label && CURVE_SYMBOLS.map(s => s + ANSWER_SUFFIX).indexOf(label.text) > -1,
+                expect(label && CURVES.map(s => s + ANSWER_SUFFIX).indexOf(label.text) > -1,
                     `${where(d)}, an answer, is labelled ${label && label.text}`).toBe(true);
             }
             if (d.def.ghost && typeof d.def.ghost === 'object' && d.def.ghost.label !== undefined) {
@@ -226,7 +226,7 @@ describe.each(MODELS.map(model => [model.id, model] as const))('the "%s" model\'
                 ['vertical', 'horizontal'].forEach(side => {
                     const symbol = d.def.droplines[side];
                     if (symbol === undefined) return;
-                    expect(AXIS_SYMBOLS, `${where(d)}'s ${side} dropline`).toContain(symbol);
+                    expect(AXIS, `${where(d)}'s ${side} dropline`).toContain(symbol);
                 });
             }
             // A word is plain text, in the app's typeface; `\text{}` is for a

@@ -4,6 +4,7 @@ import { candidatesOf } from '../../quiz/grade';
 import { explainable } from '../content';
 import type { PanelSpec, StudyContent, StudyModel } from '../content';
 import { QUESTION_PARAMS, answerOf, startOf } from './question';
+import type { BrokenRule } from './chart';
 
 /**
  * A lesson, from what only its author can say (P16).
@@ -120,6 +121,18 @@ export function defineLesson(spec: LessonSpec): StudyContent {
     const questionApparatus: StudyModel['questionApparatus'] = {};
     asked.forEach(name => { questionApparatus[name] = { start: startOf(name), answer: answerOf(name) } });
 
+    // A rule an object breaks on purpose is said beside it, and kept here
+    // for the test that checks the rules; the engine is handed the object
+    // without it.
+    const brokenRules: NonNullable<StudyModel['brokenRules']> = [];
+    const drawn = (object: object) => {
+        const { def, ...rest } = object as { def: Record<string, unknown> & { breaksRule?: BrokenRule } };
+        if (!def || !def.breaksRule) return object;
+        const { breaksRule, ...kept } = def;
+        brokenRules.push({ object: String(def.name), rule: breaksRule.rule, why: breaksRule.why });
+        return { ...rest, def: kept };
+    };
+
     const built: StudyModel = {
         ...said,
         diagram: {
@@ -132,14 +145,15 @@ export function defineLesson(spec: LessonSpec): StudyContent {
             // rather than a rebuild.
             layout: {
                 CustomLayout: {
-                    panels: panels.map(({ key, xAxis, yAxis, objects }) => ({ key, xAxis, yAxis, objects }))
+                    panels: panels.map(({ key, xAxis, yAxis, objects }) => ({ key, xAxis, yAxis, objects: objects.map(drawn) }))
                 }
             }
         },
         panels: panels.map((panel): PanelSpec =>
             ({ key: panel.key, name: panel.name, headline: panel.headline, delta: changeOf(panel.headline) })),
         explainedCalcs: explainedCalcs || explainable(calcs),
-        questionApparatus
+        questionApparatus,
+        ...(brokenRules.length > 0 ? { brokenRules } : {})
     };
 
     return { ...words, lesson: steps, model: built };

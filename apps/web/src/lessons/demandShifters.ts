@@ -397,7 +397,12 @@ const pair = (n: number) => {
             color: 'colors.demand',
             droplines: { vertical: '', horizontal: '', show: atStep(stepRevealing(DEMAND_LESSON, name)) },
             arrive: true,
-            srTitle: `Pair ${n}, worth $${worth} to you`
+            srTitle: `Pair ${n}, worth $${worth} to you`,
+            breaksRule: {
+                rule: 'Droplines',
+                why: 'Each pair lands on a tick, so the tick number is the value its step says, and no symbol ' +
+                    'on the list means what a pair is worth to you.'
+            }
         }
     };
 };

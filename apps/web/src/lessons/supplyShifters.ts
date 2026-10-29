@@ -443,7 +443,12 @@ const flight = (n: number) => {
             color: 'colors.supply',
             droplines: { vertical: '', horizontal: '', show: atStep(stepRevealing(SUPPLY_LESSON, name)) },
             arrive: true,
-            srTitle: `Flight ${n}, at the lowest fare that covers its costs`
+            srTitle: `Flight ${n}, at the lowest fare that covers its costs`,
+            breaksRule: {
+                rule: 'Droplines',
+                why: 'Each flight lands on a tick, so the tick number is the value its step says, and no ' +
+                    'symbol on the list means the fare a flight needs.'
+            }
         }
     };
 };

@@ -151,6 +151,14 @@ export interface StudyModel {
     scenarios: Scenario[];
 
     /**
+     * The chart rules its panels break on purpose, by object, and why: what
+     * each object said in its `breaksRule`, which the engine never sees. Read
+     * by `chartRules.test.ts`, which skips that rule for that object and no
+     * other; never drawn.
+     */
+    brokenRules?: { object: string; rule: string; why: string }[];
+
+    /**
      * How a param's rise and fall read in a verdict, where "up" would be wrong.
      *
      * A question's `direction` is defined on the param's *value*, and for a

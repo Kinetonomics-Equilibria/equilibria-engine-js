@@ -335,6 +335,28 @@ Press Finish to take this market to the Playground, where you can try more cases
     },
   ],
   "model": {
+    "brokenRules": [
+      {
+        "object": "pair1",
+        "rule": "Droplines",
+        "why": "Each pair lands on a tick, so the tick number is the value its step says, and no symbol on the list means what a pair is worth to you.",
+      },
+      {
+        "object": "pair2",
+        "rule": "Droplines",
+        "why": "Each pair lands on a tick, so the tick number is the value its step says, and no symbol on the list means what a pair is worth to you.",
+      },
+      {
+        "object": "pair3",
+        "rule": "Droplines",
+        "why": "Each pair lands on a tick, so the tick number is the value its step says, and no symbol on the list means what a pair is worth to you.",
+      },
+      {
+        "object": "pair4",
+        "rule": "Droplines",
+        "why": "Each pair lands on a tick, so the tick number is the value its step says, and no symbol on the list means what a pair is worth to you.",
+      },
+    ],
     "diagram": {
       "calcs": {
         "Qd": "params.step >= 7 ? calcs.q : NaN",
@@ -3670,6 +3692,28 @@ Press Finish to take this market to the Playground, where you can try more cases
     },
   ],
   "model": {
+    "brokenRules": [
+      {
+        "object": "flight1",
+        "rule": "Droplines",
+        "why": "Each flight lands on a tick, so the tick number is the value its step says, and no symbol on the list means the fare a flight needs.",
+      },
+      {
+        "object": "flight2",
+        "rule": "Droplines",
+        "why": "Each flight lands on a tick, so the tick number is the value its step says, and no symbol on the list means the fare a flight needs.",
+      },
+      {
+        "object": "flight3",
+        "rule": "Droplines",
+        "why": "Each flight lands on a tick, so the tick number is the value its step says, and no symbol on the list means the fare a flight needs.",
+      },
+      {
+        "object": "flight4",
+        "rule": "Droplines",
+        "why": "Each flight lands on a tick, so the tick number is the value its step says, and no symbol on the list means the fare a flight needs.",
+      },
+    ],
     "diagram": {
       "calcs": {
         "Qs": "params.step >= 7 ? calcs.q : NaN",
