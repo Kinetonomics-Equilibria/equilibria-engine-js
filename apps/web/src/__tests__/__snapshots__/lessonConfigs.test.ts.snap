@@ -1112,6 +1112,35 @@ Press Finish to take this market to the Playground, where you can try more real-
                 },
                 {
                   "def": {
+                    "color": "colors.demand",
+                    "fn": "params.startDemand - 100*((y) - 0.65)",
+                    "lineStyle": "dashed",
+                    "name": "questionStartDemand",
+                    "samplePoints": 2,
+                    "show": "params.asking",
+                    "strokeOpacity": 0.35,
+                    "title": "",
+                  },
+                  "type": "Curve",
+                },
+                {
+                  "def": {
+                    "color": "colors.demand",
+                    "fn": "params.answerDemand - 100*((y) - 0.65)",
+                    "label": {
+                      "text": "D_1",
+                      "y": 0.47,
+                    },
+                    "lineStyle": "dotted",
+                    "name": "questionAnswerDemand",
+                    "samplePoints": 2,
+                    "show": "params.revealed and (params.answerDemand != params.startDemand)",
+                    "title": "",
+                  },
+                  "type": "Curve",
+                },
+                {
+                  "def": {
                     "color": "colors.supply",
                     "drag": [
                       {
@@ -1137,18 +1166,6 @@ Press Finish to take this market to the Playground, where you can try more real-
                 },
                 {
                   "def": {
-                    "color": "colors.demand",
-                    "fn": "params.startDemand - 100*((y) - 0.65)",
-                    "lineStyle": "dashed",
-                    "name": "questionStartDemand",
-                    "samplePoints": 2,
-                    "show": "params.asking",
-                    "strokeOpacity": 0.35,
-                  },
-                  "type": "Curve",
-                },
-                {
-                  "def": {
                     "color": "colors.supply",
                     "fn": "params.startSupply + 100*((y) - 0.65)",
                     "lineStyle": "dashed",
@@ -1156,21 +1173,7 @@ Press Finish to take this market to the Playground, where you can try more real-
                     "samplePoints": 2,
                     "show": "params.asking",
                     "strokeOpacity": 0.35,
-                  },
-                  "type": "Curve",
-                },
-                {
-                  "def": {
-                    "color": "colors.demand",
-                    "fn": "params.answerDemand - 100*((y) - 0.65)",
-                    "label": {
-                      "text": "D_1",
-                      "y": 0.47,
-                    },
-                    "lineStyle": "dotted",
-                    "name": "questionAnswerDemand",
-                    "samplePoints": 2,
-                    "show": "params.revealed and (params.answerDemand != params.startDemand)",
+                    "title": "",
                   },
                   "type": "Curve",
                 },
@@ -1186,6 +1189,7 @@ Press Finish to take this market to the Playground, where you can try more real-
                     "name": "questionAnswerSupply",
                     "samplePoints": 2,
                     "show": "params.revealed and (params.answerSupply != params.startSupply)",
+                    "title": "",
                   },
                   "type": "Curve",
                 },

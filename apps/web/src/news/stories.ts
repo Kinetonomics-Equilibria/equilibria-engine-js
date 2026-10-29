@@ -1,5 +1,5 @@
 import { MARKET } from '../lessons/supplyAndDemand';
-import { AUD_MARKET } from '../lessons/foreignExchange';
+import { AUD_MARKET } from '../lessons/fx';
 import type { Story } from './story';
 
 /**

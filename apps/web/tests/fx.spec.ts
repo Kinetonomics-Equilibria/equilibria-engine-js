@@ -13,7 +13,7 @@ import {
  * the rate the diagram draws is the rate the lesson's sentences quote.
  */
 
-// The market in src/lessons/foreignExchange.ts: demand for AUD is
+// The market in src/lessons/fx/chart.ts: demand for AUD is
 // Q = demand − 100(e − 0.65) and supply is Q = supply + 100(e − 0.65), both at
 // 50, so it clears at Q* = 50 and e* = USD 0.65 — and the USD side at AUD 1/0.65.
 const EQUILIBRIUM = { Q: 50, rate: 0.65 };

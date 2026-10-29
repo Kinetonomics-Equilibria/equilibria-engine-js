@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
-import { FOREIGN_EXCHANGE, FX_LESSON } from '../lessons/foreignExchange';
+import { FOREIGN_EXCHANGE, FX_LESSON } from '../lessons/fx';
 import { theme } from '../theme';
 
 /**

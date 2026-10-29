@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { StudyScreen } from '../StudyScreen';
 import { LESSONS, topicOfLesson } from '../lessons';
-import { FOREIGN_EXCHANGE } from '../lessons/foreignExchange';
+import { FOREIGN_EXCHANGE } from '../lessons/fx';
 import { theme } from '../theme';
 
 /**

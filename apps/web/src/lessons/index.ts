@@ -1,6 +1,6 @@
 import type { StudyContent, StudyModel } from './content';
 import { SUPPLY_AND_DEMAND } from './supplyAndDemand';
-import { FOREIGN_EXCHANGE } from './foreignExchange';
+import { FOREIGN_EXCHANGE } from './fx';
 import { PRODUCTION_POSSIBILITIES } from './productionPossibilities';
 import { DEMAND_SHIFTERS } from './demandShifters';
 import { SUPPLY_SHIFTERS } from './supplyShifters';
