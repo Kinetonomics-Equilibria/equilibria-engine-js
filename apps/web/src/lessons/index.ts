@@ -3,6 +3,7 @@ import { SUPPLY_AND_DEMAND } from './supplyAndDemand';
 import { FOREIGN_EXCHANGE } from './foreignExchange';
 import { PRODUCTION_POSSIBILITIES } from './productionPossibilities';
 import { DEMAND_SHIFTERS } from './demandShifters';
+import { SUPPLY_SHIFTERS } from './supplyShifters';
 
 /** A topic in the navbar's Lessons panel: a row that drops down to its lessons. */
 export interface LessonTopic {
@@ -42,9 +43,12 @@ export const CURRICULUM: LessonStrand[] = [
                 id: 'economic-problem', label: 'The economic problem', color: 'grape',
                 lessons: [PRODUCTION_POSSIBILITIES]
             },
-            // Demand's determinants before the whole market, as a course
-            // meets them.
-            { id: 'markets', label: 'Markets', color: 'teal', lessons: [DEMAND_SHIFTERS, SUPPLY_AND_DEMAND] }
+            // Demand's determinants, then supply's, before the whole
+            // market, as a course meets them.
+            {
+                id: 'markets', label: 'Markets', color: 'teal',
+                lessons: [DEMAND_SHIFTERS, SUPPLY_SHIFTERS, SUPPLY_AND_DEMAND]
+            }
         ]
     },
     {

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1012" height="400" viewBox="0 0 1012 400">
+  <!-- The plane tickets lesson's cover: an airport departures board with a
+       morning of flights to Melbourne half an hour apart, one of them
+       cancelled, and a plane at the gate through the window beside it. A
+       plain white plane with no airline's livery: the lesson is about the
+       sellers, and a logo drawn here would be a brand's, not ours. Flat
+       shapes in the screen's slate, with the board's white letters and a
+       muted red for the cancelled flight, so nothing here borrows a curve's
+       colour (docs/design.md: colour means one thing). -->
+  <rect width="1012" height="400" fill="#f0f4f8"/>
+  <!-- The window onto the apron: sky, the tarmac, and the frame's mullions. -->
+  <rect x="560" y="24" width="420" height="250" rx="8" fill="#dbe7f3"/>
+  <rect x="560" y="206" width="420" height="68" fill="#9fb3c8"/>
+  <rect x="560" y="200" width="420" height="8" fill="#829ab1"/>
+  <!-- The plane at the gate, nose to the left: the far wing, the body, its
+       windows and door, the tail, the near wing and its engine, and the
+       wheels. -->
+  <path d="M760 150 L812 112 L836 112 L800 150 Z" fill="#bcccdc"/>
+  <path d="M640 150 C 640 132, 656 124, 680 124 L900 124 L948 82 L968 82 L950 150 C 950 168, 936 176, 916 176 L680 176 C 656 176, 640 168, 640 150 Z" fill="#f8f9fa"/>
+  <path d="M640 150 C 640 132, 656 124, 680 124 L690 124 L690 150 Z" fill="#334e68" opacity="0.18"/>
+  <path d="M652 140 C 654 134, 662 130, 672 130 L676 130 L676 142 L652 142 Z" fill="#334e68"/>
+  <g fill="#486581">
+    <rect x="706" y="136" width="10" height="12" rx="3"/>
+    <rect x="726" y="136" width="10" height="12" rx="3"/>
+    <rect x="746" y="136" width="10" height="12" rx="3"/>
+    <rect x="766" y="136" width="10" height="12" rx="3"/>
+    <rect x="786" y="136" width="10" height="12" rx="3"/>
+    <rect x="806" y="136" width="10" height="12" rx="3"/>
+    <rect x="826" y="136" width="10" height="12" rx="3"/>
+    <rect x="846" y="136" width="10" height="12" rx="3"/>
+    <rect x="866" y="136" width="10" height="12" rx="3"/>
+  </g>
+  <rect x="690" y="132" width="10" height="30" rx="3" fill="none" stroke="#829ab1" stroke-width="2"/>
+  <path d="M948 82 L968 82 L956 132 L926 132 Z" fill="#486581"/>
+  <path d="M770 160 L848 160 L896 206 L870 206 Z" fill="#d9e2ec"/>
+  <rect x="776" y="168" width="54" height="22" rx="10" fill="#829ab1"/>
+  <g fill="#243b53">
+    <circle cx="676" cy="190" r="7"/>
+    <circle cx="856" cy="190" r="7"/>
+    <circle cx="874" cy="190" r="7"/>
+  </g>
+  <g stroke="#243b53" stroke-width="3">
+    <line x1="676" y1="176" x2="676" y2="186"/>
+    <line x1="865" y1="176" x2="865" y2="186"/>
+  </g>
+  <!-- The window's frame, over the plane. -->
+  <rect x="556" y="20" width="428" height="258" rx="10" fill="none" stroke="#334e68" stroke-width="8"/>
+  <line x1="770" y1="20" x2="770" y2="278" stroke="#334e68" stroke-width="6"/>
+  <!-- The departures board, on its post. -->
+  <rect x="226" y="268" width="16" height="40" fill="#486581"/>
+  <rect x="40" y="24" width="460" height="250" rx="10" fill="#243b53"/>
+  <rect x="40" y="24" width="460" height="46" rx="10" fill="#102a43"/>
+  <rect x="40" y="58" width="460" height="12" fill="#102a43"/>
+  <g font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-weight="700">
+    <text x="64" y="56" font-size="22" letter-spacing="4" fill="#f0f4f8">DEPARTURES</text>
+    <g font-size="20" fill="#f0f4f8">
+      <text x="64" y="106">06:00</text>
+      <text x="64" y="146">06:30</text>
+      <text x="64" y="186">07:00</text>
+      <text x="64" y="226">07:30</text>
+    </g>
+    <g font-size="20" fill="#f0f4f8" letter-spacing="1">
+      <text x="148" y="106">MELBOURNE</text>
+      <text x="148" y="146">MELBOURNE</text>
+      <text x="148" y="186">MELBOURNE</text>
+      <text x="148" y="226">MELBOURNE</text>
+    </g>
+    <g font-size="16" fill="#9fb3c8" text-anchor="end">
+      <text x="476" y="106">ON TIME</text>
+      <text x="476" y="146">ON TIME</text>
+      <text x="476" y="186" fill="#feb2b2">CANCELLED</text>
+      <text x="476" y="226">ON TIME</text>
+    </g>
+  </g>
+  <!-- The fifth flight, faded at the board's foot: there are more to come. -->
+  <g font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" opacity="0.55">
+    <text x="64" y="262" font-size="20" fill="#f0f4f8">08:00</text>
+    <text x="148" y="262" font-size="20" fill="#f0f4f8" letter-spacing="1">MELBOURNE</text>
+    <text x="476" y="262" font-size="16" fill="#9fb3c8" text-anchor="end">ON TIME</text>
+  </g>
+  <g stroke="#334e68" stroke-width="1.5">
+    <line x1="56" y1="122" x2="484" y2="122"/>
+    <line x1="56" y1="162" x2="484" y2="162"/>
+    <line x1="56" y1="202" x2="484" y2="202"/>
+    <line x1="56" y1="242" x2="484" y2="242"/>
+  </g>
+  <!-- The terminal floor. -->
+  <rect y="300" width="1012" height="100" fill="#334e68"/>
+  <rect y="290" width="1012" height="14" fill="#243b53"/>
+</svg>

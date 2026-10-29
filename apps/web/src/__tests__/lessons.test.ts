@@ -438,10 +438,11 @@ describe('finding a lesson by its address', () => {
     });
 
     // The app opens on Home, so the panel is free to follow a course: the
-    // economic problem, then demand's determinants, then the whole market.
+    // economic problem, then demand's determinants and supply's, then the
+    // whole market.
     it('lists the lessons in the order a course meets them', () => {
         expect(CURRICULUM[0].topics.map(t => t.id)).toEqual(['economic-problem', 'markets']);
-        expect(LESSONS.map(l => l.id).slice(0, 3)).toEqual(['ppc', 'demand', 'market']);
+        expect(LESSONS.map(l => l.id).slice(0, 4)).toEqual(['ppc', 'demand', 'supply', 'market']);
     });
 
     it('gives every lesson its own address', () => {
