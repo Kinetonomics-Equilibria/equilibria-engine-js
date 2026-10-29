@@ -59,8 +59,7 @@ export const ELASTICITY = 'abs(calcs.pctQ / calcs.pctP)';
  */
 const labelAt = (response: string) => `max(1, ${START_PRICE} - 170/max(${response}, 1))`;
 
-/** Where the percentages and the elasticity arrive: nothing before, which a number about nothing would be. */
-const PERCENTAGES = stepTitled(ELASTICITY_LESSON, 'Changes as percentages');
+/** Where the elasticity arrives: nothing before, where it would be a number nothing has said. */
 const ELASTICITY_STEP = stepTitled(ELASTICITY_LESSON, 'Price elasticity of demand');
 
 /**
@@ -71,53 +70,59 @@ const ELASTICITY_STEP = stepTitled(ELASTICITY_LESSON, 'Price elasticity of deman
  * that students buy none. A cut goes only as far down as $3.50 because there, with the
  * bakery's 70 sales a dollar, a cut still brings in more than $4.50 did: the
  * question that asks for one is marked by direction, and at $3.00 it would
- * bring in exactly as much. Labelled for the verdicts, which lower its first
- * letter: "You moved the price down".
+ * bring in exactly as much. In dollars and cents, as a price is printed,
+ * where its 10c steps alone would print 4.5. Labelled for the verdicts,
+ * which lower its first letter: "You moved the price down".
  *
  * Sales lost per $1 from 0, a vertical curve, to 80 in steps of 10: 20 with
  * students kept in at lunch, 70 with the bakery. At 80 and $6.50 students
  * still buy 50 a day, and at $3.50, 290.
  */
 export const PARAMS: ParamDefinition[] = [
-    { name: 'price', label: 'The price', value: START_PRICE, min: 3.5, max: 6.5, round: 0.1 },
+    { name: 'price', label: 'The price', value: START_PRICE, min: 3.5, max: 6.5, round: 0.1, precision: 2 },
     { name: 'response', label: 'Sales lost per $1', value: 20, min: 0, max: 80, round: 10 }
 ];
 
 /**
- * The levels. The percentages and the elasticity are NaN until the step that
- * brings each in, which the caption and the chain leave unsaid; the Maths tab
- * explains each without that (`explainedCalcs` in `index.ts`).
+ * The levels. The elasticity is NaN until the step that brings it in, which
+ * the caption leaves unsaid; the Maths tab explains it without that
+ * (`explainedCalcs` in `index.ts`). The percentages are there from the
+ * start, 0 at $4.50, so "What changed" has them for the step that reads
+ * them, which moves nothing: the first rise put them there.
  */
 export const CALCS = {
     Qd: quantityAt('params.response', 'params.price'),
     revenue: 'params.price * calcs.Qd',
-    pctP: `${fromStep(PERCENTAGES)} ? ${PCT_PRICE} : NaN`,
-    pctQ: `${fromStep(PERCENTAGES)} ? ${PCT_QUANTITY} : NaN`,
+    pctP: PCT_PRICE,
+    pctQ: PCT_QUANTITY,
     e: `${fromStep(ELASTICITY_STEP)} ? ${ELASTICITY} : NaN`
 };
 
 /**
- * Demand, in a panel: blue, D at its lower right. Faint where it was, and the
- * question's lines, in both, because the revenue panel is at the front when
- * the bakery opens and through the questions.
+ * Demand, in a panel: blue, D at its lower right, and faint where it was in
+ * both, because the revenue panel is at the front when the bakery opens.
+ *
+ * The question's lines in the revenue panel only, which is at the front
+ * through the questions. The kit names them for the param, not the panel,
+ * so a second panel's would be the same objects twice.
  */
 const demand = (panel: string) => curve({
     name: 'demand_' + panel, title: 'demand', meaning: 'demand', symbol: 'D',
     moves: ['response'],
     shape: p => ({ fn: quantityAt(p.response, '(y)'), samplePoints: 2 }),
     labelAt: p => ({ y: labelAt(p.response) }),
-    ghost: true, asked: true
+    ghost: true, asked: panel === 'revenue'
 });
 
 /**
  * What students buy at the canteen's price: P on the price axis, Qd on the
  * quantity axis. In the colour of a point chosen on a curve, as the Jordans'
- * is: orange moves along, blue pivots.
+ * is: orange moves along, blue pivots. Asked where the curve is.
  */
 const atPrice = (panel: string) => pricePoint({
     name: 'atPrice_' + panel, meaning: 'choice', price: 'price', on: ['response'],
     at: p => quantityAt(p.response, p.price), x: 'calcs.Qd', quantity: 'Q_d',
-    srTitle: 'What students buy at the canteen\'s price', asked: true
+    srTitle: 'What students buy at the canteen\'s price', asked: panel === 'revenue'
 });
 
 /**

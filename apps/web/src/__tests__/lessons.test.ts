@@ -12,6 +12,7 @@ import katex from 'katex';
 import {
     lessonSymbols, referencesOf, toResultTex, toSubstitutedTex, toSymbolicTex, toWorkingTex
 } from '../dock/mathsText';
+import { formatValue } from '../narration/narrate';
 import type { NarratedCalc } from '../narration/narrate';
 
 /**
@@ -36,6 +37,7 @@ interface ParamDef {
     min: number;
     max: number;
     round: number;
+    precision?: number;
     presentation?: boolean;
     label?: string;
 }
@@ -50,7 +52,8 @@ function infoOf(def: ParamDef, value = def.value): ParamInfo {
     const decimals = (String(def.round).split('.')[1] || '').length;
     return {
         name: def.name, label: def.label || def.name, value,
-        min: def.min, max: def.max, round: def.round, precision: decimals,
+        min: def.min, max: def.max, round: def.round,
+        precision: def.precision === undefined ? decimals : def.precision,
         presentation: !!def.presentation, isBoolean: false
     };
 }
@@ -113,6 +116,21 @@ describe.each([...LESSONS, TEMPLATE].map(lesson => [lesson.id, lesson] as const)
                 expect(value).toBeGreaterThanOrEqual(def.min);
                 expect(value).toBeLessThanOrEqual(def.max);
                 expect(onGrid(def, value), `step ${i + 1} sets ${name} = ${value}, off its grid`).toBe(true);
+            });
+        });
+    });
+
+    // "What changed" prints a param at its precision, which is its `round`'s
+    // unless it says otherwise: a price in 10c steps came out "4.5 → 5.5"
+    // under a step that said "$5.50". So a price a step sets, and says in
+    // dollars and cents, is printed in dollars and cents.
+    it('prints a price a step sets as the step says it, in dollars and cents', () => {
+        lesson.lesson.forEach((step, i) => {
+            Object.keys(step.set || {}).forEach(name => {
+                const value = (step.set as Record<string, number>)[name], cents = value.toFixed(2);
+                if ((step.say || '').indexOf('$' + cents) < 0) return;
+                expect(formatValue(value, infoOf(paramNamed(model, name)).precision), `step ${i + 1}'s ${name}`)
+                    .toBe(cents);
             });
         });
     });
@@ -330,6 +348,17 @@ describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as cons
     // reveal from a student who has the diagram with no lesson running.
     it('leaves its steps to the lessons drawn on it', () => {
         expect(model.diagram.steps).toBeUndefined();
+    });
+
+    // The engine keeps the first of two objects with one name, warns, and
+    // shares its calcs with the second. The kit names a question's lines for
+    // the param they draw, so a curve asked about in two panels was one pair
+    // of lines twice, and nothing on screen said so.
+    it('gives every object a name of its own', () => {
+        const panels = (model.diagram.layout as any).CustomLayout.panels as any[];
+        const names = panels.flatMap(panel => (panel.objects as any[]).map(object => object.def && object.def.name))
+            .filter(name => !!name);
+        expect(names.filter((name, i) => names.indexOf(name) !== i)).toEqual([]);
     });
 
     // "What changed" marks a cause in its curve's colour, and the curves it

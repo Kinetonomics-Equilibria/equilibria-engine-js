@@ -36,6 +36,12 @@ export interface ParamDefinition {
     min: number;
     max: number;
     round: number;
+    /**
+     * Decimal places the param is printed to, on its slider and in "What
+     * changed", where its `round` would give too few: a price in 10c steps
+     * is 4.50, not 4.5. The engine takes it from `round` otherwise.
+     */
+    precision?: number;
     presentation?: boolean;
 }
 
