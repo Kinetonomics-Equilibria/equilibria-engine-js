@@ -5,8 +5,11 @@
 P15 (the stage beyond charts). It packages what they built rather than adding to it ·
 **Unblocks:** the fifth lesson and every one after it, written by a person or an AI session from a
 short guide ·
-**Status:** 📝 **Draft** (2026-10-27), not started. Read it against the code before building, as
-every plan here has been ([README finding 11](README.md#findings-that-cut-across-the-set)).
+**Status:** ✅ **Phases 1–5 done** (2026-10-29), in fourteen commits from `409298e` to `2e61fe8`.
+Phase 6, a lesson written from the guide by a fresh session, is still to come, on a topic of the
+user's choosing. Read against the code before building — see
+[Read against the code](#read-against-the-code-2026-10-29) — and [Findings](#findings) for what
+building it turned up.
 
 ## Goal
 
@@ -137,6 +140,28 @@ Checked against the tree on 2026-10-27.
   together.
 - `apps/web/scripts/screenshot.mjs:8` takes a URL and a size, not a step, and `?lesson=` opens a
   lesson at its cover.
+
+## Read against the code (2026-10-29)
+
+Two days after it was written, the tree it described had moved on:
+
+1. **There were five lessons, not four.** The plane tickets lesson (`supplyShifters.ts`, 818
+   lines) landed the day before building started, written by copying the Air Jordans. It was the
+   topic phase 6 suggested, so phase 6's lesson is now the sixth; and every helper the Jordans had
+   already had its second user, which settled `priceLine` and `pricePoint` into the kit.
+2. **`diagram.steps` was already gone.** "Each lesson drawn on a model of its own" (`04d12a2`)
+   split `StudyModel` from `StudyContent`: a model has no steps, the screen adds the lesson's, and
+   `lessons.test.ts` checks that a model has none. The plan's "`steps:`, the same array as
+   `lesson:`" had no copy left to remove. A model still reads its lesson's step numbers in its
+   calcs (the Jordans, the airline, the café), so `defineLesson` makes the two together.
+3. **The doc's list of departures contradicted itself.** "Where today's charts differ" said both
+   "write down in the config why it stays, then delete the line here" and "add a line here naming
+   the chart, the rule, and where the reason is written down". It now keeps a line per deliberate
+   departure, which `breaksRule` and the test hold to each other both ways.
+4. **A link carries a step.** "Screenshots at a step" is out of scope below as needing one, and
+   `lessons/<id>?step=4` has opened a lesson at a step since Links landed; the guide uses it.
+5. **`screenshot.mjs` loses its flags from the root.** `npm run screenshot -- --url …` hands
+   `--url` to npm, not the script. The guide says `--workspace=web`.
 
 ## Approach
 
@@ -361,15 +386,15 @@ Phase 6: the fifth lesson passes every lesson test and its own, and its findings
 
 ## Done when
 
-- [ ] Phase 1: no doc says the engine reads YAML.
-- [ ] Phase 2: every lesson's config pinned; the chart rules checked over every lesson; every
+- [x] Phase 1: no doc says the engine reads YAML.
+- [x] Phase 2: every lesson's config pinned; the chart rules checked over every lesson; every
   failure fixed, or recorded under "Where today's charts differ".
-- [ ] Phase 3: the four lessons made by `defineLesson`, with no question param, change calc or step
+- [x] Phase 3: the five lessons made by `defineLesson`, with no question param, change calc or step
   array written by hand.
-- [ ] Phase 4: no lesson defines its own demand, supply, equilibrium, start line, answer line or
+- [x] Phase 4: no lesson defines its own demand, supply, equilibrium, start line, answer line or
   axis; each lesson in a folder of its own; the snapshots deleted.
-- [ ] Phase 5: the template, the guide, the skill and the line in `CLAUDE.md`.
-- [ ] Phase 6: a fifth lesson, and its findings.
+- [x] Phase 5: the template, the guide, the skill and the line in `CLAUDE.md`.
+- [ ] Phase 6: a sixth lesson, written from the guide, and its findings.
 
 ## Out of scope
 
@@ -383,3 +408,55 @@ Phase 6: the fifth lesson passes every lesson test and its own, and its findings
   later" gives to Links.
 - **A visual editor.**
 - **Changing what a student sees,** beyond the fixes phase 2 finds.
+
+## Findings
+
+- **Every curve was nameless to a screen reader.** The engine draws a `<title>` in each curve's
+  path, and no lesson gave a curve an `srTitle`, so every one was empty; only points had theirs.
+  The Accessibility check found it on its first run. The kit now names a curve by its title.
+- **The hold-still check found the café running off its own plot, twice.** At 10 hours of work
+  the curve shrinks under A and B, both go to its end, and their letters were drawn one on top of
+  the other across the toasties axis: their floor was a twenty-fifth of the *curve's* reach, which
+  halves. And "Z · unattainable" ran off the right of the plot and off its top. Both fixed
+  (`8a6637e`). One corner is left: with both of Z's params at their top at once, its word meets the
+  readout, whose corner is the one no *curve* reaches — and Z is a point that goes anywhere. The
+  check takes one param at a time, as this plan said it should, so it does not see it.
+- **jsdom does no layout, so the hold-still check is a browser test.** It runs in each model's
+  playground, which draws what the last step draws; the plot is the engine's clip rectangle, read
+  through the SVG's screen transform, and a dropline's label is allowed the band just past the
+  axis it sits on. A spec cannot import a lesson — they import their pictures — so it lists the
+  models, and `chartRules.test.ts` holds that list to the models there are.
+- **An untitled object is titled by its name.** `GraphObject` gives a named object its name as its
+  title unless it has one, so the market's, the A$ lesson's and the café's question lines were
+  objects "What changed" could have named `questionStart`. The Jordans' and the airline's said
+  `title: ''`. The kit's say it too, for every lesson.
+- **A check can hold the kit to a choice it cannot otherwise see.** The Jordans' price point was
+  first placed by the same sum as the curve it sits on, which names `params.demand`; the lessons
+  test reads "names a param" as "is drawn by it", and the point is orange, not demand's blue. It
+  is placed by `calcs.q` again, which is that sum, and `pricePoint` takes it as `x`. The proxy is
+  a textual one, and it was right.
+- **`breaksRule` needed somewhere to live once the engine could not see it.** The kit takes it off
+  every object and keeps it on the model as `brokenRules`, which nothing draws and the rules test
+  reads. Each one must name a section of the doc and be listed under "Where today's charts
+  differ", and each object listed there must have one.
+- **The names were settled by the lessons, as the sketch said they would be.** `stepNumbered` is
+  `stepTitled`, the name three lessons already used. `from` and `until` take a step number, not a
+  title, because the lessons find their steps four ways — by title, by what a step reveals, by the
+  first question, and by the last step — and combine them. `FROZEN` and `STANDS_DOWN` became
+  `UNTIL_SUBMITTED` and `UNLESS_ASKING`: named for when they are true, since `draggable: FROZEN`
+  reads as its opposite. And each question's lines are named for the param they answer,
+  `questionStart<Param>`, where the lessons had `questionStart`, `questionStartDemand` and
+  `questionStartPoint`.
+- **The café's annotations stayed the café's.** `readout`, `counted` and `fixed` moved into the
+  kit, because the doc's rules for a readout are rules for any of them. The step between A and B,
+  its labels and the letters did not: one lesson draws them, and where they go is about its curve.
+  The plan listed `measuredStep` and `letter` for the kit, and its own "extracted, not designed"
+  outranked its list.
+- **The lessons shrank less than a quarter.** The market from 666 lines to 484, the A$ lesson from
+  674 to 591, the Jordans from 766 to 654, the airline from 818 to 705 and the café from 998 to
+  959. What went was the wiring; what stayed is mostly words and the reasons beside the config,
+  which is what a lesson should be. A chart is now about 150 lines, the café's 410.
+- **A browser suite against a dev server sees every edit.** One run failed a test that passed
+  alone: lesson files were being rewritten while it ran, and the dev server served them half
+  written. Nothing is edited while the browser suite runs.
+
