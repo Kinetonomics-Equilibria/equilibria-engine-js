@@ -446,9 +446,15 @@ const choice = (name: 'A' | 'B', param: 'a' | 'b') => ({
  * away from it, which is across the curve wherever on it the point is: under
  * the flat top, beside the steep end, and halfway between in between. Inside
  * while B is to the right of A, because the step between them runs outside;
- * outside while B is to the left, because then it runs inside. Never closer
- * to an axis than a twenty-fifth of the curve's reach, so a point on an axis
- * keeps its letter on the plot.
+ * outside while B is to the left, because then it runs inside. With A and B
+ * at one place, B's goes outside and A's stays in, so the two are not one on
+ * top of the other — which is where they were once a shrinking curve had
+ * pushed both to its end.
+ *
+ * Never closer to an axis than a twentieth of the axis, so a point on an axis
+ * keeps its letter on the plot. A twenty-fifth of the curve's reach was the
+ * rule, and the curve can shrink to half its size: at 10 hours of work the
+ * letters at the curve's end sat across the toasties axis.
  *
  * The coordinates themselves are in the readout at the top of the panel,
  * where they have room. Beside the points they ran into the step's labels, or
@@ -457,15 +463,18 @@ const choice = (name: 'A' | 'B', param: 'a' | 'b') => ({
 const letter = (name: 'A' | 'B', side: 'inside' | 'outside') => {
     const scale = side === 'inside' ? 11 / 12 : 13 / 12;
     const rightwards = side === 'inside';
+    // Which side a letter is on when A and B are one place: A's inside, B's out.
+    const together = name === 'A' ? rightwards : !rightwards;
+    const compared = rightwards ? (together ? '>=' : '>') : (together ? '<=' : '<');
     return {
         type: 'Label',
         def: {
             name: `${name}${side === 'inside' ? 'In' : 'Out'}`, title: '',
-            x: `max(${scale} * calcs.t${name}, calcs.maxT / 25)`,
-            y: `max(${scale} * calcs.c${name}, calcs.maxC / 25)`,
+            x: `max(${scale} * calcs.t${name}, ${TOASTIES_AXIS / 20})`,
+            y: `max(${scale} * calcs.c${name}, ${COFFEES_AXIS / 20})`,
             text: name, align: 'center', plainText: true,
             color: 'colors.choice',
-            show: `(${SHOW_CHOICES}) and calcs.gain ${rightwards ? '>=' : '<'} 0`
+            show: `(${SHOW_CHOICES}) and calcs.gain ${compared} 0`
         }
     };
 };
@@ -538,6 +547,13 @@ const fixed = (n: string) => `format(${n}, {notation: "fixed", precision: 1})`;
 const apparatus = (name: string, like: { value: number; min: number; max: number; round: number }) =>
     ({ name, ...like, presentation: true });
 
+/**
+ * How far the axes run: past the most of each good any one param at the top
+ * of its range can make, 150 toasties and 300 coffees.
+ */
+const TOASTIES_AXIS = 160;
+const COFFEES_AXIS = 320;
+
 const HOURS = { value: 20, min: 10, max: 30, round: 1 };
 const COFFEE_RATE = { value: 10, min: 5, max: 15, round: 0.5 };
 const TOASTIE_RATE = { value: 5, min: 2.5, max: 7.5, round: 0.5 };
@@ -593,8 +609,11 @@ export const ppcDiagram = {
         // In steps of 5 toasties, so every move is a sum a student can check.
         { name: 'a', label: 'Toasties at A', value: 60, min: 0, max: 150, round: 5 },
         { name: 'b', label: 'Toasties at B', value: 80, min: 0, max: 150, round: 5 },
+        // Z's coffees stop 40 short of the top of the axis, where the word
+        // above it still fits on the plot. At 320 it ran off the top: a
+        // label is turned to fit sideways (`flipToFit`), never up and down.
         { name: 'pt', label: 'Toasties at Z', value: 40, min: 0, max: 160, round: 5 },
-        { name: 'pc', label: 'Coffees at Z', value: 120, min: 0, max: 320, round: 5 },
+        { name: 'pc', label: 'Coffees at Z', value: 120, min: 0, max: 280, round: 5 },
 
         // The question apparatus, presentation like every lesson's.
         { name: 'asking', value: 0, min: 0, max: 1, round: 1, presentation: true },
@@ -615,8 +634,8 @@ export const ppcDiagram = {
             panels: [
                 {
                     key: 'cafe',
-                    xAxis: { title: 'Toasties', min: 0, max: 160 },
-                    yAxis: { title: 'Coffees', min: 0, max: 320 },
+                    xAxis: { title: 'Toasties', min: 0, max: TOASTIES_AXIS },
+                    yAxis: { title: 'Coffees', min: 0, max: COFFEES_AXIS },
                     objects: [
                         // What the café can make: everything on or under the curve.
                         {
@@ -765,10 +784,12 @@ export const ppcDiagram = {
                                 x: 'params.pt', y: 'params.pc',
                                 color: 'colors.combination',
                                 show: SHOW_Z,
+                                // Above it and to the right, or to the left where
+                                // the right would run off the plot.
                                 label: {
                                     text: 'concat("Z · ", calcs.rZ < 0.97 ? "inefficient" : ' +
                                         '(calcs.rZ > 1.03 ? "unattainable" : "efficient"))',
-                                    plainText: true
+                                    plainText: true, flipToFit: true
                                 },
                                 drag: [
                                     { directions: 'xy', param: 'pt', expression: 'params.pt + drag.dx' },
