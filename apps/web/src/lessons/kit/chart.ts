@@ -278,6 +278,10 @@ export function priceLine(spec: { param: string; across: [number, number]; meani
  * `at` is where it is across: the quantity on the curve at a price, from an
  * expression for the price and for each param of the curve it sits on —
  * one definition for the point, and for the question's start and answer.
+ * `x` is where it is now, where a calc already says so: the quantity the
+ * caption reads, which is `at` of the params now. Placed by the calc, the
+ * point is drawn by the price alone, as its colour says; placed by `at`, it
+ * would read as drawn by the curve's params too.
  *
  * With `asked`, preceded by where it was when a question was asked, drawn
  * as a ghost point is; and where the answer puts it once a verdict shows it,
@@ -293,6 +297,7 @@ export function pricePoint(spec: {
     /** The params of the curve it sits on. */
     on: string[];
     at: (p: Drawn) => string;
+    x?: string;
     quantity: AxisSymbol;
     srTitle: string;
     show?: string;
@@ -303,7 +308,7 @@ export function pricePoint(spec: {
         type: 'Point',
         def: {
             name: spec.name, title: '',
-            x: spec.at(live(all)), y: `params.${spec.price}`,
+            x: spec.x || spec.at(live(all)), y: `params.${spec.price}`,
             color,
             ...(spec.show ? { show: spec.show } : {}),
             droplines: { vertical: spec.quantity, horizontal: 'P' },

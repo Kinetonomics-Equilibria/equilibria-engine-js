@@ -539,7 +539,7 @@ Press Finish to take this market to the Playground, where you can try more cases
                 {
                   "def": {
                     "color": "colors.choice",
-                    "name": "questionStartPoint",
+                    "name": "questionStartPrice",
                     "opacity": 0.35,
                     "show": "params.asking",
                     "strokeOpacity": 0.35,
@@ -555,7 +555,7 @@ Press Finish to take this market to the Playground, where you can try more cases
                     "droplines": {
                       "horizontal": "P_1",
                     },
-                    "name": "questionAnswerPoint",
+                    "name": "questionAnswerPrice",
                     "show": "params.revealed and (params.answerPrice != params.startPrice)",
                     "title": "",
                     "x": "params.startDemand - (params.answerPrice - 300)",

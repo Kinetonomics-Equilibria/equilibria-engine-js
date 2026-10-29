@@ -2,7 +2,7 @@ import type { StudyContent, StudyModel } from './content';
 import { SUPPLY_AND_DEMAND } from './supplyAndDemand';
 import { FOREIGN_EXCHANGE } from './fx';
 import { PRODUCTION_POSSIBILITIES } from './productionPossibilities';
-import { DEMAND_SHIFTERS } from './demandShifters';
+import { DEMAND_SHIFTERS } from './demand';
 import { SUPPLY_SHIFTERS } from './supplyShifters';
 
 /** A topic in the navbar's Lessons panel: a row that drops down to its lessons. */
