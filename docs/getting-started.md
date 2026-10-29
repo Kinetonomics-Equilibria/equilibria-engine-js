@@ -82,7 +82,7 @@ See [`packages/react/README.md`](../packages/react/README.md) for the event call
 
 ## Initializing the Engine
 
-The engine reads a `config` object (typically from parsed JSON or YAML) that dictates the mathematical model and visual presentation of the graph.
+The engine reads a plain `config` object, written in JavaScript or TypeScript or loaded from JSON, that dictates the mathematical model and visual presentation of the graph.
 
 To render a graph:
 1. Create a container element in your HTML.

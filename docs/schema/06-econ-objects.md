@@ -2,7 +2,7 @@
 
 In addition to standard geometric shapes, the Equilibria Engine includes a massive library of high-level economic abstractions under the `econ` module.
 
-These tools allow authors to declare complex economic relationships—like an entire monopoly model or an Edgeworth Box—using only a few lines of YAML. The engine mathematically solves these systems and transpiles them into the underlying geometric points, lines, curves, and labels.
+These tools allow authors to declare complex economic relationships—like an entire monopoly model or an Edgeworth Box—using only a few lines of configuration. The engine mathematically solves these systems and transpiles them into the underlying geometric points, lines, curves, and labels.
 
 ## Economic Functional Forms
 

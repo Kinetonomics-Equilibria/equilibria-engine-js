@@ -5,7 +5,7 @@ Welcome to the documentation for the **Equilibria Engine** (`equilibria-engine-j
 > [!NOTE] 
 > **Acknowledgement:** This project is a hard fork of the excellent [KGJS](https://github.com/cmakler/kgjs) engine originally created by Chris Makler. The intent of the Equilibria fork is to decouple the core mathematical engine from its original monolithic application structure, making it substantially easier for developers to integrate economic models into modern websites, SPAs (React/Vue/Svelte), and custom data visualization pipelines.
 
-The primary purpose of the engine is to interpret economic models, data structures, and views defined in JSON/YAML configuration formats and render them into standalone, highly interactive diagrams.
+The primary purpose of the engine is to interpret economic models, data structures, and views defined in one plain configuration object and render them into standalone, highly interactive diagrams.
 
 ## Overview
 
@@ -33,7 +33,7 @@ The engine focuses solely on translating configuration logic into an interactive
 
 ### Schema Guides
 
-For detailed guidance on authoring YAML schemas with the KGAuthor transpiler:
+Guides to writing a configuration for the KGAuthor transpiler. Their examples are YAML because it is short to read; the engine reads the same keys as a plain object, and parses no YAML itself.
 
 5. [Schema: Getting Started](./schema/01-getting-started.md)
 6. [Schema: Parameters & Interactions](./schema/02-parameters-and-interactions.md)

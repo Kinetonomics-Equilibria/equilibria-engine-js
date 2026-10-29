@@ -9,7 +9,7 @@ This file provides LLMs and AI coding assistants with the necessary context, API
 - **MathJS** for real-time expression evaluation.
 - **KaTeX** for mathematical typography.
 
-It follows a declarative configuration pattern (typically defined in JSON or YAML) that binds mathematical models directly to visual SVG components.
+It follows a declarative configuration pattern that binds mathematical models directly to visual SVG components. The configuration is one plain object, which `new KineticGraph(config)` reads as it is: write it in JavaScript or TypeScript, or load it from JSON. The engine parses no YAML. The schema guides under `docs/schema/` show their examples in YAML only because it is short to read; the keys are the same in an object literal.
 
 ## 2. Installation & CSS Requirements
 

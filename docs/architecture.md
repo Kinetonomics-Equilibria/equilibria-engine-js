@@ -50,7 +50,7 @@ When a `ViewObject` (like a Point) is defined with a `drag` directive, the engin
 
 ## 4. KGAuthor: The Schema Transpiler
 
-The `KGAuthor` module (`src/ts/KGAuthor/`) is a transpiler layer that sits between the user-authored YAML/JSON schema and the low-level `ViewDefinition` consumed by the View. It is responsible for:
+The `KGAuthor` module (`src/ts/KGAuthor/`) is a transpiler layer that sits between the author's configuration object and the low-level `ViewDefinition` consumed by the View. It is responsible for:
 
 1. **Schema Expansion:** Converting high-level schema types (e.g., `EconSchema`, `BowlesHallidaySchema`) into fully resolved configurations with colors, idioms, and layout defaults.
 2. **Layout Resolution:** Resolving layout types (e.g., `OneGraph`, `TwoHorizontalGraphs`, `FourGraphs`) into positioned graph containers with computed aspect ratios and coordinates.

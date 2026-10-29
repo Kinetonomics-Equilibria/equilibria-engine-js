@@ -1,6 +1,6 @@
 # Configuration Specification
 
-The engine relies on a comprehensive configuration object (the `ViewDefinition`) to define everything from parameters to drawn SVG objects. While you can construct this object as pure Javascript, it is most commonly authored as YAML and parsed via `js-yaml`.
+The engine relies on a comprehensive configuration object (the `ViewDefinition`) to define everything from parameters to drawn SVG objects. It is a plain object, and the engine reads it as it is: write it in JavaScript or TypeScript, or load it from JSON. The engine parses no YAML, and nothing in this repo does. The study app's lessons write it in TypeScript (`apps/web/src/lessons/`).
 
 A graph configuration follows this top-level schema:
 
