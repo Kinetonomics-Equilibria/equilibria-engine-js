@@ -1,5 +1,7 @@
 import type { LessonStep } from '../track/track';
 import type { Scenario } from '../dock/Scenarios';
+import { atStep, defineLesson, fromStep, stepRevealing, stepTitled } from './kit/lesson';
+import type { ModelSpec, PanelDefinition } from './kit/lesson';
 import type { StudyContent, StudyModel } from './content';
 import coverPicture from './pictures/jordans-cover.svg';
 
@@ -351,18 +353,10 @@ export const DEMAND_LESSON: LessonStep[] = [
     }
 ];
 
-/** The position of the step titled `title`: 1 for the first step. */
-const stepTitled = (title: string) => DEMAND_LESSON.findIndex(step => step.title === title) + 1;
-
 /** Where the price arrives, on the student's chart. */
-const PRICED = stepTitled('Nike sets the price');
+const PRICED = stepTitled(DEMAND_LESSON, 'Nike sets the price');
 /** Where the point on the market's curve arrives, and quantity demanded with it. */
-const QUANTITY = stepTitled('Quantity demanded');
-
-/** Each param of the question apparatus is bounded like the param it draws. */
-const PRICE = { value: 300, min: 200, max: 400, round: 10 };
-const DEMAND = { value: 200, min: 100, max: 300, round: 10 };
-const apparatus = (name: string, like: typeof PRICE) => ({ name, ...like, presentation: true });
+const QUANTITY = stepTitled(DEMAND_LESSON, 'Quantity demanded');
 
 const calcs = {
     // Where the point on the market's curve is, from the step that brings it
@@ -370,17 +364,12 @@ const calcs = {
     // before that step, which both leave unsaid: a quantity demanded read out
     // over a curve with no price on it yet would be a number about nothing.
     q: 'params.demand - (params.price - 300)',
-    Qd: `params.step >= ${QUANTITY} ? calcs.q : NaN`,
+    Qd: `${fromStep(QUANTITY)} ? calcs.q : NaN`,
     // The pairs worth at least the price to the student: the points on or
     // above the dotted line. From the step that draws the line.
-    mine: `params.step >= ${PRICED} ? ` +
-        `floor((${FIRST_PAIR + EACH_PAIR_LESS} - params.price) / ${EACH_PAIR_LESS}) : NaN`,
-    dQd: 'calcs.Qd - prev.calcs.Qd',
-    dMine: 'calcs.mine - prev.calcs.mine'
+    mine: `${fromStep(PRICED)} ? ` +
+        `floor((${FIRST_PAIR + EACH_PAIR_LESS} - params.price) / ${EACH_PAIR_LESS}) : NaN`
 };
-
-/** The position of the step that puts `name` on the chart. */
-const revealing = (name: string) => DEMAND_LESSON.findIndex(step => (step.reveal || []).includes(name)) + 1;
 
 /**
  * One of the student's four pairs, at what it is worth to them.
@@ -406,186 +395,151 @@ const pair = (n: number) => {
             name, title: '',
             x: n, y: worth,
             color: 'colors.demand',
-            droplines: { vertical: '', horizontal: '', show: `params.step == ${revealing(name)}` },
+            droplines: { vertical: '', horizontal: '', show: atStep(stepRevealing(DEMAND_LESSON, name)) },
             arrive: true,
             srTitle: `Pair ${n}, worth $${worth} to you`
         }
     };
 };
 
-export const demandDiagram = {
-    schema: 'EconSchema',
-
-    params: [
-        // From $200 to $400 in steps of $10: at either end the student buys a
-        // whole number of pairs, 3 or 1, and the market's point stays on the
-        // chart for any demand. Labelled for the verdicts, which lower its
-        // first letter: "You moved the price down".
-        { name: 'price', label: 'The price', ...PRICE },
-        // From 100 to 300 thousand pairs at $300, in steps of 10. At 100 and
-        // $400 fans want none, which is a true answer and the corner of what
-        // the sliders reach; the point sits on the price axis there.
-        { name: 'demand', label: 'Demand for Air Jordans', ...DEMAND },
-
-        // The question apparatus, presentation like every lesson's.
-        { name: 'asking', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        { name: 'submitted', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        { name: 'revealed', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        apparatus('startPrice', PRICE),
-        apparatus('answerPrice', PRICE),
-        apparatus('startDemand', DEMAND),
-        apparatus('answerDemand', DEMAND)
-    ],
-
-    calcs,
-
-    layout: {
-        CustomLayout: {
-            // The student's chart first, because panels arrive in the order
-            // they are declared and it is on the stage from the start. The
-            // market arrives second, and its step brings it to the front
-            // (`focus`), with the student's chart on the rail beside it.
-            panels: [
-                {
-                    key: 'you',
-                    // Five pairs a year is where the student's points would
-                    // reach $0, and $500 is where they would start. Titled
-                    // as the market's quantity is, by its unit.
-                    xAxis: { title: 'Pairs a year', min: 0, max: 5 },
-                    yAxis: { title: 'Price (\\$)', min: 0, max: 500 },
-                    objects: [
-                        // Nike's price across the student's chart, dotted
-                        // because it is a line to read the points against, and
-                        // labelled on the price axis as the market's dropline
-                        // is, so P is one price on both charts.
-                        {
-                            type: 'Segment',
-                            def: {
-                                name: 'priceLine', title: '',
-                                a: [0, 'params.price'], b: [5, 'params.price'],
-                                color: 'colors.choice', lineStyle: 'dotted'
-                            }
-                        },
-                        {
-                            type: 'Label',
-                            def: {
-                                name: 'priceSymbol', title: '',
-                                x: 'AXIS', y: 'params.price', text: 'P',
-                                color: 'colors.choice'
-                            }
-                        },
-                        pair(1), pair(2), pair(3), pair(4)
-                    ]
-                },
-                {
-                    key: 'market',
-                    // Wide enough for the most the sliders can ask for, 400
-                    // thousand pairs at $200, with room past it. The unit is
-                    // the whole title: "Quantity (thousands of pairs a year)"
-                    // ran past the edge of the sheet on a phone.
-                    xAxis: { title: 'Thousands of pairs a year', min: 0, max: 500 },
-                    yAxis: { title: 'Price (\\$)', min: 0, max: 500 },
-                    objects: [
-                        {
-                            type: 'Curve',
-                            def: {
-                                name: 'marketDemand', title: 'demand',
-                                fn: demandAt('params.demand'), samplePoints: 2,
-                                color: 'colors.demand',
-                                label: { text: 'D', y: labelAt('params.demand') },
-                                srTitle: 'Demand',
-                                drag: DRAG_DEMAND,
-                                // D₀ is where the curve was, and stands down
-                                // while a question is on screen, where the
-                                // question's own start line is the "before".
-                                ghost: { show: 'not(params.asking)', label: '_0' }
-                            }
-                        },
-                        // Where a question found the curve, and where its
-                        // answer would put it, as in the A$ lesson.
-                        {
-                            type: 'Curve',
-                            def: {
-                                name: 'questionStartDemand', title: '',
-                                fn: demandAt('params.startDemand'), samplePoints: 2,
-                                color: 'colors.demand', lineStyle: 'dashed', strokeOpacity: 0.35,
-                                show: 'params.asking'
-                            }
-                        },
-                        {
-                            type: 'Curve',
-                            def: {
-                                name: 'questionAnswerDemand', title: '',
-                                fn: demandAt('params.answerDemand'), samplePoints: 2,
-                                color: 'colors.demand', lineStyle: 'dotted',
-                                label: { text: 'D_1', y: labelAt('params.answerDemand') },
-                                show: 'params.revealed and (params.answerDemand != params.startDemand)'
-                            }
-                        },
-                        // Where the point was when a question was asked, drawn
-                        // as a ghost point is: the student who moves the price
-                        // sees it slide away from here along the curve, and
-                        // the one who shifts the curve sees it slide sideways.
-                        {
-                            type: 'Point',
-                            def: {
-                                name: 'questionStartPoint', title: '',
-                                x: 'params.startDemand - (params.startPrice - 300)', y: 'params.startPrice',
-                                color: 'colors.choice', opacity: 0.35, strokeOpacity: 0.35,
-                                show: 'params.asking'
-                            }
-                        },
-                        // Where the point goes when the answer is the price:
-                        // on the curve as the question found it, at the price
-                        // the answer moves it to, read off the price axis at
-                        // P₁ as D₁ is read off the curve. Only once a verdict
-                        // shows it, and never for a question about the curve,
-                        // whose answer leaves the price where it started.
-                        {
-                            type: 'Point',
-                            def: {
-                                name: 'questionAnswerPoint', title: '',
-                                x: 'params.startDemand - (params.answerPrice - 300)', y: 'params.answerPrice',
-                                color: 'colors.choice',
-                                droplines: { horizontal: 'P_1' },
-                                show: 'params.revealed and (params.answerPrice != params.startPrice)'
-                            }
-                        },
-                        // What fans want at Nike's price. In the colour of a
-                        // point chosen on a curve, not the curve's, because
-                        // the price moves it along the curve and the curve is
-                        // what moves for everything else: orange moves along,
-                        // blue shifts. Untitled, so "What changed" says what
-                        // the price and quantity did rather than that a point
-                        // moved.
-                        {
-                            type: 'Point',
-                            def: {
-                                name: 'atPrice', title: '',
-                                x: 'calcs.q', y: 'params.price',
-                                color: 'colors.choice',
-                                show: `params.step >= ${QUANTITY}`,
-                                droplines: { vertical: 'Q_d', horizontal: 'P' },
-                                drag: [{ vertical: 'price', draggable: 'not(params.submitted)' }],
-                                srTitle: 'What fans want at Nike\'s price',
-                                ghost: { show: 'not(params.asking)' }
-                            }
-                        }
-                    ]
-                }
-            ]
-        }
-    }
-};
-
 /**
+ * The student's chart first, because panels arrive in the order they are
+ * declared and it is on the stage from the start. The market arrives second,
+ * and its step brings it to the front (`focus`), with the student's chart on
+ * the rail beside it.
+ *
  * The market headlined by quantity demanded, the student by the pairs they
  * buy: each the number its chart says about the price.
  */
-const PANELS = [
-    { key: 'you', name: 'You', headline: 'mine', delta: 'dMine' },
-    { key: 'market', name: 'Market', headline: 'Qd', delta: 'dQd' }
-] as const;
+const PANELS: PanelDefinition[] = [
+    {
+        key: 'you', name: 'You', headline: 'mine',
+        // Five pairs a year is where the student's points would
+        // reach $0, and $500 is where they would start. Titled
+        // as the market's quantity is, by its unit.
+        xAxis: { title: 'Pairs a year', min: 0, max: 5 },
+        yAxis: { title: 'Price (\\$)', min: 0, max: 500 },
+        objects: [
+            // Nike's price across the student's chart, dotted
+            // because it is a line to read the points against, and
+            // labelled on the price axis as the market's dropline
+            // is, so P is one price on both charts.
+            {
+                type: 'Segment',
+                def: {
+                    name: 'priceLine', title: '',
+                    a: [0, 'params.price'], b: [5, 'params.price'],
+                    color: 'colors.choice', lineStyle: 'dotted'
+                }
+            },
+            {
+                type: 'Label',
+                def: {
+                    name: 'priceSymbol', title: '',
+                    x: 'AXIS', y: 'params.price', text: 'P',
+                    color: 'colors.choice'
+                }
+            },
+            pair(1), pair(2), pair(3), pair(4)
+        ]
+    },
+    {
+        key: 'market', name: 'Market', headline: 'Qd',
+        // Wide enough for the most the sliders can ask for, 400
+        // thousand pairs at $200, with room past it. The unit is
+        // the whole title: "Quantity (thousands of pairs a year)"
+        // ran past the edge of the sheet on a phone.
+        xAxis: { title: 'Thousands of pairs a year', min: 0, max: 500 },
+        yAxis: { title: 'Price (\\$)', min: 0, max: 500 },
+        objects: [
+            {
+                type: 'Curve',
+                def: {
+                    name: 'marketDemand', title: 'demand',
+                    fn: demandAt('params.demand'), samplePoints: 2,
+                    color: 'colors.demand',
+                    label: { text: 'D', y: labelAt('params.demand') },
+                    srTitle: 'Demand',
+                    drag: DRAG_DEMAND,
+                    // D₀ is where the curve was, and stands down
+                    // while a question is on screen, where the
+                    // question's own start line is the "before".
+                    ghost: { show: 'not(params.asking)', label: '_0' }
+                }
+            },
+            // Where a question found the curve, and where its
+            // answer would put it, as in the A$ lesson.
+            {
+                type: 'Curve',
+                def: {
+                    name: 'questionStartDemand', title: '',
+                    fn: demandAt('params.startDemand'), samplePoints: 2,
+                    color: 'colors.demand', lineStyle: 'dashed', strokeOpacity: 0.35,
+                    show: 'params.asking'
+                }
+            },
+            {
+                type: 'Curve',
+                def: {
+                    name: 'questionAnswerDemand', title: '',
+                    fn: demandAt('params.answerDemand'), samplePoints: 2,
+                    color: 'colors.demand', lineStyle: 'dotted',
+                    label: { text: 'D_1', y: labelAt('params.answerDemand') },
+                    show: 'params.revealed and (params.answerDemand != params.startDemand)'
+                }
+            },
+            // Where the point was when a question was asked, drawn
+            // as a ghost point is: the student who moves the price
+            // sees it slide away from here along the curve, and
+            // the one who shifts the curve sees it slide sideways.
+            {
+                type: 'Point',
+                def: {
+                    name: 'questionStartPoint', title: '',
+                    x: 'params.startDemand - (params.startPrice - 300)', y: 'params.startPrice',
+                    color: 'colors.choice', opacity: 0.35, strokeOpacity: 0.35,
+                    show: 'params.asking'
+                }
+            },
+            // Where the point goes when the answer is the price:
+            // on the curve as the question found it, at the price
+            // the answer moves it to, read off the price axis at
+            // P₁ as D₁ is read off the curve. Only once a verdict
+            // shows it, and never for a question about the curve,
+            // whose answer leaves the price where it started.
+            {
+                type: 'Point',
+                def: {
+                    name: 'questionAnswerPoint', title: '',
+                    x: 'params.startDemand - (params.answerPrice - 300)', y: 'params.answerPrice',
+                    color: 'colors.choice',
+                    droplines: { horizontal: 'P_1' },
+                    show: 'params.revealed and (params.answerPrice != params.startPrice)'
+                }
+            },
+            // What fans want at Nike's price. In the colour of a
+            // point chosen on a curve, not the curve's, because
+            // the price moves it along the curve and the curve is
+            // what moves for everything else: orange moves along,
+            // blue shifts. Untitled, so "What changed" says what
+            // the price and quantity did rather than that a point
+            // moved.
+            {
+                type: 'Point',
+                def: {
+                    name: 'atPrice', title: '',
+                    x: 'calcs.q', y: 'params.price',
+                    color: 'colors.choice',
+                    show: `params.step >= ${QUANTITY}`,
+                    droplines: { vertical: 'Q_d', horizontal: 'P' },
+                    drag: [{ vertical: 'price', draggable: 'not(params.submitted)' }],
+                    srTitle: 'What fans want at Nike\'s price',
+                    ghost: { show: 'not(params.asking)' }
+                }
+            }
+        ]
+    }
+];
 
 /**
  * The numbers the strip reports, and what they are called everywhere.
@@ -678,10 +632,21 @@ const SCENARIOS: Scenario[] = [
 ];
 
 /** One fan's demand for Air Jordans and every fan's: what the PETPIG lesson is drawn on. */
-export const AIR_JORDANS: StudyModel = {
+const MODEL: ModelSpec = {
     id: 'air-jordans',
     name: 'Demand for Air Jordans',
-    diagram: demandDiagram,
+    params: [
+        // From $200 to $400 in steps of $10: at either end the student buys a
+        // whole number of pairs, 3 or 1, and the market's point stays on the
+        // chart for any demand. Labelled for the verdicts, which lower its
+        // first letter: "You moved the price down".
+        { name: 'price', label: 'The price', value: 300, min: 200, max: 400, round: 10 },
+        // From 100 to 300 thousand pairs at $300, in steps of 10. At 100 and
+        // $400 fans want none, which is a true answer and the corner of what
+        // the sliders reach; the point sits on the price axis there.
+        { name: 'demand', label: 'Demand for Air Jordans', value: 200, min: 100, max: 300, round: 10 }
+    ],
+    calcs,
     panels: PANELS,
     narratedCalcs: NARRATED_CALCS,
     // Quantity demanded as the sum a student can do: what fans want at $300,
@@ -720,10 +685,6 @@ export const AIR_JORDANS: StudyModel = {
             curve: 'demand'
         }
     },
-    questionApparatus: {
-        price: { start: 'startPrice', answer: 'answerPrice' },
-        demand: { start: 'startDemand', answer: 'answerDemand' }
-    },
     scenarios: SCENARIOS,
     // The curve is dragged sideways, so its param rises as it moves right.
     directionWords: {
@@ -731,7 +692,7 @@ export const AIR_JORDANS: StudyModel = {
     }
 };
 
-export const DEMAND_SHIFTERS: StudyContent = {
+export const DEMAND_SHIFTERS: StudyContent = defineLesson({
     id: 'demand',
     label: 'What shifts demand',
     title: 'Air Jordans, and what shifts demand',
@@ -762,6 +723,8 @@ export const DEMAND_SHIFTERS: StudyContent = {
             note: 'A made-up report, for this question'
         }
     },
-    lesson: DEMAND_LESSON,
-    model: AIR_JORDANS
-};
+    steps: DEMAND_LESSON,
+    model: MODEL
+});
+
+export const AIR_JORDANS: StudyModel = DEMAND_SHIFTERS.model;

@@ -1,5 +1,7 @@
 import type { LessonStep } from '../track/track';
 import type { Scenario } from '../dock/Scenarios';
+import { atStep, defineLesson, firstQuestion, fromStep, stepRevealing, stepTitled, untilStep } from './kit/lesson';
+import type { ModelSpec, PanelDefinition } from './kit/lesson';
 import type { StudyContent, StudyModel } from './content';
 import coverPicture from './pictures/flights-cover.svg';
 
@@ -391,46 +393,33 @@ export const SUPPLY_LESSON: LessonStep[] = [
     }
 ];
 
-/** The position of the step titled `title`: 1 for the first step. */
-const stepTitled = (title: string) => SUPPLY_LESSON.findIndex(step => step.title === title) + 1;
-
 /** Where the fare arrives, on the student's chart. */
-const PRICED = stepTitled('The going fare');
+const PRICED = stepTitled(SUPPLY_LESSON, 'The going fare');
 /** Where the point on the market's curve arrives, and quantity supplied with it. */
-const QUANTITY = stepTitled('Quantity supplied');
+const QUANTITY = stepTitled(SUPPLY_LESSON, 'Quantity supplied');
 /** The PEANUT part: from its first step to the step before the first question. */
-const PEANUT = stepTitled('What shifts the whole curve');
-const NEW_AIRLINE = stepTitled('N: number of sellers');
-const FIRST_QUESTION = SUPPLY_LESSON.findIndex(step => !!step.ask) + 1;
-
-/** Each param of the question apparatus is bounded like the param it draws. */
-const PRICE = { value: 200, min: 100, max: 300, round: 10 };
-const SUPPLY = { value: 200, min: 100, max: 300, round: 10 };
-const apparatus = (name: string, like: typeof PRICE) => ({ name, ...like, presentation: true });
+const PEANUT = stepTitled(SUPPLY_LESSON, 'What shifts the whole curve');
+const NEW_AIRLINE = stepTitled(SUPPLY_LESSON, 'N: number of sellers');
+const FIRST_QUESTION = firstQuestion(SUPPLY_LESSON);
 
 const calcs = {
     // Where the point on the market's curve is, from the step that brings it
     // in. `Qs` is the same number for the caption and the strip, and NaN
     // before that step, which both leave unsaid.
     q: 'params.supply + (params.price - 200)',
-    Qs: `params.step >= ${QUANTITY} ? calcs.q : NaN`,
+    Qs: `${fromStep(QUANTITY)} ? calcs.q : NaN`,
     // How much more a seat on each of the student's flights needs than at
     // the start: the market's shift read as a cost, $1 for every thousand
     // seats, less the new airline's seats from its step on, since another
     // airline's planes cost the student nothing. Through PEANUT only, and 0
     // everywhere else (see the top).
-    yourCost: `(params.step >= ${PEANUT} and params.step < ${FIRST_QUESTION}) ? ` +
-        `200 - params.supply + (params.step >= ${NEW_AIRLINE} ? ${NEW_AIRLINE_SEATS} : 0) : 0`,
+    yourCost: `(${fromStep(PEANUT)} and ${untilStep(FIRST_QUESTION)}) ? ` +
+        `200 - params.supply + (${fromStep(NEW_AIRLINE)} ? ${NEW_AIRLINE_SEATS} : 0) : 0`,
     // The flights whose costs the fare covers: the points on or below the
     // dotted line. From the step that draws the line.
-    mine: `params.step >= ${PRICED} ? min(4, max(0, ` +
-        `floor((params.price - ${FIRST_FLIGHT - EACH_FLIGHT_MORE} - calcs.yourCost) / ${EACH_FLIGHT_MORE}))) : NaN`,
-    dQs: 'calcs.Qs - prev.calcs.Qs',
-    dMine: 'calcs.mine - prev.calcs.mine'
+    mine: `${fromStep(PRICED)} ? min(4, max(0, ` +
+        `floor((params.price - ${FIRST_FLIGHT - EACH_FLIGHT_MORE} - calcs.yourCost) / ${EACH_FLIGHT_MORE}))) : NaN`
 };
-
-/** The position of the step that puts `name` on the chart. */
-const revealing = (name: string) => SUPPLY_LESSON.findIndex(step => (step.reveal || []).includes(name)) + 1;
 
 /**
  * One of the student's four flights, at the lowest fare it is worth flying for.
@@ -452,184 +441,150 @@ const flight = (n: number) => {
             name, title: '',
             x: n, y: `${needs} + calcs.yourCost`,
             color: 'colors.supply',
-            droplines: { vertical: '', horizontal: '', show: `params.step == ${revealing(name)}` },
+            droplines: { vertical: '', horizontal: '', show: atStep(stepRevealing(SUPPLY_LESSON, name)) },
             arrive: true,
             srTitle: `Flight ${n}, at the lowest fare that covers its costs`
         }
     };
 };
 
-export const supplyDiagram = {
-    schema: 'EconSchema',
-
-    params: [
-        // From $100 to $300 in steps of $10: at $100 the student runs 1
-        // flight, and from $250 all 4. Labelled for the verdicts, which lower
-        // its first letter: "You moved the fare up".
-        { name: 'price', label: 'The fare', ...PRICE },
-        // From 100 to 300 thousand seats at $200, in steps of 10. At 100 and
-        // $100 airlines offer none, which is a true answer and the corner of
-        // what the sliders reach; the point sits on the price axis there.
-        { name: 'supply', label: 'Supply of seats', ...SUPPLY },
-
-        // The question apparatus, presentation like every lesson's.
-        { name: 'asking', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        { name: 'submitted', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        { name: 'revealed', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        apparatus('startPrice', PRICE),
-        apparatus('answerPrice', PRICE),
-        apparatus('startSupply', SUPPLY),
-        apparatus('answerSupply', SUPPLY)
-    ],
-
-    calcs,
-
-    layout: {
-        CustomLayout: {
-            // The student's chart first, because panels arrive in the order
-            // they are declared and it is on the stage from the start. The
-            // market arrives second, and its step brings it to the front
-            // (`focus`), with the student's chart on the rail beside it.
-            panels: [
-                {
-                    key: 'you',
-                    // Room for a fifth flight past the student's four. The
-                    // price axis is the market's, so P is one height on both
-                    // charts, and it reaches the $400 a fourth flight needs
-                    // at the most it can: supply dragged to its least after
-                    // the new airline's step.
-                    xAxis: { title: 'Flights a day', min: 0, max: 5 },
-                    yAxis: { title: 'Price (\\$)', min: 0, max: 400 },
-                    objects: [
-                        // The going fare across the student's chart, dotted
-                        // because it is a line to read the points against, and
-                        // labelled on the price axis as the market's dropline
-                        // is, so P is one price on both charts. Grey `price`,
-                        // not `choice`: see the top.
-                        {
-                            type: 'Segment',
-                            def: {
-                                name: 'priceLine', title: '',
-                                a: [0, 'params.price'], b: [5, 'params.price'],
-                                color: 'colors.price', lineStyle: 'dotted'
-                            }
-                        },
-                        {
-                            type: 'Label',
-                            def: {
-                                name: 'priceSymbol', title: '',
-                                x: 'AXIS', y: 'params.price', text: 'P',
-                                color: 'colors.price'
-                            }
-                        },
-                        flight(1), flight(2), flight(3), flight(4)
-                    ]
-                },
-                {
-                    key: 'market',
-                    // Wide enough for the most the sliders can offer, 400
-                    // thousand seats at $300, with room past it.
-                    xAxis: { title: 'Thousands of seats a week', min: 0, max: 500 },
-                    yAxis: { title: 'Price (\\$)', min: 0, max: 400 },
-                    objects: [
-                        {
-                            type: 'Curve',
-                            def: {
-                                name: 'marketSupply', title: 'supply',
-                                fn: supplyAt('params.supply'), samplePoints: 2, min: LOWEST_FARE_DRAWN,
-                                color: 'colors.supply',
-                                label: { text: 'S', y: LABEL_AT },
-                                srTitle: 'Supply',
-                                drag: DRAG_SUPPLY,
-                                // S₀ is where the curve was, and stands down
-                                // while a question is on screen, where the
-                                // question's own start line is the "before".
-                                ghost: { show: 'not(params.asking)', label: '_0' }
-                            }
-                        },
-                        // Where a question found the curve, and where its
-                        // answer would put it, as in the other lessons.
-                        {
-                            type: 'Curve',
-                            def: {
-                                name: 'questionStartSupply', title: '',
-                                fn: supplyAt('params.startSupply'), samplePoints: 2, min: LOWEST_FARE_DRAWN,
-                                color: 'colors.supply', lineStyle: 'dashed', strokeOpacity: 0.35,
-                                show: 'params.asking'
-                            }
-                        },
-                        {
-                            type: 'Curve',
-                            def: {
-                                name: 'questionAnswerSupply', title: '',
-                                fn: supplyAt('params.answerSupply'), samplePoints: 2, min: LOWEST_FARE_DRAWN,
-                                color: 'colors.supply', lineStyle: 'dotted',
-                                label: { text: 'S_1', y: LABEL_AT },
-                                show: 'params.revealed and (params.answerSupply != params.startSupply)'
-                            }
-                        },
-                        // Where the point was when a question was asked, drawn
-                        // as a ghost point is: the student who moves the fare
-                        // sees it slide away from here along the curve, and
-                        // the one who shifts the curve sees it slide sideways.
-                        {
-                            type: 'Point',
-                            def: {
-                                name: 'questionStartPoint', title: '',
-                                x: 'params.startSupply + (params.startPrice - 200)', y: 'params.startPrice',
-                                color: 'colors.price', opacity: 0.35, strokeOpacity: 0.35,
-                                show: 'params.asking'
-                            }
-                        },
-                        // Where the point goes when the answer is the fare: on
-                        // the curve as the question found it, at the fare the
-                        // answer moves it to, read off the price axis at P₁.
-                        // Only once a verdict shows it, and never for a
-                        // question about the curve.
-                        {
-                            type: 'Point',
-                            def: {
-                                name: 'questionAnswerPoint', title: '',
-                                x: 'params.startSupply + (params.answerPrice - 200)', y: 'params.answerPrice',
-                                color: 'colors.price',
-                                droplines: { horizontal: 'P_1' },
-                                show: 'params.revealed and (params.answerPrice != params.startPrice)'
-                            }
-                        },
-                        // What airlines offer at the fare. In the fare's grey,
-                        // not the curve's orange, because the fare moves it
-                        // along the curve and the curve is what moves for
-                        // everything else: grey moves along, orange shifts.
-                        // Untitled, so "What changed" says what the fare and
-                        // quantity did rather than that a point moved.
-                        {
-                            type: 'Point',
-                            def: {
-                                name: 'atPrice', title: '',
-                                x: 'calcs.q', y: 'params.price',
-                                color: 'colors.price',
-                                show: `params.step >= ${QUANTITY}`,
-                                droplines: { vertical: 'Q_s', horizontal: 'P' },
-                                drag: [{ vertical: 'price', draggable: 'not(params.submitted)' }],
-                                srTitle: 'What airlines offer at the fare',
-                                ghost: { show: 'not(params.asking)' }
-                            }
-                        }
-                    ]
-                }
-            ]
-        }
-    }
-};
-
 /**
+ * The student's chart first, because panels arrive in the order they are
+ * declared and it is on the stage from the start. The market arrives second,
+ * and its step brings it to the front (`focus`), with the student's chart on
+ * the rail beside it.
+ *
  * The market headlined by quantity supplied, the student by the flights they
  * run: each the number its chart says about the fare.
  */
-const PANELS = [
-    { key: 'you', name: 'Your airline', headline: 'mine', delta: 'dMine' },
-    { key: 'market', name: 'Market', headline: 'Qs', delta: 'dQs' }
-] as const;
+const PANELS: PanelDefinition[] = [
+    {
+        key: 'you', name: 'Your airline', headline: 'mine',
+        // Room for a fifth flight past the student's four. The
+        // price axis is the market's, so P is one height on both
+        // charts, and it reaches the $400 a fourth flight needs
+        // at the most it can: supply dragged to its least after
+        // the new airline's step.
+        xAxis: { title: 'Flights a day', min: 0, max: 5 },
+        yAxis: { title: 'Price (\\$)', min: 0, max: 400 },
+        objects: [
+            // The going fare across the student's chart, dotted
+            // because it is a line to read the points against, and
+            // labelled on the price axis as the market's dropline
+            // is, so P is one price on both charts. Grey `price`,
+            // not `choice`: see the top.
+            {
+                type: 'Segment',
+                def: {
+                    name: 'priceLine', title: '',
+                    a: [0, 'params.price'], b: [5, 'params.price'],
+                    color: 'colors.price', lineStyle: 'dotted'
+                }
+            },
+            {
+                type: 'Label',
+                def: {
+                    name: 'priceSymbol', title: '',
+                    x: 'AXIS', y: 'params.price', text: 'P',
+                    color: 'colors.price'
+                }
+            },
+            flight(1), flight(2), flight(3), flight(4)
+        ]
+    },
+    {
+        key: 'market', name: 'Market', headline: 'Qs',
+        // Wide enough for the most the sliders can offer, 400
+        // thousand seats at $300, with room past it.
+        xAxis: { title: 'Thousands of seats a week', min: 0, max: 500 },
+        yAxis: { title: 'Price (\\$)', min: 0, max: 400 },
+        objects: [
+            {
+                type: 'Curve',
+                def: {
+                    name: 'marketSupply', title: 'supply',
+                    fn: supplyAt('params.supply'), samplePoints: 2, min: LOWEST_FARE_DRAWN,
+                    color: 'colors.supply',
+                    label: { text: 'S', y: LABEL_AT },
+                    srTitle: 'Supply',
+                    drag: DRAG_SUPPLY,
+                    // S₀ is where the curve was, and stands down
+                    // while a question is on screen, where the
+                    // question's own start line is the "before".
+                    ghost: { show: 'not(params.asking)', label: '_0' }
+                }
+            },
+            // Where a question found the curve, and where its
+            // answer would put it, as in the other lessons.
+            {
+                type: 'Curve',
+                def: {
+                    name: 'questionStartSupply', title: '',
+                    fn: supplyAt('params.startSupply'), samplePoints: 2, min: LOWEST_FARE_DRAWN,
+                    color: 'colors.supply', lineStyle: 'dashed', strokeOpacity: 0.35,
+                    show: 'params.asking'
+                }
+            },
+            {
+                type: 'Curve',
+                def: {
+                    name: 'questionAnswerSupply', title: '',
+                    fn: supplyAt('params.answerSupply'), samplePoints: 2, min: LOWEST_FARE_DRAWN,
+                    color: 'colors.supply', lineStyle: 'dotted',
+                    label: { text: 'S_1', y: LABEL_AT },
+                    show: 'params.revealed and (params.answerSupply != params.startSupply)'
+                }
+            },
+            // Where the point was when a question was asked, drawn
+            // as a ghost point is: the student who moves the fare
+            // sees it slide away from here along the curve, and
+            // the one who shifts the curve sees it slide sideways.
+            {
+                type: 'Point',
+                def: {
+                    name: 'questionStartPoint', title: '',
+                    x: 'params.startSupply + (params.startPrice - 200)', y: 'params.startPrice',
+                    color: 'colors.price', opacity: 0.35, strokeOpacity: 0.35,
+                    show: 'params.asking'
+                }
+            },
+            // Where the point goes when the answer is the fare: on
+            // the curve as the question found it, at the fare the
+            // answer moves it to, read off the price axis at P₁.
+            // Only once a verdict shows it, and never for a
+            // question about the curve.
+            {
+                type: 'Point',
+                def: {
+                    name: 'questionAnswerPoint', title: '',
+                    x: 'params.startSupply + (params.answerPrice - 200)', y: 'params.answerPrice',
+                    color: 'colors.price',
+                    droplines: { horizontal: 'P_1' },
+                    show: 'params.revealed and (params.answerPrice != params.startPrice)'
+                }
+            },
+            // What airlines offer at the fare. In the fare's grey,
+            // not the curve's orange, because the fare moves it
+            // along the curve and the curve is what moves for
+            // everything else: grey moves along, orange shifts.
+            // Untitled, so "What changed" says what the fare and
+            // quantity did rather than that a point moved.
+            {
+                type: 'Point',
+                def: {
+                    name: 'atPrice', title: '',
+                    x: 'calcs.q', y: 'params.price',
+                    color: 'colors.price',
+                    show: `params.step >= ${QUANTITY}`,
+                    droplines: { vertical: 'Q_s', horizontal: 'P' },
+                    drag: [{ vertical: 'price', draggable: 'not(params.submitted)' }],
+                    srTitle: 'What airlines offer at the fare',
+                    ghost: { show: 'not(params.asking)' }
+                }
+            }
+        ]
+    }
+];
 
 /**
  * The numbers the strip reports, and what they are called everywhere.
@@ -729,10 +684,20 @@ const SCENARIOS: Scenario[] = [
 ];
 
 /** One airline's supply of seats and every airline's: what the PEANUT lesson is drawn on. */
-export const PLANE_TICKETS: StudyModel = {
+const MODEL: ModelSpec = {
     id: 'plane-tickets',
     name: 'Supply of plane tickets',
-    diagram: supplyDiagram,
+    params: [
+        // From $100 to $300 in steps of $10: at $100 the student runs 1
+        // flight, and from $250 all 4. Labelled for the verdicts, which lower
+        // its first letter: "You moved the fare up".
+        { name: 'price', label: 'The fare', value: 200, min: 100, max: 300, round: 10 },
+        // From 100 to 300 thousand seats at $200, in steps of 10. At 100 and
+        // $100 airlines offer none, which is a true answer and the corner of
+        // what the sliders reach; the point sits on the price axis there.
+        { name: 'supply', label: 'Supply of seats', value: 200, min: 100, max: 300, round: 10 }
+    ],
+    calcs,
     panels: PANELS,
     narratedCalcs: NARRATED_CALCS,
     // Quantity supplied as the sum a student can do: what airlines offer at
@@ -771,10 +736,6 @@ export const PLANE_TICKETS: StudyModel = {
             curve: 'supply'
         }
     },
-    questionApparatus: {
-        price: { start: 'startPrice', answer: 'answerPrice' },
-        supply: { start: 'startSupply', answer: 'answerSupply' }
-    },
     scenarios: SCENARIOS,
     // The curve is dragged sideways, so its param rises as it moves right.
     directionWords: {
@@ -782,7 +743,7 @@ export const PLANE_TICKETS: StudyModel = {
     }
 };
 
-export const SUPPLY_SHIFTERS: StudyContent = {
+export const SUPPLY_SHIFTERS: StudyContent = defineLesson({
     id: 'supply',
     label: 'What shifts supply',
     title: 'Plane tickets, and what shifts supply',
@@ -814,6 +775,8 @@ export const SUPPLY_SHIFTERS: StudyContent = {
             note: 'A made-up report, for this question'
         }
     },
-    lesson: SUPPLY_LESSON,
-    model: PLANE_TICKETS
-};
+    steps: SUPPLY_LESSON,
+    model: MODEL
+});
+
+export const PLANE_TICKETS: StudyModel = SUPPLY_SHIFTERS.model;

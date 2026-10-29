@@ -1,6 +1,7 @@
 import type { LessonStep } from '../track/track';
 import type { Scenario } from '../dock/Scenarios';
-import { explainable } from './content';
+import { defineLesson } from './kit/lesson';
+import type { ModelSpec, PanelDefinition } from './kit/lesson';
 import type { StudyContent, StudyModel } from './content';
 import coverPicture from './pictures/fx-cover.svg';
 import tradePicture from './pictures/fx-trade.svg';
@@ -383,87 +384,6 @@ export const FX_LESSON: LessonStep[] = [
     }
 ];
 
-const calcs = {
-    rate: '0.65 + (params.demand - params.supply)/200',
-    inverse: '1/calcs.rate',
-    Qe: '(params.demand + params.supply)/2',
-    dRate: 'calcs.rate - prev.calcs.rate',
-    dInverse: 'calcs.inverse - prev.calcs.inverse'
-};
-
-/** Bounded like the curve each one draws. */
-const apparatusParam = (name: string) =>
-    ({ name, value: 50, min: 30, max: 70, round: 2, presentation: true });
-
-export const fxDiagram = {
-    schema: 'EconSchema',
-
-    params: [
-        // From 30 to 70, which keeps the clearing rate between USD 0.45 and
-        // USD 0.85 and every curve inside the panel at both ends of its range.
-        //
-        // In steps of 2, because a step of 2 is a cent on the rate. A step of
-        // 1 moved it half a cent, which a rate quoted to the cent shows as no
-        // change at all every other step — an arrow key that moved the curve
-        // and left the rate, the caption and the strip saying nothing happened.
-        // It also keeps Q* = (demand + supply)/2 a whole number.
-        { name: 'demand', label: 'Demand for AUD', value: 50, min: 30, max: 70, round: 2 },
-        { name: 'supply', label: 'Supply of AUD', value: 50, min: 30, max: 70, round: 2 },
-
-        // The question apparatus, as in the first lesson — and, as there, every
-        // one of these is `presentation`, or arming a question would raise the
-        // ghost of a curve nobody touched.
-        { name: 'asking', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        { name: 'submitted', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        { name: 'revealed', value: 0, min: 0, max: 1, round: 1, presentation: true },
-        apparatusParam('startDemand'),
-        apparatusParam('answerDemand'),
-        apparatusParam('startSupply'),
-        apparatusParam('answerSupply')
-    ],
-
-    calcs,
-
-    layout: {
-        CustomLayout: {
-            panels: [
-                {
-                    key: 'market',
-                    ...marketAxes,
-                    objects: [
-                        curve('demand_market', 'demand for AUD', demandAt('params.demand'),
-                            'colors.demand', { text: 'D', y: 0.47 }, 'demand'),
-                        curve('supply_market', 'supply of AUD', supplyAt('params.supply'),
-                            'colors.supply', { text: 'S', y: 0.86 }, 'supply'),
-                        startLine('questionStartDemand', demandAt('params.startDemand'), 'colors.demand'),
-                        startLine('questionStartSupply', supplyAt('params.startSupply'), 'colors.supply'),
-                        answerLine('questionAnswerDemand', demandAt('params.answerDemand'),
-                            'colors.demand', { text: 'D_1', y: 0.47 }, 'answerDemand', 'startDemand'),
-                        answerLine('questionAnswerSupply', supplyAt('params.answerSupply'),
-                            'colors.supply', { text: 'S_1', y: 0.86 }, 'answerSupply', 'startSupply'),
-                        equilibrium('market', 'calcs.rate', 'e^*')
-                    ]
-                },
-                {
-                    key: 'mirror',
-                    ...mirrorAxes,
-                    objects: [
-                        // Demand is blue and supply orange here too, as on
-                        // every chart: the supply of USD is orange though it is
-                        // the same trades as the blue demand for AUD. The
-                        // lesson's words make that link, not the colour.
-                        curve('usdSupply_mirror', 'supply of USD', usdSupplyAt('params.demand'),
-                            'colors.supply', { text: 'S', y: 2.35 }, 'demand'),
-                        curve('usdDemand_mirror', 'demand for USD', usdDemandAt('params.supply'),
-                            'colors.demand', { text: 'D', y: 1.2 }, 'supply'),
-                        equilibrium('mirror', 'calcs.inverse', '1/e^*')
-                    ]
-                }
-            ]
-        }
-    }
-};
-
 /**
  * Which panel headlines what. A rate in each, each in the other's currency.
  *
@@ -472,10 +392,40 @@ export const fxDiagram = {
  * any number the stage's caption room was measured against, so in the grid a
  * longer name ("Market for AUD") was squeezed to "Marke…".
  */
-const PANELS = [
-    { key: 'market', name: 'AUD market', headline: 'rate', delta: 'dRate' },
-    { key: 'mirror', name: 'USD market', headline: 'inverse', delta: 'dInverse' }
-] as const;
+const PANELS: PanelDefinition[] = [
+    {
+        key: 'market', name: 'AUD market', headline: 'rate',
+        ...marketAxes,
+        objects: [
+            curve('demand_market', 'demand for AUD', demandAt('params.demand'),
+                'colors.demand', { text: 'D', y: 0.47 }, 'demand'),
+            curve('supply_market', 'supply of AUD', supplyAt('params.supply'),
+                'colors.supply', { text: 'S', y: 0.86 }, 'supply'),
+            startLine('questionStartDemand', demandAt('params.startDemand'), 'colors.demand'),
+            startLine('questionStartSupply', supplyAt('params.startSupply'), 'colors.supply'),
+            answerLine('questionAnswerDemand', demandAt('params.answerDemand'),
+                'colors.demand', { text: 'D_1', y: 0.47 }, 'answerDemand', 'startDemand'),
+            answerLine('questionAnswerSupply', supplyAt('params.answerSupply'),
+                'colors.supply', { text: 'S_1', y: 0.86 }, 'answerSupply', 'startSupply'),
+            equilibrium('market', 'calcs.rate', 'e^*')
+        ]
+    },
+    {
+        key: 'mirror', name: 'USD market', headline: 'inverse',
+        ...mirrorAxes,
+        objects: [
+            // Demand is blue and supply orange here too, as on
+            // every chart: the supply of USD is orange though it is
+            // the same trades as the blue demand for AUD. The
+            // lesson's words make that link, not the colour.
+            curve('usdSupply_mirror', 'supply of USD', usdSupplyAt('params.demand'),
+                'colors.supply', { text: 'S', y: 2.35 }, 'demand'),
+            curve('usdDemand_mirror', 'demand for USD', usdDemandAt('params.supply'),
+                'colors.demand', { text: 'D', y: 1.2 }, 'supply'),
+            equilibrium('mirror', 'calcs.inverse', '1/e^*')
+        ]
+    }
+];
 
 /**
  * The numbers the strip reports, and what they are called everywhere.
@@ -571,13 +521,28 @@ const SCENARIOS: Scenario[] = [
 ];
 
 /** The AUD market and the USD market it mirrors: what the exchange-rate lesson is drawn on. */
-export const AUD_MARKET: StudyModel = {
+const MODEL: ModelSpec = {
     id: 'aud',
     name: 'The market for the Australian dollar',
-    diagram: fxDiagram,
+    params: [
+        // From 30 to 70, which keeps the clearing rate between USD 0.45 and
+        // USD 0.85 and every curve inside the panel at both ends of its range.
+        //
+        // In steps of 2, because a step of 2 is a cent on the rate. A step of
+        // 1 moved it half a cent, which a rate quoted to the cent shows as no
+        // change at all every other step — an arrow key that moved the curve
+        // and left the rate, the caption and the strip saying nothing happened.
+        // It also keeps Q* = (demand + supply)/2 a whole number.
+        { name: 'demand', label: 'Demand for AUD', value: 50, min: 30, max: 70, round: 2 },
+        { name: 'supply', label: 'Supply of AUD', value: 50, min: 30, max: 70, round: 2 }
+    ],
+    calcs: {
+        rate: '0.65 + (params.demand - params.supply)/200',
+        inverse: '1/calcs.rate',
+        Qe: '(params.demand + params.supply)/2'
+    },
     panels: PANELS,
     narratedCalcs: NARRATED_CALCS,
-    explainedCalcs: explainable(calcs),
     // The engine's labels, "Demand for AUD", say which curve and not what the
     // number is. It is that curve's quantity at the rate the lesson starts at.
     paramMeanings: {
@@ -612,10 +577,6 @@ export const AUD_MARKET: StudyModel = {
             curve: 'supply'
         }
     },
-    questionApparatus: {
-        demand: { start: 'startDemand', answer: 'answerDemand' },
-        supply: { start: 'startSupply', answer: 'answerSupply' }
-    },
     scenarios: SCENARIOS,
     // Both curves are dragged sideways, so their params rise as the curve moves
     // right — and "right" is the word every syllabus uses for an increase.
@@ -625,7 +586,7 @@ export const AUD_MARKET: StudyModel = {
     }
 };
 
-export const FOREIGN_EXCHANGE: StudyContent = {
+export const FOREIGN_EXCHANGE: StudyContent = defineLesson({
     id: 'fx',
     label: 'Exchange rates (AUD)',
     title: 'The Australian dollar, and what moves it',
@@ -671,6 +632,8 @@ export const FOREIGN_EXCHANGE: StudyContent = {
             picture: 'rba'
         }
     },
-    lesson: FX_LESSON,
-    model: AUD_MARKET
-};
+    steps: FX_LESSON,
+    model: MODEL
+});
+
+export const AUD_MARKET: StudyModel = FOREIGN_EXCHANGE.model;
