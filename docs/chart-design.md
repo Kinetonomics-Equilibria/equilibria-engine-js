@@ -474,8 +474,18 @@ Currency codes (AUD, USD) are fine: that is how money is written.
 
 ## Where today's charts differ
 
-Each line is a place where a chart in the repo breaks a rule above. Fix it, or
-write down in the config why it stays, then delete the line here.
+Each line is a place where a chart in the repo breaks a rule above, on purpose,
+and where the reason is written down beside its config. Don't copy one. If one
+can be fixed, fix it and delete its line. When a chart has to break a rule, add
+a line here naming the chart, the rule, and where the reason is written down.
+`chartRules.test.ts` checks the rules a machine can, and skips a rule only for
+the objects a line here names.
 
-None at the moment. When a chart has to break a rule, add a line here naming
-the chart, the rule, and where the reason is written down.
+- **The student's points in the Air Jordans and plane tickets lessons**,
+  `pair1`, `pair2`, `pair3` and `pair4`, and `flight1`, `flight2`, `flight3`
+  and `flight4`: their droplines have no symbol on the axis
+  ([Droplines](#droplines)). Each point lands on a tick, so the
+  tick number is the value its step says, and a symbol there would hide it.
+  Nor is there one on the list for what a pair is worth to you, or the fare a
+  flight needs. The reason is beside `pair` in `demandShifters.ts` and `flight`
+  in `supplyShifters.ts`.
