@@ -26,6 +26,9 @@ import classes from './NarrationFoot.module.css';
  * — what moved, what that did to the curves, and what followed, each in the
  * lesson's words where it has them and each with its numbers. That is the
  * chain a student is asked to write, in the order they are asked to write it.
+ * Between the curves and what followed the lesson says why the one led to
+ * the other ("At the old rate, sellers now offer more AUD than buyers
+ * want…"), the step a student most often leaves out of it.
  *
  * It used to be a card of its own, the column's bottom third, and that was
  * the wrong shape for it: a third of the column held at rest to say "drag a
@@ -101,14 +104,17 @@ function Row({ clause, worded = false }: { clause: Clause; worded?: boolean }) {
 }
 
 /**
- * The chain down its rail: what moved, what that did to the curves, what
- * followed. The first two are about curves, so their markers are drawn in the
- * curves' colour where there is one to draw them in; what followed is the
- * market's answer and no one curve's, and keeps its own.
+ * The chain down its rail: what moved, what that did to the curves, why that
+ * led where it did, what followed. The first two are about curves, so their
+ * markers are drawn in the curves' colour where there is one to draw them in;
+ * what followed is the market's answer and no one curve's, and keeps its own.
+ * The reason is not a thing that happened, so it has no marker: it is on the
+ * rail between the curves and what followed, in the reasoning's teal, as a
+ * question's "Why" is.
  *
  * `ends` is the foot's: the first cause and the first effect, and nothing
  * between. `arrive` has the parts after the cause come in turn — the curves,
- * then what followed — after a move that happened all at once.
+ * the reason, then what followed — after a move that happened all at once.
  */
 function Chain({ line, ends = false, arrive = false }: { line: NarrationLine; ends?: boolean; arrive?: boolean }) {
     const curve = curveColor(line);
@@ -123,6 +129,15 @@ function Chain({ line, ends = false, arrive = false }: { line: NarrationLine; en
         {
             part: 'movement', curve,
             rows: ends ? [] : line.movements.map(m => <div key={m} className={classes.movement}>{m}</div>)
+        },
+        {
+            part: 'because', curve: null,
+            rows: ends || !line.because ? [] : [
+                <div key="because" className={classes.because}>
+                    <span className={classes.becauseLabel}>Why</span>
+                    <span>{line.because}</span>
+                </div>
+            ]
         },
         { part: 'effect', curve: null, rows: effects.map(c => <Row key={c.name} clause={c} />) }
     ].filter(p => p.rows.length > 0);
@@ -247,12 +262,17 @@ export function NarrationFoot({
     };
 
     // "See all" where the sheet says more than the foot: a clause between the
-    // ends, the cause's numbers, or the maths.
+    // ends, the reason, the cause's numbers, or the maths. The reason is named
+    // in the press, since it is the one thing on the sheet that is not more
+    // of what the foot shows.
     const count = countOf(line);
     const between = count - Math.min(line.causes.length, 1) - Math.min(line.effects.length, 1);
-    const more = settled && (between > 0
+    const more = settled && (between > 0 || !!line.because
         || (line.causes.length > 0 && !!line.causes[0].words)
         || (!!onWhy && !!line.whyTarget));
+    const seeAllLabel = between > 0
+        ? (line.because ? `See why, and all ${count} changes` : `See all ${count} changes`)
+        : (line.because ? 'See why' : 'See the numbers');
 
     const undo = settled && onUndo ? (
         <Button
@@ -326,7 +346,7 @@ export function NarrationFoot({
                             aria-controls={open ? sheetId : undefined}
                             onClick={() => toggle(true)}
                         >
-                            {between > 0 ? `See all ${count} changes` : 'See the numbers'}
+                            {seeAllLabel}
                             <IconChevronUp size={14} stroke={1.75} aria-hidden="true" />
                         </Anchor>
                     ) : null}

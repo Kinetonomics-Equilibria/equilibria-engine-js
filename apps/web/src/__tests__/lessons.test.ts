@@ -383,6 +383,24 @@ describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as cons
         expect(names.filter((name, i) => names.indexOf(name) !== i)).toEqual([]);
     });
 
+    // A reason is said between the move's words and the numbers that followed,
+    // so it goes with a param whose move has words, and is said either way the
+    // student moves it. One sentence each way, because the screen reader hears
+    // it inside the chain's one sentence, and the sheet has room for a few
+    // lines of it beside four clauses.
+    it('gives each reason both ways, as one sentence, beside the words for the move', () => {
+        Object.entries(model.paramWords || {}).forEach(([name, words]) => {
+            if (!words.because) return;
+            expect(words.rise && words.fall, `"${name}" has a reason but no words for its move`).toBeTruthy();
+            [words.because.rise, words.because.fall].forEach(said => {
+                expect(said, `"${name}" has a reason for one way only`).toBeTruthy();
+                expect(said, `"${name}"'s reason`).toMatch(/^[A-Z].*[^.!?\s]\.$/);
+                expect(said, `"${name}"'s reason is more than one sentence`).not.toMatch(/[.!?]\s/);
+                expect(said!.length, `"${name}"'s reason: ${said}`).toBeLessThanOrEqual(160);
+            });
+        });
+    });
+
     // "What changed" marks a cause in its curve's colour, and the curves it
     // moved in the same one beside the first of them, so that is a claim about
     // everything the param draws in the first panel it draws in — and a marker

@@ -164,13 +164,27 @@ const MODEL: ModelSpec = {
             about: 'People overseas paying for Australian exports, holidays and assets.',
             rise: 'Demand for AUD increases',
             fall: 'Demand for AUD decreases',
-            curve: 'demand'
+            curve: 'demand',
+            // The AUD alone, which is on the stage from the start: the USD
+            // market comes in later, and its words are in the effects.
+            because: {
+                rise: 'At the old exchange rate, buyers now want more AUD than sellers offer, so ' +
+                    'the rate is pushed up until the two match again.',
+                fall: 'At the old exchange rate, buyers now want less AUD than sellers offer, so ' +
+                    'the rate is pushed down until the two match again.'
+            }
         },
         supply: {
             about: 'Australians paying for imports, trips and assets overseas.',
             rise: 'Supply of AUD increases',
             fall: 'Supply of AUD decreases',
-            curve: 'supply'
+            curve: 'supply',
+            because: {
+                rise: 'At the old exchange rate, sellers now offer more AUD than buyers want, so ' +
+                    'the rate is pushed down until the two match again.',
+                fall: 'At the old exchange rate, sellers now offer less AUD than buyers want, so ' +
+                    'the rate is pushed up until the two match again.'
+            }
         }
     },
     scenarios: SCENARIOS,

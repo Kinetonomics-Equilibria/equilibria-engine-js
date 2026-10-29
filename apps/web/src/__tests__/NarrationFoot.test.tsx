@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MantineProvider } from '@mantine/core';
 import type { ReactElement } from 'react';
@@ -321,6 +321,54 @@ describe('the whole chain', () => {
         rerender(<MantineProvider theme={theme} env="test"><NarrationFoot line={chain()} /></MantineProvider>);
         await userEvent.setup().click(seeAll());
         expect(sheet().querySelector('ol')!.getAttribute('data-arrive')).toBeNull();
+    });
+});
+
+/**
+ * Why the curves' move led to what followed: the lesson's sentence, on the
+ * sheet between the two, named as a question's reasoning is. The one thing on
+ * the sheet that is not more of what the foot shows, so the press names it.
+ */
+describe('the reason', () => {
+    const REASONED = [{
+        ...PARAMS[0],
+        because: { rise: 'At the old price, buyers want more.', fall: 'At the old price, sellers offer more.' }
+    }];
+    const reasoned = (over: Partial<NarrateInput> = {}) => chain({ params: REASONED, ...over });
+
+    it('is said between the curves and what followed, as the reasoning', async () => {
+        await opened(<NarrationFoot line={reasoned()} />);
+
+        const parts = [...sheet().querySelectorAll('[data-part]')].map(p => p.getAttribute('data-part'));
+        expect(parts).toEqual(['cause', 'movement', 'because', 'effect']);
+        expect(inSheet('because')!.textContent).toBe('WhyAt the old price, buyers want more.');
+    });
+
+    it('is the sheet\'s, and not the foot\'s, whose press names it', () => {
+        view(<NarrationFoot line={reasoned()} />);
+
+        expect(part('because')).toBeNull();
+        expect(seeAll().textContent).toBe('See why, and all 4 changes');
+    });
+
+    it('is named alone where the ends are all the changes there are', () => {
+        view(<NarrationFoot line={reasoned({ affected: undefined, calcs: CALCS.slice(0, 1) })} />);
+        expect(seeAll().textContent).toBe('See why');
+    });
+
+    it('is not said for a param the lesson gives no reason for', async () => {
+        await opened(<NarrationFoot line={chain()} />);
+        expect(inSheet('because')).toBeNull();
+    });
+
+    it('is said aloud, and on paper', () => {
+        view(<NarrationPrinted line={reasoned()} />);
+        expect(document.querySelector('[data-printed] [data-part="because"]')!.textContent)
+            .toBe('WhyAt the old price, buyers want more.');
+        cleanup();
+
+        view(<NarrationFoot line={reasoned()} />);
+        expect(announced()).toContain('demand shifts up; at the old price, buyers want more; the price rises');
     });
 });
 

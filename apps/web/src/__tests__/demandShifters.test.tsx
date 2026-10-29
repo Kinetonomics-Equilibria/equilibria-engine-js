@@ -48,7 +48,7 @@ const caption = (key: string) => (chrome(key) && chrome(key)!.textContent) || ''
  * says only the chain's two ends, and these steps are held to every clause.
  */
 const chain = () => {
-    const all = screen.queryByRole('button', { name: /^See (all \d+ changes|the numbers)/ });
+    const all = screen.queryByRole('button', { name: /^See (why|all \d+ changes|the numbers)/ });
     if (all) fireEvent.click(all);
     return screen.getByRole('region', { name: 'What changed' }).textContent || '';
 };

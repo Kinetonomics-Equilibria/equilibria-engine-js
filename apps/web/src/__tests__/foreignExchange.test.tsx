@@ -592,7 +592,7 @@ describe('the colour of what changed', () => {
         // The curves' movement is on the whole chain, a press away; the foot
         // says only its two ends.
         const card = screen.getByRole('region', { name: 'What changed' });
-        const all = within(card).queryByRole('button', { name: /^See all/ });
+        const all = within(card).queryByRole('button', { name: /^See (why|all)/ });
         if (all) fireEvent.click(all);
         const less = within(card).getByRole('button', { name: /^Show less/ });
         const sheet = document.getElementById(less.getAttribute('aria-controls')!)!;
@@ -665,7 +665,7 @@ describe('a market not drawn yet', () => {
 
     /** The whole chain, as "See all" opens it, and the sentence a screen reader hears. */
     const chain = () => {
-        const all = screen.queryByRole('button', { name: /^See (all \d+ changes|the numbers)/ });
+        const all = screen.queryByRole('button', { name: /^See (why|all \d+ changes|the numbers)/ });
         if (all) fireEvent.click(all);
         return screen.getByRole('region', { name: 'What changed' }).textContent || '';
     };

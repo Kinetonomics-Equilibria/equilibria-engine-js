@@ -162,13 +162,28 @@ export const SUPPLY_AND_DEMAND: StudyContent = defineLesson({
                 about: 'Where demand meets the price axis. Higher means buyers want more at every price.',
                 rise: 'Demand increases',
                 fall: 'Demand decreases',
-                curve: 'demand'
+                curve: 'demand',
+                // In the words "Where they meet" teaches equilibrium with: what
+                // buyers want, what sellers offer, nothing left over and nobody
+                // missing out. Not "surplus", which is consumer surplus here.
+                because: {
+                    rise: 'At the old price, buyers now want more than sellers offer, so some buyers ' +
+                        'miss out and the price is pushed up until the two match again.',
+                    fall: 'At the old price, sellers now offer more than buyers want, so some is left ' +
+                        'over and the price is pushed down until the two match again.'
+                }
             },
             c: {
                 about: 'Where supply meets the price axis. Higher means each unit costs sellers more.',
                 rise: 'Sellers\' costs rise',
                 fall: 'Sellers\' costs fall',
-                curve: 'supply'
+                curve: 'supply',
+                because: {
+                    rise: 'At the old price, sellers now offer less than buyers want, so some buyers ' +
+                        'miss out and the price is pushed up until the two match again.',
+                    fall: 'At the old price, sellers now offer more than buyers want, so some is left ' +
+                        'over and the price is pushed down until the two match again.'
+                }
             }
         },
         scenarios: SCENARIOS

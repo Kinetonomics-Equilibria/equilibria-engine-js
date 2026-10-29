@@ -831,8 +831,9 @@ export function StudyScreen({
         setReadout(engine.getCalcs() as Readout);
         setDeclared(marketOf(engine.getParams()));
         // The engine says what a param is called and to how many places; the
-        // lesson says what its rise and fall mean, where it has words for them,
-        // and which colour its curve is drawn in — by name, since only the
+        // lesson says what its rise and fall mean and why they do what follows,
+        // where it has words for them, and which colour its curve is drawn
+        // in — by name, since only the
         // engine knows the value a name stands for.
         const colors = engine.getColors();
         setNarratedParams(engine.getParams()
@@ -849,6 +850,7 @@ export function StudyScreen({
                 return {
                     name: p.name, label: p.label, precision: p.precision,
                     ...(words ? { rise: words.rise, fall: words.fall } : {}),
+                    ...(words && words.because ? { because: words.because } : {}),
                     ...(color ? { color } : {})
                 };
             }));

@@ -35,8 +35,9 @@ attention on finding things.
 2. **Cause above effect, everywhere.** The side column reads top to bottom in
    the order a student works: where they are, what they can move, what moving
    it did. The chain inside "What changed" reads the same way: what moved, what
-   that did to the curves, what followed. Spatial order is causal order, so the
-   layout teaches the reasoning before a word is read.
+   that did to the curves, why that led where it did, what followed. Spatial
+   order is causal order, so the layout teaches the reasoning before a word is
+   read.
 
 3. **Words before symbols.** Plain words first, the economics word second, the
    letter last. A slider says who is behind its curve ("People overseas paying
@@ -72,15 +73,15 @@ attention on finding things.
    | Blue (primary) | You can act here; where you are | buttons, links, the current step, Present while presenting |
    | Light blue | A word to learn | key-term callouts |
    | Yellow | A question waiting for you | the question callout, its progress marker, the cover's bars for a question |
-   | Teal | The reasoning | "Why" after a question; a right answer, in a verdict and in the recap; the recap's takeaway |
+   | Teal | The reasoning | "Why" after a question, and in the whole chain of "What changed"; a right answer, in a verdict and in the recap; the recap's takeaway |
    | Grey | Numbers, and things to try | chips, the chain's arrows, try-it callouts; an answer the student was shown, in the recap |
    | The curves' colours | The market itself | the diagram, the slider that moves each curve, and the chain's markers for what moved and the curves it moved |
    | A topic's colour | Which topic, only ever as a dot: before its name, or before a story's headline | the Lessons and Playground panels, and over the page's title; before each headline in the In the news panel and Home's feed, with the topic's name there for a screen reader. Beside words, so a teal topic is never read as the reasoning |
 
 7. **Calm by default, depth on demand.** Each card shows the headline and puts
    the depth one press away: "What changed" says what moved and what followed
-   first, and "See all" opens the rest of the chain; "Why? See the maths"
-   opens the formula behind the first effect; a scenario carries its reasoning in one line; "Try this" offers
+   first, and "See why" opens the rest of the chain and the reason under it;
+   "Why? See the maths" opens the formula behind the first effect; a scenario carries its reasoning in one line; "Try this" offers
    questions and marks nothing. A curve that reaches the end of its range just
    stops there: the slider already shows the number, so nothing is said.
 
@@ -435,12 +436,33 @@ from 480px to 570px (see [Present](#present)).
   Undo it says what it is waiting for. Under the sheet the body is hidden as
   well as covered (`.stack` in `ui/paper.module.css`), so neither the
   keyboard nor a screen reader reaches words nobody can see. "Why? See the
-  maths" is on the sheet, under the chain. Where the ends are the whole
-  chain the press is "See the numbers"; where it would show nothing more it
-  is not offered.
+  maths" is on the sheet, under the chain. With a reason the press is "See
+  why, and all 6 changes", or "See why" where the ends are every change
+  there is; without one, where the ends are the whole chain, it is "See the
+  numbers"; where it would show nothing more it is not offered.
+- The sheet is the chain set as the card's words are: at their reading size,
+  15px, with each clause's words whole on a line and its numbers under them,
+  a size down, at the words' left edge. Beside its numbers in the column's
+  320px one clause in two broke over two lines, some after their first word,
+  with the numbers at the right edge, away from their words. The chain's two
+  ends, what moved and the effect ranked first, are its boldest words; the
+  effects after the first are in plain type, so the eye finds the ends
+  first. The foot keeps its one-line rows, where a clause is cut rather than
+  wrapped.
+- Between the curves and what followed, the sheet says why the one led to
+  the other, in the lesson's words (`paramWords.because`): "At the old price,
+  buyers now want more than sellers offer, so some buyers miss out and the
+  price is pushed up until the two match again." It is a reason, not an
+  event, so it has no marker and the rail runs past it; it is in the `why`
+  callout, named "Why", as a question's reasoning is. Only where one param
+  moved and something followed: two causes can push the price opposite ways.
+  The foot has no room for it, so the press names it — "See why, and all 6
+  changes" — since it is the one thing on the sheet that is not more of what
+  the foot shows. The printed page and the screen reader's sentence say it
+  too. See [Why the chain says why](#why-the-chain-says-why).
 - After a move made all at once — a step's, a scenario's, Reset, a story's
   move — what moved is there at once and what followed comes after it in
-  turn: the curves at 160ms, the effects at 360ms. The order the chain is
+  turn: the curves at 160ms, the reason at 260ms, the effects at 360ms. The order the chain is
   read in is said a second time by when. After a drag it is all there when
   the student lets go, since the chain has already unfolded under their
   hand; with reduced motion it is always all there at once.
@@ -465,6 +487,27 @@ lesson's words left the strip for the same reason (see `LessonCard`). Beside the
 stage the column's width is already the stage's loss, so the chain costs the
 diagram nothing there, gets the room to be read whole, and sits directly under
 the controls that cause it. The strip's height went back to the diagram.
+
+### Why the chain says why
+
+The chain showed *that*: demand increases, demand shifts up, the price rises.
+It never said *why* the price rose, and that is the step a student most often
+leaves out of the chain they are asked to write: that at the old price
+buyers now want more than sellers offer, and that this is what pushes the
+price up until the two match. No number on the screen says it, and the ghost
+curve and the arrow on the diagram show where the market went, not what
+drove it there.
+
+A page that describes the market as it stands, a few sentences rewritten as
+the student drags, was weighed and left. It describes a state, "when the
+price is above P*, quantity supplied exceeds quantity demanded", and these
+markets always land back at equilibrium, so after every move it would say
+the one sentence it said before. What changes from move to move is the
+reason, and it depends on which curve moved and which way, not on how far.
+So it is one sentence for each param each way, written by the lesson in its
+own words, said where it belongs in the chain, and only where it is true of
+every move that way. A param for which no one sentence is, such as the café's
+specialisation, has none.
 
 ### Why the chain became a foot
 
@@ -505,7 +548,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 | Card head | `ui/paper.module.css` `.head`, `.eyebrow` | What the card is, small and grey at the left ("Lesson" beside the stage, "What changed"); the card's one action at the right ("What changed"'s Undo). |
 | Callout | `ui/callout.module.css` | A tinted box inside a card, toned by kind: `term`, `ask`, `try`, `why`, with `.label` for its name. The only place these colours are defined. |
 | Param control | `ParamControl.tsx` | Name and value on a line, who it is under them, the slider across the card. Explore, a lesson's try-it and its question use it; the question's stops moving once it is answered, and Enter answers. Drawn in its curve's colour where the lesson names one, the theme's blue where it does not. The gesture wiring is `ParamSlider`'s. |
-| The chain | `NarrationFoot.tsx` | "What changed", at the foot of the column's card: the chain's two ends at one height whatever they say, and the whole chain on a sheet that rises over the card ("See all"). Cause, curves, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine; what followed comes in turn after a move made at once. `NarrationPrinted` is the whole chain on paper. Rendered from `narrate()`; decides nothing. |
+| The chain | `NarrationFoot.tsx` | "What changed", at the foot of the column's card: the chain's two ends at one height whatever they say, and the whole chain on a sheet that rises over the card ("See all"), at the card's reading size. Cause, curves, the reason in a `why` callout, effects down a rail, each in the lesson's words with its numbers was → now; the first two marked in their curves' colour, read from the engine; what followed comes in turn after a move made at once. `NarrationPrinted` is the whole chain on paper. Rendered from `narrate()`; decides nothing. |
 | Action row | `dock/Scenarios.tsx` `ActionRow` | Something to press that needs its reason beside it: the name, the reasoning under it, an arrow — all one button. A row that opens a page is a real link; a row that is a place has the rail's icon before its name. Scenarios, a story's move and Home's places use it. |
 | Prompt list | `dock/Explore.tsx` | Suggestions under a "Try this" eyebrow, with hollow markers: things to do, not tasks to tick. |
 | Stage sheet | `StageSheet.tsx` | A sheet over the whole stage, for a moment with no diagram to show: paper, inset by the stage's own margin (`STAGE_PAD`), with the card head and a body that scrolls. The stage stays mounted under it, inert and at its size. |
@@ -532,6 +575,7 @@ are the lesson's own:
 | --- | --- | --- |
 | `paramWords.about` | Explore, under each control | Who is behind the curve, one short sentence. Not the unit. |
 | `paramWords.rise` / `fall` | The chain's cause | A whole clause, present tense, sentence case: "Supply of AUD increases". |
+| `paramWords.because` | The whole chain, between the curves and what followed | Why the move led to what followed, one sentence each way, true however far the param moves: "At the old price, buyers now want more than sellers offer, so some buyers miss out and the price is pushed up until the two match again." Not the move again, and not the numbers. Left out where no one sentence is true of every move. |
 | `paramWords.curve` | The chain's markers, and the param's slider | The colour its curve is drawn in, as the diagram names it: `demand` for `color: 'colors.demand'`. Where the param moves curves in two panels, the colour of the first panel's: demand for AUD is blue, though in the USD market it moves the orange supply of USD. |
 | `narratedCalcs[].rise` / `fall` | The chain's effects | The step title that teaches it: "The AUD appreciates", "Sellers earn more". Mind reciprocals — a dearer USD 1 is a USD that has *appreciated*. |
 | `explorePrompts` | "Try this" | Two or three open questions, each answerable with the controls on screen. |

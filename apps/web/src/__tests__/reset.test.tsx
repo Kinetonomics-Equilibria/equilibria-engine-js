@@ -81,7 +81,7 @@ describe('Reset', () => {
         expect(marketCaption()).toContain('Price $14.00');
         expect(changed().getAttribute('data-kind')).toBe('settled');
         // The cause's numbers are on the whole chain, a press away.
-        await user.click(within(changed()).getByRole('button', { name: /^See all/ }));
+        await user.click(within(changed()).getByRole('button', { name: /^See (why|all)/ }));
         expect(changed().textContent).toContain('28.0→26.0');
         expect(reset()).toHaveProperty('disabled', true);
         // Still the step the student was at.

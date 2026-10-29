@@ -816,9 +816,9 @@ test('the narration narrates once per interaction, not once per frame', async ({
     expect(chain, 'the middle clause names what the engine said moved').toContain('demand shifts up');
     expect(chain).toMatch(/The price rises\$11\.00→\$\d/);
 
-    // And one utterance, once.
+    // And one utterance, once, with the reason between the curves and the price.
     expect(await page.locator(`${STRIP} [role="status"]`).textContent())
-        .toMatch(/^Demand increases from 20\.0 to .*; demand shifts up; the price rises from \$11\.00 to /);
+        .toMatch(/^Demand increases from 20\.0 to .*; demand shifts up; at the old price, buyers now want more than sellers offer, .*; the price rises from \$11\.00 to /);
 });
 
 test('the narration and the panel chips agree about "before"', async ({ page }) => {
@@ -982,7 +982,7 @@ test('"What changed" keeps its height, and the slider that moved it stays put', 
 test('the maths instrument shows the calc the strip named', async ({ page }) => {
     await dragDemandDown(page);
     // "Why?" is under the whole chain, on the sheet "See all" opens.
-    await page.locator(STRIP).getByRole('button', { name: /^See all/ }).click();
+    await page.locator(STRIP).getByRole('button', { name: /^See (why|all)/ }).click();
     await page.getByRole('button', { name: 'Why?' }).click();
 
     // "Why?" is answered by the instrument the strip pointed at, opened on the

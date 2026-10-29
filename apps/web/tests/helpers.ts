@@ -305,7 +305,7 @@ export async function textCollisions(page: Page): Promise<string[]> {
  */
 export async function inWholeChain<T>(page: Page, fn: (chain: Locator) => Promise<T>): Promise<T> {
     const foot = page.locator('[data-kind]');
-    const seeAll = foot.getByRole('button', { name: /^See (all \d+ changes|the numbers)/ });
+    const seeAll = foot.getByRole('button', { name: /^See (why|all \d+ changes|the numbers)/ });
     if ((await seeAll.count()) === 0) return fn(foot);
     await seeAll.click();
     const sheet = foot.locator('[data-sheet]');

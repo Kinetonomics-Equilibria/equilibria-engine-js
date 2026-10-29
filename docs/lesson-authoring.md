@@ -172,6 +172,17 @@ called, its unit and decimals), `paramWords`, `paramMeanings`,
 `directionWords`. A curve a param turns rather than shifts needs none: "What
 changed" says it gets steeper or flatter.
 
+A param's `because` is the reason "What changed" gives between the curves
+and the numbers, one sentence for its rise and one for its fall: "At the old
+price, buyers now want more than sellers offer, so some buyers miss out and
+the price is pushed up until the two match again." Say what makes the move
+lead to what followed, in the words the steps use, not the move or the
+numbers again. It is said for every move that way, however far and wherever
+the other params are, so check it at the ends of the ranges, and leave it
+out where no one sentence holds: the café's specialisation has none. It may
+be said before a panel is on the stage, so it names nothing that panel
+shows: the canteen's price says nothing of revenue.
+
 A narrated calc's `unit` is put in front of its number, as `$` is, so there is
 no `%` after one. Say it in the label: "% change in price". `rise` and `fall`
 can be left out where they would only say the label again; the clause is then

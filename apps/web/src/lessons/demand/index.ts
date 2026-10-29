@@ -169,13 +169,27 @@ const MODEL: ModelSpec = {
                 'curve stays put.',
             rise: 'Nike raises its price',
             fall: 'Nike cuts its price',
-            curve: 'choice'
+            curve: 'choice',
+            // Said of a pair, not of fans, so it holds at the steps where the
+            // chart is your own pairs alone.
+            because: {
+                rise: 'Fewer pairs are worth at least the higher price, so fewer are bought: a move ' +
+                    'along the curve.',
+                fall: 'More pairs are worth at least the lower price, so more are bought: a move ' +
+                    'along the curve.'
+            }
         },
         demand: {
             about: 'What all fans want at each price. Anything in PETPIG shifts it.',
             rise: 'Demand for Air Jordans increases',
             fall: 'Demand for Air Jordans decreases',
-            curve: 'demand'
+            curve: 'demand',
+            because: {
+                rise: 'Nike\'s price hasn\'t changed, but fans now want more pairs at every price, ' +
+                    'including this one.',
+                fall: 'Nike\'s price hasn\'t changed, but fans now want fewer pairs at every price, ' +
+                    'including this one.'
+            }
         }
     },
     scenarios: SCENARIOS,

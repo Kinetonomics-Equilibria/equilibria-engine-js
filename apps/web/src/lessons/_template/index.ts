@@ -63,13 +63,25 @@ export const TEMPLATE: StudyContent = defineLesson({
                 about: 'Shoppers at the market, buying for the week.',
                 rise: 'Demand for strawberries increases',
                 fall: 'Demand for strawberries decreases',
-                curve: 'demand'
+                curve: 'demand',
+                because: {
+                    rise: 'At the old price, shoppers now want more than growers bring, so some ' +
+                        'shoppers miss out and the price is pushed up until the two match again.',
+                    fall: 'At the old price, growers now bring more than shoppers want, so some is ' +
+                        'left over and the price is pushed down until the two match again.'
+                }
             },
             supply: {
                 about: 'Growers from around the district, bringing what they picked.',
                 rise: 'Supply of strawberries increases',
                 fall: 'Supply of strawberries decreases',
-                curve: 'supply'
+                curve: 'supply',
+                because: {
+                    rise: 'At the old price, growers now bring more than shoppers want, so some is ' +
+                        'left over and the price is pushed down until the two match again.',
+                    fall: 'At the old price, growers now bring less than shoppers want, so some ' +
+                        'shoppers miss out and the price is pushed up until the two match again.'
+                }
             }
         },
         scenarios: [

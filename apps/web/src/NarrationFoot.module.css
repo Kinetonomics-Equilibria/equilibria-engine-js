@@ -121,10 +121,14 @@
     }
 }
 
+/* With the card's height to fill, the chain is set as the card's own words
+ * are, at their reading size (`LessonCard`'s 15px), and further apart: the
+ * room to read one part at a time that the bottom third never had. */
 .sheetBody {
+    --line: calc(15px * 1.5);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
     min-height: 0;
     overflow-y: auto;
 }
@@ -179,10 +183,10 @@
     -webkit-line-clamp: 3;
 }
 
-/* The chain: what moved, what that did to the curves, what followed — three
- * parts down a rail, each marked where it starts, in the order it happened.
- * The rail is what makes three short lists one sequence, without a word of
- * "therefore" between them. On the foot, two ends of it, closer together. */
+/* The chain: what moved, what that did to the curves, why, what followed —
+ * parts down a rail, each event marked where it starts, in the order it
+ * happened. The rail is what makes short lists one sequence, without a word
+ * of "therefore" between them. On the foot, two ends of it, closer together. */
 .parts {
     --gap: 10px;
     display: flex;
@@ -197,10 +201,8 @@
     --gap: 6px;
 }
 
-/* On the sheet, with the card's height to fill, further apart: the room to
- * read one part at a time that the bottom third never had. */
 .sheetBody .parts {
-    --gap: 16px;
+    --gap: 18px;
 }
 
 .part {
@@ -211,6 +213,12 @@
     padding-left: 16px;
     /* The marker is centred on the part's first line. */
     --marker: 9px;
+}
+
+/* On the sheet each clause is two lines, its words and its numbers, so a gap
+ * between clauses says which numbers are whose. */
+.sheetBody .part {
+    gap: 10px;
 }
 
 /* `--curve` is the colour of the curves a part is about, where the foot has
@@ -257,11 +265,25 @@
     background: var(--mantine-color-text);
 }
 
+/* The reason is not an event, so the rail runs on past it unmarked, from the
+ * curves down to what followed: it is the way from one to the other. */
+.part[data-part='because']::before {
+    content: none;
+}
+
+.part[data-part='because']::after {
+    top: 0;
+}
+
 /* After a move made all at once, what moved is there at once, and what
  * followed comes after it in turn: the curves, then the market's answer. The
  * order the chain is read in, said a second time by when. */
 .parts[data-arrive] > [data-part='movement'] {
     animation: arrive 220ms ease-out 160ms both;
+}
+
+.parts[data-arrive] > [data-part='because'] {
+    animation: arrive 220ms ease-out 260ms both;
 }
 
 .parts[data-arrive] > [data-part='effect'] {
@@ -302,14 +324,32 @@
     white-space: nowrap;
 }
 
-.part[data-part='cause'] .words {
-    font-weight: 500;
+/* On the sheet, at the card's reading size, a clause is its words whole and
+ * its numbers under them, a size down: words before symbols. A clause is a
+ * lesson's sentence, "More AUD changes hands", and beside its numbers in the
+ * column's 320px one in two broke over two lines, some after their first
+ * word, with the numbers at the right edge, away from what they belong to. */
+.sheetBody .row,
+.sheetBody .movement,
+.sheetBody .because {
+    font-size: 15px;
+    line-height: 1.5;
 }
 
-.part[data-part='effect'] .words {
-    font-weight: 500;
+.sheetBody .row {
+    flex-direction: column;
+    align-items: flex-start;
 }
 
+.sheetBody .numbers {
+    margin-left: 0;
+    font-size: var(--mantine-font-size-sm);
+}
+
+/* The chain's two ends are its strongest words: what moved, and the effect
+ * the lesson ranks first. The effects after it are read in plain type, so
+ * the eye finds the two ends before the rest. */
+.part[data-part='cause'] .words,
 .part[data-part='effect'] > :first-child .words {
     font-weight: 600;
 }
@@ -342,6 +382,21 @@
 
 .movement::first-letter {
     text-transform: uppercase;
+}
+
+/* Why the curves' move led to what followed, in the lesson's words: the
+ * reasoning, so in the reasoning's callout, named as a question's is. */
+.because {
+    composes: callout why from './ui/callout.module.css';
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: var(--mantine-font-size-sm);
+    line-height: 1.5;
+}
+
+.becauseLabel {
+    composes: label from './ui/callout.module.css';
 }
 
 .why {

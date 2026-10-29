@@ -666,7 +666,7 @@ test('the whole chain stays open through drags, and goes down on Show less or Ne
     const sheet = foot.locator('[data-sheet]');
 
     await dragSideways(page, 'down', 40);
-    await foot.getByRole('button', { name: /^See all/ }).click();
+    await foot.getByRole('button', { name: /^See (why|all)/ }).click();
     await expect(sheet).toBeVisible();
     await expect(sheet).toContainText('Demand for AUD increases');
 
@@ -680,7 +680,7 @@ test('the whole chain stays open through drags, and goes down on Show less or Ne
     await foot.getByRole('button', { name: /^Show less/ }).click();
     await expect(sheet).toHaveCount(0);
 
-    await foot.getByRole('button', { name: /^See all/ }).click();
+    await foot.getByRole('button', { name: /^See (why|all)/ }).click();
     await expect(sheet).toBeVisible();
     await page.getByRole('button', { name: 'Next' }).click();
     await expect(sheet).toHaveCount(0);

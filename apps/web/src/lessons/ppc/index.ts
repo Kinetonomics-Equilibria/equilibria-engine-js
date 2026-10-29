@@ -171,22 +171,43 @@ const MODEL: ModelSpec = {
                 'resources.',
             rise: 'Resources increase',
             fall: 'Resources decrease',
-            curve: 'ppf'
+            curve: 'ppf',
+            because: {
+                rise: 'With more hours to share between coffee and toasties, the café can make more ' +
+                    'of both.',
+                fall: 'With fewer hours to share between coffee and toasties, the café can make fewer ' +
+                    'of both.'
+            }
         },
         C: {
             about: 'How many coffees an hour of work makes, if all of it goes on coffee. Better ' +
                 'machines and skills raise it.',
             rise: 'Coffee-making gets faster',
             fall: 'Coffee-making gets slower',
-            curve: 'ppf'
+            curve: 'ppf',
+            because: {
+                rise: 'An hour on coffee now makes more cups, so every hour moved to toasties gives ' +
+                    'up more coffees.',
+                fall: 'An hour on coffee now makes fewer cups, so every hour moved to toasties gives ' +
+                    'up fewer coffees.'
+            }
         },
         T: {
             about: 'How many toasties an hour of work makes, if all of it goes on toasties. A ' +
                 'better sandwich press raises it.',
             rise: 'Toastie-making gets faster',
             fall: 'Toastie-making gets slower',
-            curve: 'ppf'
+            curve: 'ppf',
+            because: {
+                rise: 'An hour on toasties now makes more of them, so each toastie takes less time ' +
+                    'away from coffee.',
+                fall: 'An hour on toasties now makes fewer of them, so each toastie takes more time ' +
+                    'away from coffee.'
+            }
         },
+        // No reason for specialisation: what it does to the cost of a toastie
+        // depends on where A and B are, so no one sentence is true of every
+        // move.
         k: {
             about: 'How differently suited the staff are to the two jobs. At 1 everyone is as ' +
                 'good at one as the other, and the curve is a straight line.',

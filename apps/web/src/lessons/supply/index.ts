@@ -186,13 +186,27 @@ const MODEL: ModelSpec = {
                 'the curve stays put.',
             rise: 'Fares rise',
             fall: 'Fares fall',
-            curve: 'price'
+            curve: 'price',
+            // Said of a flight, not of airlines, so it holds at the steps where
+            // the chart is your own flights alone.
+            because: {
+                rise: 'More flights cover their costs at the higher fare, so more seats are offered: ' +
+                    'a move along the curve.',
+                fall: 'Fewer flights cover their costs at the lower fare, so fewer seats are offered: ' +
+                    'a move along the curve.'
+            }
         },
         supply: {
             about: 'The seats all airlines offer at each fare. Anything in PEANUT shifts it.',
             rise: 'Supply of seats increases',
             fall: 'Supply of seats decreases',
-            curve: 'supply'
+            curve: 'supply',
+            because: {
+                rise: 'The fare hasn\'t changed, but airlines now offer more seats at every fare, ' +
+                    'including this one.',
+                fall: 'The fare hasn\'t changed, but airlines now offer fewer seats at every fare, ' +
+                    'including this one.'
+            }
         }
     },
     scenarios: SCENARIOS,

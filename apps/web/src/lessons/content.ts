@@ -196,6 +196,23 @@ export interface ParamWords extends Reading {
      * colour, as the FX lesson's USD market does.
      */
     curve?: string;
+
+    /**
+     * Why its rise, or its fall, did what followed: one sentence each way,
+     * said in "What changed" between the curves it moved and the numbers
+     * that moved with them. "At the old price, buyers now want more than
+     * sellers offer, so some miss out and the price is pushed up until the
+     * two match again."
+     *
+     * The link a chain of numbers cannot show, and the one a student most
+     * often leaves out of the chain they write. So it says what the rows
+     * around it do not: not the move again, and not which numbers rose, but
+     * what makes one lead to the other. It must hold however far the param
+     * moves and wherever the other params are, since it is said for every
+     * move one way; where that cannot be said in a sentence, leave it out.
+     * Said only when this param alone moved.
+     */
+    because?: Reading;
 }
 
 /** The stage before the lesson starts. See `StudyContent.cover`. */

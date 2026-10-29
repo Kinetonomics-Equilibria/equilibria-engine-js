@@ -132,14 +132,29 @@ const MODEL: ModelSpec = {
                 'the curve, and the curve stays put.',
             rise: 'The canteen raises its price',
             fall: 'The canteen cuts its price',
-            curve: 'choice'
+            curve: 'choice',
+            // Nothing about revenue, which a price move reaches steps before
+            // the revenue panel does; and "how far", since at 0 sales lost per
+            // $1 sales do not move at all.
+            because: {
+                rise: 'The curve stays put, and students move up along it: how far sales fall ' +
+                    'depends on how much they respond to the price.',
+                fall: 'The curve stays put, and students move down along it: how far sales rise ' +
+                    'depends on how much they respond to the price.'
+            }
         },
         response: {
             about: 'How many fewer rolls students buy for each dollar on the price: more when they ' +
                 'have somewhere else to go.',
             rise: 'Each dollar on the price loses more sales',
             fall: 'Each dollar on the price loses fewer sales',
-            curve: 'demand'
+            curve: 'demand',
+            // At $4.50 a turn of the curve changes nothing, so this is said only
+            // away from it, where it is true.
+            because: {
+                rise: 'The same change in price from $4.50 now changes sales by a bigger percentage.',
+                fall: 'The same change in price from $4.50 now changes sales by a smaller percentage.'
+            }
         }
     },
     scenarios: SCENARIOS

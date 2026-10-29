@@ -390,6 +390,57 @@ describe('the words', () => {
 });
 
 /**
+ * Why the curves' move led to the numbers: the lesson's sentence for the one
+ * cause, the way it went. Said only where it can be true of the whole move —
+ * one cause, and something that followed from it.
+ */
+describe('the reason', () => {
+    const REASONED: NarratedParam[] = [
+        {
+            name: 'a', label: 'a', precision: 1, rise: 'Demand increases', fall: 'Demand decreases',
+            because: { rise: 'Buyers want more than sellers offer.', fall: 'Sellers offer more than buyers want.' }
+        },
+        { name: 'c', label: 'c', precision: 1, because: { rise: 'Costs rise.' } }
+    ];
+    const reasoned = (over: Partial<NarrateInput> = {}) => line({ params: REASONED, ...over });
+
+    it('is the one cause\'s, whichever way it went', () => {
+        expect(reasoned().because).toBe('Buyers want more than sellers offer.');
+        expect(reasoned({ after: market(16) }).because).toBe('Sellers offer more than buyers want.');
+    });
+
+    it('is not said where the lesson has none, or none for that way', () => {
+        expect(line().because).toBeNull();
+        expect(reasoned({ before: market(20, 4), after: market(20, 2) }).because).toBeNull();
+    });
+
+    // Demand and costs up at once both push the price up here, but demand up
+    // and costs down would not: a sentence for each would say both ways.
+    it('is not said for two causes, which can pull opposite ways', () => {
+        expect(reasoned({ after: { params: { a: 24, c: 4 }, calcs: market(24, 4).calcs } }).because).toBeNull();
+    });
+
+    it('is not said where nothing followed, or mid-gesture', () => {
+        const nothing = reasoned({ after: { params: { a: 24, c: 2 }, calcs: market(20).calcs } });
+        expect(nothing.causes).toHaveLength(1);
+        expect(nothing.because).toBeNull();
+        expect(reasoned({ live: true }).because).toBeNull();
+    });
+
+    it('goes with the effects when the stage is drawing none of them', () => {
+        expect(leaveOut(reasoned(), ['Qe']).because).toBe('Buyers want more than sellers offer.');
+        expect(leaveOut(reasoned(), ['Pe', 'Qe']).because).toBeNull();
+    });
+
+    it('is said between the curves and what followed', () => {
+        expect(toSentence(reasoned({ affected: [shiftUp] }))).toBe(
+            'Demand increases from 20.0 to 24.0; demand shifts up; buyers want more than sellers offer; ' +
+            'P* from $11.0 to $13.0, Q* from 9.0 to 11.0.'
+        );
+    });
+});
+
+/**
  * Which colour a cause is marked in: its curve's, where the lesson names one.
  *
  * A colour says which curve, not which way, so it is the same whichever way

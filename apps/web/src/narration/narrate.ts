@@ -53,6 +53,11 @@ export interface NarratedParam extends Reading {
      * one the lesson names (`ParamWords.curve`). Absent where it names none.
      */
     color?: string;
+    /**
+     * Why its rise or fall did what followed, one sentence each way: the
+     * link the chain's numbers cannot show (`ParamWords.because`).
+     */
+    because?: Reading;
 }
 
 /**
@@ -172,6 +177,17 @@ export interface NarrationLine {
      */
     movements: string[];
 
+    /**
+     * Why the movement led to the effects, in the lesson's words: "At the old
+     * price, buyers now want more than sellers offer…". The step a student
+     * most often leaves out of the chain they write, and the one no number on
+     * the screen says.
+     *
+     * Only where one param moved and something followed. Two causes can pull
+     * the price opposite ways, and a sentence for each would say both.
+     */
+    because: string | null;
+
     /** Every narrated calc whose displayed value changed. */
     effects: Clause[];
 
@@ -249,8 +265,17 @@ function clause(
 
 /** Nothing has moved: no chain, nothing to undo, nothing to ask "why?" about. */
 export const REST: NarrationLine = {
-    kind: 'rest', causes: [], mechanism: null, movements: [], effects: [], whyTarget: null
+    kind: 'rest', causes: [], mechanism: null, movements: [], because: null, effects: [], whyTarget: null
 };
+
+/** The one cause's reason, the way it went: see `NarrationLine.because`. */
+function reasonFor(causes: Clause[], effects: Clause[], params: NarratedParam[]): string | null {
+    if (causes.length !== 1 || effects.length === 0) return null;
+    const cause = causes[0],
+        reading = params.find(p => p.name === cause.name)?.because;
+    if (!reading) return null;
+    return (cause.direction === 'up' ? reading.rise : reading.fall) || null;
+}
 
 export function narrate(input: NarrateInput): NarrationLine {
     const { before, after, params, calcs, affected, live } = input;
@@ -290,6 +315,7 @@ export function narrate(input: NarrateInput): NarrationLine {
             causes: causes.map(reading),
             mechanism: null,
             movements: [],
+            because: null,
             effects: effects.map(reading),
             whyTarget: null
         };
@@ -302,6 +328,7 @@ export function narrate(input: NarrateInput): NarrationLine {
         causes,
         mechanism: movements.length > 0 ? movements.join(' and ') : null,
         movements,
+        because: reasonFor(causes, effects, params),
         effects,
         whyTarget: effects.length > 0 ? effects[0].name : null
     };
@@ -325,10 +352,12 @@ export function leaveOut(line: NarrationLine, calcs: string[]): NarrationLine {
     const effects = line.effects.filter(c => calcs.indexOf(c.name) < 0);
     if (effects.length === line.effects.length) return line;
 
-    // As `narrate` has it: with neither a cause nor an effect, nothing moved.
+    // As `narrate` has it: with neither a cause nor an effect, nothing moved;
+    // and with no effect, the reason is for numbers nobody can see.
     if (line.causes.length === 0 && effects.length === 0) return REST;
     return {
         ...line,
+        because: effects.length > 0 ? line.because : null,
         effects,
         whyTarget: line.whyTarget !== null && effects.length > 0 ? effects[0].name : null
     };
@@ -384,6 +413,7 @@ export function toSentence(line: NarrationLine): string {
             : 'You changed ' + line.causes.map(named).join(', '));
     }
     if (line.mechanism) parts.push(line.mechanism);
+    if (line.because) parts.push(midSentence(line.because.replace(/\.$/, '')));
     if (line.effects.length > 0) parts.push(line.effects.map(meant).join(', '));
 
     if (parts.length === 0) return '';
