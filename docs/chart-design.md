@@ -263,7 +263,7 @@ above the plot.
 - **A label never sits on the equilibrium.** Where the point can reach the end
   of the curve its label is at, the label moves to the other end while the point
   is there. Supply does this at the top of the market lesson's ranges
-  (`studyDiagram.ts`).
+  (`lessons/supplyAndDemand.ts`).
 - **The label is the curve's symbol** from the [list](#symbols). The live curve
   keeps its plain name always: D, never D′ or D₁. Its ghost adds ₀
   (`ghost: { label: '_0' }`), and the answer after a question adds ₁. The engine

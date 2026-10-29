@@ -38,7 +38,7 @@ const marker = (position: number) =>
 /** The lesson card's way on: "Start lesson" on its first page, "Next" after. */
 const next = () => screen.getByRole('button', { name: /^(Next|Start lesson)$/ });
 
-/** The question step in `studyDiagram.ts`. */
+/** The question step in `lessons/supplyAndDemand.ts`. */
 const ASK = 8;
 
 const row = () => screen.getByRole('group', { name: 'Question' });

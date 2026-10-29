@@ -14,7 +14,7 @@ import {
  * that mounts a mock.
  */
 
-// The market in src/studyDiagram.ts: demand P = a - Q and supply P = c + Q,
+// The market in src/lessons/supplyAndDemand.ts: demand P = a - Q and supply P = c + Q,
 // with a = 20 and c = 2, so it clears at Q* = 9, P* = 11 and consumer surplus
 // is 0.5 x 9 x 9 = 40.5. Change the params there and these move with them.
 const EQUILIBRIUM = { Q: 9, P: 11 };
@@ -1279,7 +1279,7 @@ test('the diagram and its captions change shape in the same frame', async ({ pag
  * since that helper's whole job is to get *past* the question.
  */
 
-/** The question step in `src/studyDiagram.ts`. */
+/** The question step in `src/lessons/supplyAndDemand.ts`. */
 const ASK_MARKER = 8;
 
 async function toTheQuestion(page: Page) {

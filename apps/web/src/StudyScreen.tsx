@@ -11,6 +11,7 @@ import type {
 } from 'equilibria-engine-js';
 import type { Aside, StudyContent, StudyModel } from './lessons/content';
 import { SUPPLY_AND_DEMAND } from './lessons/supplyAndDemand';
+import { questionState } from './lessons/kit/question';
 import { STORY_NOTE, dateWords } from './news';
 import type { Story } from './news';
 import { StoryCard } from './StoryCard';
@@ -143,11 +144,7 @@ function recapCases(
  * did and narrates nothing — which is what lets a question arm and disarm
  * without the diagram drawing the ghost of a curve nobody touched.
  */
-const QUESTION_OFF = [
-    { name: 'asking', value: 0 },
-    { name: 'submitted', value: 0 },
-    { name: 'revealed', value: 0 }
-];
+const QUESTION_OFF = questionState({ asking: 0, submitted: 0, revealed: 0 });
 
 /** The params a student moves, by name and value: presentation ones left out. */
 function marketOf(params: { name: string; value: number; presentation?: boolean }[]): Record<string, number> {
@@ -875,13 +872,13 @@ export function StudyScreen({
         if (question) {
             const start = question.starts[question.question.param],
                 info = engine.getParams().filter(p => p.name === question.question.param)[0];
-            restoring.push(
-                { name: 'asking', value: 1 },
-                { name: 'submitted', value: isFrozen(question) ? 1 : 0 },
-                { name: 'revealed', value: question.phase === 'reveal'
+            restoring.push(...questionState({
+                asking: 1,
+                submitted: isFrozen(question) ? 1 : 0,
+                revealed: question.phase === 'reveal'
                     || (question.phase === 'verdict' && !!question.grade?.correct
-                        && drawsAnswerWhenRight(question.question, questionApparatus)) ? 1 : 0 }
-            );
+                        && drawsAnswerWhenRight(question.question, questionApparatus)) ? 1 : 0
+            }));
             if (apparatus) {
                 restoring.push(
                     { name: apparatus.start, value: start },
@@ -1115,9 +1112,7 @@ export function StudyScreen({
         engine.snapshot();
         engine.update({
             params: [
-                { name: 'asking', value: 1 },
-                { name: 'submitted', value: 0 },
-                { name: 'revealed', value: 0 },
+                ...questionState({ asking: 1, submitted: 0, revealed: 0 }),
                 ...(apparatus ? [
                     { name: apparatus.start, value: start },
                     // The target, the illustration, or parked on the start when
@@ -1195,13 +1190,13 @@ export function StudyScreen({
 
         engine.update({
             params: [
-                { name: 'submitted', value: 1 },
+                ...questionState({ submitted: 1 }),
                 // A right answer gets the exact position too: their curve is
                 // within tolerance of it, and seeing where "close enough" sat is
                 // the difference between being told yes and being shown why. A
                 // target only — see `drawsAnswerWhenRight`.
                 ...(marked.correct && drawsAnswerWhenRight(attempt.question, questionApparatus)
-                    ? [{ name: 'revealed', value: 1 }] : [])
+                    ? questionState({ revealed: 1 }) : [])
             ]
         });
 
@@ -1237,7 +1232,7 @@ export function StudyScreen({
         setAttempt(current => attemptReducer(current, { type: 'retry' }));
         if (!engine) return;
 
-        const thaw = [{ name: 'submitted', value: 0 }, { name: 'revealed', value: 0 }];
+        const thaw = questionState({ submitted: 0, revealed: 0 });
         if (back.length === 0) {
             engine.update({ params: thaw });
             return;
@@ -1274,7 +1269,7 @@ export function StudyScreen({
 
         setAttempt(next);
         if (drawsAnswer(attempt.question, questionApparatus)) {
-            engineRef.current?.update({ params: [{ name: 'revealed', value: 1 }] });
+            engineRef.current?.update({ params: questionState({ revealed: 1 }) });
         }
         setTrack(current => trackReducer(
             current, { type: 'resolve', index: Number(attempt.questionId), outcome: { how: 'shown' } }, steps
