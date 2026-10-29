@@ -21,7 +21,7 @@ import { test } from './helpers';
  * import their pictures); `chartRules.test.ts` holds this list to the models
  * there are.
  */
-const MODELS = ['cafe', 'air-jordans', 'plane-tickets', 'market', 'aud'];
+const MODELS = ['cafe', 'air-jordans', 'plane-tickets', 'market', 'canteen', 'aud'];
 
 /** Two frames: the engine has redrawn for the param, and the labels are placed. */
 const settled = (page: Page) =>

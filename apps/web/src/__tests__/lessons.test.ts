@@ -339,16 +339,24 @@ describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as cons
     // show the same trades from the other side, where the param moves a curve
     // of the other kind in that kind's colour (the FX lesson's USD market):
     // still one of the lesson's curve colours, never a raw one.
+    //
+    // An area is not a curve the chain marks: it takes the colour of what it
+    // belongs to ("Points and areas" in `docs/chart-design.md`), so revenue is
+    // green whichever param sizes it. It was held here only when its shape
+    // named a param outright, as the elasticity lesson's price-by-quantity
+    // does, and not when it went through calcs, as the market lesson's does.
     it('names, for each param it colours, the colour of everything that param draws first', () => {
         const panels = (model.diagram.layout as any).CustomLayout.panels as any[];
         const words = Object.values(model.paramWords || {});
         const curveColours = words.filter(w => w.curve).map(w => `colors.${w.curve}`);
+        const isArea = (object: any) => object.type === 'Area' || object.type === 'Rectangle';
         Object.keys(model.paramWords || {}).forEach(name => {
             const curve = model.paramWords![name].curve;
             if (!curve) return;
             const mentions = new RegExp(`params\\.${name}\\b`);
             const drawnIn = panels
-                .map(panel => (panel.objects as any[]).filter(object => mentions.test(JSON.stringify(object.def))))
+                .map(panel => (panel.objects as any[])
+                    .filter(object => !isArea(object) && mentions.test(JSON.stringify(object.def))))
                 .filter(drawn => drawn.length > 0);
             expect(drawnIn.length, `param "${name}" draws something`).toBeGreaterThan(0);
             drawnIn[0].forEach(object => {

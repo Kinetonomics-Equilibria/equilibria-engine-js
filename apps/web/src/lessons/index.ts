@@ -4,6 +4,7 @@ import { FOREIGN_EXCHANGE } from './fx';
 import { PRODUCTION_POSSIBILITIES } from './ppc';
 import { DEMAND_SHIFTERS } from './demand';
 import { SUPPLY_SHIFTERS } from './supply';
+import { PRICE_ELASTICITY } from './elasticity';
 
 /** A topic in the navbar's Lessons panel: a row that drops down to its lessons. */
 export interface LessonTopic {
@@ -44,10 +45,11 @@ export const CURRICULUM: LessonStrand[] = [
                 lessons: [PRODUCTION_POSSIBILITIES]
             },
             // Demand's determinants, then supply's, before the whole
-            // market, as a course meets them.
+            // market, as a course meets them; then how far buyers respond
+            // to a price, which needs demand and a price on it.
             {
                 id: 'markets', label: 'Markets', color: 'teal',
-                lessons: [DEMAND_SHIFTERS, SUPPLY_SHIFTERS, SUPPLY_AND_DEMAND]
+                lessons: [DEMAND_SHIFTERS, SUPPLY_SHIFTERS, SUPPLY_AND_DEMAND, PRICE_ELASTICITY]
             }
         ]
     },
