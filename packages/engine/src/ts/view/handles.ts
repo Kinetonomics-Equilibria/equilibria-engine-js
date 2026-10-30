@@ -55,11 +55,21 @@ const ARROWS: Record<string, Pt[]> = {
     xy: [[-1, 0], [1, 0], [0, -1], [0, 1]]
 };
 
-/** Draw a handle's shapes into its group, in `colour`, centred on the group's origin. */
+/** The keyboard's ring, round all of the handle and a little past it. */
+const FOCUS_RING = REACH + 5;
+
+/**
+ * Draw a handle's shapes into its group, in `colour`, centred on the group's
+ * origin, with the ring keyboard focus shows round it (kgjs-theme.css).
+ */
 export function drawHandle(group, directions: Directions, colour: string, thumb: boolean) {
     group.selectAll('*').remove();
+    group.append('circle')
+        .attr('class', 'kg-focus-ring')
+        .attr('r', FOCUS_RING);
     if (thumb) {
         group.append('circle')
+            .attr('class', 'kg-handle-thumb')
             .attr('r', THUMB_RADIUS)
             .style('fill', 'white')
             .style('stroke', colour)
@@ -72,6 +82,7 @@ export function drawHandle(group, directions: Directions, colour: string, thumb:
         // A white edge behind the fill, as a point's ring is, so an arrow
         // laid across a dropline or another curve keeps its shape.
         group.append('polygon')
+            .attr('class', 'kg-handle-arrow')
             .attr('points', [tip, left, right].map(p => p.join(',')).join(' '))
             .style('fill', colour)
             .style('stroke', 'white')
@@ -139,36 +150,89 @@ export class Handles {
 
         // A point's handle is drawn round it, in the group its point is
         // already moved to. A curve's is placed along it.
+        on.filter((vo): vo is Point => vo instanceof Point).forEach(p => { p.handleAt = p.pixelCircle().at; });
         const curves = on.filter((vo): vo is Curve => vo instanceof Curve);
-        if (curves.length === 0) return;
+        if (curves.length > 0) placeAlong(curves, objects, on);
 
-        const shown = objects.filter(displayed);
-        const obstacles: Obstacles = {
-            // A point that can be dragged reaches as far as the arrows round it.
-            points: shown.filter((vo): vo is Point => vo instanceof Point).map(function (p) {
-                const { at, r } = p.pixelCircle();
-                return { at, r: (on.indexOf(p) > -1 ? REACH : r) + GAP };
-            }),
-            labels: shown.filter((vo): vo is Label => vo instanceof Label).map(boxOf).filter(box => !!box),
-            lines: shown.map(function (vo) {
-                if (vo instanceof Curve) return { from: vo as ViewObject, path: vo.pixelPath() };
-                if (!(vo instanceof Segment)) return null;
-                const ends = vo.sampleGeometry() || [];
-                return { from: vo as ViewObject, path: ends.map(e => [vo.xScale.scale(e.x), vo.yScale.scale(e.y)] as Pt) };
-            }).filter(line => !!line),
-            handles: []
-        };
-
-        curves.forEach(function (curve) {
-            const at = along(curve, obstacles);
-            if (!at) {
-                curve.handleElement.style('display', 'none');
-                return;
-            }
-            curve.handleElement.attr('transform', `translate(${at[0]} ${at[1]})`);
-            obstacles.handles.push(at);
+        // What shows a handle is what the keyboard can move.
+        objects.forEach(function (vo) {
+            if (vo.handleElement) asSlider(vo, vo.handleElement.style('display') !== 'none');
         });
     }
+}
+
+/** Place each curve's handle along it, clear of what else is in its panel. */
+function placeAlong(curves: Curve[], objects: ViewObject[], on: ViewObject[]) {
+    const shown = objects.filter(displayed);
+    const obstacles: Obstacles = {
+        // A point that can be dragged reaches as far as the arrows round it.
+        points: shown.filter((vo): vo is Point => vo instanceof Point).map(function (p) {
+            const { at, r } = p.pixelCircle();
+            return { at, r: (on.indexOf(p) > -1 ? REACH : r) + GAP };
+        }),
+        labels: shown.filter((vo): vo is Label => vo instanceof Label).map(boxOf).filter(box => !!box),
+        lines: shown.map(function (vo) {
+            if (vo instanceof Curve) return { from: vo as ViewObject, path: vo.pixelPath() };
+            if (!(vo instanceof Segment)) return null;
+            const ends = vo.sampleGeometry() || [];
+            return { from: vo as ViewObject, path: ends.map(e => [vo.xScale.scale(e.x), vo.yScale.scale(e.y)] as Pt) };
+        }).filter(line => !!line),
+        handles: []
+    };
+
+    curves.forEach(function (curve) {
+        const at = along(curve, obstacles);
+        curve.handleAt = at;
+        if (!at) {
+            curve.handleElement.style('display', 'none');
+            return;
+        }
+        curve.handleElement.attr('transform', `translate(${at[0]} ${at[1]})`);
+        obstacles.handles.push(at);
+    });
+}
+
+/**
+ * An object with a handle is a slider to the keyboard and a screen reader:
+ * Tab reaches it, the arrow keys move it the ways its arrows point
+ * (`InteractionHandler.keyed`), and it is read as its name and what it moves,
+ * "Demand, slider, Demand for AUD 52". Where it has no handle it is none of
+ * these, as it is not draggable: frozen, hidden, or in a panel too small to
+ * read.
+ *
+ * Its value is the first param it moves, and its words every one, so a point
+ * moved two ways says both: "Toasties at Z 40, Coffees at Z 120". A param is
+ * said as its value alone where its label would only say the object's name
+ * again, "Demand for AUD, slider, 50", or where it has no label of its own.
+ */
+function asSlider(vo: ViewObject, on: boolean) {
+    const el = vo.rootElement;
+    if (!on) {
+        if (vo.sliderSaid) {
+            ['tabindex', 'role', 'aria-label', 'aria-valuenow', 'aria-valuemin', 'aria-valuemax',
+                'aria-valuetext', 'aria-orientation'].forEach(name => el.attr(name, null));
+            vo.sliderSaid = null;
+        }
+        return;
+    }
+    const ih = vo.interactionHandler,
+        params = ih.movedParams().map(name => vo.model.getParam(name)).filter(p => !!p);
+    if (params.length === 0) return;
+    const first = params[0],
+        name = vo.srTitle || vo.title || vo.name || '',
+        named = (p: any) => p.label && p.label !== p.name && p.label.toLowerCase() !== String(name).toLowerCase(),
+        text = params.map(p => (named(p) ? p.label + ' ' : '') + p.formatted()).join(', '),
+        said = [name, text, first.value, first.min, first.max, ih.directions].join('|');
+    if (said === vo.sliderSaid) return;
+    vo.sliderSaid = said;
+    el.attr('tabindex', 0)
+        .attr('role', 'slider')
+        .attr('aria-label', name)
+        .attr('aria-valuenow', first.value)
+        .attr('aria-valuemin', first.min)
+        .attr('aria-valuemax', first.max)
+        .attr('aria-valuetext', text)
+        .attr('aria-orientation', ih.directions === 'x' ? 'horizontal' : ih.directions === 'y' ? 'vertical' : null);
 }
 
 /** Whether an object is on screen now: shown, and not hidden for being off the plot. */

@@ -160,6 +160,10 @@ export class ViewObject extends UpdateListener implements IViewObject {
     /** The group a handle is drawn in, on an object that can be dragged; and what was last drawn in it. */
     public handleElement;
     public handleDrawn: string;
+    /** Where the handle is, in the panel's pixels: where a key press grabs the object (`InteractionHandler.keyed`). */
+    public handleAt: [number, number] | null;
+    /** What the object last said as a slider, so its attributes are written only when that changes. */
+    public sliderSaid: string | null;
 
     /** Whether `show` held at the last update; undefined before the first, which arrives nothing. */
     private shownBefore: boolean | undefined;
@@ -246,10 +250,8 @@ export class ViewObject extends UpdateListener implements IViewObject {
 
     addScreenReaderDescriptions(el) {
         const vo = this;
-        if (vo.rootElement) {
-            //Let's not add tabIndex until we know how to style it...
-            //vo.rootElement.attr('tabindex','0');
-        }
+        // Not reached by Tab here: an object is, as a slider, while it shows
+        // a handle, and its focus ring goes round that (view/handles.ts).
         if (vo.def.hasOwnProperty('srTitle') && vo.def['srTitle'] != undefined) {
             vo.screenReaderTitle = el.selectAll('title.screenReaderTitle-' + vo.id).data([1]).join('title').attr('class', 'screenReaderTitle-' + vo.id);
         }

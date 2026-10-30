@@ -320,6 +320,10 @@ describe('a question that names its curve', () => {
         const sliders = within(row()!).getAllByRole('slider');
         expect(sliders).toHaveLength(1);
         expect(sliders[0].getAttribute('aria-label')).toBe('Your answer');
-        expect(screen.getAllByRole('slider')).toEqual(sliders);
+        // The diagram's curves are sliders to the keyboard as well, and only
+        // the one the question is about can be moved there.
+        const all = screen.getAllByRole('slider');
+        expect(all.filter(el => !el.closest('svg'))).toEqual(sliders);
+        expect(all.filter(el => el.closest('svg')).map(el => el.getAttribute('aria-label'))).toEqual(['Demand']);
     });
 });

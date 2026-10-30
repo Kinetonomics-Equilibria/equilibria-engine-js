@@ -209,17 +209,20 @@ describe('the playground', () => {
 describe('what a step hands the student', () => {
 
     const tryIt = () => screen.queryByRole('group', { name: 'Try it' });
+    // The diagram's curves are sliders as well, to the keyboard (the engine's
+    // view/handles.ts); these are the ones off it.
+    const offTheDiagram = () => screen.queryAllByRole('slider').filter(el => !el.closest('svg'));
 
     it('is on the card at the step that offers it, and nowhere else', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(MOVES));
         expect(tryIt()).toBeNull();
-        expect(screen.queryByRole('slider')).toBeNull();
+        expect(offTheDiagram()).toEqual([]);
 
         await user.click(next());
         expect(within(tryIt()!).getAllByRole('slider')).toHaveLength(1);
-        expect(screen.getAllByRole('slider')).toHaveLength(1);
+        expect(offTheDiagram()).toHaveLength(1);
 
         await user.click(next());
         expect(tryIt()).toBeNull();

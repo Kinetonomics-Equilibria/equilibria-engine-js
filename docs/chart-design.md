@@ -182,6 +182,18 @@ config sets nothing.
 - **Not drawn like a point.** The thumb is white where a point is solid, so it
   is never read as a combination the chart is about.
 - **Handles hold still** ([Motion](#motion)): no pulse and no bounce.
+- **The keyboard reaches what has a handle**, and only that. Each one is a
+  slider: Tab reaches it, and a screen reader says its name and what it moves,
+  "Demand for AUD, slider, 50", or "Point Z, slider, Toasties at Z 40,
+  Coffees at Z 120" for a point that moves two ways. An arrow key moves it a
+  step the way that arrow points, as a drag of its handle that far would, and
+  Shift moves it five. Something that moves one way takes all four arrow keys,
+  as a slider does: right and up are more. A step is a fortieth of the axis at
+  a round number, and never too small to move the param. Each press is a move
+  of its own, as a slider's is, so the ghost is one press behind.
+- **Its focus ring goes round the handle**: 2px, in the colour of the page's
+  other rings, round the thumb and its arrows or round the point and its
+  arrows. Never the browser's, which outlines the curve's whole unclipped box.
 
 ## Colour
 
@@ -488,6 +500,10 @@ Currency codes (AUD, USD) are fine: that is how money is written.
   a 3px line.
 - Whatever can be dragged has a [handle](#handles) at rest, so finding it
   doesn't depend on hovering, which a tablet can't do.
+- Whatever can be dragged can be moved from the keyboard as well, as a slider
+  ([Handles](#handles)). Its name is its `srTitle`, and a param it moves is
+  said by its `label` where that says more than the name, as the slider
+  for the same param says it.
 
 ## Adding a chart
 

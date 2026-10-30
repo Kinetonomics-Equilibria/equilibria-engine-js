@@ -81,11 +81,11 @@ const live = (r: any, name: string) => named(r, name).find((o: any) => o.def.dra
 function handleOf(vo: any) {
     const g = vo.handleElement;
     if (!g || g.style('display') === 'none') return null;
-    const arrows = g.selectAll('polygon').nodes().map((p: SVGPolygonElement) => {
+    const arrows = g.selectAll('polygon.kg-handle-arrow').nodes().map((p: SVGPolygonElement) => {
         const [tip] = p.getAttribute('points')!.split(' ').map(xy => xy.split(',').map(Number));
         return Math.abs(tip[0]) > Math.abs(tip[1]) ? (tip[0] < 0 ? 'left' : 'right') : (tip[1] < 0 ? 'up' : 'down');
     });
-    return { thumb: g.selectAll('circle').size() === 1, arrows };
+    return { thumb: g.selectAll('circle.kg-handle-thumb').size() === 1, arrows };
 }
 
 /** Where a curve's handle is, in its panel's pixels. */
@@ -190,6 +190,128 @@ describe('a panel too small to be read', () => {
         const r = build([DEMAND, PRICE_POINT], { density: 'indicator' });
         expect(handleOf(live(r, 'demand'))).toBeNull();
         expect(handleOf(named(r, 'chosen')[0])).toBeNull();
+        r.destroy();
+    });
+});
+
+/**
+ * The keyboard reaches what the mouse can drag.
+ *
+ * Whatever shows a handle is a slider: Tab reaches it, it is read as its name
+ * and what it moves, and an arrow key moves it a step as a drag of its handle
+ * would, each press a gesture of its own, as a slider's is.
+ */
+describe('from the keyboard', () => {
+
+    const press = (vo: any, key: string, init: KeyboardEventInit = {}) =>
+        vo.rootElement.node().dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }));
+    const param = (r: any, name: string) => r.kg.getParams().find((p: any) => p.name === name).value;
+    const attrs = (vo: any) => {
+        const node = vo.rootElement.node() as Element;
+        return ['tabindex', 'role', 'aria-label', 'aria-valuenow', 'aria-valuetext', 'aria-orientation']
+            .reduce((out, name) => ({ ...out, [name]: node.getAttribute(name) }), {});
+    };
+
+    it('reaches a curve that can be dragged, and reads it as a slider', () => {
+        const r = build([DEMAND]);
+        expect(attrs(live(r, 'demand'))).toEqual({
+            'tabindex': '0', 'role': 'slider', 'aria-label': 'demand',
+            'aria-valuenow': '20', 'aria-valuetext': '20.0', 'aria-orientation': 'horizontal'
+        });
+        r.destroy();
+    });
+
+    it('does not reach it while the drag is frozen', () => {
+        const r = build([DEMAND]);
+        setParam(r, 'locked', 1);
+        expect(attrs(live(r, 'demand'))).toEqual({
+            'tabindex': null, 'role': null, 'aria-label': null,
+            'aria-valuenow': null, 'aria-valuetext': null, 'aria-orientation': null
+        });
+        press(live(r, 'demand'), 'ArrowRight');
+        expect(param(r, 'a')).toBe(20);
+        r.destroy();
+    });
+
+    it('moves it a fortieth of the axis a press, and five with Shift', () => {
+        const r = build([DEMAND]);
+        press(live(r, 'demand'), 'ArrowRight');
+        expect(param(r, 'a')).toBeCloseTo(20.5);
+        press(live(r, 'demand'), 'ArrowLeft', { shiftKey: true });
+        expect(param(r, 'a')).toBeCloseTo(18);
+        expect(live(r, 'demand').rootElement.node().getAttribute('aria-valuetext')).toBe('18.0');
+        r.destroy();
+    });
+
+    it('takes up and down as more and less on a curve that moves sideways, as a slider does', () => {
+        const r = build([DEMAND]);
+        press(live(r, 'demand'), 'ArrowUp');
+        expect(param(r, 'a')).toBeCloseTo(20.5);
+        press(live(r, 'demand'), 'ArrowDown');
+        press(live(r, 'demand'), 'ArrowDown');
+        expect(param(r, 'a')).toBeCloseTo(19.5);
+        r.destroy();
+    });
+
+    it('makes each press a gesture, so the ghost is one press behind', () => {
+        const r = build([DEMAND]);
+        const model = view(r).model;
+        press(live(r, 'demand'), 'ArrowRight');
+        expect(model.prevParamValues.a).toBe(20);
+        press(live(r, 'demand'), 'ArrowRight');
+        expect(model.prevParamValues.a).toBeCloseTo(20.5);
+        expect(model.inGesture).toBe(false);
+        r.destroy();
+    });
+
+    it('moves a param that snaps further than a step', () => {
+        // A step of the axis is 0.5; the param moves in twos.
+        const r = mountConfig({
+            schema: 'EconSchema',
+            params: [{ name: 'q', value: 10, min: 0, max: 20, round: 2 }],
+            layout: { OneGraph: { graph: {
+                xAxis: { title: 'Quantity', min: 0, max: 20 }, yAxis: { title: 'Price', min: 0, max: 20 },
+                objects: [{ type: 'Point', def: { name: 'chosen', title: '', x: 'params.q', y: 5, drag: [{ horizontal: 'q' }] } }]
+            } } }
+        });
+        press(named(r, 'chosen')[0], 'ArrowRight');
+        expect(param(r, 'q')).toBe(12);
+        r.destroy();
+    });
+
+    it('moves a point that goes anywhere only the way its arrow points, and says both its values', () => {
+        const r = mountConfig({
+            schema: 'EconSchema',
+            params: [
+                { name: 'pt', label: 'Toasties at Z', value: 10, min: 0, max: 20, round: 0.5 },
+                { name: 'pc', label: 'Coffees at Z', value: 10, min: 0, max: 20, round: 0.5 }
+            ],
+            layout: { OneGraph: { graph: {
+                xAxis: { title: 'Toasties', min: 0, max: 20 }, yAxis: { title: 'Coffees', min: 0, max: 20 },
+                objects: [{ type: 'Point', def: {
+                    name: 'Z', title: 'Z', x: 'params.pt', y: 'params.pc', srTitle: 'Point Z',
+                    drag: [
+                        { directions: 'xy', param: 'pt', expression: 'params.pt + drag.dx' },
+                        { directions: 'xy', param: 'pc', expression: 'params.pc + drag.dy' }
+                    ]
+                } }]
+            } } }
+        });
+        const z = named(r, 'Z')[0];
+        press(z, 'ArrowUp');
+        expect([param(r, 'pt'), param(r, 'pc')]).toEqual([10, 10.5]);
+        expect(attrs(z)).toMatchObject({
+            'aria-label': 'Point Z', 'aria-valuetext': 'Toasties at Z 10.0, Coffees at Z 10.5', 'aria-orientation': null
+        });
+        r.destroy();
+    });
+
+    it('leaves alone a key that is not an arrow', () => {
+        const r = build([DEMAND]);
+        const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+        live(r, 'demand').rootElement.node().dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+        expect(param(r, 'a')).toBe(20);
         r.destroy();
     });
 });

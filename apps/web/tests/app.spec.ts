@@ -569,7 +569,7 @@ test('a narrow stage captions its small panels inside their sheets', async ({ pa
  * ghost's along its own line until it clears; this asks for the effect.
  */
 test("a nudge keeps the ghost's label off the live one", async ({ page }) => {
-    await page.getByRole('slider', { name: 'a' }).focus();
+    await page.getByRole('slider', { name: 'a', exact: true }).focus();
     await page.keyboard.press('ArrowRight');
 
     // The ghost is up, label and all — otherwise there is nothing to collide.
@@ -934,7 +934,7 @@ test('the dock switches instruments without moving the stage', async ({ page }) 
 });
 
 test('a slider scrub is one interaction, not one per frame', async ({ page }) => {
-    const slider = page.getByRole('slider', { name: 'a' });
+    const slider = page.getByRole('slider', { name: 'a', exact: true });
     const box = (await slider.boundingBox())!;
 
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -964,7 +964,7 @@ test('a slider scrub is one interaction, not one per frame', async ({ page }) =>
  * slider that moved it stays where the student is holding it.
  */
 test('"What changed" keeps its height, and the slider that moved it stays put', async ({ page }) => {
-    const slider = page.getByRole('slider', { name: 'a' });
+    const slider = page.getByRole('slider', { name: 'a', exact: true });
     const card = page.locator(STRIP);
     const before = (await slider.boundingBox())!;
     const resting = (await card.boundingBox())!;

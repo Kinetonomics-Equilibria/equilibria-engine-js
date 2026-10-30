@@ -152,16 +152,16 @@ export class Param implements IParam {
     // Updates to the closest rounded value to the desired newValue within accepted range
     update(newValue: any) {
         let param = this;
-        if (newValue < param.min) {
-            param.value = param.min;
-        }
-        else if (newValue > param.max) {
-            param.value = param.max;
-        }
-        else {
-            param.value = Math.round(newValue / param.round) * param.round;
-        }
+        param.value = param.landing(newValue);
         return param.value;
+    }
+
+    /** What `update` would make the value: clamped to the range, and rounded within it. */
+    landing(newValue: any): number {
+        const param = this;
+        if (newValue < param.min) return param.min;
+        if (newValue > param.max) return param.max;
+        return Math.round(newValue / param.round) * param.round;
     }
 
     /** This param's declaration and current value, copied, for a host to read. */

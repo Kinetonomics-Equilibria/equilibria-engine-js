@@ -232,7 +232,8 @@ caption and "What changed" at every step: what the screen says is the fastest
 way to learn its format ("Revenue$945.00▲ $100.00"). Three things a test meets:
 
 - A slider moved by the keyboard is a move a press, so a caption's chip says
-  only the last press. Read the two captions either side instead.
+  only the last press. Read the two captions either side instead. A curve or
+  point moved by the keyboard is the same.
 - A step reached from the cover by its marker has nothing drawn before it, so
   "What changed" cannot say how a curve moved. Step to it from the step
   before.

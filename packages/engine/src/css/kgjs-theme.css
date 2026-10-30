@@ -23,6 +23,7 @@
     --kg-grid-color: #eeeeee;
 
     /* Baseline interaction states */
+    --kg-focus-color: #228be6;
     --kg-hover-opacity: 0.8;
     --kg-active-stroke-width: 3px;
 }
@@ -105,12 +106,31 @@
  * same artefact was recorded at two unrelated heights (NOTES issue D) and why
  * nothing in the object tree ever matched it: it is an outline, not a shape.
  *
- * Only the pointer's ring is suppressed. Keyboard focus keeps its ring — the
- * one case where a ring is the whole point — and `addScreenReaderDescriptions`
- * still withholds `tabindex` for now, with a comment saying the reason is not
- * knowing how to style it. This is half of that answer; the other half is a
- * ring that traces the curve rather than the box it happens to occupy.
+ * Only the pointer's ring is suppressed. Keyboard focus keeps a ring — the one
+ * case where a ring is the whole point — but not the browser's: below.
  */
 .kg-container svg :focus:not(:focus-visible) {
     outline: none;
+}
+
+/*
+ * Whatever can be dragged is a slider to the keyboard while it shows a handle
+ * (view/handles.ts), and its ring goes round the handle: round the thumb on a
+ * curve and the arrows beside it, or round a point and its arrows. The box
+ * the browser would outline is the curve's unclipped one, above. 2px, in the
+ * colour of the page's other rings, which a host sets as `--kg-focus-color`.
+ */
+.kg-container svg [role="slider"]:focus-visible {
+    outline: none;
+}
+
+.kg-container .kg-focus-ring {
+    display: none;
+    fill: none;
+    stroke: var(--kg-focus-color);
+    stroke-width: 2px;
+}
+
+.kg-container svg [role="slider"]:focus-visible .kg-focus-ring {
+    display: inline;
 }

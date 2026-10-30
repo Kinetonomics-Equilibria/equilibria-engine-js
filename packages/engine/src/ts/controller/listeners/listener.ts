@@ -34,10 +34,13 @@ export class Listener extends UpdateListener implements IListener {
     }
 
     onChange(scope) {
-        const l = this,
-            compiledMath = math.compile(l.expression);
-        let parsedMath = compiledMath.evaluate(scope);
-        l.model.updateParam(l.param, parsedMath);
+        const l = this;
+        l.model.updateParam(l.param, l.requested(scope));
+    }
+
+    /** The value this listener would ask its param for, in `scope`. */
+    requested(scope) {
+        return math.compile(this.expression).evaluate(scope);
     }
 
 

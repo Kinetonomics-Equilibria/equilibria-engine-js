@@ -31,11 +31,14 @@
     --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* A word in a diagram's label (`\text{PPC}`) in the theme's font, which the
- * engine cannot know; see kgjs-theme.css. On the container rather than :root,
- * so it wins over the engine's default whichever stylesheet loads last. */
+/* A word in a diagram's label (`\text{PPC}`) in the theme's font, and the ring
+ * round a curve or point the keyboard has reached in the colour of every other
+ * ring, which the engine cannot know; see kgjs-theme.css. On the container
+ * rather than :root, so it wins over the engine's default whichever stylesheet
+ * loads last. */
 .kg-container {
     --kg-font-family: var(--mantine-font-family);
+    --kg-focus-color: var(--mantine-primary-color-filled);
 }
 
 body {
