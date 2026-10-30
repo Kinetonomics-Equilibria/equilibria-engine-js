@@ -47,7 +47,7 @@ export class LabelYields {
 }
 
 /** Where a label was drawn, in its panel's pixels, or null if it is not on screen. */
-function boxOf(label: Label): LabelBox | null {
+export function boxOf(label: Label): LabelBox | null {
     const node = label.rootElement && label.rootElement.node() as HTMLElement;
     if (!node || node.style.display === 'none') return null;
     const left = parseFloat(node.style.left), top = parseFloat(node.style.top);

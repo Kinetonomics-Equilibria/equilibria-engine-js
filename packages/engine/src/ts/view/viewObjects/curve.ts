@@ -71,6 +71,7 @@ export class Curve extends ViewObject {
         curve.dragPath = curve.rootElement.selectAll('path.dragPath-' + curve.id).data([1]).join('path').attr('class', 'dragPath-' + curve.id).attr('stroke-width', '20px').style('stroke', 'yellow').style('stroke-opacity', 0).style('fill', 'none');
         curve.path = curve.rootElement.selectAll('path.path-' + curve.id).data([1]).join('path').attr('class', 'path-' + curve.id).style('fill', 'none');
         curve.addScreenReaderDescriptions(curve.path);
+        curve.addHandle();
         // The hit area is never filled, focused or not. Focus used to fill it
         // yellow, which a straight line has no area to show — so it never drew
         // anything on a demand or supply curve — and which closes a bowed curve
@@ -112,6 +113,18 @@ export class Curve extends ViewObject {
             samples.push({ x: +d.x, y: +d.y });
         }
         return samples;
+    }
+
+    /**
+     * The curve as it was last drawn, in its panel's pixels: the samples the
+     * path was drawn through, before the clip path cut it to the plot. Empty
+     * before the first redraw.
+     */
+    pixelPath(): [number, number][] {
+        const curve = this;
+        const fn = curve.univariateFunction || curve.parametricFunction;
+        const data: any[] = (fn && (fn as any).data) || [];
+        return data.map(d => [curve.xScale.scale(+d.x), curve.yScale.scale(+d.y)] as [number, number]);
     }
 
     // update properties

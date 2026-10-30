@@ -213,6 +213,21 @@ export function makeDraggable(def: any) {
     return def;
 }
 
+/**
+ * The ways an object's drags can move it, `x`, `y` or `xy`, as `DragListener`
+ * reads them: `horizontal` is x, `vertical` is y, and a drag that names no
+ * directions is both.
+ */
+export function dragDirections(drag: any[]): string {
+    let x = false, y = false;
+    (drag || []).forEach(function (d) {
+        const directions = d.hasOwnProperty('horizontal') ? 'x' : d.hasOwnProperty('vertical') ? 'y' : (d.directions || 'xy');
+        if (directions.indexOf('x') > -1) x = true;
+        if (directions.indexOf('y') > -1) y = true;
+    });
+    return (x ? 'x' : '') + (y ? 'y' : '');
+}
+
 export function curvesFromFunctions(fns: (UnivariateFunctionDefinition | ParametricFunctionDefinition)[], def, graph) {
     // One named object, drawn as several curves. The name is claimed here, once,
     // and each copy is marked as reusing it — otherwise the second branch reads

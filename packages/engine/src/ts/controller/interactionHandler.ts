@@ -40,6 +40,13 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
     private wrote: { pointerEvents: string; cursor: string } | null = null;
 
     /**
+     * The ways the object can be dragged right now, as the cursor says them:
+     * empty while every drag is frozen. Read by `view/handles.ts`, which draws
+     * at rest what the cursor only shows on hover.
+     */
+    public directions: '' | 'x' | 'y' | 'xy' = '';
+
+    /**
      * Announce something the student did to a specific object.
      *
      * `kg:curve_dragged` and `kg:node_hover` have been declared in `constants.ts`
@@ -94,6 +101,7 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                     yDrag = true;
                 }
             });
+            ih.directions = (xDrag && yDrag) ? "xy" : xDrag ? "x" : yDrag ? "y" : "";
             const pointerEvents = (xDrag || yDrag) ? "all" : "none",
                 cursor = (xDrag && yDrag) ? "move" : xDrag ? "ew-resize" : "ns-resize";
             if (!ih.wrote || ih.wrote.pointerEvents != pointerEvents || ih.wrote.cursor != cursor) {

@@ -48,6 +48,12 @@ import { ARRIVAL, POP_MS, popEase } from "../arrival";
             return [{ x: +p.x, y: +p.y }];
         }
 
+        /** Where the point is drawn, in its panel's pixels, and its radius. */
+        pixelCircle(): { at: [number, number], r: number } {
+            const p = this;
+            return { at: [p.xScale.scale(+p.x), p.yScale.scale(+p.y)], r: +p.r };
+        }
+
         // create SVG elements
         draw(layer) {
             let p = this;
@@ -56,6 +62,7 @@ import { ARRIVAL, POP_MS, popEase } from "../arrival";
             p.circle = p.rootElement.selectAll('circle.circle-' + p.id).data([1]).join('circle').attr('class', 'circle-' + p.id);
             //p.addClipPathAndArrows()
             p.addScreenReaderDescriptions(p.circle);
+            p.addHandle();
             //p.rootElement.on("focus", function() {p.dragCircle.style('fill-opacity','30%')});
             //p.rootElement.on("blur", function() {p.dragCircle.style('fill-opacity',0)});
             return p.addInteraction();

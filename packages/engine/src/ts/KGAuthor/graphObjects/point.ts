@@ -3,7 +3,7 @@ import { LABEL_SIZE } from "../../view/typeScale";
 import { setDefaults } from "../../util";
 import { LabelDefinition, Label } from "./label";
 import { GraphObjectGenerator } from "../defObjects/graphObjectGenerator";
-import { setFillColor, makeDraggable, copyJSON } from "../parsers/parsingFunctions";
+import { setFillColor, makeDraggable, copyJSON, dragDirections } from "../parsers/parsingFunctions";
 import { Graph } from "../positionedObjects/graph";
 import { Tree } from "../positionedObjects/tree";
 import { GraphObjectDefinition, GraphObject } from "./graphObject";
@@ -62,6 +62,7 @@ export class Point extends GraphObject {
                 color: def.color,
                 bgcolor: null
             });
+            if (def.drag && def.drag.length > 0) labelDef.besideHandle = dragDirections(def.drag);
             p.subObjects.push(new Label(labelDef, graph));
         }
 

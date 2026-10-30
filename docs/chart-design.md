@@ -68,6 +68,7 @@ by default, and `chartRules.test.ts` checks every rule here a machine can.
 | Dropline labels | On the axis, among the tick numbers | The engine, from `droplines` on a point |
 | Curve, point and area labels | On the plot, beside what they name | The engine, from `label` on the object |
 | Readouts | Top-right corner of the plot | The engine, as `Label` objects |
+| Handles | On whatever can be dragged | The engine, from `drag` on the object |
 
 The chart's title is never drawn inside the plot, and the engine draws no title
 of its own.
@@ -139,7 +140,7 @@ between.
 | Role | Size | Fill |
 | --- | --- | --- |
 | A point the chart is about: equilibrium, a chosen combination | radius 7 (the default), with a 1.5px white ring | solid, its colour |
-| A handle: a curve's end that can be dragged | radius 6 | solid, the curve's colour |
+| A curve's end that can be dragged: the PPC's most coffees and most toasties | radius 6 | solid, the curve's colour, with its [handle](#handles)'s arrows |
 | A ghost point | radius 7 | 35%, from `ghost:` |
 | An area the lesson names: consumer surplus, revenue, profit | — | 20% (the default), no outline |
 | A region that is context: the attainable set under a PPC | — | 8%, no outline |
@@ -147,6 +148,40 @@ between.
 An area takes the colour of what it belongs to. Consumer surplus is under
 demand, so it is demand's blue; producer surplus is supply's orange; revenue,
 price times quantity, is the equilibrium's green.
+
+## Handles
+
+Whatever a student can drag says so where it is, with the pointer nowhere near
+it. The cursor changes only once the pointer is on a curve's grip, so a student
+had to sweep the plot and wait; a tablet has no pointer to change, and on a
+projector only the person at the laptop sees it. The engine draws every handle
+from the object's `drag` (`packages/engine/src/ts/view/handles.ts`), so a
+config sets nothing.
+
+| What can be dragged | Its handle |
+| --- | --- |
+| A curve | A thumb on the curve, with an arrow beside it each way it moves. The thumb is the sliders' own: a white disc in a 4px ring of the curve's colour, 16px across. It looks like the control under the diagram that moves the same thing, because it is one. |
+| A point | The arrows alone, round it. A point is already a place to grab. |
+
+- **The arrows say which way**: ◀ ▶ for a drag sideways, ▲ ▼ for up and down,
+  and all four for a drag anywhere, as the cursor says. Each is a small
+  triangle in the thing's colour, 11 to 18px out from its centre, with a white
+  edge so it keeps its shape across a dropline.
+- **Only what can be dragged now.** A curve held still for a step, or frozen
+  once an answer is committed, has no handle, as it has no drag cursor. A
+  ghost, a question's lines and an answer line never have one. Nor does a panel
+  at `indicator` size, which is glanced at, not dragged.
+- **A quarter of the way along the curve**, from its left-hand end: the end away
+  from D and S's labels, and from the equilibrium in the middle. It slides
+  along the curve, as little as it must, to keep clear of points, labels and
+  other handles, and of other curves where it can. It goes with the curve as
+  the curve is dragged.
+- **A label beside a point that can be dragged sits past its arrows.** The
+  engine moves a point's own label out to 20px. A label set beside one by hand
+  keeps the same distance, as the café's "+20 toasties" does beside A.
+- **Not drawn like a point.** The thumb is white where a point is solid, so it
+  is never read as a combination the chart is about.
+- **Handles hold still** ([Motion](#motion)): no pulse and no bounce.
 
 ## Colour
 
@@ -345,8 +380,9 @@ For all three:
   (`position: 'l'` or `'r'`, or aligned left or right) that could be pushed off
   the plot takes `flipToFit: true`: the engine draws it on the other side of
   its anchor whenever this side would run off.
-- The only arrow is the engine's shift arrow, which a point's `ghost: true`
-  draws from where it was to where it is. Don't draw decorative arrows.
+- The only arrows are the engine's: the shift arrow, which a point's
+  `ghost: true` draws from where it was to where it is, and a
+  [handle](#handles)'s. Don't draw decorative arrows.
 
 ## Motion
 
@@ -450,6 +486,8 @@ Currency codes (AUD, USD) are fine: that is how money is written.
 - Don't shrink a drag target. The engine gives curves and points an invisible
   grip 20px across or more, so a student on a trackpad doesn't have to land on
   a 3px line.
+- Whatever can be dragged has a [handle](#handles) at rest, so finding it
+  doesn't depend on hovering, which a tablet can't do.
 
 ## Adding a chart
 
@@ -468,12 +506,15 @@ Currency codes (AUD, USD) are fine: that is how money is written.
    at the top right, no more than three at a time.
 8. **Motion.** `arrive: true` only on the point a step brings in for the student
    to read.
-9. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
-   hand-set `strokeWidth`.
-10. **Words.** Every symbol is in the list above, and the lesson says it in words
+9. **Drags.** Nothing to draw: the engine puts a handle on whatever can be
+   dragged. A label set by hand beside a point that can be dragged sits 20px
+   out, past its arrows.
+10. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
+    hand-set `strokeWidth`.
+11. **Words.** Every symbol is in the list above, and the lesson says it in words
     first.
-11. **Contrast.** Any new colour clears 3:1 as a line and 4.5:1 as text.
-12. **Look at it.** Check it in focus and in the grid, at 1440×900 and on a phone.
+12. **Contrast.** Any new colour clears 3:1 as a line and 4.5:1 as text.
+13. **Look at it.** Check it in focus and in the grid, at 1440×900 and on a phone.
     The defects in `NOTES.md` that no test caught were found by looking at a
     screenshot.
 

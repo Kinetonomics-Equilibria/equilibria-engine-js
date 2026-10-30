@@ -18,9 +18,21 @@ export interface LabelDefinition extends GraphObjectDefinition {
     position?: string;
     /** What kind of chrome this label is; see `AXIS_TITLE` in graphObjects/axis.ts. */
     furniture?: string;
+    /**
+     * The ways the point this label names can be dragged, `x`, `y` or `xy`,
+     * so the label sits clear of the arrows its handle draws round it
+     * (view/handles.ts). Set by a point on its own label.
+     */
+    besideHandle?: string;
     /** Drawn on the other side of its anchor when this side runs off the plot. */
     flipToFit?: boolean;
 }
+
+/**
+ * How far a label beside a point that can be dragged sits from it, at the
+ * least: past the tips of its handle's arrows, 18px out, and their white edge.
+ */
+const BESIDE_HANDLE_X = 20, BESIDE_HANDLE_Y = 22;
 
 export class Label extends GraphObject {
 
@@ -79,6 +91,20 @@ export class Label extends GraphObject {
                     break;
             }
         }
+        // Beside a point that can be dragged, further out, past the arrows
+        // round it: a label to one side clears the arrows pointing sideways,
+        // and one above or below clears those pointing up and down. A label
+        // in a corner is already clear of arrows pointing up and down.
+        if (def.besideHandle) {
+            const away = (offset: number, least: number) => offset < 0 ? Math.min(offset, -least) : Math.max(offset, least);
+            if (def.besideHandle.indexOf('x') > -1 && def.align !== 'center' && def.xPixelOffset !== undefined) {
+                def.xPixelOffset = away(def.xPixelOffset, BESIDE_HANDLE_X);
+            }
+            if (def.besideHandle.indexOf('y') > -1 && def.align === 'center' && def.yPixelOffset !== undefined) {
+                def.yPixelOffset = away(def.yPixelOffset, BESIDE_HANDLE_Y);
+            }
+        }
+        delete def.besideHandle;
         super(def, graph);
         this.type = 'Label';
         this.extractCoordinates();

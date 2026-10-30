@@ -177,9 +177,13 @@ const legLabel = (
     }
 });
 
-/** Just past A, along the leg away from it: above it going right, below it going left. */
-const PAST_A_RIGHTWARDS = { align: 'left', xPixelOffset: 10, yPixelOffset: 13 };
-const PAST_A_LEFTWARDS = { align: 'right', xPixelOffset: -10, yPixelOffset: -15 };
+/**
+ * Just past A, along the leg away from it: above it going right, below it
+ * going left. Past the arrows round A as well, which say it can be dragged
+ * and reach 18px out; 10px in, the label sat on the arrow pointing its way.
+ */
+const PAST_A_RIGHTWARDS = { align: 'left', xPixelOffset: 20, yPixelOffset: 13 };
+const PAST_A_LEFTWARDS = { align: 'right', xPixelOffset: -20, yPixelOffset: -15 };
 
 /**
  * How far the axes run: past the most of each good any one param at the top

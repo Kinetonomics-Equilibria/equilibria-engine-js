@@ -241,6 +241,9 @@ export function compileDensity(parsedData: ViewDefinition): ViewDefinition {
             }
 
             o.def.strokeScale = strokeScaleExpression(param);
+            // A handle goes with the labels: a panel too small to be read is
+            // not where a student is meant to drag.
+            o.def.handle = combineShow(o.def.handle, `params.${param} < 2`);
         });
     });
 

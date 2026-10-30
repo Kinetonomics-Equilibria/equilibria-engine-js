@@ -10,6 +10,7 @@ import { ViewObjectDefinition, ViewObject } from "./viewObjects/viewObject";
 import { Sample, Movement, describeMovement, noiseFor } from "./movement";
 import { AxisMarks } from "./axisMarks";
 import { LabelYields } from "./labelYields";
+import { Handles } from "./handles";
 import { KG_EVENTS } from "../constants";
 import { parse } from "../KGAuthor/parsers/parsingFunctions";
 import { StepDefinition, compileSteps } from "../KGAuthor/parsers/steps";
@@ -572,6 +573,9 @@ export class View implements IView {
         if (labelYields) view.model.addUpdateListener(labelYields as any);
         const axisMarks = AxisMarks.over(view.viewObjects);
         if (axisMarks) view.model.addUpdateListener(axisMarks as any);
+        // After both: a curve's handle keeps clear of the labels as they end up.
+        const handles = Handles.over(view.viewObjects);
+        if (handles) view.model.addUpdateListener(handles as any);
 
         view.updateDimensions();
     }

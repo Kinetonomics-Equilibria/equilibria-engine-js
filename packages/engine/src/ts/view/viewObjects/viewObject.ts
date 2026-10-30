@@ -52,6 +52,11 @@ export interface ViewObjectDefinition extends UpdateListenerDefinition {
      * drawn out from `a`, or from `b` if this says `'b'`. See `view/arrival.ts`.
      */
     arrive?: boolean | 'b';
+    /**
+     * Whether a curve or point that can be dragged shows its handle (see
+     * `view/handles.ts`). True unless a panel is too small to be read.
+     */
+    handle?: any;
 
     color?: string;
     fill?: string;
@@ -151,6 +156,10 @@ export class ViewObject extends UpdateListener implements IViewObject {
     public lineStyle;
     public clearColor;
     public arrive;
+    public handle;
+    /** The group a handle is drawn in, on an object that can be dragged; and what was last drawn in it. */
+    public handleElement;
+    public handleDrawn: string;
 
     /** Whether `show` held at the last update; undefined before the first, which arrives nothing. */
     private shownBefore: boolean | undefined;
@@ -168,10 +177,11 @@ export class ViewObject extends UpdateListener implements IViewObject {
             show: true,
             inDef: false,
             lineStyle: 'solid',
-            checkOnGraph: true
+            checkOnGraph: true,
+            handle: true
         });
 
-        setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'strokeScale', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc']);
+        setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'strokeScale', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc', 'handle']);
         setProperties(def, 'constants', ['xScale', 'yScale', 'clipPath', 'clipPath2', 'interactive', 'alwaysUpdate', 'inDef', 'checkOnGraph', 'tabbable', 'view', 'arrive']);
         setProperties(def, 'colorAttributes', ['stroke', 'fill', 'color']);
 
@@ -282,6 +292,22 @@ export class ViewObject extends UpdateListener implements IViewObject {
     addInteraction() {
         const vo = this;
         vo.interactionHandler.addTrigger(vo.rootElement);
+        return vo;
+    }
+
+    /**
+     * A group for the object's handle, last in its root so it is drawn over
+     * the object and grabbed with it, on an object with a drag. Empty until
+     * `view/handles.ts` draws in it, and hidden for a screen reader, which is
+     * told what the object is by its title.
+     */
+    addHandle() {
+        const vo = this;
+        if (vo.def['drag'] && vo.def['drag'].length > 0) {
+            vo.handleElement = vo.rootElement.selectAll('g.handle-' + vo.id).data([1]).join('g')
+                .attr('class', 'handle-' + vo.id)
+                .attr('aria-hidden', 'true');
+        }
         return vo;
     }
 
