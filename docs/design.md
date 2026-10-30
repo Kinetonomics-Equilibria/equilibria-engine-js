@@ -129,7 +129,7 @@ attention on finding things.
   it is cut with an ellipsis rather than wrapped. The A$ lesson's title is
   whole from about 945px.
 - Presenting, the topic and title are drawn as large as the side column
-  (`--present-zoom`, 1.5; see [Present](#present)), and the tools stay as
+  (`--present-zoom`, 1.25; see [Present](#present)), and the tools stay as
   they are. At that size a cut title would lose its last words on a
   1280-wide projector, so it wraps instead, onto two lines of about the same
   length (`text-wrap: balance`). That makes the stage a line shorter on that
@@ -185,14 +185,32 @@ attention on finding things.
   projector. The rail is about the app, and a class has no use for it, so
   the stage gets its width; it is inert while it is away, so the keyboard
   cannot reach it.
-- The words a class reads from across the room are drawn 1.5 times as large
+- The words a class reads from across the room are drawn 1.25 times as large
   (`--present-zoom` in `index.css`, a CSS `zoom` under `:fullscreen`). The
   chart's text was made large enough for a projector, and the column's 15px
-  body and 12px heads were not. 1.3 was tried first and was still too small.
+  body and 12px heads were not; at 1.25 they are about 19px and 15px.
+- It was 1.5, after 1.3 was tried and judged too small, and the column took
+  the diagram's room. At 1366×768 the stage was under 900px, the rail went
+  under the focal panel, and the focal panel was 367px. 1.25 gives up some
+  of the words' size for the diagram's:
+
+  | Screen | Column | Focus, focal panel | Grid, each panel |
+  | --- | --- | --- | --- |
+  | 1280×800 | 480 → 400 | 395 → 400 | 288 → 327 |
+  | 1366×768 | 480 → 400 | 367 → 535 | |
+  | 1440×900 | 480 → 400 | 595 → 656 | |
+  | 1512×982 | 480 → 400 | 650 → 711 | |
+  | 1920×1080 | 570 → 475 | 831 → 839 | |
+
+  At 1280×800 the stage is under 900 whatever the zoom (832px at 1.25), so
+  the rail is under the focal panel and the focal panel is held by the
+  height: it is 579px only with no zoom at all.
   - **The side column**, width and all. Everything in it grows together, so
     a line holds the words it did and the card is the one students know. At
-    1280×800 the column is 480px and the stage keeps about 750px; a long step
-    scrolls after about eight lines. See [The side column](#the-side-column).
+    1280×800 the column is 400px and the stage keeps 832px. It keeps the
+    narrower rule, 20vw up to 380px, under the zoom: the diagram is what a
+    class came to see, and at 1512×982 the focal panel is 711px on it and
+    670 on 24vw. See [The side column](#the-side-column).
   - **The topic and title** above the stage, but not the tools beside them.
     A long title wraps; see [The title line](#the-title-line).
   - **A report's words** (`AsidePanel`), when it is at the front of Focus,
@@ -373,9 +391,9 @@ It grows from 1333px and not before. At 1366×768, the commonest school
 laptop, the stage is 926px wide, and under 900 (`FILMSTRIP_BELOW_PX`) the rail
 goes under the focal panel and the focal panel goes from 546px to 381px. A
 flat 352px there did that; 24vw is 328 and leaves the stage 918. Presenting,
-it is all 1.5 times as large and keeps the rule it had, from 480px to 570px
-(see [Present](#present)): zoom multiplies a `vw` too, and 24vw at 1.5 times
-put the rail under the focal panel on a 1470×956 MacBook Air.
+it is all 1.25 times as large and keeps the rule it had, from 400px to 475px
+(see [Present](#present)): zoom multiplies a `vw` too, and the narrower rule
+leaves the diagram more of the screen.
 
 ```
  A lesson                            The playground

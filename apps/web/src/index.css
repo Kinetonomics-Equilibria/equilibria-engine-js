@@ -19,8 +19,9 @@
     /* How much larger the side column, the title and a report's words are
      * drawn while the page is presenting, read from across a classroom. One
      * number, so they stay alike; see StudyScreen's `.side`, TitleLine's
-     * `.heading` and AsidePanel's `.words`. */
-    --present-zoom: 1.5;
+     * `.heading` and AsidePanel's `.words`. 1.5 cost the diagram too much;
+     * see docs/design.md, "Present". */
+    --present-zoom: 1.25;
     /* How a sheet rises over a card's body, and goes back down: "What
      * changed"'s, from its foot and into it again. Long enough to watch it
      * come up from where it was, quick to start and slowing as it lands. The
