@@ -307,17 +307,22 @@
  * place, and the whole chain is a press away on a sheet over the card.
  *
  * 320px on a laptop, where the stage has none to spare, and wider with the
- * window up to 380px. At 320 a line of the lesson is about 42 characters, short
- * of comfortable reading; on a large screen the focal panel is held by the
- * stage's height and the width it gives up was slack beside it. The window,
- * and whether the page is presenting, are all that set it, so nothing in the
- * column can resize the stage. */
+ * window (24vw) up to 456px. At 320 a line of the
+ * lesson is about 42 characters, short of comfortable reading; on a large
+ * screen the focal panel is held by the stage's height and the width it gives
+ * up was slack beside it, and in Grid each panel gives up about half of what
+ * the column takes. It starts to grow at 1333px and not before: at 1366×768,
+ * the commonest school laptop, the stage is 926px, and under 900
+ * (`FILMSTRIP_BELOW_PX`) the rail goes under the focal panel and the focal
+ * panel goes from 546px to 381px. 24vw there is 328px, and the stage keeps
+ * 918. The window, and whether the page is presenting, are all that set it,
+ * so nothing in the column can resize the stage. */
 .side {
     display: flex;
     flex: none;
     flex-direction: column;
     gap: var(--mantine-spacing-sm);
-    width: clamp(320px, 20vw, 380px);
+    width: clamp(320px, 24vw, 456px);
     min-height: 0;
 }
 
@@ -337,9 +342,15 @@
  * because the column also sets text in pixels and its maths in KaTeX's em,
  * and its slider, icons and spacing should grow with its words. Pointer
  * positions are measured in the zoomed box, so a slider still lands where it
- * is pressed. */
+ * is pressed.
+ *
+ * Presenting, the column keeps the narrower rule it had, 20vw up to 380px:
+ * zoom multiplies a `vw` too, so 24vw would be 36% of the screen, and on a
+ * 1470×956 MacBook Air, presenting on its own screen, it would put the rail
+ * under the focal panel. */
 :fullscreen .side {
     zoom: var(--present-zoom);
+    width: clamp(320px, 20vw, 380px);
 }
 
 /* The column's whole height, from the top of the screen: the lesson's card,

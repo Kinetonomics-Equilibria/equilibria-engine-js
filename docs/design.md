@@ -352,13 +352,30 @@ One menu for everything that leaves the screen (`ShareMenu`):
 
 Beside the stage, the screen's full height, one card with "What changed" at its
 foot. It is 320px
-wide on a laptop and grows with the window to 380px (`clamp(320px, 20vw,
-380px)`): at 320 a line of the lesson is about 42 characters, short of
-comfortable reading, and on a large screen the focal panel is held by the
-stage's height, so the width the column takes there was slack beside it. Grid,
-whose panels sit side by side and are held by the stage's width, pays for it,
-which is why the column stops at 380. Presenting, it is all 1.5 times as large,
-from 480px to 570px (see [Present](#present)).
+wide on a laptop and grows with the window to 456px (`clamp(320px, 24vw,
+456px)`): at 320 a line of the lesson is about 42 characters, short of
+comfortable reading, and on a 16:9 screen the focal panel is held by the
+stage's height, so the width the column takes there was slack beside it.
+Grid, whose panels sit side by side and are held by the stage's width, pays
+about half of what the column takes, per panel, which is why the column stops
+at 456; so does Focus on a 16:10 screen, where the focal panel and the rail
+beside it are held by the width:
+
+| Window | Column | Focus, focal panel | Grid, each panel |
+| --- | --- | --- | --- |
+| 1366×768 | 320 → 328 | 546, as it was | 372 → 368 |
+| 1440×900 | 320 → 346 | 662 → 642 | 408 → 395 |
+| 1512×982 | 320 → 363 | 717 → 684 | 443 → 422 |
+| 1728×1117 | 346 → 415 | 862 → 809 | 506 → 473 |
+| 1920×1080 | 380 → 456 | 849, as it was | 582 → 546 |
+
+It grows from 1333px and not before. At 1366×768, the commonest school
+laptop, the stage is 926px wide, and under 900 (`FILMSTRIP_BELOW_PX`) the rail
+goes under the focal panel and the focal panel goes from 546px to 381px. A
+flat 352px there did that; 24vw is 328 and leaves the stage 918. Presenting,
+it is all 1.5 times as large and keeps the rule it had, from 480px to 570px
+(see [Present](#present)): zoom multiplies a `vw` too, and 24vw at 1.5 times
+put the rail under the focal panel on a 1470×956 MacBook Air.
 
 ```
  A lesson                            The playground
@@ -468,6 +485,13 @@ from 480px to 570px (see [Present](#present)).
   hand; with reduced motion it is always all there at once.
 - The tabs are each as wide as their name, sharing out what is left, and the
   open one is no bolder than the rest, so opening one moves no other.
+- The tabs float over the top of the open instrument, which scrolls up under
+  them rather than being cut off at their edge. What passes under is frosted:
+  blurred 6px and washed with the card's paper at half strength, fading out
+  over 12px under the track, and the track is a tint, so the frost shows
+  through it. Light enough that a line going under is still seen as a line:
+  at 10px and 70% the 13px text vanished and the bar read as a white band.
+  "What changed"'s sheet stops under the tabs and is drawn over the frost.
 - On a phone there is no column: the lesson, a story's card, or in the
   playground the instruments, tabs and all, go under the stage at one fixed
   height, with no foot, and the

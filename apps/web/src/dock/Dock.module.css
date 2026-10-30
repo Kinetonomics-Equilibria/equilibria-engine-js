@@ -16,29 +16,71 @@
     /* The scroll area runs to the card's edge, so its content is clipped to
      * the card's corners rather than drawn over them. */
     overflow: hidden;
+    /* The bar's layers, and the sheet "What changed" raises, are stacked
+     * against each other here and nowhere else. */
+    isolation: isolate;
+    /* The tabs' bar: the track's 14px margin and the track, 34px, a 28px tab
+     * in 3px of track above and below. The open instrument starts at the
+     * card's top, under it. */
+    --bar: 48px;
 }
 
 .tabs {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
 }
 
-/* A segmented control: a sunken track, the open tab raised out of it. In the
- * card the track's edges are the instruments' edges, 14px in, as the lesson
- * card's words are. */
+/* The tabs, laid over the top of the open instrument. The track's edges are
+ * the instruments' edges, 14px in, as the lesson card's words are. */
+.bar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    padding: 14px 14px 0;
+}
+
+/* Frosted: what scrolls up under the bar is blurred and washed with the
+ * card's own paper, so the tabs read over it, and the frost fades out over
+ * the 12px under the track rather than stopping at an edge. At the top of an
+ * instrument nothing is under it and it is the card's plain paper.
+ *
+ * Light enough that the lines going under are still seen as lines, soft and
+ * grey: at 10px and 70% the instrument's 13px text vanished, and the bar read
+ * as a white band the content was cut off at. At 3px it could still be read,
+ * behind the tabs' names.
+ *
+ * Under the track and over the instrument. The sheet "What changed" raises
+ * comes after it, at the same level, so it is drawn over the frost: while it
+ * is up nothing is under the bar to see, and its head is not blurred. */
+.bar::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 -12px;
+    z-index: 1;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--mantine-color-body) 50%, transparent);
+    -webkit-backdrop-filter: blur(6px) saturate(1.8);
+    backdrop-filter: blur(6px) saturate(1.8);
+    -webkit-mask-image: linear-gradient(#000 calc(100% - 12px), transparent);
+    mask-image: linear-gradient(#000 calc(100% - 12px), transparent);
+}
+
+/* A segmented control: a sunken track, the open tab raised out of it. The
+ * track is a tint rather than a colour, so the frost shows through it as it
+ * does round it, and over plain paper it is the grey it always was. */
 .list {
+    position: relative;
+    z-index: 2;
     flex: none;
     flex-wrap: nowrap;
     gap: 2px;
     padding: 3px;
     border-radius: 10px;
-    background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
-}
-
-.dock .list {
-    margin: 14px 14px 0;
+    background: light-dark(rgba(16, 24, 40, 0.055), rgba(255, 255, 255, 0.05));
 }
 
 /* Each tab is its name's width, and the room the names leave is shared
@@ -66,10 +108,11 @@
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1), 0 0 0 1px light-dark(rgba(16, 24, 40, 0.04), transparent);
 }
 
-/* The open instrument and "What changed" under it: the room the foot's
- * sheet rises into, under the tabs. */
+/* The open instrument and "What changed" under it, from the card's top: the
+ * room the foot's sheet rises into, which stops under the tabs. */
 .stack {
     composes: stack from '../ui/paper.module.css';
+    --sheet-top: var(--bar);
 }
 
 .panel {
@@ -83,6 +126,17 @@
     height: 100%;
 }
 
+/* Something brought into view, by the keyboard or otherwise, lands under the
+ * bar's frost, not behind it. */
+.viewport {
+    scroll-padding-top: calc(var(--bar) + 12px);
+}
+
+/* The scrollbar starts under the tabs, so it is never drawn over them. */
+.dock .scrollbar[data-orientation='vertical'] {
+    top: var(--bar);
+}
+
 .panelInner {
     padding-top: var(--mantine-spacing-sm);
     padding-right: var(--mantine-spacing-xs);
@@ -92,7 +146,7 @@
  * lesson card's words keep theirs: 14px at the sides, and 12px under the tabs
  * and at the foot. */
 .dock .panelInner {
-    padding: 12px 14px;
+    padding: calc(var(--bar) + 12px) 14px 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

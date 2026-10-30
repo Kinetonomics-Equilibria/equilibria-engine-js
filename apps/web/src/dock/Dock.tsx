@@ -64,6 +64,10 @@ export function Dock({ instruments, open, onOpenChange, context, focus, classNam
     // Not `grow`, which shares the track in equal parts. Each tab is its
     // name's width and the room left over is shared out, which the dock's CSS
     // keeps still by giving the open tab no heavier a weight than the rest.
+    //
+    // The tabs are on a bar laid over the top of the open instrument, not
+    // above it, so what scrolls up passes under them, blurred, rather than
+    // being cut off at their edge.
     return (
         <aside className={className ? `${classes.dock} ${className}` : classes.dock} aria-label="Instruments">
             <Tabs
@@ -73,13 +77,15 @@ export function Dock({ instruments, open, onOpenChange, context, focus, classNam
                 variant="pills"
                 classNames={{ root: classes.tabs, list: classes.list, tab: classes.tab }}
             >
-                <Tabs.List>
-                    {instruments.map(i => (
-                        <Tabs.Tab key={i.id} value={i.id} leftSection={i.icon}>
-                            {i.label}
-                        </Tabs.Tab>
-                    ))}
-                </Tabs.List>
+                <div className={classes.bar}>
+                    <Tabs.List>
+                        {instruments.map(i => (
+                            <Tabs.Tab key={i.id} value={i.id} leftSection={i.icon}>
+                                {i.label}
+                            </Tabs.Tab>
+                        ))}
+                    </Tabs.List>
+                </div>
 
                 <div className={classes.stack}>
                     {instruments.map(i => (
@@ -88,7 +94,11 @@ export function Dock({ instruments, open, onOpenChange, context, focus, classNam
                               * instrument, and none otherwise. `auto` showed one for as
                               * long as the content overflowed at all, so the maths sat
                               * beside a permanent bar for want of fourteen pixels. */}
-                            <ScrollArea.Autosize className={classes.scroll} type="hover">
+                            <ScrollArea.Autosize
+                                className={classes.scroll}
+                                classNames={{ viewport: classes.viewport, scrollbar: classes.scrollbar }}
+                                type="hover"
+                            >
                                 <div className={classes.panelInner}>
                                     <i.Component
                                         {...context}

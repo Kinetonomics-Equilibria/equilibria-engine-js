@@ -60,7 +60,8 @@
  * chain scrolls under it past what fits. */
 .sheet {
     position: absolute;
-    inset: 0;
+    /* The stack's top, or under what a card lays over it: the dock's tabs. */
+    inset: var(--sheet-top, 0) 0 0;
     z-index: 1;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
