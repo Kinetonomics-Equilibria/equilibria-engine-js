@@ -6,6 +6,7 @@ import { setDefaults, setProperties } from "../../util";
 import { Sample } from "../movement";
 import { Scale } from "../scale";
 import { reducedMotion } from "../arrival";
+import { KG_HANDLE_CLASS } from "../../constants";
 
 
 
@@ -307,7 +308,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
         const vo = this;
         if (vo.def['drag'] && vo.def['drag'].length > 0) {
             vo.handleElement = vo.rootElement.selectAll('g.handle-' + vo.id).data([1]).join('g')
-                .attr('class', 'kg-handle handle-' + vo.id)
+                .attr('class', `${KG_HANDLE_CLASS} handle-${vo.id}`)
                 .attr('aria-hidden', 'true');
         }
         return vo;

@@ -1,7 +1,7 @@
 import { View } from "./view/view";
 import { StepDefinition } from "./KGAuthor/parsers/steps";
 import { DensityLevel } from "./KGAuthor/parsers/density";
-import { KG_EVENTS } from "./constants";
+import { KG_EVENTS, KG_HANDLE_CLASS } from "./constants";
 import type { ParamInfo } from "./model/param";
 import { EventEmitter } from "eventemitter3";
 import "../css/kgjs-theme.css";
@@ -12,7 +12,7 @@ import "../css/kgjs-theme.css";
 // got unstyled maths. The engine uses KaTeX, so the engine asks for its CSS.
 import "katex/dist/katex.min.css";
 
-export { KG_EVENTS };
+export { KG_EVENTS, KG_HANDLE_CLASS };
 export type { DensityLevel };
 
 /**

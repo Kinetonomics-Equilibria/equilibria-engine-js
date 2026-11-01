@@ -206,6 +206,26 @@ describe('Share', () => {
         await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
     });
 
+    it('leaves the handles off the picture, and puts them back on the page', async () => {
+        const user = userEvent.setup();
+        let onThePicture: string[] = [];
+        vi.mocked(toPng).mockImplementation(async node => {
+            onThePicture = Array.from(node.querySelectorAll<SVGElement>('.kg-handle')).map(h => h.style.display);
+            return 'data:image/png;base64,iVBORw0KGgo=';
+        });
+        open('lessons/market?step=6&a=28');
+        const onThePage = () => Array.from(document.querySelectorAll<SVGElement>('.kg-handle')).map(h => h.style.display);
+        const before = onThePage();
+        expect(before.length).toBeGreaterThan(0);
+
+        await user.click(share());
+        await user.click(item(/^Download the diagram/));
+        await waitFor(() => expect(saved).toHaveLength(1));
+
+        expect(onThePicture).toEqual(before.map(() => 'none'));
+        expect(onThePage()).toEqual(before);
+    });
+
     it('says so, and stays open, when the browser will not draw the picture', async () => {
         const user = userEvent.setup();
         vi.mocked(toPng).mockRejectedValue(new Error('Tainted canvas'));

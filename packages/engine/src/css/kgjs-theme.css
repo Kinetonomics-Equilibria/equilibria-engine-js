@@ -165,3 +165,10 @@
         transition: none;
     }
 }
+
+/* Nothing on paper can be dragged, and the disc would read as a point. */
+@media print {
+    .kg-container .kg-handle {
+        display: none;
+    }
+}

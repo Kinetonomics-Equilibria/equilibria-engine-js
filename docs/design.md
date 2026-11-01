@@ -273,14 +273,15 @@ One menu for everything that leaves the screen (`ShareMenu`):
   away. While it is up the stage's tools are disabled as under any sheet; "What changed" goes on saying what
   it said, since the diagram under it is still the view.
 - Download gives the stage as drawn — sheets, curves, labels and captions,
-  not the column beside it — as a PNG at twice the screen's pixels, for
-  notes, slides or an assignment. It is named for the view: "Exchange rates
+  not the column beside it, and not a chart's handles, since nothing on a
+  picture can be dragged — as a PNG at twice the screen's pixels, for notes,
+  slides or an assignment. It is named for the view: "Exchange rates
   (AUD), step 7.png".
 - Print is a print stylesheet, not an export of its own: the lesson's topic
   and title; the view in words (`PrintedView`) — where in the lesson, which
   panel is in front, and each param moved from where the lesson puts it —
   with a QR code back to the view and its link; the diagram, scaled as drawn to the
-  paper's 680px; and the whole chain from "What changed", as its sheet says
+  paper's 680px, without its handles; and the whole chain from "What changed", as its sheet says
   it, since paper has no "See all" to press (`NarrationPrinted`), left off at
   rest. No rail, tools or tabs. The browser's dialog saves it as a PDF, and printing
   from the browser's own menu gives the same page.

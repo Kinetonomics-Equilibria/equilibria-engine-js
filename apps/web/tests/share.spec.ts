@@ -51,6 +51,63 @@ test('Download saves the stage as drawn, at twice its pixels, named for the view
     expect(pageErrors).toEqual([]);
 });
 
+/**
+ * A handle says what can be dragged, so it is on neither of the things that
+ * leave the screen (docs/chart-design.md, Handles). A chart with two.
+ */
+const DRAGGABLE = '/playground/aud';
+const thumbs = (page: Page) => page.locator('.kg-handle-thumb:visible');
+
+test('the picture has no handles, only the curve where one was', async ({ page }) => {
+    await opened(page, DRAGGABLE);
+    const thumb = (await thumbs(page).first().boundingBox())!;
+    const layer = (await page.locator('[class*="stageLayer"]').boundingBox())!;
+    await share(page).click();
+    const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        item(page, /^Download the diagram/).click()
+    ]);
+
+    // Where the thumb's white middle is on screen, at the picture's two pixels
+    // to one: the curve's blue, running on through.
+    const [red] = await page.evaluate(async ({ png, x, y }) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${png}`;
+        await image.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const paper = canvas.getContext('2d')!;
+        paper.drawImage(image, 0, 0);
+        return Array.from(paper.getImageData(x, y, 1, 1).data);
+    }, {
+        png: readFileSync((await download.path())!).toString('base64'),
+        x: Math.round(2 * (thumb.x + thumb.width / 2 - layer.x)),
+        y: Math.round(2 * (thumb.y + thumb.height / 2 - layer.y))
+    });
+    expect(red).toBeLessThan(120);
+});
+
+test('the paper has no handles, and the keyboard can still move a curve after it', async ({ page }) => {
+    await opened(page, DRAGGABLE);
+    const demand = page.locator('g[role="slider"][aria-label="Demand for AUD"]');
+    await expect(thumbs(page)).toHaveCount(2);
+    await demand.focus();
+
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await page.emulateMedia({ media: 'print' });
+    await expect(thumbs(page)).toHaveCount(0);
+    // A redraw with the handles hidden by the stylesheet, which is not the
+    // same as there being none to drag.
+    await page.keyboard.press('ArrowRight');
+
+    await page.emulateMedia({ media: 'screen' });
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await expect(thumbs(page)).toHaveCount(2);
+    await expect(demand).toHaveAttribute('tabindex', '0');
+    await expect(demand).toHaveAttribute('aria-valuetext', '52');
+});
+
 test('the QR code is as large as the stage allows, and Esc puts it away', async ({ page }) => {
     await opened(page, VIEW);
     const stage = (await page.locator('[class*="stageBox"]').boundingBox())!;

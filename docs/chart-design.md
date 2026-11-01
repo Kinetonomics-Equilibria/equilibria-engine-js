@@ -192,6 +192,10 @@ config sets nothing.
 - **Not drawn like a point.** The thumb is white where a point is solid, so it
   is never read as a combination the chart is about.
 - **Handles hold still** ([Motion](#motion)): no pulse and no bounce.
+- **Only on screen.** A printed page and a downloaded picture leave them off,
+  arrows and all: nothing on either can be dragged, and a thumb on a curve
+  would read as a point. Present and an embed keep them, because a student or
+  a teacher can drag there.
 - **The keyboard reaches what has a handle**, and only that. Each one is a
   slider: Tab reaches it, and a screen reader says its name and what it moves,
   "Demand for AUD, slider, 50", or "Point Z, slider, Toasties at Z 40,

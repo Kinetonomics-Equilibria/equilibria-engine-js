@@ -64,9 +64,14 @@ const FOCUS_RING = REACH + 5;
  */
 export function drawHandle(group, directions: Directions, colour: string, thumb: boolean) {
     group.selectAll('*').remove();
+    // Nothing on it of its own, for the stylesheet to add to on focus. A copy
+    // of the diagram can leave the stylesheet behind, as a saved picture does,
+    // and a circle with no paint of its own is a solid black one.
     group.append('circle')
         .attr('class', 'kg-focus-ring')
-        .attr('r', FOCUS_RING);
+        .attr('r', FOCUS_RING)
+        .attr('fill', 'none')
+        .attr('stroke', 'none');
     if (thumb) {
         group.append('circle')
             .attr('class', 'kg-handle-thumb')
@@ -154,9 +159,11 @@ export class Handles {
         const curves = on.filter((vo): vo is Curve => vo instanceof Curve);
         if (curves.length > 0) placeAlong(curves, objects, on);
 
-        // What shows a handle is what the keyboard can move.
+        // What has a handle is what the keyboard can move. Asked of what was
+        // decided here, not of the element's style, which the print stylesheet
+        // hides: a redraw while printing would stop it being a slider.
         objects.forEach(function (vo) {
-            if (vo.handleElement) asSlider(vo, vo.handleElement.style('display') !== 'none');
+            if (vo.handleElement) asSlider(vo, on.indexOf(vo) > -1 && !!vo.handleAt);
         });
     }
 }

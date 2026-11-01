@@ -137,6 +137,14 @@ describe('a curve that can be dragged', () => {
         r.destroy();
     });
 
+    it('draws its focus ring with no paint of its own, for a copy with no stylesheet', () => {
+        // A saved picture is one: the ring came out a solid black disc.
+        const r = build([DEMAND]);
+        const ring = live(r, 'demand').handleElement.select('circle.kg-focus-ring');
+        expect([ring.attr('fill'), ring.attr('stroke')]).toEqual(['none', 'none']);
+        r.destroy();
+    });
+
     it('marks it held from the press to the release, with no need to move', () => {
         // What draws it solid on a tablet, which has no hover (kgjs-theme.css).
         const r = build([DEMAND]);
