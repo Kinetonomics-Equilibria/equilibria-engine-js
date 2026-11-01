@@ -185,9 +185,10 @@ config sets nothing.
   mouse or a finger holds it, and while the keyboard is on it. A screen with no
   hover has only the press, and goes back at the release. The change takes
   120ms, and none for a student who has asked for less motion. At 80% orange
-  and green come to 2.6:1 on white, under the 3:1 a line has to clear
-  ([Colour](#colour)): the price of a handle that doesn't compete with the
-  curve, and any lower takes blue and purple under it as well.
+  and green come to 2.6:1 on white and grey to 2.9:1, under the 3:1 a line has
+  to clear ([Colour](#colour)): the price of a handle that doesn't compete with
+  the curve. Blue is 3.4:1 and purple 3.0:1, so any lower takes purple under it
+  as well.
 - **Not drawn like a point.** The thumb is white where a point is solid, so it
   is never read as a combination the chart is about.
 - **Handles hold still** ([Motion](#motion)): no pulse and no bounce.
