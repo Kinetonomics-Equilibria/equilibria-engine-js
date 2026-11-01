@@ -307,7 +307,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
         const vo = this;
         if (vo.def['drag'] && vo.def['drag'].length > 0) {
             vo.handleElement = vo.rootElement.selectAll('g.handle-' + vo.id).data([1]).join('g')
-                .attr('class', 'handle-' + vo.id)
+                .attr('class', 'kg-handle handle-' + vo.id)
                 .attr('aria-hidden', 'true');
         }
         return vo;

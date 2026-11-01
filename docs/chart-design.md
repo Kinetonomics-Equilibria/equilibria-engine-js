@@ -179,6 +179,15 @@ config sets nothing.
 - **A label beside a point that can be dragged sits past its arrows.** The
   engine moves a point's own label out to 20px. A label set beside one by hand
   keeps the same distance, as the café's "+20 toasties" does beside A.
+- **A little see-through at rest, solid once a student is at it.** 80%
+  (`--kg-handle-opacity`), so a handle sits behind the curve it is on. It goes
+  to full strength with the pointer anywhere on that curve or point, while a
+  mouse or a finger holds it, and while the keyboard is on it. A screen with no
+  hover has only the press, and goes back at the release. The change takes
+  120ms, and none for a student who has asked for less motion. At 80% orange
+  and green come to 2.6:1 on white, under the 3:1 a line has to clear
+  ([Colour](#colour)): the price of a handle that doesn't compete with the
+  curve, and any lower takes blue and purple under it as well.
 - **Not drawn like a point.** The thumb is white where a point is solid, so it
   is never read as a combination the chart is about.
 - **Handles hold still** ([Motion](#motion)): no pulse and no bounce.

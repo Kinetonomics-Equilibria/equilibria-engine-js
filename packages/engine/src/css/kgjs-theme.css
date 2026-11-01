@@ -24,6 +24,7 @@
 
     /* Baseline interaction states */
     --kg-focus-color: #228be6;
+    --kg-handle-opacity: 0.8;
     --kg-hover-opacity: 0.8;
     --kg-active-stroke-width: 3px;
 }
@@ -133,4 +134,34 @@
 
 .kg-container svg [role="slider"]:focus-visible .kg-focus-ring {
     display: inline;
+}
+
+/*
+ * A handle is a little see-through at rest, and solid once a student is at it:
+ * over the curve or point it belongs to, holding it, or on it from the
+ * keyboard. A touch screen has no hover, and on one a hover would stick after
+ * the finger had gone, so it is asked for only where there is a pointer that
+ * can hover; `.kg-handle-held` is set from the press to the release, by a
+ * mouse or a finger (InteractionHandler.hold).
+ */
+.kg-container .kg-handle {
+    opacity: var(--kg-handle-opacity);
+    transition: opacity 120ms ease;
+}
+
+.kg-container .kg-handle.kg-handle-held,
+.kg-container svg [role="slider"]:focus-visible > .kg-handle {
+    opacity: 1;
+}
+
+@media (hover: hover) {
+    .kg-container svg [role="slider"]:hover > .kg-handle {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kg-container .kg-handle {
+        transition: none;
+    }
 }

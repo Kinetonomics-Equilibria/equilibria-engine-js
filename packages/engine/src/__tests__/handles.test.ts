@@ -137,6 +137,25 @@ describe('a curve that can be dragged', () => {
         r.destroy();
     });
 
+    it('marks it held from the press to the release, with no need to move', () => {
+        // What draws it solid on a tablet, which has no hover (kgjs-theme.css).
+        const r = build([DEMAND]);
+        const demand = live(r, 'demand');
+        const held = () => demand.handleElement.classed('kg-handle-held');
+        // d3's drag reads `view`, which jsdom will not take in the constructor.
+        const mouse = (type: string) => {
+            const event = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0 });
+            Object.defineProperty(event, 'view', { value: window });
+            return event;
+        };
+        expect(held()).toBe(false);
+        demand.rootElement.node().querySelector('path').dispatchEvent(mouse('mousedown'));
+        expect(held()).toBe(true);
+        window.dispatchEvent(mouse('mouseup'));
+        expect(held()).toBe(false);
+        r.destroy();
+    });
+
     it('keeps it clear of a point on the curve', () => {
         // The point sits where the handle would go, a quarter of the way along.
         const point = { type: 'Point', def: { name: 'there', title: '', coordinates: [5, 15], color: 'colors.equilibriumPrice' } };

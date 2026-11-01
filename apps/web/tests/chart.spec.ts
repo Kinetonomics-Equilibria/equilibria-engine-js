@@ -118,3 +118,66 @@ for (const id of MODELS) {
         expect(pageErrors).toEqual([]);
     });
 }
+
+/**
+ * A handle is a little see-through at rest, and solid once a student is at it
+ * (docs/chart-design.md, Handles). The states are the stylesheet's, so only a
+ * browser can read them: the pointer, a press, the keyboard, and a touch
+ * screen, which has no hover and must not be left with one.
+ */
+const AT_REST = '0.8';
+const demandSlider = (page: Page) => page.locator('g[role="slider"][aria-label="Demand for AUD"]');
+const demandHandle = (page: Page) => demandSlider(page).locator('.kg-handle');
+
+const middleOf = async (page: Page) => {
+    const box = (await demandHandle(page).boundingBox())!;
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+};
+
+test('a handle is solid under the pointer and while it is held', async ({ page, pageErrors }) => {
+    await page.goto('/playground/aud');
+    const handle = demandHandle(page);
+    await expect(handle).toHaveCSS('opacity', AT_REST);
+
+    const { x, y } = await middleOf(page);
+    await page.mouse.move(x, y);
+    await expect(handle).toHaveCSS('opacity', '1');
+
+    // Dragged sideways with the pointer far off the curve, it is still held.
+    await page.mouse.down();
+    await page.mouse.move(x + 20, y + 200);
+    await expect(handle).toHaveCSS('opacity', '1');
+    await page.mouse.up();
+
+    await page.mouse.move(5, 5);
+    await expect(handle).toHaveCSS('opacity', AT_REST);
+    expect(pageErrors).toEqual([]);
+});
+
+test('a handle is solid while the keyboard is on it', async ({ page }) => {
+    await page.goto('/playground/aud');
+    await expect(demandHandle(page)).toHaveCSS('opacity', AT_REST);
+    await demandSlider(page).focus();
+    await expect(demandHandle(page)).toHaveCSS('opacity', '1');
+});
+
+test.describe('on a touch screen', () => {
+    test.use({ viewport: { width: 768, height: 1024 }, hasTouch: true, isMobile: true });
+
+    test('a handle is solid under the finger, and nothing stays solid after it', async ({ page }) => {
+        await page.goto('/playground/aud');
+        const handle = demandHandle(page);
+        await expect(handle).toHaveCSS('opacity', AT_REST);
+
+        const { x, y } = await middleOf(page);
+        const finger = await page.context().newCDPSession(page);
+        await finger.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+        await expect(handle).toHaveCSS('opacity', '1');
+        await finger.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await expect(handle).toHaveCSS('opacity', AT_REST);
+
+        // A tap leaves a hover behind on a touch screen, which must not count.
+        await page.touchscreen.tap(x, y);
+        await expect(handle).toHaveCSS('opacity', AT_REST);
+    });
+});

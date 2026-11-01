@@ -146,6 +146,7 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
             element.on("keydown", function (event) { handler.keyed(event) });
             element.call(d3.drag()
                 .on('start', function (event, d) {
+                    handler.hold(true);
                     handler.scope.params = handler.model.currentParamValues;
                     handler.scope.calcs = handler.model.currentCalcValues;
                     handler.scope.colors = handler.model.currentColors;
@@ -177,6 +178,7 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                     });
                 })
                 .on('end', function (event, d) {
+                    handler.hold(false);
                     //handler.element.style("cursor","default");
                     if (handler.gestureOpen) {
                         handler.gestureOpen = false;
@@ -188,6 +190,18 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
         }
 
         handler.update(true);
+    }
+
+    /**
+     * Mark the object's handle as held, from the press to the release, which
+     * draws it solid (kgjs-theme.css). A class rather than `:active`, which a
+     * touch does not reliably set, and which a pointer leaves on the way out
+     * of a curve it can only drag one way. `start` fires on a press with a
+     * mouse or a finger alike, so this is what a tablet has for a hover.
+     */
+    private hold(held: boolean) {
+        const handle = (this.viewObject as any).handleElement;
+        if (handle) handle.classed('kg-handle-held', held);
     }
 
     /** The params the object's drags move right now, each once, in the order the drags declare them. */
