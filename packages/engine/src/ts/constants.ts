@@ -6,11 +6,5 @@ export const KG_EVENTS = {
     NODE_HOVER: 'kg:node_hover'
 };
 
-/**
- * The class on a handle's group (view/handles.ts). Exported for a host that
- * draws a picture of a diagram: a handle is there to be dragged, so it has no
- * place on a picture, as the print stylesheet has it off the paper. Find them
- * and hide them before drawing, since a copy of an SVG takes the page's
- * stylesheets with it in no way a rule here could reach.
- */
+/** The class on a handle's group (view/handles.ts), which the theme and `view/picture.ts` find it by. */
 export const KG_HANDLE_CLASS = 'kg-handle';

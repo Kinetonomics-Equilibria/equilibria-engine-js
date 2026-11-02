@@ -43,6 +43,10 @@
  * the 3px curves drawn in them (`LINE_WEIGHT`, view/viewObjects/viewObject.ts).
  * This rule used to be written for `.kg-axis`, a class no axis has, so the
  * colour never applied either.
+ *
+ * A saved picture leaves this stylesheet behind for what is inside an `<svg>`,
+ * so this rule and the next are written onto the axes for one
+ * (`readyForPicture`, view/picture.ts). A property added here goes there too.
  */
 .kg-container g.axis line,
 .kg-container g.axis path {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import { toPng } from 'html-to-image';
-import { KG_HANDLE_CLASS } from 'equilibria-engine-js';
+import { readyForPicture } from 'equilibria-engine-js';
 
 /**
  * Share: everything that leaves the screen — a link, a QR code, a picture of
@@ -63,37 +63,21 @@ export function pictureName(lesson: string, where: string | null): string {
 }
 
 /**
- * Do `draw` with the handles under `node` hidden, and put them back as they
- * were. On the page itself, for the moment it takes, because `toPng` copies an
- * `<svg>` whole: its `filter` is never asked about what is inside, and no
- * stylesheet reaches the copy.
- */
-async function withoutHandles<T>(node: HTMLElement, draw: () => Promise<T>): Promise<T> {
-    const handles = Array.from(node.querySelectorAll<SVGElement>(`.${KG_HANDLE_CLASS}`));
-    const shown = handles.map(handle => handle.style.display);
-    handles.forEach(handle => { handle.style.display = 'none'; });
-    try {
-        return await draw();
-    } finally {
-        handles.forEach((handle, i) => { handle.style.display = shown[i]; });
-    }
-}
-
-/**
  * The stage as drawn, as a PNG, saved to the student's downloads.
  *
  * At twice the screen's pixels, so it stays sharp on a slide. The diagram's
  * sheets are white on the page's own shade, which is what the picture's
  * background is too, so the panels read as cards in it as they do on screen.
- * Without the handles, which say what can be dragged: nothing on a picture
- * can, and a thumb on a curve would read as a point. Rejects when the browser
- * will not draw it, so the menu can say so.
+ * What the copy needs written on the diagram first is the engine's to know
+ * (`readyForPicture`): its axes as they are drawn, and no handles. Rejects when
+ * the browser will not draw it, so the menu can say so.
  */
 export async function downloadPicture(node: HTMLElement, name: string): Promise<void> {
-    const url = await withoutHandles(node, () => toPng(node, {
+    const putBack = readyForPicture(node);
+    const url = await toPng(node, {
         pixelRatio: 2,
         backgroundColor: getComputedStyle(document.body).backgroundColor
-    }));
+    }).finally(putBack);
     const link = document.createElement('a');
     link.href = url;
     link.download = name;

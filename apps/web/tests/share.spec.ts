@@ -52,25 +52,28 @@ test('Download saves the stage as drawn, at twice its pixels, named for the view
 });
 
 /**
- * A handle says what can be dragged, so it is on neither of the things that
- * leave the screen (docs/chart-design.md, Handles). A chart with two.
+ * What a saved picture is drawn from leaves the stylesheet behind for what is
+ * inside an `<svg>` (`readyForPicture`), so these read the picture's own
+ * pixels: nothing about the page says what came out. At two pixels to one, and
+ * from the top left of the stage.
  */
 const DRAGGABLE = '/playground/aud';
 const thumbs = (page: Page) => page.locator('.kg-handle-thumb:visible');
 
-test('the picture has no handles, only the curve where one was', async ({ page }) => {
-    await opened(page, DRAGGABLE);
-    const thumb = (await thumbs(page).first().boundingBox())!;
-    const layer = (await page.locator('[class*="stageLayer"]').boundingBox())!;
+interface Box { x: number; y: number; width: number; height: number }
+
+async function savedPicture(page: Page) {
     await share(page).click();
     const [download] = await Promise.all([
         page.waitForEvent('download'),
         item(page, /^Download the diagram/).click()
     ]);
+    return readFileSync((await download.path())!).toString('base64');
+}
 
-    // Where the thumb's white middle is on screen, at the picture's two pixels
-    // to one: the curve's blue, running on through.
-    const [red] = await page.evaluate(async ({ png, x, y }) => {
+/** The red of each pixel in a box of the picture, row by row: how light a grey or a black is. */
+const redsIn = (page: Page, png: string, box: Box) =>
+    page.evaluate(async ({ png, x, y, width, height }) => {
         const image = new Image();
         image.src = `data:image/png;base64,${png}`;
         await image.decode();
@@ -79,13 +82,59 @@ test('the picture has no handles, only the curve where one was', async ({ page }
         canvas.height = image.height;
         const paper = canvas.getContext('2d')!;
         paper.drawImage(image, 0, 0);
-        return Array.from(paper.getImageData(x, y, 1, 1).data);
-    }, {
-        png: readFileSync((await download.path())!).toString('base64'),
-        x: Math.round(2 * (thumb.x + thumb.width / 2 - layer.x)),
-        y: Math.round(2 * (thumb.y + thumb.height / 2 - layer.y))
-    });
+        const { data } = paper.getImageData(x, y, width, height);
+        const rows: number[][] = [];
+        for (let row = 0; row < height; row++) {
+            rows.push(Array.from({ length: width }, (_, column) => data[4 * (row * width + column)]));
+        }
+        return rows;
+    }, { png, ...box });
+
+const onThePicture = async (page: Page, box: Box): Promise<Box> => {
+    const stage = (await page.locator('[class*="stageLayer"]').boundingBox())!;
+    return {
+        x: Math.round(2 * (box.x - stage.x)), y: Math.round(2 * (box.y - stage.y)),
+        width: Math.ceil(2 * box.width), height: Math.ceil(2 * box.height)
+    };
+};
+
+test('the picture has no handles, only the curve where one was', async ({ page }) => {
+    await opened(page, DRAGGABLE);
+    const thumb = (await thumbs(page).first().boundingBox())!;
+    // The thumb's middle, white on screen: the curve's blue, running on through.
+    const middle = await onThePicture(page, { x: thumb.x + thumb.width / 2, y: thumb.y + thumb.height / 2, width: 0.5, height: 0.5 });
+    const [[red]] = await redsIn(page, await savedPicture(page), middle);
     expect(red).toBeLessThan(120);
+});
+
+test('the picture has the axes as they are drawn, not as d3 writes them', async ({ page }) => {
+    await opened(page, DRAGGABLE);
+    const domains = await page.locator('g.axis path.domain:visible').evaluateAll(all => all.map(path => {
+        const { x, y, width, height } = path.getBoundingClientRect();
+        return { x, y, width, height };
+    }));
+    const quantity = domains.find(box => box.width > box.height)!;
+    const number = await page.locator('g.axis text:visible', { hasText: /^100$/ }).first().evaluate(text => {
+        const { x, y, width, height } = text.getBoundingClientRect();
+        return { x, y, width, height };
+    });
+
+    // A column down through the quantity axis, between two ticks.
+    const column = await onThePicture(page, { x: quantity.x + 0.3 * quantity.width, y: quantity.y - 6, width: 0.5, height: 16 });
+    const digits = await onThePicture(page, number);
+    const png = await savedPicture(page);
+
+    const down = (await redsIn(page, png, column)).map(([red]) => red);
+    const line = down.filter(red => red < 128);
+    // 2px is four of the picture's, where d3's 1px would be two, and in the
+    // axis colour, #333, where d3's would be black.
+    expect(line.length).toBeGreaterThanOrEqual(4);
+    expect(line.length).toBeLessThanOrEqual(5);
+    expect(Math.min(...down)).toBeGreaterThan(40);
+
+    // 14px type has digits 10px tall, so twenty here, where d3's 10px has fourteen.
+    const inked = (await redsIn(page, png, digits)).filter(row => row.some(red => red < 128));
+    expect(inked.length).toBeGreaterThanOrEqual(18);
 });
 
 test('the paper has no handles, and the keyboard can still move a curve after it', async ({ page }) => {
