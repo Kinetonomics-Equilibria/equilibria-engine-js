@@ -5,6 +5,7 @@ import { PRODUCTION_POSSIBILITIES } from './ppc';
 import { DEMAND_SHIFTERS } from './demand';
 import { SUPPLY_SHIFTERS } from './supply';
 import { PRICE_ELASTICITY } from './elasticity';
+import { TERMS_OF_TRADE } from './terms-of-trade';
 
 /** A topic in the navbar's Lessons panel: a row that drops down to its lessons. */
 export interface LessonTopic {
@@ -56,7 +57,12 @@ export const CURRICULUM: LessonStrand[] = [
     {
         label: 'Macroeconomics',
         topics: [
-            { id: 'international', label: 'International economics', color: 'orange', lessons: [FOREIGN_EXCHANGE] }
+            // The exchange rate first: the terms of trade lean on it for what
+            // a boom does to the AUD.
+            {
+                id: 'international', label: 'International economics', color: 'orange',
+                lessons: [FOREIGN_EXCHANGE, TERMS_OF_TRADE]
+            }
         ]
     }
 ];

@@ -85,6 +85,9 @@ import { Schema } from "../../schemas/schema";
                 choice: 'orange',
                 combination: 'purple',
 
+                // trade: what a country's exports buy in imports.
+                termsOfTrade: 'purple',
+
                 // equilibrium
                 price: 'grey',
                 paretoLens: "'#ffff99'",

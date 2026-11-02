@@ -84,19 +84,21 @@ that uses it:
 
 | Helper | What it draws | Used in |
 | --- | --- | --- |
-| `axis`, `priceAxis` | An axis with a title in words; the price axis's `$` escaped | every lesson; `priceAxis` all but `fx` and `ppc` |
+| `axis`, `priceAxis` | An axis with a title in words; the price axis's `$` escaped | every lesson; `priceAxis` all but `fx`, `ppc` and `terms-of-trade` |
 | `curve` | A curve, by what it means and its symbol; its ghost and a question's lines | every lesson but `ppc` |
-| `equilibrium` | Where two curves cross, with droplines | `market`, `fx`, the template |
+| `equilibrium` | Where two curves cross, with droplines | `market`, `fx`, `terms-of-trade`, the template |
 | `priceLine` | A price across a panel with no curve to sit on, P on the axis | `demand`'s and `supply`'s first panel |
 | `pricePoint` | The point a price picks on a curve, with its droplines: P on the price axis, so no `priceLine` beside it | `demand`, `supply`, `elasticity` |
-| `namedArea` | An area the lesson names, at 20% | `market`, `elasticity` |
+| `namedArea` | An area the lesson names, at 20% | `market`, `elasticity`, `terms-of-trade` |
 | `contextArea` | A region that is context, at 8% | `ppc` |
 | `readout` | A line in the plot's top-right corner | `ppc` |
 
 A curve's label goes where
 [Labels on the plot](./chart-design.md#labels-on-the-plot) says — demand at its
-lower right, supply at its upper right — placed by a calc where the end moves,
-and never on the equilibrium or the point a price picks.
+lower right, supply at its upper right — placed by a calc of the curve's own
+params where the end moves, and never on the equilibrium or the point a price
+picks. A label placed by `calcs.Pe` on a curve with a ghost draws that ghost on
+top of the curve whenever the other curve moves.
 
 Where the kit has nothing that fits, write a raw engine object beside the
 kit's, as the café's curve is, and give it the house rules by hand:

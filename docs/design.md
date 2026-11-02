@@ -629,7 +629,7 @@ are the lesson's own:
 | step `recap.takeaway` | The recap, under the cases | The rule every question was an instance of, in one paragraph. Said here and not on the card as well. |
 | `asides`, step `aside` | A panel beside the diagram, at that step | The event a question turns on, as a report: a name for its caption ("News report"), a headline, one sentence, and a note that says it is made up. It is part of the question's prompt, so it names no curve the question offers — and the card does not tell the story again. A real event is a story, below, and never an aside. |
 | `pictures` | The cover, and steps that show one | An imported image file, its name in a few words, and alt text that says what it shows. Anything that moves has a `still`. |
-| step `focus` | The stage, when the lesson passes that step going forward | The key of a panel that arrives to take over the lesson, such as the market after a chart of one buyer. Panels arrive in declared order, on the rail; this puts one at the front instead. Once, at the step that reveals it or later. |
+| step `focus` | The stage, when the lesson passes that step going forward | The key of a panel that arrives to take over the lesson, such as the market after a chart of one buyer. Panels arrive in declared order, on the rail; this puts one at the front instead. At the step that reveals it or later. A panel that has arrived can be brought back the same way where a step moves or reads something on it, as the terms of trade lesson returns to the market for each shift. |
 
 Every field is optional. Without words a clause is shown by its label, as the
 first version of the screen did, so a lesson can gain them one at a time.

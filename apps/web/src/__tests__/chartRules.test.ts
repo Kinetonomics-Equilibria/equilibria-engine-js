@@ -46,7 +46,7 @@ section('Colour').forEach(line => {
  * not the kit fails, and the other way round.
  */
 const asRead = (tex: string) => tex
-    .replace('\\text{PPC}', 'PPC')
+    .replace(/\\text\{(\w+)\}/, '$1')
     .replace('^*', '\\*')
     .replace('_0', '₀')
     .replace('_1', '₁')
@@ -129,8 +129,9 @@ describe('the rules themselves', () => {
             // "A, B, C…" is the points' letters, which are not symbols.
             .filter(row => row[1].indexOf('…') < 0)
             .flatMap(row => row[1].split(', ').map(s => s.trim()));
-        const known = AXIS.concat(CURVES, CURVES.map(s => s + GHOST_SUFFIX), CURVES.map(s => s + ANSWER_SUFFIX))
-            .map(asRead);
+        // Once each: ToT is on its line and on the axis, and means one thing.
+        const known = new Set(AXIS.concat(CURVES, CURVES.map(s => s + GHOST_SUFFIX), CURVES.map(s => s + ANSWER_SUFFIX))
+            .map(asRead));
         expect([...known].sort()).toEqual([...listed].sort());
     });
 
@@ -223,6 +224,12 @@ describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as cons
             }
             if (d.def.ghost && typeof d.def.ghost === 'object' && d.def.ghost.label !== undefined) {
                 expect(d.def.ghost.label, `${where(d)}'s ghost`).toBe(GHOST_SUFFIX);
+            }
+            // A ghost shows when anything its definition reads has moved, its
+            // label included, so a label placed by a calc draws D₀ on top of D
+            // when only the other curve moved.
+            if (isCurve(d) && d.def.ghost && d.def.label) {
+                expect(JSON.stringify(d.def.label), `${where(d)}'s label reads a calc`).not.toMatch(/calcs\./);
             }
             if (d.def.droplines && !departs(model, d, 'Droplines')) {
                 ['vertical', 'horizontal'].forEach(side => {

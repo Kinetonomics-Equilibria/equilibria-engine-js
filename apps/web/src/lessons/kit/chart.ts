@@ -18,13 +18,15 @@ import { ONCE_REVEALED, UNLESS_ASKING, UNTIL_SUBMITTED, WHILE_ASKING, answerOf, 
  * Colour section's table, a name per concept (`colors.demand`, never
  * `colors.blue`). A new one goes into the doc and `EconSchema` first.
  */
-export const MEANINGS = ['demand', 'supply', 'equilibriumPrice', 'ppf', 'choice', 'price', 'combination'] as const;
+export const MEANINGS = [
+    'demand', 'supply', 'equilibriumPrice', 'ppf', 'choice', 'price', 'combination', 'termsOfTrade'
+] as const;
 export type Meaning = typeof MEANINGS[number];
 
 export const colourOf = (meaning: Meaning) => `colors.${meaning}`;
 
 /** The symbols a curve is labelled with, as the engine is given them (Symbols). */
-export const CURVE_SYMBOLS = ['D', 'S', '\\text{PPC}'] as const;
+export const CURVE_SYMBOLS = ['D', 'S', '\\text{PPC}', '\\text{ToT}'] as const;
 export type CurveSymbol = typeof CURVE_SYMBOLS[number];
 
 /** What a ghost adds to its curve's symbol, D₀, and what the answer to a question adds, D₁. */
@@ -32,7 +34,7 @@ export const GHOST_SUFFIX = '_0';
 export const ANSWER_SUFFIX = '_1';
 
 /** The symbols a dropline or a price line puts on an axis (Symbols). */
-export const AXIS_SYMBOLS = ['P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*'] as const;
+export const AXIS_SYMBOLS = ['P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*', '\\text{ToT}'] as const;
 export type AxisSymbol = typeof AXIS_SYMBOLS[number];
 
 /**

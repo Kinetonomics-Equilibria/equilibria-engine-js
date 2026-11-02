@@ -245,6 +245,7 @@ A new colour must clear 3:1 as a line, because nothing darkens a line for you.
 | `choice` | orange | Points chosen on the curve (A, B), and the step between them; a price a seller sets, and the point it picks on demand |
 | `price` | grey | A price sellers take as given, and the point it picks on supply: the plane tickets lesson's fare. Not `choice`, which is supply's orange, so the point would be the colour of the curve it slides along, and a point on the price line the colour of the line |
 | `combination` | purple | A combination anywhere: inside, on or outside the curve |
+| `termsOfTrade` | purple | The terms of trade: the line through the origin, and the point on it that says what 100 baskets of exports buy |
 
 Contrast of the engine's palette on white. "Text" is what a label in that
 colour is drawn in:
@@ -325,11 +326,15 @@ above the plot.
   are. Other curves are labelled at the end with the most open space, and at
   the same end every time that curve is drawn.
 - **A label stays on the plot across the whole slider range.** If the end of a
-  curve moves, position the label with a calc, not a constant.
+  curve moves, position the label with a calc, not a constant. On a curve with a
+  ghost, that calc reads the curve's own params and nothing else: a ghost shows
+  when anything its definition reads has moved, the label included, so a label
+  placed by the equilibrium draws D₀ on top of D when only supply moved.
 - **A label never sits on the equilibrium.** Where the point can reach the end
   of the curve its label is at, the label moves to the other end while the point
   is there. Supply does this at the top of the market lesson's ranges
-  (`lessons/market/chart.ts`).
+  (`lessons/market/chart.ts`), where it has no ghost. A curve with one can't,
+  so choose the ranges and the label's place to keep the two apart.
 - **The label is the curve's symbol** from the [list](#symbols). The live curve
   keeps its plain name always: D, never D′ or D₁. Its ghost adds ₀
   (`ghost: { label: '_0' }`), and the answer after a question adds ₁. The engine
@@ -469,8 +474,9 @@ point gives one price, P\*, and one quantity, Q\*."
 | D | The demand curve | A market's demand curve |
 | S | The supply curve | A market's supply curve |
 | PPC | The production possibility curve | The PPC |
-| D₀, S₀, PPC₀ | Where that curve was | Its ghost |
-| D₁, S₁, PPC₁ | Where that curve goes | The answer, after a question |
+| ToT | The terms of trade, export prices ÷ import prices × 100 | Its line, and the imports axis, at the end of a dropline |
+| D₀, S₀, PPC₀, ToT₀ | Where that curve was | Its ghost |
+| D₁, S₁, PPC₁, ToT₁ | Where that curve goes | The answer, after a question |
 | P\* | The equilibrium price | The price axis, at the end of a dropline |
 | Q\* | The equilibrium quantity | The quantity axis, at the end of a dropline |
 | P | A price a seller sets, or sellers take as given, where nothing clears a market | The price axis, at the end of a dropline or a price line |
