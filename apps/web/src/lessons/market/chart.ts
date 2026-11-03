@@ -58,7 +58,7 @@ const demand = (panel: string) => curve({
     // panel is inside the shaded triangle.
     labelAt: p => ({ x: DEMAND_LABEL_AT(p.a) }),
     drag: [{ vertical: 'a' }],
-    ghost: panel === 'market', asked: panel === 'market'
+    ghost: panel === 'market', shiftAt: 'prev.calcs.Pe', asked: panel === 'market'
 });
 
 /**
@@ -80,7 +80,7 @@ const supply = (panel: string) => curve({
 
 /**
  * Where the market clears. In the market panel, also where it cleared before,
- * and the move between the two — the sentence the diagram is trying to say.
+ * where demand's shift arrow starts.
  */
 const cleared = (panel: string) => equilibrium({
     name: 'equilibrium_' + panel, x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'],

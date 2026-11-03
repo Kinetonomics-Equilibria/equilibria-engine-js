@@ -86,7 +86,7 @@ const demand = (panel: string) => curve({
     moves: ['demand'],
     shape: p => ({ fn: demandAt(p.demand, '(y)'), samplePoints: 2 }),
     labelAt: p => ({ y: `max(15, ${p.demand} - 135)` }),
-    drag: [{ horizontal: 'demand' }], ghost: true, asked: panel === 'market'
+    drag: [{ horizontal: 'demand' }], ghost: true, shiftAt: 'prev.calcs.Pe', asked: panel === 'market'
 });
 
 /** Supply, at its upper right: at 230, above the most the sliders take the price, 204. */
@@ -95,7 +95,7 @@ const supply = (panel: string) => curve({
     moves: ['supply'],
     shape: p => ({ fn: supplyAt(p.supply, '(y)'), samplePoints: 2 }),
     labelAt: () => ({ y: 230 }),
-    drag: [{ horizontal: 'supply' }], ghost: true, asked: panel === 'market'
+    drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.Pe', asked: panel === 'market'
 });
 
 const cleared = (panel: string) => equilibrium({

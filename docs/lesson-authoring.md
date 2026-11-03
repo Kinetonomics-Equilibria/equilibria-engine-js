@@ -86,8 +86,8 @@ that uses it:
 | Helper | What it draws | Used in |
 | --- | --- | --- |
 | `axis`, `priceAxis` | An axis with a title in words; the price axis's `$` escaped | every lesson; `priceAxis` all but `fx`, `ppc` and `terms-of-trade` |
-| `curve` | A curve, by what it means and its symbol; its ghost and a question's lines | every lesson but `ppc` |
-| `equilibrium` | Where two curves cross, with droplines | `market`, `fx`, `terms-of-trade`, the template |
+| `curve` | A curve, by what it means and its symbol; its ghost, its level shift arrow (`shiftAt`) and a question's lines | every lesson but `ppc` |
+| `equilibrium` | Where two curves cross, with droplines, and its ghost with no arrow | `market`, `fx`, `terms-of-trade`, the template |
 | `priceLine` | A price across a panel with no curve to sit on, P on the axis | `demand`'s and `supply`'s first panel |
 | `pricePoint` | The point a price picks on a curve, with its droplines: P on the price axis, so no `priceLine` beside it | `demand`, `supply`, `elasticity` |
 | `namedArea` | An area the lesson names, at 20% | `market`, `elasticity`, `terms-of-trade` |

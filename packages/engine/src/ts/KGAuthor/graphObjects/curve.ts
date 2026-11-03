@@ -7,6 +7,8 @@ import { setStrokeColor, parseFn, parseFill, copyJSON, replaceVariable } from ".
 import { AreaDefinition, Area } from "./area";
 import { GraphObjectDefinition, GraphObject } from "./graphObject";
 import { anonymizeCopy } from "../parsers/nameRegistry";
+import { KGAuthorClasses } from "../classRegistry";
+import { toPrev } from "../parsers/ghosts";
 
 
 
@@ -20,6 +22,8 @@ export interface CurveDefinition extends GraphObjectDefinition {
     pts?: { name: string; x?: string; y?: string; }[];
     areaBelow?: string | AreaDefinition;
     areaAbove?: string | AreaDefinition;
+    /** Set by `ghost: { arrow: { y } }`, never by an author: see `levelArrow`. */
+    shiftArrow?: { y: string | number; [key: string]: any };
 }
 
 /**
@@ -62,6 +66,10 @@ export class Curve extends GraphObject {
         c.type = 'Curve';
         c.layer = def.layer || 1;
         c.pts = def.pts || [];
+
+        // Taken off first, so the label copied from this def below does not carry it.
+        const shiftArrow = def.shiftArrow;
+        delete def.shiftArrow;
 
         if (def.hasOwnProperty('areaBelow')) {
             setDefaults(def.areaBelow, {
@@ -110,6 +118,42 @@ export class Curve extends GraphObject {
                 }
             }
         }
+
+        if (shiftArrow) {
+            const arrow = c.levelArrow(shiftArrow);
+            if (arrow) c.subObjects.push(new KGAuthorClasses['Arrow'](arrow, graph));
+        }
+    }
+
+    /**
+     * The shift arrow a curve's ghost asks for (`ghost: { arrow: { y } }`, in
+     * `parsers/ghosts.ts`): level at height `y`, from where the ghost crosses
+     * it to where this curve does.
+     *
+     * Built here rather than with the ghost because only the curve knows where
+     * it crosses a height: a `Line` works its inverse out from whichever two
+     * things the author gave, and a curve written as Q = f(P) is its own. The
+     * ghost is this def with every binding read one snapshot back, so where it
+     * crosses is this curve's crossing read the same way. The height goes in
+     * after that, so both ends sit at the height the author wrote.
+     *
+     * A curve written as P = f(Q) has no crossing short of solving for one, and
+     * draws none.
+     */
+    levelArrow(shiftArrow: { y: string | number; [key: string]: any }) {
+        const fn = this.def.univariateFunction;
+        if (!fn || !(fn.yFn || fn.ind === 'y')) {
+            console.warn(
+                `ghost: "${this.def.name || this.def.partOf || 'a curve'}" is written with price as a ` +
+                `function of quantity, so it cannot say where it crosses a height, and draws no level ` +
+                `shift arrow. Write it as quantity in terms of (y), or as a Line.`
+            );
+            return null;
+        }
+        const { y, ...drawn } = shiftArrow;
+        const across = fn.yFn || fn.fn;
+        const at = (f: string) => `(${replaceVariable(f, '(y)', `(${y})`)})`;
+        return { ...drawn, begin: [at(toPrev(across)), y], end: [at(across), y] };
     }
 
     yOfX(x) {

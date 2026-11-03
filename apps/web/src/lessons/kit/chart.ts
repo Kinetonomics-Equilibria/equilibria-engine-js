@@ -140,6 +140,14 @@ export interface CurveSpec {
     drag?: CurveDrag[];
     /** Draw where it was, D₀, standing down while a question is on screen. */
     ghost?: boolean;
+    /**
+     * With `ghost`, the height its shift arrow runs at, level, from where it
+     * was to where it is: the price the market cleared at before the move,
+     * `prev.calcs.Pe`, so the arrow starts at the old equilibrium (Lines). A
+     * curve on a chart with no equilibrium has no arrow of its own: the point
+     * a price picks on it moves level when it shifts, and draws one there.
+     */
+    shiftAt?: string;
     /** Draw the start and the answer of a question about it. */
     asked?: boolean;
     breaksRule?: BrokenRule;
@@ -149,11 +157,15 @@ export interface CurveSpec {
  * A curve, now: solid, in its meaning's colour, labelled with its symbol
  * where the author says, and named for a screen reader. With `ghost`, the
  * engine draws where it was from this same def, dashed and labelled D₀ while
- * the curve stays D. With `asked`, it is followed by its question's lines
- * (`questionLines`).
+ * the curve stays D, and with `shiftAt` the level arrow between. With `asked`,
+ * it is followed by its question's lines (`questionLines`).
  */
 export function curve(spec: CurveSpec): object[] {
     const p = live(spec.moves);
+    const ghost = {
+        show: UNLESS_ASKING, label: GHOST_SUFFIX,
+        ...(spec.shiftAt ? { arrow: { y: spec.shiftAt } } : {})
+    };
     const now = {
         type: spec.type || 'Curve',
         def: {
@@ -163,7 +175,7 @@ export function curve(spec: CurveSpec): object[] {
             srTitle: spec.srTitle || capitalised(spec.title),
             label: { text: spec.symbol, ...spec.labelAt(p) },
             ...(spec.drag ? { drag: spec.drag.map(d => ({ draggable: UNTIL_SUBMITTED, ...d })) } : {}),
-            ...(spec.ghost ? { ghost: { show: UNLESS_ASKING, label: GHOST_SUFFIX } } : {}),
+            ...(spec.ghost ? { ghost } : {}),
             ...reason(spec.breaksRule)
         }
     };
@@ -215,8 +227,10 @@ export function questionLines(spec: Pick<CurveSpec, 'meaning' | 'symbol' | 'type
 /**
  * Where a market clears: the green point, read off both axes by its
  * droplines, and not lettered — its droplines name it (Points, Droplines).
- * With `ghost`, the engine draws where it cleared before and the arrow
- * between, and gives the ghost no droplines: two P*s would contradict.
+ * With `ghost`, the engine draws where it cleared before, and gives the ghost
+ * no droplines: two P*s would contradict. No arrow between the two: the point
+ * slides along the curve that stayed, at a slant, and the curve that shifted
+ * draws the shift level from the old point (`shiftAt`).
  */
 export function equilibrium(spec: {
     name: string;
@@ -236,7 +250,7 @@ export function equilibrium(spec: {
             color: colourOf('equilibriumPrice'),
             droplines: { vertical: spec.droplines[0], horizontal: spec.droplines[1] },
             srTitle: spec.srTitle || 'Equilibrium',
-            ...(spec.ghost ? { ghost: true } : {}),
+            ...(spec.ghost ? { ghost: { arrow: false } } : {}),
             ...reason(spec.breaksRule)
         }
     };

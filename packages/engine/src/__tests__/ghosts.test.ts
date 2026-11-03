@@ -435,6 +435,115 @@ describe('the shift arrow', () => {
         expect(objectsIn(r).filter((o: any) => o.constructor.name === 'Segment').length).toBe(0);
         r.destroy();
     });
+
+    it('is revealed with the point it belongs to, not before', () => {
+        // The repro from the study screen: the lesson draws demand at one step
+        // and the equilibrium two later, and a drag in between put the
+        // equilibrium's arrow on a chart with no equilibrium on it.
+        const r = build([EQUILIBRIUM], { ...CALCS, steps: [{ reveal: ['equilibrium'] }] });
+        const arrow = () => objectsIn(r).filter((o: any) => o.constructor.name === 'Segment')[0];
+
+        move(r, 14);
+        expect(arrow().show).toBeFalsy();
+
+        r.kg.update({ params: [{ name: 'step', value: 1 }] });
+        expect(arrow().show).toBeTruthy();
+        r.destroy();
+    });
+});
+
+describe('the shift arrow on a curve', () => {
+
+    // Where the market cleared against a supply of `y = 2 + x`: at a = 20, Q 9
+    // and P 11.
+    const CALCS = { calcs: { Qe: '(params.a - 2)/2', Pe: '(params.a + 2)/2' } };
+
+    const level = (type: string, shape: any, extra: any = {}) => ({
+        type,
+        def: { name: 'demand', ...shape, color: 'colors.demand', ghost: { arrow: { y: 'prev.calcs.Pe' } }, ...extra }
+    });
+
+    const segments = (r: any) => objectsIn(r).filter((o: any) => o.constructor.name === 'Segment');
+
+    it.each([
+        ['a Line', 'Line', { yIntercept: 'params.a', slope: -1 }],
+        ['a curve written as Q = f(P)', 'Curve', { fn: 'params.a - (y)', samplePoints: 2 }]
+    ])('runs level across %s, from where it was to where it is, at the height asked for', (_name, type, shape) => {
+        const r = build([level(type, shape)], CALCS);
+        expect(r.error).toBe(null);
+        expect(segments(r).length).toBe(1);
+
+        move(r, 14);
+
+        // At the old price, 11: from 9 on the ghost, where the market cleared,
+        // to 3 on the curve now.
+        const arrow = segments(r)[0];
+        expect(arrow.show).toBeTruthy();
+        expect([arrow.x1, arrow.y1]).toEqual([9, 11]);
+        expect([arrow.x2, arrow.y2]).toEqual([3, 11]);
+        r.destroy();
+    });
+
+    it('is drawn level on screen, at the height itself, short of both curves', () => {
+        // Not offset as a point's is: it joins two curves rather than two
+        // places on one, so there is nothing under it to stand clear of.
+        const r = build([level('Line', { yIntercept: 'params.a', slope: -1 })], CALCS);
+        const arrow = segments(r)[0];
+        const line = r.container.querySelector(`line.line-${arrow.id}`) as Element;
+        const at = (k: string) => Number(line.getAttribute(k));
+
+        move(r, 14);
+
+        expect(at('y1')).toBeCloseTo(arrow.yScale.scale(11));
+        expect(at('y2')).toBeCloseTo(arrow.yScale.scale(11));
+        expect(at('x1') - at('x2')).toBeCloseTo(arrow.xScale.scale(9) - arrow.xScale.scale(3) - 24);
+        r.destroy();
+    });
+
+    it('shows with the ghost, so not when the other curve moved', () => {
+        const C = { name: 'c', value: 2, min: 0, max: 8, round: 0.1 };
+        const r = build([level('Line', { yIntercept: 'params.a', slope: -1 })], {
+            params: [A, C],
+            calcs: { Pe: '(params.a + params.c)/2' }
+        });
+
+        r.kg.snapshot();
+        r.kg.update({ params: [{ name: 'c', value: 6 }] });
+        expect(segments(r)[0].show).toBeFalsy();
+        r.destroy();
+    });
+
+    it('is revealed with the curve it belongs to', () => {
+        const r = build([level('Line', { yIntercept: 'params.a', slope: -1 })],
+            { ...CALCS, steps: [{ reveal: ['demand'] }] });
+
+        move(r, 14);
+        expect(segments(r)[0].show).toBeFalsy();
+
+        r.kg.update({ params: [{ name: 'step', value: 1 }] });
+        expect(segments(r)[0].show).toBeTruthy();
+        r.destroy();
+    });
+
+    it('warns, and draws none, on a curve written as P = f(Q)', () => {
+        const { result: r, warnings } = captureWarnings(() =>
+            build([level('Curve', { fn: 'params.a - (x)' })], CALCS));
+
+        expect(warnings.some(w => w.indexOf('cannot say where it crosses a height') > -1)).toBe(true);
+        expect(segments(r).length).toBe(0);
+        r.destroy();
+    });
+
+    it('warns, and draws none, when a height is given to a point', () => {
+        const { result: r, warnings } = captureWarnings(() => build([{
+            type: 'Point',
+            def: { name: 'equilibrium', x: 'calcs.Qe', y: 'calcs.Pe', ghost: { arrow: { y: 5 } } }
+        }], CALCS));
+
+        expect(warnings.some(w => w.indexOf('is not a curve') > -1)).toBe(true);
+        expect(segments(r).length).toBe(0);
+        r.destroy();
+    });
 });
 
 describe('the label pairing', () => {

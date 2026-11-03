@@ -74,6 +74,12 @@ describe('a curve', () => {
         expect(defOf(now).drag).toEqual([{ horizontal: 'demand', draggable: 'not(params.submitted)' }]);
         expect(defOf(now).ghost).toEqual({ show: 'not(params.asking)', label: '_0' });
     });
+
+    // A shift is sideways, so its arrow is level, from the old equilibrium.
+    it('draws its shift level at the height it is given', () => {
+        const [now] = curve({ ...DEMAND, ghost: true, shiftAt: 'prev.calcs.Pe' });
+        expect(defOf(now).ghost).toEqual({ show: 'not(params.asking)', label: '_0', arrow: { y: 'prev.calcs.Pe' } });
+    });
 });
 
 describe('the other helpers', () => {
@@ -93,6 +99,13 @@ describe('the other helpers', () => {
             droplines: { vertical: 'Q^*', horizontal: 'P^*' },
             srTitle: 'Equilibrium'
         });
+    });
+
+    // It slides along the curve that stayed, at a slant: the curve that
+    // shifted draws the arrow, level.
+    it('draw where the market cleared before, with no arrow of its own', () => {
+        expect(defOf(equilibrium({ name: 'eq', x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'], ghost: true })).ghost)
+            .toEqual({ arrow: false });
     });
 
     it('draw a price line dotted, with P on the price axis', () => {

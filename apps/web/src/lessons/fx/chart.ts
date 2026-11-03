@@ -95,12 +95,12 @@ export const PANELS: PanelDefinition[] = [
             ...curve({
                 name: 'demand_market', title: 'demand for AUD', meaning: 'demand', symbol: 'D',
                 moves: ['demand'], shape: p => ({ fn: demandAt(p.demand), ...STRAIGHT }), labelAt: () => ({ y: 0.47 }),
-                drag: [{ horizontal: 'demand' }], ghost: true, asked: true
+                drag: [{ horizontal: 'demand' }], ghost: true, shiftAt: 'prev.calcs.rate', asked: true
             }),
             ...curve({
                 name: 'supply_market', title: 'supply of AUD', meaning: 'supply', symbol: 'S',
                 moves: ['supply'], shape: p => ({ fn: supplyAt(p.supply), ...STRAIGHT }), labelAt: () => ({ y: 0.86 }),
-                drag: [{ horizontal: 'supply' }], ghost: true, asked: true
+                drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.rate', asked: true
             }),
             equilibrium({
                 name: 'equilibrium_market', x: 'calcs.Qe', y: 'calcs.rate', droplines: ['Q^*', 'e^*'],
@@ -120,12 +120,12 @@ export const PANELS: PanelDefinition[] = [
             ...curve({
                 name: 'usdSupply_mirror', title: 'supply of USD', meaning: 'supply', symbol: 'S',
                 moves: ['demand'], shape: p => ({ fn: usdSupplyAt(p.demand) }), labelAt: () => ({ y: 2.35 }),
-                drag: [{ horizontal: 'demand' }], ghost: true
+                drag: [{ horizontal: 'demand' }], ghost: true, shiftAt: 'prev.calcs.inverse'
             }),
             ...curve({
                 name: 'usdDemand_mirror', title: 'demand for USD', meaning: 'demand', symbol: 'D',
                 moves: ['supply'], shape: p => ({ fn: usdDemandAt(p.supply) }), labelAt: () => ({ y: 1.2 }),
-                drag: [{ horizontal: 'supply' }], ghost: true
+                drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.inverse'
             }),
             equilibrium({
                 name: 'equilibrium_mirror', x: 'calcs.Qe', y: 'calcs.inverse', droplines: ['Q^*', '1/e^*'],

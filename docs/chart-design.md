@@ -126,7 +126,21 @@ between.
 - A ghost comes from `ghost:` on the object, never from a hand-drawn dashed
   copy. The engine builds it from the same definition, so the two can't
   disagree about slope or colour. With `ghost: { label: '_0' }` it is named D₀
-  while the live curve stays D, and on a point it also draws the shift arrow.
+  while the live curve stays D, and it draws the shift arrow.
+- **A shift arrow is level.** A shift is sideways: at every price, more or
+  less is bought or sold. So the arrow runs parallel to the quantity axis, from
+  where the curve was to where it is, at the price the market cleared at
+  before the move. It starts at the old equilibrium. The curve that shifted
+  draws it: `shiftAt: 'prev.calcs.Pe'` in the kit, which is
+  `ghost: { arrow: { y } }` on the engine's object. It is in the curve's
+  colour, and stops 12px short of each curve.
+- The equilibrium has no arrow of its own. It slides along the curve that
+  stayed, at a slant, and its ghost already shows where it was.
+- A point a price picks on a curve keeps its own arrow, from where it was to
+  where it is. It is level when the curve shifts, and runs along the curve when
+  the price moves, because that is a movement along the curve, not a shift. A
+  chart with such a point gives its curve no `shiftAt`, or one move would draw
+  two arrows.
   The one hand-drawn "before" is a question's starting line, which is set from
   params when the question is asked. It is drawn exactly like a ghost: dashed,
   35%.
@@ -411,9 +425,8 @@ For all three:
   (`position: 'l'` or `'r'`, or aligned left or right) that could be pushed off
   the plot takes `flipToFit: true`: the engine draws it on the other side of
   its anchor whenever this side would run off.
-- The only arrows are the engine's: the shift arrow, which a point's
-  `ghost: true` draws from where it was to where it is, and a
-  [handle](#handles)'s. Don't draw decorative arrows.
+- The only arrows are the engine's: the shift arrow, which a ghost draws
+  ([Lines](#lines)), and a [handle](#handles)'s. Don't draw decorative arrows.
 
 ## Motion
 
@@ -537,7 +550,8 @@ Currency codes (AUD, USD) are fine: that is how money is written.
    Droplines only if it is read off the axes.
 5. **Areas.** 20%, or 8% for context, and labelled in words.
 6. **Before and after.** Use `ghost:` for before and a dotted answer line for a
-   question. Never two P\*s.
+   question. Never two P\*s. On a chart with an equilibrium, give each curve
+   that shifts a `shiftAt` at the old equilibrium price, so its arrow is level.
 7. **Annotations.** Plain text at the default size in the thing's colour, readouts
    at the top right, no more than three at a time.
 8. **Motion.** `arrive: true` only on the point a step brings in for the student

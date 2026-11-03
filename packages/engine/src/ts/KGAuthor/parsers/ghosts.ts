@@ -39,12 +39,18 @@ export interface GhostDefinition {
      */
     show?: string;
     /**
-     * Draw the displacement. Defaults to true for a def that carries a position
-     * and is refused elsewhere — two parallel lines have no single arrow
-     * between them, which is why the study screen's arrow joins the equilibrium
-     * *points* rather than the demand curves.
+     * Draw the displacement. Defaults to true for a def that carries a position,
+     * from where it was to where it is.
+     *
+     * Two parallel lines have no single arrow between them, so a curve has one
+     * only at a height the author names: `{ y }` draws it level, across from
+     * where the ghost crosses that height to where the curve does. Level
+     * because a shift is a move sideways — at every price, more or less is
+     * bought — and an arrow at a slant says something else. The study screen
+     * names the old equilibrium price, so the arrow starts where the market
+     * was. `true` on a curve is refused, having no height to draw at.
      */
-    arrow?: boolean;
+    arrow?: boolean | LevelArrow;
     /**
      * How the two labels tell the copies apart.
      *
@@ -64,6 +70,18 @@ export interface GhostDefinition {
     /** Anything else is merged onto the generated def. */
     [property: string]: any;
 }
+
+/**
+ * Where a curve's shift arrow runs: the height, read as written, at both ends.
+ * Not rewritten to `prev`, so an author who means the old price writes
+ * `prev.calcs.Pe`.
+ */
+export interface LevelArrow {
+    y: string | number;
+}
+
+const isLevel = (arrow: any): arrow is LevelArrow =>
+    !!arrow && typeof arrow === 'object' && arrow.y !== undefined;
 
 /** How a ghost looks unless the author says otherwise. */
 const GHOST_STYLE = {
@@ -96,6 +114,10 @@ const GHOST_SOLID_FILL = { opacity: 0.35 };
  * them runs through the head. Each of those lines cuts the offset shaft within
  * about ten pixels of the point at the angles a market diagram draws, so the
  * arrow stops twelve short of either end and touches none of them.
+ *
+ * A curve's level arrow is not offset: it joins two curves rather than two
+ * places on one, so there is nothing under it to stand clear of, and it stops
+ * twelve short of each for the same reason.
  */
 const GHOST_ARROW_OFFSET = 8;
 const GHOST_ARROW_INSET = 12;
@@ -448,18 +470,46 @@ function yieldLabel(def: any, ghost: any) {
     ghost.label = { ...ghost.label, yieldsTo: id };
 }
 
-/** The move itself: from where the thing was to where it is. */
+/**
+ * The move itself: from where the thing was to where it is.
+ *
+ * Shown with the ghost, and revealed with the object: a step that names the
+ * object reaches its ghost by `partOf`, and has to reach the arrow the same
+ * way, or the arrow is on screen at a step before the object it belongs to.
+ */
 function arrowDef(def: any, ghost: any, options: GhostDefinition, type: string): TypeAndDef | null {
-    const here = position(def);
-
     if (options.arrow === false) return null;
+
+    const drawn = {
+        color: def.color,
+        inset: GHOST_ARROW_INSET,
+        show: ghost.show,
+        ...(def.name ? { partOf: def.name } : {})
+    };
+
+    if (isLevel(options.arrow)) {
+        if (!isCurveLike(type)) {
+            console.warn(
+                `ghost: ${describe(type, def)} is not a curve, so it has no height to draw a level ` +
+                `shift arrow across. A point's arrow joins where it was to where it is: leave out ` +
+                `\`y\`.`
+            );
+            return null;
+        }
+        // Only the curve knows where it crosses a height, so the curve's own
+        // class draws it — see `Curve.levelArrow`.
+        def.shiftArrow = { ...drawn, y: options.arrow.y };
+        return null;
+    }
+
+    const here = position(def);
 
     if (!here) {
         if (options.arrow === true) {
             console.warn(
                 `ghost: ${describe(type, def)} has no single position, so there are no two points ` +
-                `for a shift arrow to join. Draw one between the objects that do move to a place — ` +
-                `an equilibrium point, not the curves that cross there.`
+                `for a shift arrow to join. Give it a height, \`arrow: { y }\`, to draw it level ` +
+                `across from where the curve was.`
             );
         }
         return null;
@@ -472,10 +522,8 @@ function arrowDef(def: any, ghost: any, options: GhostDefinition, type: string):
         def: {
             begin: position(ghost),
             end: here,
-            color: def.color,
             offset: GHOST_ARROW_OFFSET,
-            inset: GHOST_ARROW_INSET,
-            show: ghost.show
+            ...drawn
         }
     } as TypeAndDef;
 }
@@ -489,10 +537,19 @@ function arrowDef(def: any, ghost: any, options: GhostDefinition, type: string):
  * is how this package breaks its own import cycles.
  */
 function isPointLike(type: string): boolean {
+    return isA(type, 'Point');
+}
+
+/** Is this a curve, a `Line` or anything else built on one, which can say where it crosses a height? */
+function isCurveLike(type: string): boolean {
+    return isA(type, 'Curve');
+}
+
+function isA(type: string, base: string): boolean {
     const cls = KGAuthorClasses[type];
-    const Point = KGAuthorClasses['Point'];
-    if (!cls || !Point) return false;
-    return cls === Point || cls.prototype instanceof Point;
+    const Base = KGAuthorClasses[base];
+    if (!cls || !Base) return false;
+    return cls === Base || cls.prototype instanceof Base;
 }
 
 /** Name it if the author named it, otherwise say what kind of thing it is. */

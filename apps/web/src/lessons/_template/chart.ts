@@ -55,14 +55,14 @@ export const PANELS: PanelDefinition[] = [
                 moves: ['demand'],
                 shape: p => ({ fn: demandAt(p.demand, '(y)'), samplePoints: 2 }),
                 labelAt: () => ({ y: 1 }),
-                drag: [{ horizontal: 'demand' }], ghost: true, asked: true
+                drag: [{ horizontal: 'demand' }], ghost: true, shiftAt: 'prev.calcs.Pe', asked: true
             }),
             ...curve({
                 name: 'supply_market', title: 'supply', meaning: 'supply', symbol: 'S',
                 moves: ['supply'],
                 shape: p => ({ fn: supplyAt(p.supply, '(y)'), samplePoints: 2 }),
                 labelAt: () => ({ y: 9 }),
-                drag: [{ horizontal: 'supply' }], ghost: true, asked: true
+                drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.Pe', asked: true
             }),
             equilibrium({
                 name: 'equilibrium_market', x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'],

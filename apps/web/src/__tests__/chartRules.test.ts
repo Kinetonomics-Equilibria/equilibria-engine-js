@@ -182,6 +182,21 @@ describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as cons
         });
     });
 
+    // A shift is sideways, so its arrow is level, from the old equilibrium,
+    // and the equilibrium draws none at a slant beside it.
+    it('draw a shift level, from where the market cleared: Lines', () => {
+        panelsOf(model).forEach(panel => {
+            const here = drawn.filter(d => d.panel === panel.key);
+            const cleared = here.filter(d => d.type === 'Point' && d.def.title === 'equilibrium' && d.def.ghost);
+            cleared.forEach(d => expect(d.def.ghost.arrow, `${where(d)}'s ghost draws an arrow`).toBe(false));
+            if (cleared.length === 0) return;
+            here.filter(d => isCurve(d) && d.def.ghost && !departs(model, d, 'Lines')).forEach(d => {
+                const arrow = d.def.ghost.arrow;
+                expect(arrow && String(arrow.y), `${where(d)}'s shift arrow`).toMatch(/^prev\.calcs\.\w+$/);
+            });
+        });
+    });
+
     it('colour everything by what it means, in four hues at most: Colour', () => {
         panelsOf(model).forEach(panel => {
             const hues = new Set<string>();
