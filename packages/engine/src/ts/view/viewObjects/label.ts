@@ -1,7 +1,7 @@
 import { setDefaults, setProperties } from "../../util";
 import { ViewObjectDefinition, ViewObject, paintScale } from "./viewObject";
 import { UnivariateFunction, UnivariateFunctionDefinition } from "../../math/univariateFunction";
-import { AXIS_TITLE } from "../../KGAuthor/graphObjects/axis";
+import { AXIS_TITLE, AXIS_VALUE } from "../../KGAuthor/graphObjects/axis";
 import * as katex from "katex";
 import * as d3 from "d3";
 import { readableOn } from "../readable";
@@ -413,6 +413,7 @@ export class Label extends ViewObject {
             .attr('class', 'rootElement-' + label.id + ' draggable')
             // Set in the page's font rather than KaTeX's; see kgjs-theme.css.
             .classed('kg-axis-title', (label.def as LabelDefinition).furniture === AXIS_TITLE)
+            .classed('kg-axis-value', (label.def as LabelDefinition).furniture === AXIS_VALUE)
             .style('position', 'absolute')
             // No font-size here: it is an updatable now, and draw() runs before
             // the first update, so this would write "undefinedpt". redraw() sets it.

@@ -273,33 +273,42 @@
 
 /* A shelf is a third of a phone's stage, about 100px, where a model with four
  * panels has three shelf panels and "Unemployment (%) 4.0" is 150px: kept
- * whole, it ran into the next panel's caption. So on a shelf the label gives
- * way, with an ellipsis as the name does, and the number still never does:
- * "Unemploy… 4.0". The name above it already says which chart it is. */
+ * whole, it ran into the next panel's caption. A rail panel is wider, and
+ * "Unemployment (%) 4.5" and its chip still did not fit beside each other:
+ * the chip was squeezed to an empty grey disc. So on either the label gives
+ * way, with an ellipsis as the name does, and the number and its chip never
+ * do: "Unemploy… 4.0 ▲ 0.5". The name above it says which chart it is.
+ *
+ * The label and the number are a row in every place, not only these two, so
+ * the caption is the same text wherever the panel is: a panel moved from the
+ * strip to the rail said "USD 1 = AUD 1.43" over two lines in one and one in
+ * the other. Elsewhere `.values` never shrinks, so nothing gives way. */
+.rail .values,
 .shelf .values {
     min-width: 0;
     max-width: 100%;
 }
 
-.shelf .headline {
+.headline {
     display: flex;
     gap: 0.25em;
     min-width: 0;
     max-width: 100%;
 }
 
-.shelf .headlineLabel {
+.headlineLabel {
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.shelf .headlineNumber {
+.headlineNumber {
     flex: none;
 }
 
 .change {
+    flex: none;
     font-variant-numeric: tabular-nums;
 }
 

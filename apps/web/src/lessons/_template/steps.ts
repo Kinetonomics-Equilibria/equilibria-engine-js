@@ -30,7 +30,7 @@ export const TEMPLATE_LESSON: LessonStep[] = [
         title: 'Market equilibrium',
         say: 'At the point where the curves cross, shoppers want as many punnets as growers bring. This ' +
             'happens at 50 punnets, at $5.00 each.\n\n' +
-            'This point gives one price, labelled P*, and one quantity, labelled Q*.',
+            'You can read this price and quantity off the axes. Economists write them as P* and Q*.',
         term: GLOSSARY.equilibrium
     },
     // A question starts from the baseline, both curves included: the answer

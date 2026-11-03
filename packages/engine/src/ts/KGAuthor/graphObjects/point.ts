@@ -10,6 +10,7 @@ import { GraphObjectDefinition, GraphObject } from "./graphObject";
 import { anonymizeCopy } from "../parsers/nameRegistry";
 import { combineShow } from "../parsers/steps";
 import { EdgeDefinition, Edge, Segment } from "./segment";
+import { AXIS_VALUE } from "./axis";
 
 
 
@@ -68,6 +69,11 @@ export class Point extends GraphObject {
 
         if (def.hasOwnProperty('droplines')) {
 
+            // A dropline labelled with its value rather than a symbol is plain
+            // text in the page's font, marked so its figures are one width.
+            const asRead = (droplines: any) =>
+                droplines.plainText ? { plainText: true, furniture: AXIS_VALUE } : {};
+
             // A dropline is a copy of its point, `show` and all, so it comes
             // and goes with the point. A `show` of the droplines' own is
             // conjoined with that rather than replacing it, as a reveal is:
@@ -98,7 +104,8 @@ export class Point extends GraphObject {
                     xTopAxisLabelDef.y = 'OPPAXIS';
                     setDefaults(xTopAxisLabelDef, {
                         text: def.droplines.top,
-                        fontSize: LABEL_SIZE
+                        fontSize: LABEL_SIZE,
+                        ...asRead(def.droplines)
                     });
                     p.subObjects.push(new Label(xTopAxisLabelDef, graph));
                 }
@@ -112,7 +119,8 @@ export class Point extends GraphObject {
                     xAxisLabelDef.y = 'AXIS';
                     setDefaults(xAxisLabelDef, {
                         text: def.droplines.vertical,
-                        fontSize: LABEL_SIZE
+                        fontSize: LABEL_SIZE,
+                        ...asRead(def.droplines)
                     });
                     p.subObjects.push(new Label(xAxisLabelDef, graph));
                 }
@@ -136,7 +144,8 @@ export class Point extends GraphObject {
                     yAxisLabelDef.x = 'AXIS';
                     setDefaults(yAxisLabelDef, {
                         text: def.droplines.horizontal,
-                        fontSize: LABEL_SIZE
+                        fontSize: LABEL_SIZE,
+                        ...asRead(def.droplines)
                     });
                     p.subObjects.push(new Label(yAxisLabelDef, graph));
                 }

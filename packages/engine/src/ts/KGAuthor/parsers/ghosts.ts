@@ -413,8 +413,16 @@ function ghostDef(def: any, options: GhostDefinition, type: string): any {
     if (options.show) show = combineShow(show, options.show);
     ghost.show = combineShow(show, moved(def));
 
-    pairLabels(def, ghost, options);
-    yieldLabel(def, ghost);
+    // A point's ghost says nothing. Its label beside it, a word such as
+    // "Inefficient" or its letter, was said twice, once at each, and the
+    // two words for one point read as two points. An author who wants one
+    // names it (`ghost: { label }`), as a curve's is named D₀.
+    if (isPointLike(type) && options.label === undefined) {
+        delete ghost.label;
+    } else {
+        pairLabels(def, ghost, options);
+        yieldLabel(def, ghost);
+    }
 
     const overrides = { ...options };
     ['show', 'arrow', 'label'].forEach(function (key) { delete overrides[key]; });

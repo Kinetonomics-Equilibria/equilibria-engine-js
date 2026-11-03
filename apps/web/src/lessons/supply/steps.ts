@@ -68,7 +68,7 @@ export const SUPPLY_LESSON: LessonStep[] = [
         set: { price: 200 },
         title: 'The going fare',
         say: 'Now let\'s add a fare. Suppose seats on the route sell for $200, which is shown by the ' +
-            'dotted line labelled P.\n\n' +
+            'dotted line across the chart.\n\n' +
             'Your first three flights cover their costs at this fare, so you run 3. Your fourth flight ' +
             'needs $250, so you don\'t run it.'
     },
@@ -101,7 +101,7 @@ export const SUPPLY_LESSON: LessonStep[] = [
     {
         title: 'Quantity supplied',
         say: 'At a fare of $200, airlines offer 200,000 seats a week. You can read this amount from the ' +
-            'bottom axis, where it is labelled Qs.\n\n' +
+            'bottom axis. Economists write it as Qs.\n\n' +
             'Each price matches one quantity, so each price is a single point on the curve.',
         term: GLOSSARY.quantitySupplied
     },

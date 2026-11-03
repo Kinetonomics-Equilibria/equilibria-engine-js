@@ -92,11 +92,17 @@ describe('the other helpers', () => {
             { title: 'USD per AUD', min: 0.4, max: 0.9, tickPrecision: 2 });
     });
 
-    it('draw the equilibrium in green, read off both axes, and unlettered', () => {
-        expect(defOf(equilibrium({ name: 'eq', x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'] }))).toEqual({
+    // Each dropline says its value where it meets its axis, to the places
+    // its caption prints, in the page's font.
+    it('draw the equilibrium in green, read off both axes at their values, and unlettered', () => {
+        expect(defOf(equilibrium({ name: 'eq', x: 'calcs.Qe', y: 'calcs.Pe', places: [0, 2] }))).toEqual({
             name: 'eq', title: 'equilibrium', x: 'calcs.Qe', y: 'calcs.Pe',
             color: 'colors.equilibriumPrice',
-            droplines: { vertical: 'Q^*', horizontal: 'P^*' },
+            droplines: {
+                vertical: 'format(calcs.Qe, {notation: "fixed", precision: 0})',
+                horizontal: 'format(calcs.Pe, {notation: "fixed", precision: 2})',
+                plainText: true
+            },
             srTitle: 'Equilibrium'
         });
     });
@@ -104,14 +110,16 @@ describe('the other helpers', () => {
     // It slides along the curve that stayed, at a slant: the curve that
     // shifted draws the arrow, level.
     it('draw where the market cleared before, with no arrow of its own', () => {
-        expect(defOf(equilibrium({ name: 'eq', x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'], ghost: true })).ghost)
+        expect(defOf(equilibrium({ name: 'eq', x: 'calcs.Qe', y: 'calcs.Pe', places: [0, 2], ghost: true })).ghost)
             .toEqual({ arrow: false });
     });
 
-    it('draw a price line dotted, with P on the price axis', () => {
-        const [line, symbol] = priceLine({ param: 'price', across: [0, 5], meaning: 'price' });
+    it('draw a price line dotted, with its value on the price axis', () => {
+        const [line, symbol] = priceLine({ param: 'price', across: [0, 5], meaning: 'price', places: 0 });
         expect(defOf(line)).toMatchObject({ a: [0, 'params.price'], b: [5, 'params.price'], lineStyle: 'dotted', color: 'colors.price' });
-        expect(defOf(symbol)).toMatchObject({ x: 'AXIS', y: 'params.price', text: 'P' });
+        expect(defOf(symbol)).toMatchObject({
+            x: 'AXIS', y: 'params.price', text: 'format(params.price, {notation: "fixed", precision: 0})', plainText: true
+        });
     });
 
     // The answer about the price moves the point along the curve as the
@@ -119,13 +127,17 @@ describe('the other helpers', () => {
     it('put the answer to a question about a price on the curve as it was found', () => {
         const [start, answer, now] = pricePoint({
             name: 'atPrice', meaning: 'choice', price: 'price', on: ['demand'],
-            at: p => `${p.demand} - (${p.price} - 300)`, quantity: 'Q_d', srTitle: 'At the price', asked: true
+            at: p => `${p.demand} - (${p.price} - 300)`, places: [0, 0], srTitle: 'At the price', asked: true
         });
         expect(defOf(start).x).toBe('params.startDemand - (params.startPrice - 300)');
         expect(defOf(answer).x).toBe('params.startDemand - (params.answerPrice - 300)');
-        expect(defOf(answer).droplines).toEqual({ horizontal: 'P_1' });
+        expect(defOf(answer).droplines).toEqual(
+            { horizontal: 'format(params.answerPrice, {notation: "fixed", precision: 0})', plainText: true });
         expect(defOf(now)).toMatchObject({ x: 'params.demand - (params.price - 300)', y: 'params.price',
-            droplines: { vertical: 'Q_d', horizontal: 'P' }, ghost: { show: 'not(params.asking)' } });
+            droplines: {
+                vertical: 'format(params.demand - (params.price - 300), {notation: "fixed", precision: 0})',
+                horizontal: 'format(params.price, {notation: "fixed", precision: 0})'
+            }, ghost: { show: 'not(params.asking)' } });
     });
 
     it('shade a named area at 20% and a context area at 8%', () => {

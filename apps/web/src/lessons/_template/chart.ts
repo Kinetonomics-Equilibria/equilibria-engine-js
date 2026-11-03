@@ -65,7 +65,7 @@ export const PANELS: PanelDefinition[] = [
                 drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.Pe', asked: true
             }),
             equilibrium({
-                name: 'equilibrium_market', x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'],
+                name: 'equilibrium_market', x: 'calcs.Qe', y: 'calcs.Pe', places: [0, 2],
                 ghost: true
             })
         ]

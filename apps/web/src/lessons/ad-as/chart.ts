@@ -1,4 +1,4 @@
-import { axis, contextArea, curve, equilibrium } from '../kit/chart';
+import { axis, axisValue, contextArea, curve, equilibrium } from '../kit/chart';
 import { UNLESS_ASKING } from '../kit/question';
 import type { ParamDefinition, PanelDefinition } from '../kit/lesson';
 
@@ -120,13 +120,18 @@ const cycleAt = (t: string) => `104 + calcs.growth + ${SWING} * cos(${TO_RADIANS
 /** What is said beside the production point: how the economy uses its resources. */
 const STATE = 'calcs.gap < -0.05 ? "Inefficient" : (calcs.gap > 0.05 ? "Unsustainable" : "Efficient")';
 
+/** Which half of the cycle the economy is on, said beside its point. */
+const PHASE = 'params.expanding > 0.5 ? "Expansion" : "Contraction"';
+
 /**
- * A word on the business cycle panel, in the cycle's colour, plain text.
- * Untitled, as every annotation is, so "What changed" never says one moved.
+ * A turning point's name, on the time axis under it, in the cycle's colour,
+ * plain text: where a time axis would have its dates, which this one has
+ * none of, so nothing on the plot is in its way. Untitled, as every
+ * annotation is, so "What changed" never says one moved.
  */
-const cycleWord = (name: string, text: string, x: number | string, y: string, place: object) => ({
+const turningPoint = (name: string, text: string, x: number) => ({
     type: 'Label',
-    def: { name, title: '', x, y, text, plainText: true, color: 'colors.businessCycle', ...place }
+    def: { name, title: '', x, y: 'AXIS', text, plainText: true, color: 'colors.businessCycle' }
 });
 
 /**
@@ -174,7 +179,7 @@ export const PANELS: PanelDefinition[] = [
                 drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.level'
             }),
             equilibrium({
-                name: 'equilibrium_economy', x: 'calcs.realGdp', y: 'calcs.level', droplines: ['Y', '\\text{PL}'],
+                name: 'equilibrium_economy', x: 'calcs.realGdp', y: 'calcs.level', places: [1, 1],
                 srTitle: 'Where aggregate demand meets short-run aggregate supply', ghost: true
             })
         ]
@@ -215,7 +220,10 @@ export const PANELS: PanelDefinition[] = [
                     name: 'economy_phillips', title: '',
                     x: 'calcs.unemployment', y: 'calcs.inflation',
                     color: 'colors.equilibriumPrice',
-                    droplines: { vertical: 'U', horizontal: '\\pi' },
+                    droplines: {
+                        vertical: axisValue('calcs.unemployment', 1), horizontal: axisValue('calcs.inflation', 1),
+                        plainText: true
+                    },
                     srTitle: 'Unemployment and inflation now',
                     ghost: { show: UNLESS_ASKING }
                 }
@@ -254,19 +262,19 @@ export const PANELS: PanelDefinition[] = [
                 labelAt: () => ({ x: 0.8 }),
                 ghost: true
             }),
-            // The turning points, over the last peak, away from the curve's
-            // label, and under the trough; and the halves either side of the
-            // trough, each under its half, where the cycle is above it.
-            cycleWord('peak', 'Peak', LAST_PEAK, `104 + calcs.growth + ${SWING}`, { position: 'b' }),
-            cycleWord('trough', 'Trough', TROUGH, `104 + calcs.growth - ${SWING}`, { position: 't' }),
-            cycleWord('contraction', 'Contraction', TROUGH - 3.9, '104 + calcs.growth - 2.5', { align: 'center' }),
-            cycleWord('expansion', 'Expansion', TROUGH + 3.9, '104 + calcs.growth - 2.5', { align: 'center' }),
+            // The turning points, on the time axis. The halves between them
+            // are named once, beside the economy, on the half it is on: two
+            // words floating over the plot sat on the point as it passed.
+            turningPoint('firstPeak', 'Peak', FIRST_PEAK),
+            turningPoint('trough', 'Trough', TROUGH),
+            turningPoint('lastPeak', 'Peak', LAST_PEAK),
             {
                 type: 'Point',
                 def: {
                     name: 'economy_cycle', title: '',
                     x: 'calcs.cycleTime', y: 'calcs.realGdp',
                     color: 'colors.equilibriumPrice',
+                    label: { text: PHASE, plainText: true, flipToFit: true },
                     srTitle: 'Real GDP now',
                     ghost: { show: UNLESS_ASKING }
                 }
@@ -302,8 +310,6 @@ export const PANELS: PanelDefinition[] = [
                     ghost: { show: UNLESS_ASKING, label: '_0' }
                 }
             },
-            // No ghost: a ghost point carries its label, and the word for
-            // where it was sat on the word for where it is.
             {
                 type: 'Point',
                 def: {
@@ -312,7 +318,8 @@ export const PANELS: PanelDefinition[] = [
                     y: `calcs.mostCapital * ${ON_THE_RAY} * calcs.scale`,
                     color: 'colors.combination',
                     label: { text: STATE, plainText: true, flipToFit: true },
-                    srTitle: 'What the economy produces now'
+                    srTitle: 'What the economy produces now',
+                    ghost: { show: UNLESS_ASKING }
                 }
             }
         ]

@@ -1,4 +1,4 @@
-import { axis, curve, priceAxis, priceLine, pricePoint } from '../kit/chart';
+import { axis, axisValue, curve, priceAxis, priceLine, pricePoint } from '../kit/chart';
 import { atStep, firstQuestion, fromStep, stepRevealing, stepTitled, untilStep } from '../kit/lesson';
 import type { ParamDefinition, PanelDefinition } from '../kit/lesson';
 import { NEW_AIRLINE_SEATS, SUPPLY_LESSON } from './steps';
@@ -83,8 +83,7 @@ export const CALCS = {
  * One of the student's four flights, at the lowest fare it is worth flying for.
  *
  * Its step says where it goes, "1 flight and $100", so it has droplines to
- * read that off the axes at that step and no other, as the Jordans' pairs do,
- * and carry no symbol on the axes, for their reason.
+ * read that off the axes at that step and no other, as the Jordans' pairs do.
  *
  * Each arrives: the point pops in, then its droplines are drawn out from it
  * to the axes, the way the step has the student read it.
@@ -98,14 +97,12 @@ const flight = (n: number) => {
             name, title: '',
             x: n, y: `${needs} + calcs.yourCost`,
             color: 'colors.supply',
-            droplines: { vertical: '', horizontal: '', show: atStep(stepRevealing(SUPPLY_LESSON, name)) },
+            droplines: {
+                vertical: axisValue(String(n), 0), horizontal: axisValue(`${needs} + calcs.yourCost`, 0),
+                plainText: true, show: atStep(stepRevealing(SUPPLY_LESSON, name))
+            },
             arrive: true,
-            srTitle: `Flight ${n}, at the lowest fare that covers its costs`,
-            breaksRule: {
-                rule: 'Droplines',
-                why: 'Each flight lands on a tick, so the tick number is the value its step says, and no ' +
-                    'symbol on the list means the fare a flight needs.'
-            }
+            srTitle: `Flight ${n}, at the lowest fare that covers its costs`
         }
     };
 };
@@ -131,7 +128,7 @@ export const PANELS: PanelDefinition[] = [
         objects: [
             // The going fare across the student's chart. Grey `price`, not
             // `choice`: see the top of `index.ts`.
-            ...priceLine({ param: 'price', across: [0, 5], meaning: 'price' }),
+            ...priceLine({ param: 'price', across: [0, 5], meaning: 'price', places: 0 }),
             flight(1), flight(2), flight(3), flight(4)
         ]
     },
@@ -154,7 +151,7 @@ export const PANELS: PanelDefinition[] = [
             // curve's orange: grey moves along, orange shifts.
             ...pricePoint({
                 name: 'atPrice', meaning: 'price', price: 'price', on: ['supply'],
-                at: p => quantityAt(p.supply, p.price), x: 'calcs.q', quantity: 'Q_s',
+                at: p => quantityAt(p.supply, p.price), x: 'calcs.q', places: [0, 0],
                 srTitle: 'What airlines offer at the fare',
                 show: fromStep(QUANTITY), asked: true
             })

@@ -4,7 +4,7 @@
  *
  * Two of them, and an author normally sets neither (docs/chart-design.md).
  * Words and the marks that go with a point or an axis — axis titles, a
- * dropline's `P*`, a point's letter, an annotation — are `LABEL_SIZE`. A
+ * dropline's value, a point's letter, an annotation — are `LABEL_SIZE`. A
  * curve's symbol, `D` or `PPC`, is `SYMBOL_SIZE`, a step larger, since it
  * names the thing the chart is about.
  *

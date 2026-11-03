@@ -36,8 +36,8 @@ export const TERMS_OF_TRADE_LESSON: LessonStep[] = [
     {
         reveal: ['equilibrium_market'],
         title: 'Prices as an index',
-        say: 'At the point where the curves cross, the market sets a price, labelled P*, and a volume ' +
-            'shipped, labelled Q*.\n\n' +
+        say: 'At the point where the curves cross, the market sets a price and a volume shipped, which ' +
+            'you can read off the axes. Economists write them as P* and Q*.\n\n' +
             'We write each of these as an index that starts at 100, so a price of 120 means that prices ' +
             'are 20% higher than at the start.',
         term: GLOSSARY.index

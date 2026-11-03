@@ -101,6 +101,9 @@ const labelOf = (drawn: Drawn): { text: string; plainText?: boolean } | undefine
 
 const AXIS: readonly string[] = AXIS_SYMBOLS, CURVES: readonly string[] = CURVE_SYMBOLS;
 
+/** A value as a dropline's axis says it: `axisValue` in the kit, a number to fixed places. */
+const AXIS_VALUE = /^format\(.+, \{notation: "fixed", precision: \d\}\)$/;
+
 const isSymbol = (text: string) =>
     AXIS.indexOf(text) > -1 ||
     CURVES.some(s => text === s || text === s + GHOST_SUFFIX || text === s + ANSWER_SUFFIX);
@@ -241,11 +244,14 @@ describe.each([...MODELS, TEMPLATE.model].map(model => [model.id, model] as cons
             if (d.def.ghost && typeof d.def.ghost === 'object' && d.def.ghost.label !== undefined) {
                 expect(d.def.ghost.label, `${where(d)}'s ghost`).toBe(GHOST_SUFFIX);
             }
+            // A dropline says its value where it meets the axis, as the
+            // caption prints it (the kit's `axisValue`), in the page's font.
             if (d.def.droplines && !departs(model, d, 'Droplines')) {
                 ['vertical', 'horizontal'].forEach(side => {
-                    const symbol = d.def.droplines[side];
-                    if (symbol === undefined) return;
-                    expect(AXIS, `${where(d)}'s ${side} dropline`).toContain(symbol);
+                    const said = d.def.droplines[side];
+                    if (said === undefined) return;
+                    expect(String(said), `${where(d)}'s ${side} dropline`).toMatch(AXIS_VALUE);
+                    expect(d.def.droplines.plainText, `${where(d)}'s droplines, in the page's font`).toBe(true);
                 });
             }
             // A word is plain text, in the app's typeface; `\text{}` is for a

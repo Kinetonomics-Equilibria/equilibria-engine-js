@@ -34,8 +34,8 @@ export const ELASTICITY_LESSON: LessonStep[] = [
         title: 'The canteen\'s sausage rolls',
         say: 'Your school canteen sells sausage rolls for $4.50, and students buy 210 a day.\n\n' +
             'The demand curve, labelled D, shows how many rolls students would buy at each price.\n\n' +
-            'The canteen\'s price is labelled P. You can read the quantity demanded, Qd, from the bottom ' +
-            'axis.',
+            'You can read the canteen\'s price from the price axis, and the quantity demanded, Qd, from ' +
+            'the bottom axis.',
         term: GLOSSARY.quantityDemanded
     },
     {

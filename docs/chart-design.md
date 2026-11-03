@@ -75,7 +75,7 @@ by default, and `chartRules.test.ts` checks every rule here a machine can.
 | Plot | Under the caption | The engine |
 | Axis titles | 44px under the x axis, centred; 56px left of the y axis, rotated, centred | The engine, from `xAxis.title` and `yAxis.title` |
 | Tick numbers | Outside each axis | The engine (d3) |
-| Dropline labels | On the axis, among the tick numbers | The engine, from `droplines` on a point |
+| Dropline values | On the axis, among the tick numbers | The engine, from `droplines` on a point |
 | Curve, point and area labels | On the plot, beside what they name | The engine, from `label` on the object |
 | Readouts | Top-right corner of the plot | The engine, as `Label` objects |
 | Handles | On whatever can be dragged | The engine, from `drag` on the object |
@@ -102,7 +102,7 @@ place beside the axis titles is measured for.
 | Headline number and chip | 14px | regular, tabular figures | dimmed grey |
 | Curve label (a symbol) | `SYMBOL_SIZE`, 12pt (16px); `LABEL_SIZE` in a grid panel | maths italic | the curve's |
 | Axis title | `LABEL_SIZE`, 10.5pt (14px) | regular | text |
-| Dropline label | `LABEL_SIZE` | maths italic | the point's |
+| Dropline value | `LABEL_SIZE` | regular, plain text, tabular figures | the point's |
 | Point letter, area label, annotation | `LABEL_SIZE` | regular, plain text | the thing's |
 | Tick numbers | 14px | regular, tabular figures | axis grey |
 
@@ -124,7 +124,7 @@ sizes in between.
 | Where it was (the ghost) | 2px | dashed, 10 on 10 off | the curve's | 35% |
 | Where it should go (the answer, after Check) | 2px | dotted | the curve's | 100% |
 | Dropline | 2px | dotted | the point's | 100% |
-| Price line (a set price across the plot, to read points against; labelled P on the price axis) | 2px | dotted | `choice`, or `price` against supply | 100% |
+| Price line (a set price across the plot, to read points against; labelled with its value on the price axis) | 2px | dotted | `choice`, or `price` against supply | 100% |
 | Measured step ("+20 toasties") | 2px | dotted | the thing measured | 100% |
 | Gridline | 1px | dotted | light grey | 100% |
 
@@ -173,7 +173,7 @@ sizes in between.
 | --- | --- | --- |
 | A point the chart is about: equilibrium, a chosen combination | radius 7 (the default), with a 1.5px white ring | solid, its colour |
 | A curve's end that can be dragged: the PPC's most coffees and most toasties | radius 6 | solid, the curve's colour, with its [handle](#handles)'s arrows |
-| A ghost point | radius 7 | 35%, from `ghost:` |
+| A ghost point | radius 7 | 35%, from `ghost:`, and no label: its word or letter beside it, said twice, read as two points |
 | An area the lesson names: consumer surplus, revenue, profit | — | 20% (the default), no outline |
 | A region that is context: the attainable set under a PPC | — | 8%, no outline |
 
@@ -407,14 +407,22 @@ For a point whose values a student is meant to read off the axes: the
 equilibrium price and quantity, or the quantity traded under a price ceiling.
 
 - **From the point to both axes**, unless only one value matters. Dotted, 2px,
-  in the point's colour. Set with `droplines: { vertical: 'Q^*', horizontal:
-  'P^*' }` on the point.
-- **Labelled on the axis**, among the tick numbers, with the symbol. A tick
-  number the label would cover is hidden while it does: the engine does this,
-  and the tick mark stays.
+  in the point's colour. The kit draws them (`equilibrium`, `pricePoint`),
+  and a point of an author's own takes `axisValue` for each side and
+  `plainText: true`.
+- **Labelled on the axis with its value**, among the tick numbers: "7.60",
+  to the places the caption prints the same number, bare as a tick number is,
+  since the unit is in the axis title. In the page's font, in the point's
+  colour, with figures of one width so it holds still while a curve is
+  dragged and only its digits change. A tick number the label would cover is
+  hidden while it does: the engine does this, and the tick mark stays.
+- **The symbol is said, not drawn.** It was the label, P\* and Q\*, and a
+  student dragging a curve then had to read the value off the ticks either
+  side. A lesson says the symbol in its words, where it teaches the idea ("Economists
+  write them as P\* and Q\*"), and the Maths tab writes it in the formula.
 - **Only the point as it is now has droplines.** A ghost point gets none, and
-  the engine won't give it any. Two P\*s at two heights would contradict each
-  other. The old value is in the caption's chip and in "What changed".
+  the engine won't give it any. Two values at two heights would contradict
+  each other. The old value is in the caption's chip and in "What changed".
 - **Not for points that aren't read off the axes**, such as A and B on a PPC,
   whose story is the step between them.
 
@@ -497,20 +505,27 @@ brings something onto it. Otherwise it holds still (principle 5).
 On a chart, a student reads three kinds of text:
 
 - **Words**: titles, axis titles, annotations. Always in full.
-- **Symbols**: on curves, droplines and points. Only from this list.
-- **Numbers**: formatted as everywhere else.
+- **Symbols**: on curves and points. Only from this list.
+- **Numbers**: tick numbers, and a dropline's value on its axis, formatted as
+  everywhere else.
 
 A symbol is allowed only because it sits on the plot, where space is tight.
 Each one means one thing across the whole app. The lesson says each one in
-words before a student needs it, usually in the step that first draws it: "This
-point gives one price, labelled P\*, and one quantity, labelled Q\*."
+words before a student needs it, usually in the step that first draws it:
+"The demand curve, labelled D, shows…".
+
+A reading a dropline shows has a symbol too, P\* for the equilibrium price,
+which an exam asks a student to write on their own diagram. The chart shows
+the reading's value instead ([Droplines](#droplines)), so the symbol is said:
+in the lesson's words ("Economists write them as P\* and Q\*") and in the
+Maths tab's formulas. These rows say where.
 
 | Symbol | Means | Drawn on |
 | --- | --- | --- |
 | D | The demand curve | A market's demand curve |
 | S | The supply curve | A market's supply curve |
 | PPC | The production possibility curve | The PPC |
-| ToT | The terms of trade, export prices ÷ import prices × 100 | Its line, and the imports axis, at the end of a dropline |
+| ToT | The terms of trade, export prices ÷ import prices × 100 | Its line; the imports axis shows its value |
 | AD | Aggregate demand | The economy's aggregate demand curve |
 | SRAS | Short-run aggregate supply | The economy's short-run aggregate supply curve |
 | LRAS | Long-run aggregate supply, at potential GDP | The vertical line at potential GDP |
@@ -519,18 +534,18 @@ point gives one price, labelled P\*, and one quantity, labelled Q\*."
 | GDP | Real GDP over time | The business cycle |
 | D₀, S₀, PPC₀, ToT₀, AD₀, SRAS₀, LRAS₀, SRPC₀, LRPC₀, GDP₀ | Where that curve was | Its ghost |
 | D₁, S₁, PPC₁, ToT₁, AD₁, SRAS₁, LRAS₁, SRPC₁, LRPC₁, GDP₁ | Where that curve goes | The answer, after a question |
-| P\* | The equilibrium price | The price axis, at the end of a dropline |
-| Q\* | The equilibrium quantity | The quantity axis, at the end of a dropline |
-| P | A price a seller sets, or sellers take as given, where nothing clears a market | The price axis, at the end of a dropline or a price line |
-| P₁ | Where that price goes | The price axis, for the answer after a question |
-| Q<sub>d</sub> | The quantity demanded at P | The quantity axis, at the end of a dropline |
-| Q<sub>s</sub> | The quantity supplied at P | The quantity axis, at the end of a dropline |
-| e\* | The equilibrium exchange rate, USD per AUD | The AUD market's rate axis |
-| 1/e\* | Its reciprocal, AUD per USD | The USD market's rate axis |
-| Y | Real GDP, where AD meets SRAS | The real GDP axis, at the end of a dropline |
-| PL | The price level, where AD meets SRAS | The price level axis, at the end of a dropline |
-| U | The unemployment rate | The Phillips curve's unemployment axis, at the end of a dropline |
-| π | The inflation rate | The Phillips curve's inflation axis, at the end of a dropline |
+| P\* | The equilibrium price | Said in the lesson and written in the Maths tab; its axis shows the value |
+| Q\* | The equilibrium quantity | Said in the lesson and written in the Maths tab; its axis shows the value |
+| P | A price a seller sets, or sellers take as given, where nothing clears a market | Said in the lesson and written in the Maths tab; its axis shows the value |
+| P₁ | Where that price goes | Said in the lesson and written in the Maths tab; its axis shows the value |
+| Q<sub>d</sub> | The quantity demanded at P | Said in the lesson and written in the Maths tab; its axis shows the value |
+| Q<sub>s</sub> | The quantity supplied at P | Said in the lesson and written in the Maths tab; its axis shows the value |
+| e\* | The equilibrium exchange rate, USD per AUD | Said in the lesson and written in the Maths tab; its axis shows the value |
+| 1/e\* | Its reciprocal, AUD per USD | Said in the lesson and written in the Maths tab; its axis shows the value |
+| Y | Real GDP, where AD meets SRAS | Said in the lesson and written in the Maths tab; its axis shows the value |
+| PL | The price level, where AD meets SRAS | Said in the lesson and written in the Maths tab; its axis shows the value |
+| U | The unemployment rate | Said in the lesson and written in the Maths tab; its axis shows the value |
+| π | The inflation rate | Said in the lesson and written in the Maths tab; its axis shows the value |
 | A, B, C… | Points the lesson names | Beside the point |
 
 A new symbol is added here first, and only if a word won't fit where it has to
@@ -612,11 +627,4 @@ is. The lesson kit takes `breaksRule` off before the engine sees it.
 `chartRules.test.ts` checks the rules a machine can, skips a rule only for an
 object whose `breaksRule` names it, and holds every such object to a line here.
 
-- **The student's points in the Air Jordans and plane tickets lessons**,
-  `pair1`, `pair2`, `pair3` and `pair4`, and `flight1`, `flight2`, `flight3`
-  and `flight4`: their droplines have no symbol on the axis
-  ([Droplines](#droplines)). Each point lands on a tick, so the
-  tick number is the value its step says, and a symbol there would hide it.
-  Nor is there one on the list for what a pair is worth to you, or the fare a
-  flight needs. The reason is in the `breaksRule` of `pair` in `lessons/demand/chart.ts`
-  and of `flight` in `lessons/supply/chart.ts`.
+None today.

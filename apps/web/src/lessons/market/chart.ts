@@ -89,7 +89,7 @@ const supply = (panel: string) => curve({
  * where the shift arrow of the curve that moved starts.
  */
 const cleared = (panel: string) => equilibrium({
-    name: 'equilibrium_' + panel, x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'],
+    name: 'equilibrium_' + panel, x: 'calcs.Qe', y: 'calcs.Pe', places: [1, 2],
     ghost: panel === 'market'
 });
 

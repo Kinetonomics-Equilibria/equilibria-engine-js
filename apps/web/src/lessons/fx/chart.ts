@@ -103,7 +103,7 @@ export const PANELS: PanelDefinition[] = [
                 drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.rate', asked: true
             }),
             equilibrium({
-                name: 'equilibrium_market', x: 'calcs.Qe', y: 'calcs.rate', droplines: ['Q^*', 'e^*'],
+                name: 'equilibrium_market', x: 'calcs.Qe', y: 'calcs.rate', places: [0, 2],
                 srTitle: 'Equilibrium exchange rate', ghost: true
             })
         ]
@@ -128,7 +128,7 @@ export const PANELS: PanelDefinition[] = [
                 drag: [{ horizontal: 'supply' }], ghost: true, shiftAt: 'prev.calcs.inverse'
             }),
             equilibrium({
-                name: 'equilibrium_mirror', x: 'calcs.Qe', y: 'calcs.inverse', droplines: ['Q^*', '1/e^*'],
+                name: 'equilibrium_mirror', x: 'calcs.Qe', y: 'calcs.inverse', places: [0, 2],
                 srTitle: 'Equilibrium exchange rate', ghost: true
             })
         ]

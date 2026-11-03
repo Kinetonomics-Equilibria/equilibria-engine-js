@@ -37,7 +37,11 @@ export type CurveSymbol = typeof CURVE_SYMBOLS[number];
 export const GHOST_SUFFIX = '_0';
 export const ANSWER_SUFFIX = '_1';
 
-/** The symbols a dropline or a price line puts on an axis (Symbols). */
+/**
+ * The symbols for the readings a dropline or a price line shows (Symbols):
+ * said in a lesson's words and written in the Maths tab. On the chart the
+ * axis shows the reading's value (`axisValue`).
+ */
 export const AXIS_SYMBOLS = [
     'P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*', '\\text{ToT}', 'Y', '\\text{PL}', 'U', '\\pi'
 ] as const;
@@ -74,6 +78,20 @@ const answerDiffers = (params: string[]) =>
     `${ONCE_REVEALED} and (${params.map(name => `params.${answerOf(name)} != params.${startOf(name)}`).join(' or ')})`;
 
 const reason = (breaksRule?: BrokenRule) => breaksRule ? { breaksRule } : {};
+
+/**
+ * What a dropline says where it meets its axis: the value there, "7.60", to
+ * `places` decimals, as the caption prints the same number (Droplines). Bare,
+ * as the tick numbers beside it are: the unit is in the axis's title.
+ */
+export const axisValue = (value: string, places: number) => fixed(value, places);
+
+/** A point's droplines, each labelled with its value on its axis. */
+const readOff = (x: string | null, y: string | null, places: [number, number]) => ({
+    ...(x !== null ? { vertical: axisValue(x, places[0]) } : {}),
+    ...(y !== null ? { horizontal: axisValue(y, places[1]) } : {}),
+    plainText: true
+});
 
 // ---------------------------------------------------------------------------
 // Axes
@@ -235,7 +253,8 @@ export function questionLines(spec: Pick<CurveSpec, 'meaning' | 'symbol' | 'type
 
 /**
  * Where a market clears: the green point, read off both axes by its
- * droplines, and not lettered — its droplines name it (Points, Droplines).
+ * droplines, each labelled with its value, and not lettered (Points,
+ * Droplines).
  * With `ghost`, the engine draws where it cleared before, and gives the ghost
  * no droplines: two P*s would contradict. No arrow between the two: the point
  * slides along the curve that stayed, at a slant, and the curve that shifted
@@ -245,8 +264,8 @@ export function equilibrium(spec: {
     name: string;
     x: string;
     y: string;
-    /** The quantity's symbol, then the price's: `['Q^*', 'P^*']`. */
-    droplines: [AxisSymbol, AxisSymbol];
+    /** The decimals its quantity, then its price, are printed to, as their captions print them: `[0, 2]`. */
+    places: [number, number];
     srTitle?: string;
     ghost?: boolean;
     breaksRule?: BrokenRule;
@@ -257,7 +276,7 @@ export function equilibrium(spec: {
             name: spec.name, title: 'equilibrium',
             x: spec.x, y: spec.y,
             color: colourOf('equilibriumPrice'),
-            droplines: { vertical: spec.droplines[0], horizontal: spec.droplines[1] },
+            droplines: readOff(spec.x, spec.y, spec.places),
             srTitle: spec.srTitle || 'Equilibrium',
             ...(spec.ghost ? { ghost: { arrow: false } } : {}),
             ...reason(spec.breaksRule)
@@ -267,14 +286,14 @@ export function equilibrium(spec: {
 
 /**
  * A price set or taken as given, across the plot: dotted, to read points
- * against, and labelled P on the price axis as a dropline is (Lines). In
- * `choice` where a seller sets it, and in `price` against supply, whose
- * orange `choice` would be.
+ * against, and labelled with its value on the price axis as a dropline is
+ * (Lines). In `choice` where a seller sets it, and in `price` against supply,
+ * whose orange `choice` would be.
  *
  * Two objects, `priceLine` and `priceSymbol`, which the step that brings the
- * price in reveals by name.
+ * price in reveals by name. `places` is the decimals the price is printed to.
  */
-export function priceLine(spec: { param: string; across: [number, number]; meaning: 'choice' | 'price' }): object[] {
+export function priceLine(spec: { param: string; across: [number, number]; meaning: 'choice' | 'price'; places: number }): object[] {
     const at = `params.${spec.param}`, color = colourOf(spec.meaning);
     return [
         {
@@ -287,15 +306,18 @@ export function priceLine(spec: { param: string; across: [number, number]; meani
         },
         {
             type: 'Label',
-            def: { name: 'priceSymbol', title: '', x: 'AXIS', y: at, text: 'P', color }
+            def: {
+                name: 'priceSymbol', title: '', x: 'AXIS', y: at, text: axisValue(at, spec.places),
+                plainText: true, color
+            }
         }
     ];
 }
 
 /**
  * The point a price picks on a curve: what buyers want, or sellers offer, at
- * it. Dragged up and down by the price, read off the axes at its quantity
- * and at P, and in the price's colour rather than the curve's, because the
+ * it. Dragged up and down by the price, read off both axes at their values,
+ * and in the price's colour rather than the curve's, because the
  * price moves it along the curve and the curve is what moves for everything
  * else. Untitled, so "What changed" says what the price and the quantity did
  * rather than that a point moved.
@@ -310,7 +332,7 @@ export function priceLine(spec: { param: string; across: [number, number]; meani
  *
  * With `asked`, preceded by where it was when a question was asked, drawn
  * as a ghost point is; and where the answer puts it once a verdict shows it,
- * read off the price axis at P₁: on the curve as the question found it, at
+ * read off the price axis at its value: on the curve as the question found it, at
  * the price the answer moves it to, and never for a question about the
  * curve, whose answer leaves the price where it started.
  */
@@ -323,7 +345,8 @@ export function pricePoint(spec: {
     on: string[];
     at: (p: Drawn) => string;
     x?: string;
-    quantity: AxisSymbol;
+    /** The decimals its quantity, then the price, are printed to, as their captions print them: `[0, 2]`. */
+    places: [number, number];
     srTitle: string;
     show?: string;
     asked?: boolean;
@@ -336,7 +359,7 @@ export function pricePoint(spec: {
             x: spec.x || spec.at(live(all)), y: `params.${spec.price}`,
             color,
             ...(spec.show ? { show: spec.show } : {}),
-            droplines: { vertical: spec.quantity, horizontal: 'P' },
+            droplines: readOff(spec.x || spec.at(live(all)), `params.${spec.price}`, spec.places),
             drag: [{ vertical: spec.price, draggable: UNTIL_SUBMITTED }],
             srTitle: spec.srTitle,
             ghost: { show: UNLESS_ASKING }
@@ -359,7 +382,7 @@ export function pricePoint(spec: {
                 name: 'questionAnswer' + called, title: '',
                 x: spec.at({ ...started(spec.on), ...answered([spec.price]) }), y: `params.${answerOf(spec.price)}`,
                 color,
-                droplines: { horizontal: 'P_1' },
+                droplines: readOff(null, `params.${answerOf(spec.price)}`, spec.places),
                 show: answerDiffers([spec.price])
             }
         },

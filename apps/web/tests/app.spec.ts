@@ -51,7 +51,8 @@ const LABELS_PER_PANEL = 6;
 const QUESTION_LABELS = 1;
 
 /**
- * The ghost of the market panel's demand curve carries a label of its own.
+ * The ghost of a market panel's curve carries a label of its own, which one
+ * move brings out.
  *
  * `ghost` copies the label along with everything else, and the study diagram
  * gives the ghost a qualifier, so the dashed twin reads `D₀` and the live curve
@@ -59,6 +60,9 @@ const QUESTION_LABELS = 1;
  * at all, which is why the count moved.
  */
 const GHOST_LABELS = 1;
+
+/** The market panel's curves with a ghost: demand, and supply since it was given a shift arrow. */
+const GHOSTED_CURVES = 2;
 
 /**
  * Pull the focal panel's demand curve down by its transparent hit area.
@@ -213,7 +217,7 @@ test('draws the focal panel in full and the rail panels as indicators', async ({
     // rebuild — so the count that says anything is the *visible* one.
     const labels = page.locator(`${LABEL}:visible`);
     await expect(labels).toHaveCount(LABELS_PER_PANEL);
-    await expect(page.locator(LABEL)).toHaveCount(LABELS_PER_PANEL * 3 + QUESTION_LABELS + GHOST_LABELS);
+    await expect(page.locator(LABEL)).toHaveCount(LABELS_PER_PANEL * 3 + QUESTION_LABELS + GHOSTED_CURVES * GHOST_LABELS);
 
     // Ticks tell the same story from the other side: only the focal panel has
     // any, while the curves — two per panel — are all still drawn.

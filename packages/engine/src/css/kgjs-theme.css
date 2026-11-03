@@ -89,6 +89,15 @@
 }
 
 /*
+ * A dropline's value on its axis, "7.60", has figures of one width, as the
+ * tick numbers beside it do, so it holds still as a curve is dragged and
+ * only its digits change (`AXIS_VALUE`, KGAuthor/graphObjects/axis.ts).
+ */
+.kg-axis-value {
+    font-variant-numeric: tabular-nums;
+}
+
+/*
  * A word inside any other label — `\text{PPC}` on a curve — is set in the page's
  * font as well, and its maths is not.
  *

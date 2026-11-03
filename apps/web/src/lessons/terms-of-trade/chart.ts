@@ -1,4 +1,4 @@
-import { axis, curve, equilibrium, namedArea } from '../kit/chart';
+import { axis, axisValue, curve, equilibrium, namedArea } from '../kit/chart';
 import type { Drawn } from '../kit/chart';
 import type { ParamDefinition, PanelDefinition } from '../kit/lesson';
 
@@ -95,7 +95,7 @@ const supply = (panel: string) => curve({
 });
 
 const cleared = (panel: string) => equilibrium({
-    name: 'equilibrium_' + panel, x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'],
+    name: 'equilibrium_' + panel, x: 'calcs.Qe', y: 'calcs.Pe', places: [0, 0],
     srTitle: 'Equilibrium export price and volume', ghost: true
 });
 
@@ -147,7 +147,7 @@ export const PANELS: PanelDefinition[] = [
                     name: 'bought_trade', title: '',
                     x: 100, y: 'calcs.tot',
                     color: 'colors.termsOfTrade',
-                    droplines: { horizontal: '\\text{ToT}' },
+                    droplines: { horizontal: axisValue('calcs.tot', 0), plainText: true },
                     srTitle: 'What 100 baskets of exports buy',
                     ghost: true
                 }

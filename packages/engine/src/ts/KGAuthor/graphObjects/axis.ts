@@ -16,6 +16,14 @@ import { GraphObject } from "./graphObject";
  */
 export const AXIS_TITLE = 'axisTitle';
 
+/**
+ * A dropline's label that is the value it meets its axis at, "7.60", rather
+ * than a symbol: set in the page's font with figures of one width, as the
+ * tick numbers beside it are, so it does not jitter as a curve is dragged.
+ * Asked for with `droplines: { plainText: true }` (`Point`).
+ */
+export const AXIS_VALUE = 'axisValue';
+
 export class Axis extends GraphObject {
 
     constructor(def, graph) {

@@ -45,7 +45,7 @@ export const MARKET_LESSON: LessonStep[] = [
         say: 'At the point where the curves cross, the amount buyers want equals the amount sellers ' +
             'offer. Nothing is left over, and every buyer willing to pay this price can buy the ' +
             'good.\n\n' +
-            'This point gives one price, labelled P*, and one quantity, labelled Q*.',
+            'You can read this price and quantity off the axes. Economists write them as P* and Q*.',
         term: GLOSSARY.equilibrium
     },
     {

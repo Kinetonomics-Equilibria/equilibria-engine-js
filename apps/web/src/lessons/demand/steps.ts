@@ -64,7 +64,7 @@ export const DEMAND_LESSON: LessonStep[] = [
         set: { price: 300 },
         title: 'Nike sets the price',
         say: 'Now let\'s add a price. Nike charges $300 a pair, which is shown by the dotted line ' +
-            'labelled P.\n\n' +
+            'across the chart.\n\n' +
             'Your first two pairs are worth at least $300 to you, so you buy 2. Your third pair is worth ' +
             'only $200, so you don\'t buy it.'
     },
@@ -97,7 +97,7 @@ export const DEMAND_LESSON: LessonStep[] = [
     {
         title: 'Quantity demanded',
         say: 'At Nike\'s price of $300, fans want 200,000 pairs a year. You can read this amount from the ' +
-            'bottom axis, where it is labelled Qd.\n\n' +
+            'bottom axis. Economists write it as Qd.\n\n' +
             'Each price matches one quantity, so each price is a single point on the curve.',
         term: GLOSSARY.quantityDemanded
     },

@@ -115,13 +115,13 @@ const demand = (panel: string) => curve({
 });
 
 /**
- * What students buy at the canteen's price: P on the price axis, Qd on the
- * quantity axis. In the colour of a point chosen on a curve, as the Jordans'
+ * What students buy at the canteen's price, read off both axes at their
+ * values: the price to the cent, the rolls whole. In the colour of a point chosen on a curve, as the Jordans'
  * is: orange moves along, blue pivots. Asked where the curve is.
  */
 const atPrice = (panel: string) => pricePoint({
     name: 'atPrice_' + panel, meaning: 'choice', price: 'price', on: ['response'],
-    at: p => quantityAt(p.response, p.price), x: 'calcs.Qd', quantity: 'Q_d',
+    at: p => quantityAt(p.response, p.price), x: 'calcs.Qd', places: [0, 2],
     srTitle: 'What students buy at the canteen\'s price', asked: panel === 'revenue'
 });
 

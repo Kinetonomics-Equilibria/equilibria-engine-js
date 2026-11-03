@@ -1,4 +1,4 @@
-import { axis, curve, priceAxis, priceLine, pricePoint } from '../kit/chart';
+import { axis, axisValue, curve, priceAxis, priceLine, pricePoint } from '../kit/chart';
 import { atStep, fromStep, stepRevealing, stepTitled } from '../kit/lesson';
 import type { ParamDefinition, PanelDefinition } from '../kit/lesson';
 import { DEMAND_LESSON } from './steps';
@@ -63,8 +63,8 @@ export const CALCS = {
  *
  * Its step says where it goes, "1 pair and $400", so it has droplines to read
  * that off the axes at that step and no other: the next pair takes them over,
- * and after the fourth the price's step counts points against its line. The
- * droplines carry no symbol on the axes, against the house rule, and say why.
+ * and after the fourth the price's step counts points against its line. Each
+ * lands on a tick, so its value on the axis is the tick's own number.
  *
  * Each arrives: the point pops in, then its droplines are drawn out from it
  * to the axes, the way the step has the student read it.
@@ -78,14 +78,12 @@ const pair = (n: number) => {
             name, title: '',
             x: n, y: worth,
             color: 'colors.demand',
-            droplines: { vertical: '', horizontal: '', show: atStep(stepRevealing(DEMAND_LESSON, name)) },
+            droplines: {
+                vertical: axisValue(String(n), 0), horizontal: axisValue(String(worth), 0), plainText: true,
+                show: atStep(stepRevealing(DEMAND_LESSON, name))
+            },
             arrive: true,
-            srTitle: `Pair ${n}, worth $${worth} to you`,
-            breaksRule: {
-                rule: 'Droplines',
-                why: 'Each pair lands on a tick, so the tick number is the value its step says, and no symbol ' +
-                    'on the list means what a pair is worth to you.'
-            }
+            srTitle: `Pair ${n}, worth $${worth} to you`
         }
     };
 };
@@ -110,7 +108,7 @@ export const PANELS: PanelDefinition[] = [
         objects: [
             // Nike's price across the student's chart, labelled on the price
             // axis as the market's dropline is, so P is one price on both.
-            ...priceLine({ param: 'price', across: [0, 5], meaning: 'choice' }),
+            ...priceLine({ param: 'price', across: [0, 5], meaning: 'choice', places: 0 }),
             pair(1), pair(2), pair(3), pair(4)
         ]
     },
@@ -138,7 +136,7 @@ export const PANELS: PanelDefinition[] = [
             // slide sideways.
             ...pricePoint({
                 name: 'atPrice', meaning: 'choice', price: 'price', on: ['demand'],
-                at: p => quantityAt(p.demand, p.price), x: 'calcs.q', quantity: 'Q_d',
+                at: p => quantityAt(p.demand, p.price), x: 'calcs.q', places: [0, 0],
                 srTitle: 'What fans want at Nike\'s price',
                 show: fromStep(QUANTITY), asked: true
             })
