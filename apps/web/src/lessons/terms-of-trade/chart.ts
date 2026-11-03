@@ -73,10 +73,6 @@ export const CALCS = {
  * above where it does. Low enough to stay clear of the point at the most the
  * sliders ship, 144 at a price of 36, where D is at 165.
  *
- * From its own param alone, as supply's is. A ghost shows when anything its
- * definition reads has moved, and that takes in the label: placed by `calcs.Pe`,
- * this curve drew a D₀ on top of itself when only supply moved.
- *
  * Its question's lines in the market only, at the front through the
  * questions. The kit names them for the param, not the panel, so a second
  * panel's would be the same objects twice.

@@ -98,8 +98,7 @@ A curve's label goes where
 [Labels on the plot](./chart-design.md#labels-on-the-plot) says — demand at its
 lower right, supply at its upper right — placed by a calc of the curve's own
 params where the end moves, and never on the equilibrium or the point a price
-picks. A label placed by `calcs.Pe` on a curve with a ghost draws that ghost on
-top of the curve whenever the other curve moves.
+picks.
 
 Where the kit has nothing that fits, write a raw engine object beside the
 kit's, as the café's curve is, and give it the house rules by hand:

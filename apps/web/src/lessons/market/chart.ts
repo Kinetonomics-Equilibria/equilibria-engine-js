@@ -69,18 +69,24 @@ const demand = (panel: string) => curve({
  * both near the top of their ranges, and the label was drawn over the
  * equilibrium. Higher up it does not fit in a small panel, and the engine
  * slides it back down onto the point. So it goes to the curve's other end,
- * which is then nowhere near P*.
+ * which is then nowhere near P*. No place read from `c` alone does: at the top
+ * of both ranges there are two units of supply between the point and the top
+ * of the panel.
+ *
+ * Only the market panel draws where it was, as demand's does, and the shift
+ * arrow from where the market cleared.
  */
 const supply = (panel: string) => curve({
     name: 'supply_' + panel, title: 'supply', meaning: 'supply', symbol: 'S', type: 'Line',
     moves: ['c'],
     shape: p => ({ yIntercept: p.c, slope: 1 }),
-    labelAt: p => ({ x: `calcs.Pe > 16 ? 1.5 : 18 - ${p.c}` })
+    labelAt: p => ({ x: `calcs.Pe > 16 ? 1.5 : 18 - ${p.c}` }),
+    ghost: panel === 'market', shiftAt: 'prev.calcs.Pe'
 });
 
 /**
  * Where the market clears. In the market panel, also where it cleared before,
- * where demand's shift arrow starts.
+ * where the shift arrow of the curve that moved starts.
  */
 const cleared = (panel: string) => equilibrium({
     name: 'equilibrium_' + panel, x: 'calcs.Qe', y: 'calcs.Pe', droplines: ['Q^*', 'P^*'],

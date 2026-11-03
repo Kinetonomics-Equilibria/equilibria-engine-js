@@ -228,6 +228,28 @@ describe('a ghost is where *this* object was, not a record that something moved'
         r.destroy();
     });
 
+    it('does not count where its label is, which may read the other curve', () => {
+        // Supply labelled at its other end while the market clears near its
+        // top: the label reads `calcs.Pe`, which demand moves too. Counted, it
+        // raised S₀ exactly on S whenever demand moved.
+        const r = build([DEMAND, {
+            type: 'Line',
+            def: {
+                name: 'supply', yIntercept: 'params.c', slope: 1, color: 'colors.supply',
+                label: { text: 'S', x: 'calcs.Pe > 12 ? 1.5 : 18 - params.c' },
+                ghost: true
+            }
+        }], MARKET);
+        const supplyGhost = () => objectsIn(r).filter((o: any) => o.constructor.name === 'Curve')[2];
+
+        moveParam(r, 'a', 26);
+        expect(supplyGhost().show).toBeFalsy();
+
+        moveParam(r, 'c', 6);
+        expect(supplyGhost().show).toBeTruthy();
+        r.destroy();
+    });
+
     it('follows a calc, so a point moved by either curve keeps its ghost', () => {
         // The equilibrium is bound to calcs rather than to a param, and both
         // params move the calcs. That is the right answer for it: it *did* move.

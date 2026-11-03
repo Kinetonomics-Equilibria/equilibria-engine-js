@@ -340,15 +340,13 @@ above the plot.
   are. Other curves are labelled at the end with the most open space, and at
   the same end every time that curve is drawn.
 - **A label stays on the plot across the whole slider range.** If the end of a
-  curve moves, position the label with a calc, not a constant. On a curve with a
-  ghost, that calc reads the curve's own params and nothing else: a ghost shows
-  when anything its definition reads has moved, the label included, so a label
-  placed by the equilibrium draws D₀ on top of D when only supply moved.
+  curve moves, position the label with a calc, not a constant.
 - **A label never sits on the equilibrium.** Where the point can reach the end
   of the curve its label is at, the label moves to the other end while the point
   is there. Supply does this at the top of the market lesson's ranges
-  (`lessons/market/chart.ts`), where it has no ghost. A curve with one can't,
-  so choose the ranges and the label's place to keep the two apart.
+  (`lessons/market/chart.ts`). A ghost shows when the curve moves, not its
+  label, so a label placed by the equilibrium raises no ghost when only the
+  other curve moved.
 - **The label is the curve's symbol** from the [list](#symbols). The live curve
   keeps its plain name always: D, never D′ or D₁. Its ghost adds ₀
   (`ghost: { label: '_0' }`), and the answer after a question adds ₁. The engine

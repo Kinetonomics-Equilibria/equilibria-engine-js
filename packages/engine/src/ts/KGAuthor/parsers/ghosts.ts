@@ -305,10 +305,17 @@ function bindings(value: any, key?: string, found: string[] = []): string[] {
  * is exactly the case `prev.changed` was written to exclude (NOTES.md issue 13).
  * An object with no bindings at all — which `ghostDef` has already warned about —
  * keeps the old predicate and behaves exactly as it did.
+ *
+ * Its label is left out. A label is where the name is written, not where the
+ * object is, and where it goes may read anything: the market's supply is
+ * labelled at its other end while the market clears near its top, by
+ * `calcs.Pe`. Counted, a label that moved while its curve stayed raised the
+ * ghost exactly on top of the curve, S₀ on S, every time demand moved.
  */
 function moved(def: any): string {
     const own = { ...def };
     NOT_INHERITED.forEach(function (key) { delete own[key]; });
+    delete own.label;
 
     const refs = bindings(own);
     if (refs.length === 0) return 'prev.changed';
