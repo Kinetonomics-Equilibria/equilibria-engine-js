@@ -160,7 +160,7 @@ describe('The address follows the view', () => {
 
         act(() => window.history.back());
 
-        await screen.findByRole('heading', { name: 'A market, and what it does to everything else' });
+        await screen.findByRole('heading', { name: 'Supply, demand and market equilibrium' });
         // The caption reads the engine, which draws a beat after the heading is up.
         await waitFor(() => expect(marketCaption()).toContain('Price $15.00'));
         expect(screen.getByRole('group', { name: 'Try it' })).toBeTruthy();
@@ -181,7 +181,7 @@ describe('The address follows the view', () => {
         await screen.findByRole('heading', { name: 'The market for the Australian dollar' });
 
         act(() => window.history.back());
-        await screen.findByRole('heading', { name: 'A market, and what it does to everything else' });
+        await screen.findByRole('heading', { name: 'Supply, demand and market equilibrium' });
         expect(address()).toBe('/lessons/market');
     });
 
@@ -203,7 +203,7 @@ describe('The address follows the view', () => {
 
         act(() => window.history.back());
 
-        await screen.findByRole('heading', { name: 'A market, and what it does to everything else' });
+        await screen.findByRole('heading', { name: 'Supply, demand and market equilibrium' });
         expect(address()).toBe('/lessons/market?step=9');
         expect(marker(LAST).getAttribute('aria-current')).toBe('step');
         expect(screen.getByRole('button', { name: 'Finish' })).toBeTruthy();

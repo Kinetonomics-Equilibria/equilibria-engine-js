@@ -54,7 +54,7 @@ export { FX_LESSON } from './steps';
 const NARRATED_CALCS = [
     {
         name: 'rate', label: 'AUD 1 =', unit: 'USD ', precision: 2,
-        tex: 'e^*', meaning: 'Exchange rate: the price of AUD 1 in USD',
+        tex: 'e^*', meaning: 'The exchange rate, which is the price of AUD 1 in USD',
         rise: 'The AUD appreciates', fall: 'The AUD depreciates'
     },
     // The reciprocal, so its words are the other way round from the rate's: a
@@ -84,44 +84,44 @@ const NARRATED_CALCS = [
 const SCENARIOS: Scenario[] = [
     {
         id: 'iron-ore',
-        label: 'Iron ore prices soar',
-        description: 'China pays more for Australian iron ore, and pays in AUD: demand for AUD rises.',
+        label: 'Iron ore prices rise sharply',
+        description: 'China pays more for Australian iron ore, and pays in AUD. Demand for AUD rises.',
         params: { demand: 60 }
     },
     {
         id: 'rba',
         label: 'RBA lifts the cash rate',
-        description: 'Higher Australian interest rates draw investors overseas into AUD bonds: demand for AUD rises.',
+        description: 'Higher Australian interest rates draw investors overseas into AUD bonds. Demand for AUD rises.',
         params: { demand: 60 }
     },
     {
         id: 'china-slows',
         label: 'China\'s economy slows',
-        description: 'Less steel, less iron ore and coal bought from Australia: demand for AUD falls.',
+        description: 'China makes less steel and buys less iron ore and coal from Australia. Demand for AUD falls.',
         params: { demand: 40 }
     },
     {
         id: 'holidays',
         label: 'Australians holiday abroad',
-        description: 'Holiday money means selling AUD for foreign currency: supply of AUD rises.',
+        description: 'Holiday money means selling AUD for foreign currency. Supply of AUD rises.',
         params: { supply: 60 }
     },
     {
         id: 'inflation',
         label: 'Australian prices rise faster',
-        description: 'Imports look cheap beside dearer local goods, so Australians buy more of them: supply of AUD rises.',
+        description: 'Imports look cheap next to local goods, so Australians buy more of them. Supply of AUD rises.',
         params: { supply: 60 }
     },
     {
         id: 'fed',
         label: 'US Fed lifts its rates',
-        description: 'Australian savers move money into US bonds, selling AUD to do it: supply of AUD rises.',
+        description: 'Australian savers move money into US bonds, and they sell AUD to do it. Supply of AUD rises.',
         params: { supply: 60 }
     },
     {
         id: 'imports-fall',
         label: 'Australians buy fewer imports',
-        description: 'Fewer imported cars and phones means less AUD sold for USD: supply of AUD falls.',
+        description: 'Fewer imported cars and phones means less AUD is sold for USD. Supply of AUD falls.',
         params: { supply: 40 }
     },
     {
@@ -149,9 +149,9 @@ const MODEL: ModelSpec = {
     // (70 and 50, or 50 and 30); equal rises leave the rate where it was and
     // move only the quantity; and demand alone can take the AUD down.
     explorePrompts: [
-        'Make AUD 1 worth USD 0.75. Which curve did you move, and which way?',
-        'Raise demand and supply by the same amount. What happens to the exchange rate?',
-        'Make the AUD depreciate without touching supply.'
+        'What would make AUD 1 worth USD 0.75? Which curve moves, and which way?',
+        'What happens to the exchange rate when demand and supply rise by the same amount?',
+        'How can the AUD depreciate without any change in supply?'
     ],
     // Who is behind each curve, as the first two steps introduce them, and the
     // titles of the steps that move them. Each in the colour of its curve in
@@ -199,17 +199,17 @@ const MODEL: ModelSpec = {
 export const FOREIGN_EXCHANGE: StudyContent = defineLesson({
     id: 'fx',
     label: 'Exchange rates (AUD)',
-    title: 'The Australian dollar, and what moves it',
+    title: 'The Australian dollar exchange rate',
     goals: [
         'Who buys Australian dollars, and who sells them',
         'Why the AUD rises and falls against the USD',
-        'Four real-world cases to work out yourself'
+        'How to apply this to four real-world cases'
     ],
     cover: {
         question: 'Why does the Australian dollar rise and fall?',
-        hook: 'Every time the world buys Australian iron ore, a degree or a week on the Gold ' +
-            'Coast, someone has to buy AUD to pay for it. Follow those trades and you can work ' +
-            'out which way the AUD moves when the news changes.',
+        hook: 'People overseas need Australian dollars to pay for iron ore, university degrees and ' +
+            'holidays on the Gold Coast. In this lesson we look at how these trades set the price of the ' +
+            'Australian dollar, and at why that price changes.',
         picture: 'cover'
     },
     pictures: {

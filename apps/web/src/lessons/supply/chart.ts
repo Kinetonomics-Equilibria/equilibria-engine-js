@@ -46,7 +46,7 @@ const PRICED = stepTitled(SUPPLY_LESSON, 'The going fare');
 const QUANTITY = stepTitled(SUPPLY_LESSON, 'Quantity supplied');
 /** The PEANUT part: from its first step to the step before the first question. */
 const PEANUT = stepTitled(SUPPLY_LESSON, 'What shifts the whole curve');
-const NEW_AIRLINE = stepTitled(SUPPLY_LESSON, 'N: number of sellers');
+const NEW_AIRLINE = stepTitled(SUPPLY_LESSON, 'Number of sellers');
 const FIRST_QUESTION = firstQuestion(SUPPLY_LESSON);
 
 export const PARAMS: ParamDefinition[] = [

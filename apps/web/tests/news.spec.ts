@@ -18,7 +18,7 @@ const address = (page: Page) => {
 const caption = (page: Page, key: string) => page.locator(`[data-testid="stage-chrome"] [data-panel="${key}"]`);
 const changed = (page: Page) => page.getByRole('region', { name: 'What changed' });
 const report = (page: Page) => page.locator('[data-host-panel="story"]');
-const HOME = 'Learn it, play with it, see it happen';
+const HOME = 'Economics lessons, diagrams and news';
 const RBA = '/news/2026-09-rba-cash-rate';
 
 test('the app opens on Home: the places, and the newest stories', async ({ page, pageErrors }) => {

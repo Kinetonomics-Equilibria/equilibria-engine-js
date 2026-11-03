@@ -86,8 +86,9 @@ describe('The stories', () => {
             // It moves: the move is a way the market goes, not where it is.
             expect(story.move[name]).not.toBe(param.value);
         });
-        // Who, which curve, which way, as a scenario's reasoning ends.
-        expect(story.reasoning).toMatch(/: [^:]+\.$/);
+        // Who, which curve, which way, as a scenario's reasoning ends: the
+        // result in a sentence of its own.
+        expect(story.reasoning).toMatch(/\. [A-Z][^.]+\.$/);
     });
 
     it('are listed under the month each happened in', () => {
@@ -136,7 +137,7 @@ describe('A story\'s address', () => {
     it('opens Home where its story is not there, and says so', async () => {
         open('news/2026-01-nothing-happened');
         await settles('/');
-        expect(screen.getByRole('heading', { name: 'Learn it, play with it, see it happen' })).toBeTruthy();
+        expect(screen.getByRole('heading', { name: 'Economics lessons, diagrams and news' })).toBeTruthy();
     });
 });
 
@@ -243,7 +244,7 @@ describe('The In the news panel', () => {
         expect(screen.queryByRole('region', { name: 'In the news', hidden: true })).toBeNull();
 
         act(() => window.history.back());
-        await screen.findByRole('heading', { name: 'The Australian dollar, and what moves it' });
+        await screen.findByRole('heading', { name: 'The Australian dollar exchange rate' });
     });
 
     it('lights In the news on the rail while a story is open', async () => {
@@ -258,7 +259,7 @@ describe('Home', () => {
 
     it('is where the app opens, and lights Home on the rail', async () => {
         open();
-        expect(screen.getByRole('heading', { level: 1, name: 'Learn it, play with it, see it happen' })).toBeTruthy();
+        expect(screen.getByRole('heading', { level: 1, name: 'Economics lessons, diagrams and news' })).toBeTruthy();
         expect(address()).toBe('/');
         expect(rail('Home').hasAttribute('data-active')).toBe(true);
     });
@@ -266,7 +267,7 @@ describe('Home', () => {
     it('is where a path the app does not have opens, and the address says so', async () => {
         open('somewhere/else?step=3');
         await settles('/');
-        expect(screen.getByRole('heading', { name: 'Learn it, play with it, see it happen' })).toBeTruthy();
+        expect(screen.getByRole('heading', { name: 'Economics lessons, diagrams and news' })).toBeTruthy();
     });
 
     it('lists the three places, each with a line saying what is in it', () => {
@@ -305,7 +306,7 @@ describe('Home', () => {
         await screen.findByRole('heading', { name: STORIES[1].headline });
 
         act(() => window.history.back());
-        await screen.findByRole('heading', { name: 'Learn it, play with it, see it happen' });
+        await screen.findByRole('heading', { name: 'Economics lessons, diagrams and news' });
         expect(address()).toBe('/');
     });
 
@@ -315,10 +316,10 @@ describe('Home', () => {
         await settles('/lessons/fx');
         await user.click(rail('Home'));
         expect(address()).toBe('/');
-        await screen.findByRole('heading', { name: 'Learn it, play with it, see it happen' });
+        await screen.findByRole('heading', { name: 'Economics lessons, diagrams and news' });
 
         act(() => window.history.back());
-        await screen.findByRole('heading', { name: 'The Australian dollar, and what moves it' });
+        await screen.findByRole('heading', { name: 'The Australian dollar exchange rate' });
         expect(address()).toBe('/lessons/fx');
     });
 });

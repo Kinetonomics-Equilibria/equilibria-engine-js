@@ -1,8 +1,9 @@
 # Writing a lesson
 
 How a lesson is put together, in the order it is written. Each step names the
-section of [`design.md`](./design.md) or [`chart-design.md`](./chart-design.md)
-it needs; read that section when you reach it, rather than all of both first.
+section of [`design.md`](./design.md), [`chart-design.md`](./chart-design.md) or
+[`language.md`](./language.md) it needs; read that section when you reach it,
+rather than all of them first.
 
 A lesson is mostly its words and its model. The rest — the wiring a question
 needs, the change each caption shows, the chart's house rules — is the lesson
@@ -149,11 +150,28 @@ step can carry, and [Motion](./chart-design.md#motion) before `arrive`.
 ### 4. The words
 
 In `index.ts`, and the steps' `title`, `say` and `term`. Read
+[`language.md`](./language.md) first, all of it, since it sets the voice for
+every word below. Then read
 [Writing for the screen](./design.md#writing-for-the-screen) and
-[What a lesson supplies](./design.md#what-a-lesson-supplies), which says how
-each field is written and where it is read. A symbol on the chart is said in
-words in the step that first draws it ([Symbols](./chart-design.md#symbols)),
-and every number a step states is one the diagram solves to at that step.
+[What a lesson supplies](./design.md#what-a-lesson-supplies), which says where
+each field is read. A symbol on the chart is said in words in the step that
+first draws it ([Symbols](./chart-design.md#symbols)), and every number a step
+states is one the diagram solves to at that step.
+
+The lesson's title is the economics, and the example goes on the cover. A
+step's `say` runs in the order things happen, and steps its reasoning out in
+short paragraphs. A block whose every line starts `- ` is shown as a list, for a
+run of items or the stages of a sum.
+
+A step that hands over a control (`try`) keeps its words short, so the control
+stays on the screen at 1366×768 without scrolling. Where the step that explains
+an idea is already full, give the control a step of its own, as "The law of
+demand" follows "Nike sets the price".
+
+A key term comes from the glossary, `apps/web/src/lessons/glossary.ts`:
+`term: GLOSSARY.marginalUtility`. A lesson that needs a new word adds it there,
+following [Definitions](./language.md#definitions), and a word already there is
+used as it stands, so it means the same thing in every lesson.
 
 `lessons.test.ts` holds the words to the room the screen has for them, and
 fails a lesson that runs over:
@@ -161,12 +179,18 @@ fails a lesson that runs over:
 | What | At most |
 | --- | --- |
 | A step's `title` | 40 characters |
-| A step's `say` | 2 paragraphs, each 220 characters |
-| A question's `explain` | 200 characters |
-| A recap's `takeaway`, the cover's `hook` | 220 characters |
+| A step's `say` | 3 blocks, each 200 characters, and 480 in all |
+| A key term's meaning | 220 characters |
+| A question's `explain` | 240 characters |
+| A recap's `takeaway`, the cover's `hook` | 280 characters |
 | The cover's `question` | 60 characters |
 | A picture's `alt` | 250 characters |
 | `goals`, and parts | 4 |
+
+`language.test.ts` reads the same words for the marks of a backwards or
+commanding sentence, such as a colon, "Say" for "Suppose", or a command used as
+an "if". It also holds each key term to the glossary and to the rules for a
+definition.
 
 The model's words are in `index.ts` too: `narratedCalcs` (what every number is
 called, its unit and decimals), `paramWords`, `paramMeanings`,
@@ -217,8 +241,8 @@ did.
 
 ### 6. The tests
 
-`lessons.test.ts` and `chartRules.test.ts` hold every listed lesson, and the
-template, to the rules for words, wiring and charts: they run over a new
+`lessons.test.ts`, `language.test.ts` and `chartRules.test.ts` hold every listed
+lesson, and the template, to the rules for words, wiring and charts: they run over a new
 lesson as soon as it is listed. Add its model's id to the list in
 `apps/web/tests/chart.spec.ts`, which takes each param to the ends of its
 range in the Playground and checks every label stays on the plot.

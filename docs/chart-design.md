@@ -466,8 +466,8 @@ On a chart, a student reads three kinds of text:
 
 A symbol is allowed only because it sits on the plot, where space is tight.
 Each one means one thing across the whole app. The lesson says each one in
-words before a student needs it, usually in the step that first draws it: "That
-point gives one price, P\*, and one quantity, Q\*."
+words before a student needs it, usually in the step that first draws it: "This
+point gives one price, labelled P\*, and one quantity, labelled Q\*."
 
 | Symbol | Means | Drawn on |
 | --- | --- | --- |

@@ -156,7 +156,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('opens the AUD lesson from its address', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'The Australian dollar exchange rate' })).toBeVisible();
     await page.getByRole('button', { name: 'Lessons' }).click();
     await expect(page.getByRole('link', { name: 'Exchange rates (AUD)' })).toHaveAttribute('aria-current', 'page');
 });
@@ -251,7 +251,7 @@ test('the last step looks back over the questions, and says how each went', asyn
     ]);
     const colour = (n: number) => outcomes.nth(n).evaluate(el => getComputedStyle(el).backgroundColor);
     expect(await colour(0)).not.toBe(await colour(1));
-    await expect(recap.getByText(/the AUD appreciates, the reverse and it depreciates/)).toBeVisible();
+    await expect(recap.getByText(/Less demand or more supply makes it depreciate/)).toBeVisible();
 
     await page.locator('body').click({ position: { x: 1, y: 1 } });
     const inStage: boolean[] = [];
@@ -541,7 +541,7 @@ test('no text on the stage lands on other text', async ({ page }) => {
 
     for (const arrangement of ['Focus', 'Grid'] as const) {
         await arrange(page, arrangement);
-        for (const scenario of ['Back to AUD 1 = USD 0.65', 'Iron ore prices soar', 'Australians holiday abroad']) {
+        for (const scenario of ['Back to AUD 1 = USD 0.65', 'Iron ore prices rise sharply', 'Australians holiday abroad']) {
             // Exact: a progress marker is named by its step's title, and a
             // title could share words with a scenario.
             await page.getByRole('button', { name: scenario, exact: true }).click();
@@ -631,7 +631,7 @@ test('the Lessons panel moves between lessons, and the back button returns', asy
     // Another topic drops down to its own lessons.
     await page.getByRole('button', { name: 'Markets', exact: true }).click();
     await market.click();
-    await expect(page.getByRole('heading', { name: 'A market, and what it does to everything else' }))
+    await expect(page.getByRole('heading', { name: 'Supply, demand and market equilibrium' }))
         .toBeVisible();
     expect(new URL(page.url()).pathname).toBe('/lessons/market');
 
@@ -650,7 +650,7 @@ test('the Lessons panel moves between lessons, and the back button returns', asy
     await expect(market).toBeHidden();
 
     await page.goBack();
-    await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'The Australian dollar exchange rate' })).toBeVisible();
 });
 
 /**

@@ -1,4 +1,5 @@
 import type { LessonStep } from '../../track/track';
+import { GLOSSARY } from '../glossary';
 
 /** Where the lesson starts, and where the questions start from: every index at 100. */
 export const BASELINE = { demand: 100, supply: 100, imports: 100 };
@@ -26,66 +27,55 @@ export const TERMS_OF_TRADE_LESSON: LessonStep[] = [
         part: 'What the terms of trade are',
         reveal: ['demand_market', 'supply_market'],
         title: 'What Australia sells',
-        say: 'Australia\'s biggest exports are commodities: iron ore, coal and gas, shipped to steel ' +
-            'mills and power stations overseas.\n\n' +
-            'The demand curve, D, shows how much the world wants at each price. The supply curve, S, ' +
-            'shows how much Australian miners ship.',
-        term: {
-            word: 'Commodity',
-            meaning: 'A raw material sold in bulk, where one load is much the same as another.'
-        }
+        say: 'Australia\'s biggest exports are commodities, such as iron ore, coal and gas. These are ' +
+            'shipped to steel mills and power stations overseas.\n\n' +
+            'The demand curve, labelled D, shows how much the world wants at each price. The supply ' +
+            'curve, labelled S, shows how much Australian miners ship.',
+        term: GLOSSARY.commodity
     },
     {
         reveal: ['equilibrium_market'],
         title: 'Prices as an index',
-        say: 'Where the curves cross, the market sets a price, P*, and a volume shipped, Q*. Each is ' +
-            'written as an index that starts at 100.\n\n' +
-            'So a price of 120 would mean prices are 20% higher than at the start.',
-        term: {
-            word: 'Index',
-            meaning: 'A number that tracks a change from a start of 100: 120 means 20% higher, and 90 ' +
-                'means 10% lower.'
-        }
+        say: 'At the point where the curves cross, the market sets a price, labelled P*, and a volume ' +
+            'shipped, labelled Q*.\n\n' +
+            'We write each of these as an index that starts at 100, so a price of 120 means that prices ' +
+            'are 20% higher than at the start.',
+        term: GLOSSARY.index
     },
     // Words alone, with the market still at the front: the other half of the
     // ratio, before the panel that draws the ratio.
     {
         title: 'What Australia buys',
-        say: 'Exports pay for imports: phones, laptops, cars and fuel. Import prices are an index too, ' +
-            'tracking the cost of a basket of imports. It starts at 100.\n\n' +
-            'So how much can a basket of exports buy? That depends on both prices.',
-        term: {
-            word: 'Basket',
-            meaning: 'A fixed mix of goods, kept the same so a price index compares like with like.'
-        }
+        say: 'Exports pay for imports, such as phones, laptops, cars and fuel. Import prices are also an ' +
+            'index, which tracks the cost of a basket of imports and starts at 100.\n\n' +
+            'How much can a basket of exports buy? The answer depends on both prices.',
+        term: GLOSSARY.basket
     },
     {
         reveal: ['trade'],
         focus: 'trade',
         title: 'The terms of trade',
-        say: 'Divide export prices by import prices, then multiply by 100: 100 ÷ 100 × 100 = 100. ' +
-            'That\'s the terms of trade, ToT.\n\n' +
-            'Read it in baskets: at 100, the point shows 100 baskets of exports buying 100 baskets ' +
-            'of imports.',
-        term: {
-            word: 'Terms of trade',
-            meaning: 'Export prices ÷ import prices × 100: how much a country\'s exports buy in imports.'
-        }
+        say: 'To compare the two prices, we divide export prices by import prices and multiply by 100. ' +
+            'Here, 100 ÷ 100 × 100 = 100. This number is the terms of trade, labelled ToT.\n\n' +
+            'We can read it in baskets. At 100, the point shows 100 baskets of exports buying 100 ' +
+            'baskets of imports.',
+        term: GLOSSARY.termsOfTrade
     },
     {
         set: { imports: 125 },
-        title: 'Imports get dearer',
-        say: 'Say a chip shortage pushes up the price of phones and laptops, and import prices rise ' +
-            'to 125. Exports haven\'t changed.\n\n' +
-            '100 ÷ 125 × 100 = 80. The line turns down from the dashed one, where it was: 100 ' +
-            'baskets of exports now buy 80.'
+        title: 'Imports cost more',
+        say: 'Suppose a chip shortage pushes up the price of phones and laptops, and import prices rise ' +
+            'to 125. Export prices have not changed.\n\n' +
+            'The terms of trade are now 100 ÷ 125 × 100 = 80. The line turns down from the dashed line, ' +
+            'which shows where it was.\n\n' +
+            'This means that 100 baskets of exports now buy 80 baskets of imports.'
     },
     {
         set: { imports: 80 },
-        title: 'Imports get cheaper',
-        say: 'Now say factories overseas cut their prices, and import prices fall to 80.\n\n' +
-            '100 ÷ 80 × 100 = 125, so the same exports buy more. Move import prices yourself and ' +
-            'watch the line turn.',
+        title: 'Imports cost less',
+        say: 'Now suppose factories overseas cut their prices, and import prices fall to 80.\n\n' +
+            'The terms of trade are now 100 ÷ 80 × 100 = 125, so the same exports buy more imports.\n\n' +
+            'You can move import prices below to see how the line turns.',
         try: [{ param: 'imports', label: 'Import prices' }]
     },
     // Back to the start as a step of its own, so the boom that follows moves
@@ -94,96 +84,84 @@ export const TERMS_OF_TRADE_LESSON: LessonStep[] = [
     {
         set: { imports: 100 },
         title: 'Favourable and unfavourable',
-        say: 'Import prices settle back at 100, and the terms of trade with them.\n\n' +
-            'A rise is called favourable, because the same exports buy more imports. A fall is ' +
-            'unfavourable. Either can start with export prices or with import prices.',
-        term: {
-            word: 'Favourable movement',
-            meaning: 'A rise in the terms of trade: the same exports buy more imports. A fall is an ' +
-                'unfavourable movement.'
-        }
+        say: 'Suppose import prices settle back at 100. The terms of trade return to 100 as well.\n\n' +
+            'A rise in the terms of trade is called favourable, because the same exports buy more ' +
+            'imports. A fall is called unfavourable.\n\n' +
+            'Either movement can start with export prices or with import prices.',
+        term: GLOSSARY.favourableMovement
     },
     {
         part: 'The boom',
         focus: 'market',
         set: { demand: 200 },
         title: 'China starts building',
-        say: 'In the 2000s, China built cities, railways and factories at a record pace. Its steel ' +
-            'mills wanted far more iron ore and coal at every price.\n\n' +
-            'The demand curve shifts right of the dashed one, where it was.'
+        say: 'In the 2000s, China built cities, railways and factories at a record pace. Its steel mills ' +
+            'wanted far more iron ore and coal at every price.\n\n' +
+            'The demand curve shifts to the right of the dashed curve, which shows where it was.'
     },
     {
         title: 'Mines take years to build',
-        say: 'A new mine, its railway and its port take years. Until then, miners can only squeeze a ' +
-            'little more from the mines they have, so the supply curve is steep.\n\n' +
+        say: 'A new mine, with its railway and port, takes years to build. Until then, miners can produce ' +
+            'only a little more from the mines they have, so the supply curve is steep.\n\n' +
             'Volume edges up to 120, and the price nearly doubles to 180.',
-        term: {
-            word: 'Short run',
-            meaning: 'A time too short to build new capacity, so sellers can change how much they ' +
-                'sell only a little.'
-        }
+        term: GLOSSARY.shortRun
     },
     {
         focus: 'trade',
-        title: 'The terms of trade soar',
-        say: 'Import prices haven\'t moved, so 180 ÷ 100 × 100 = 180. The line is much steeper.\n\n' +
-            '100 baskets of exports now buy 180 baskets of imports. Australia can afford nearly ' +
-            'twice the imports for the same exports.'
+        title: 'The terms of trade rise sharply',
+        say: 'Import prices have not changed, so the terms of trade are 180 ÷ 100 × 100 = 180. The line ' +
+            'is much steeper.\n\n' +
+            'This means that 100 baskets of exports now buy 180 baskets of imports. Australia can afford ' +
+            'nearly twice the imports for the same exports.'
     },
     {
         reveal: ['revenue'],
         focus: 'revenue',
         title: 'More money coming in',
-        say: 'Price times volume is export revenue, the green rectangle: what the world pays ' +
-            'Australia. It\'s an index too, and it started at 100.\n\n' +
-            'Now it\'s 216, more than double. Most of that rise came from the price.',
-        term: {
-            word: 'Export revenue',
-            meaning: 'What a country earns from its exports: their price times their volume.'
-        }
+        say: 'Export revenue is the price multiplied by the volume, which is shown by the green rectangle. ' +
+            'It is what the world pays Australia. Export revenue is also an index, and it started at ' +
+            '100.\n\n' +
+            'Export revenue is now 216, which is more than double. Most of this rise came from the price.',
+        term: GLOSSARY.exportRevenue
     },
     {
         title: 'Who gains, and who doesn\'t',
-        say: 'Mining profits soar, and so does the tax governments collect on them. Buyers need more ' +
-            'AUD to pay for dearer ore, so the AUD tends to rise, which makes imports cheaper too.\n\n' +
-            'Not everyone gains. A dearer AUD makes it harder for farmers, universities and tourism ' +
-            'to sell overseas.'
+        say: 'Mining profits rise, and so does the tax that governments collect on them. Buyers need more ' +
+            'AUD to pay for the iron ore, so the AUD tends to rise, which also makes imports cheaper.\n\n' +
+            'Not everyone gains. A stronger AUD makes it harder for farmers, universities and tourism ' +
+            'businesses to sell overseas.'
     },
     {
         part: 'After the boom',
         focus: 'market',
         set: { supply: 150 },
         title: 'New mines open',
-        say: 'High prices make new mines worth building. Years later they start shipping, so miners ' +
-            'sell more at every price.\n\n' +
-            'The supply curve shifts right. The price falls to 140, and volume jumps to 160.',
-        term: {
-            word: 'Long run',
-            meaning: 'Time enough to build new capacity, so sellers can change how much they sell by ' +
-                'much more.'
-        }
+        say: 'High prices make new mines worth building. Years later the new mines start shipping, so ' +
+            'miners sell more at every price.\n\n' +
+            'The supply curve shifts to the right. The price falls to 140, and volume jumps to 160.',
+        term: GLOSSARY.longRun
     },
     {
         focus: 'revenue',
         title: 'Lower prices, more revenue',
-        say: 'The terms of trade fall to 140: each basket of exports buys less than at the peak.\n\n' +
-            'But far more is leaving port, so export revenue rises to 224. The terms of trade follow ' +
-            'prices. Revenue counts the volume as well.'
+        say: 'The terms of trade fall to 140, so each basket of exports buys less than at the peak.\n\n' +
+            'However, far more is leaving port, so export revenue rises to 224.\n\n' +
+            'The terms of trade depend only on prices, while export revenue also depends on volume.'
     },
     {
         focus: 'market',
         set: { demand: 175 },
         title: 'China slows down',
-        say: 'China finishes its biggest projects, and its mills need less ore. Demand eases, but it ' +
+        say: 'China finishes its biggest projects, and its mills need less iron ore. Demand eases, but it ' +
             'stays well above where it began.\n\n' +
-            'The demand curve shifts left, and the price falls to 120.'
+            'The demand curve shifts to the left, and the price falls to 120.'
     },
     {
         focus: 'trade',
         title: 'A new normal',
-        say: 'The terms of trade settle at 120: below the peak, but above where they began.\n\n' +
-            'That\'s what really happened. Australia\'s peaked in 2011, then fell by about a third, ' +
-            'and stayed above their 20th-century average.'
+        say: 'The terms of trade settle at 120, which is below the peak but above where they began.\n\n' +
+            'Australia\'s terms of trade followed the same pattern. They peaked in 2011, then fell by ' +
+            'about a third, and stayed above their 20th-century average.'
     },
     // The questions. Each starts from the baseline, whatever the student did
     // on the way, and the market stays at the front through all of them: two
@@ -200,12 +178,13 @@ export const TERMS_OF_TRADE_LESSON: LessonStep[] = [
         focus: 'market',
         set: { ...BASELINE },
         title: 'A cyclone hits Port Hedland',
-        say: 'A cyclone shuts Australia\'s biggest ore port for weeks, and ships can\'t load.\n\n' +
-            'Which one moves, and which way? Move it, then press Check.',
+        say: 'Suppose a cyclone shuts Australia\'s biggest iron ore port for weeks, and ships cannot ' +
+            'load.\n\n' +
+            'Which one moves, and which way? Move it on the diagram, then press Check.',
         ask: {
             param: 'supply', direction: 'down', among: EVERYTHING, illustrate: 20,
-            explain: 'Less can be shipped at every price, so supply decreases and the curve shifts ' +
-                'left. Export prices rise, and with import prices unchanged, so do the terms of trade.'
+            explain: 'Less can be shipped at every price, so supply decreases and the curve shifts to the ' +
+                'left. Export prices rise. Import prices have not changed, so the terms of trade rise.'
         }
     },
     // The event is the report's, beside the diagram, so the card asks the
@@ -218,20 +197,20 @@ export const TERMS_OF_TRADE_LESSON: LessonStep[] = [
             'Which one moves, and which way?',
         ask: {
             param: 'imports', direction: 'up', among: EVERYTHING, illustrate: 25,
-            explain: 'Australia buys those goods from overseas, so import prices rise. Export prices ' +
-                'haven\'t changed, so the same exports buy fewer imports: the terms of trade fall.'
+            explain: 'Australia buys these goods from overseas, so import prices rise. Export prices have ' +
+                'not changed, so the same exports buy fewer imports and the terms of trade fall.'
         }
     },
     {
         set: { ...BASELINE },
         title: 'India starts building',
-        say: 'India builds railways and ports at a record pace, and orders more Australian coal and ' +
-            'iron ore.\n\n' +
+        say: 'Suppose India builds railways and ports at a record pace, and orders more Australian coal ' +
+            'and iron ore.\n\n' +
             'Which one moves, and which way?',
         ask: {
             param: 'demand', direction: 'up', among: EVERYTHING, illustrate: 50,
-            explain: 'Buyers want more at every price, so demand increases and the curve shifts ' +
-                'right. Export prices rise, and with import prices unchanged, so do the terms of trade.'
+            explain: 'Buyers want more at every price, so demand increases and the curve shifts to the ' +
+                'right. Export prices rise. Import prices have not changed, so the terms of trade rise.'
         }
     },
     // Starts away from the baseline, because a ratio of 100 from 100 and 100
@@ -239,25 +218,25 @@ export const TERMS_OF_TRADE_LESSON: LessonStep[] = [
     {
         set: { demand: 125, supply: 100, imports: 100 },
         title: 'Prices catch up',
-        say: 'Export prices are at 120, so the terms of trade are too. Then the things Australia buys ' +
-            'get dearer, until the terms of trade are back at 100.\n\n' +
-            'Move it just as far as that takes, then press Check.',
+        say: 'Export prices are at 120, so the terms of trade are also at 120. Suppose the things Australia ' +
+            'buys then cost more, until the terms of trade are back at 100.\n\n' +
+            'Move it as far as this requires, then press Check.',
         ask: {
             param: 'imports', direction: 'up', target: 120, among: EVERYTHING,
-            explain: '120 ÷ 120 × 100 = 100. When export prices and import prices rise by the same ' +
-                'percentage, exports buy just what they did before.'
+            explain: 'The terms of trade are 120 ÷ 120 × 100 = 100. When export prices and import prices ' +
+                'rise by the same percentage, exports buy the same amount as before.'
         }
     },
     {
         set: { ...BASELINE },
         title: 'Over to you',
-        say: 'Here\'s how you went on the four cases.\n\n' +
-            'Press Finish to take this market to the Playground, where you can try more cases in ' +
-            'Scenarios or move the curves yourself.',
+        say: 'Here is how you went on the four cases.\n\n' +
+            'If you would like more practice, press Finish to open this market in the Playground. You ' +
+            'can try more cases in Scenarios, or move the curves yourself.',
         recap: {
-            takeaway: 'The terms of trade are export prices ÷ import prices × 100. They rise when ' +
-                'exports get dearer or imports cheaper, and the same exports buy more. High prices ' +
-                'bring new supply, so a boom fades.'
+            takeaway: 'The terms of trade are export prices divided by import prices, multiplied by 100. ' +
+                'They rise when export prices rise or import prices fall, because the same exports buy ' +
+                'more imports. High prices attract new supply, so a boom tends to fade.'
         }
     }
 ];

@@ -245,7 +245,7 @@ describe('Share', () => {
         expect(window.print).toHaveBeenCalled();
 
         const printed = screen.getByText('Moved from where the lesson puts it').parentElement!;
-        expect(printed.textContent).toContain('Step 7 of 9: Back to the start');
+        expect(printed.textContent).toContain('Step 7 of 9 · Back to the start');
         expect(printed.textContent).toContain('Revenue at the front');
         expect(printed.textContent).toContain('a 20.0 → 26.5');
         expect(scan(screen.getByRole('img', { name: /back to this view, for the printed page/ })))
@@ -296,7 +296,7 @@ describe('Share on a phone', () => {
             await menu(user);
             await user.click(item(/^Send with/));
             expect(sent).toHaveBeenCalledWith({
-                title: 'A market, and what it does to everything else',
+                title: 'Supply, demand and market equilibrium',
                 url: href('lessons/market')
             });
         } finally {

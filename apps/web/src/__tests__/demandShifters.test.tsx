@@ -75,9 +75,9 @@ describe('the cover', () => {
         expect(within(sheet).getByRole('heading', { name: /want more Air Jordans\?$/ })).toBeTruthy();
         const parts = within(within(sheet).getByRole('list')).getAllByRole('listitem');
         expect(parts.map(part => part.textContent)).toEqual([
-            '1 · Why demand slopes down5 steps',
+            '1 · Why demand slopes down6 steps',
             '2 · From you to the market3 steps',
-            '3 · PETPIG: what shifts demand8 steps',
+            '3 · What shifts demand (PETPIG)9 steps',
             '4 · Your turn4 questions'
         ]);
     });
@@ -124,7 +124,7 @@ describe('what each step says', () => {
         expect(chain()).toMatch(/Quantity demanded rises\s*200\s*→\s*250/);
         expect(chain()).not.toMatch(/shifts/);
 
-        await user.click(next());
+        await user.click(marker(at('A substitute gets cheaper') - 1));
         await user.click(next());
         expect(chain()).toMatch(/Demand for Air Jordans decreases\s*200\s*→\s*150/);
         expect(chain()).toMatch(/[Dd]emand shifts to the left/);
@@ -136,10 +136,10 @@ describe('what each step says', () => {
     it('leaves the student\'s own pairs where they were when the population grows', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(marker(at('T: tastes and preferences')));
+        await user.click(marker(at('Tastes and preferences')));
         const before = caption('you');
         await user.click(next());
-        expect(DEMAND_LESSON[at('P: population') - 1].say).toContain('Your own points don\'t move');
+        expect(DEMAND_LESSON[at('Population') - 1].say).toContain('Your own points don\'t move');
         expect(caption('market')).toContain('Quantity demanded 250');
         expect(caption('you')).toBe(before);
     });
@@ -156,7 +156,7 @@ describe('the stage', () => {
         expect(role('you')).toBe('focal');
         expect(chrome('market')).toBeNull();
 
-        await user.click(marker(at('Nike sets the price')));
+        await user.click(marker(at('The law of demand')));
         await user.click(next());
         expect(role('market')).toBe('focal');
         expect(role('you')).toBe('rail');

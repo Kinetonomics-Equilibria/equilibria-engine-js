@@ -51,7 +51,7 @@ export function StoryCard({
                         />
                         <ActionRow
                             label="Open in the Playground"
-                            description="The market as this news left it, yours to move."
+                            description="This opens the market as this news left it, and you can move it yourself."
                             href={playground}
                             onPress={onOpenPlayground}
                         />

@@ -91,13 +91,13 @@ const SCENARIOS: Scenario[] = [
     {
         id: 'input-costs',
         label: 'Input costs rise',
-        description: 'Production gets dearer, so sellers need more to supply the same quantity.',
+        description: 'Production costs more, so sellers need a higher price to supply the same quantity.',
         params: { c: 6 }
     },
     {
         id: 'both',
         label: 'Boom and cost squeeze',
-        description: 'Both at once — the quantity effects work against each other.',
+        description: 'Demand and costs both rise, so their effects on the quantity work against each other.',
         params: { a: 26, c: 6 }
     },
     {
@@ -110,16 +110,17 @@ const SCENARIOS: Scenario[] = [
 export const SUPPLY_AND_DEMAND: StudyContent = defineLesson({
     id: 'market',
     label: 'Supply and demand',
-    title: 'A market, and what it does to everything else',
+    title: 'Supply, demand and market equilibrium',
     goals: [
         'How demand and supply set a price',
         'What changes when demand rises',
-        'One change to work out yourself'
+        'How to apply this to one change in the market'
     ],
     cover: {
         question: 'Why do prices go up and down?',
-        hook: 'Nobody sets most prices. They settle where what buyers want meets what sellers ' +
-            'will sell, and when either side changes the price moves, and with it who gains.'
+        hook: 'Most prices are not set by any one person. They are the result of buyers and sellers ' +
+            'trading in a market. In this lesson we look at how demand and supply set a price, and at ' +
+            'what happens when demand changes.'
     },
     steps: MARKET_LESSON,
 
@@ -145,9 +146,9 @@ export const SUPPLY_AND_DEMAND: StudyContent = defineLesson({
         // `c` raise the price and leave the quantity, and so consumer surplus,
         // where they were; and raising `c` alone shrinks what buyers gain.
         explorePrompts: [
-            'Raise sellers\' costs (c). Which way do the price and the quantity sold go?',
-            'Raise a and c by the same amount. What changes, and what stays the same?',
-            'Make buyers gain less without touching demand.'
+            'If sellers\' costs (c) rise, which way do the price and the quantity sold move?',
+            'What changes when a and c rise by the same amount, and what stays the same?',
+            'How can buyers gain less without any change in demand?'
         ],
         // The letters stay on the sliders, as on the formulas; the sentence
         // under each says which curve it is and which way is which, since
@@ -159,7 +160,7 @@ export const SUPPLY_AND_DEMAND: StudyContent = defineLesson({
         // which.
         paramWords: {
             a: {
-                about: 'Where demand meets the price axis. Higher means buyers want more at every price.',
+                about: 'Where demand meets the price axis. A higher value means buyers want more at every price.',
                 rise: 'Demand increases',
                 fall: 'Demand decreases',
                 curve: 'demand',
@@ -174,7 +175,7 @@ export const SUPPLY_AND_DEMAND: StudyContent = defineLesson({
                 }
             },
             c: {
-                about: 'Where supply meets the price axis. Higher means each unit costs sellers more.',
+                about: 'Where supply meets the price axis. A higher value means each unit costs sellers more.',
                 rise: 'Sellers\' costs rise',
                 fall: 'Sellers\' costs fall',
                 curve: 'supply',

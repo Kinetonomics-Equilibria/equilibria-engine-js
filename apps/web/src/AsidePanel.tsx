@@ -52,7 +52,7 @@ export function AsidePanel({ aside, picture, source, panel, style }: AsidePanelP
                 <p className={classes.body}>{aside.body}</p>
                 {source ? (
                     <p className={classes.source}>
-                        Source: {reads ? (
+                        Source · {reads ? (
                             <a href={source.href} target="_blank" rel="noopener noreferrer">{source.outlet}</a>
                         ) : source.outlet}
                     </p>

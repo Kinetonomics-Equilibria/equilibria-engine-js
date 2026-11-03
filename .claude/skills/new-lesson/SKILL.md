@@ -20,6 +20,9 @@ in its order. This skill is the short form.
 
 - Read `docs/lesson-authoring.md`, then each section of `docs/design.md` and
   `docs/chart-design.md` it points to as you reach that step, as `CLAUDE.md` asks.
+- Read `docs/language.md` in full before writing any words. Write beside the student, in the
+  order things happen, in full sentences, and with no colons. The lesson's title is the
+  economics, and the example goes on the cover.
 - The students are Year 10 to first-year, mostly in Australia: Australian examples, `$` for
   Australian dollars, the RBA rather than the Fed.
 - Pick a topic and an example a student has lived: the Air Jordans, plane tickets to
@@ -36,7 +39,8 @@ in its order. This skill is the short form.
    rule broken on purpose says so in `breaksRule`.
 4. The steps (`steps.ts`): one idea each. Find a step with `stepTitled`, never `findIndex`.
 5. The words (`index.ts`): the lesson's, and the model's `narratedCalcs`, `paramWords`,
-   `scenarios` and the rest.
+   `scenarios` and the rest. Each key term comes from `GLOSSARY` in
+   `apps/web/src/lessons/glossary.ts`, and a new one is added there.
 6. The questions: from the baseline, offering every curve that could move, naming none.
 7. List it in `CURRICULUM` (`apps/web/src/lessons/index.ts`), add its model's id to
    `MODELS` in `apps/web/tests/chart.spec.ts`, and write `<name>.test.tsx` holding every

@@ -162,10 +162,10 @@ export function verdictFor(
             // than teaching, so the wrong-direction case just states the answer
             // and lets the reveal do the work.
             magnitude = grade.missBy! < 0
-                ? `Not quite far enough: you stopped at ${show(committed)}, ` +
+                ? `That's not quite far enough. You stopped at ${show(committed)}, ` +
                   `and it goes to ${show(question.target)}.`
-                : `A bit too far: you went to ${show(committed)}, ` +
-                  `and it only goes to ${show(question.target)}.`;
+                : `That's a bit too far. You went to ${show(committed)}, ` +
+                  `and it goes to ${show(question.target)}.`;
         } else {
             magnitude = `It goes to ${show(question.target)}.`;
         }

@@ -65,16 +65,16 @@ describe('the lesson speaks on its card, and "What changed" reports the numbers'
         expect(words()).toContain('In this lesson');
         expect(screen.getByRole('button', { name: 'Start lesson' })).toBeTruthy();
         expect(narration().getAttribute('data-kind')).toBe('rest');
-        expect(narration().textContent).toContain('Start the lesson');
+        expect(narration().textContent).toContain('once the lesson starts');
     });
 
     it('shows a step\'s words on the card when the step fires', async () => {
         mount();
         await userEvent.setup().click(marker(1));
 
-        expect(within(card()).getByRole('heading', { name: 'Demand: what buyers want' })).toBeTruthy();
+        expect(within(card()).getByRole('heading', { name: 'The demand curve' })).toBeTruthy();
         // And not in "What changed", which carries no lesson's words.
-        expect(narration().textContent).not.toContain('Demand: what buyers want');
+        expect(narration().textContent).not.toContain('The demand curve');
     });
 
     /**

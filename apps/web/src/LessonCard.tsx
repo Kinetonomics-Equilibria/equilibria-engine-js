@@ -20,7 +20,7 @@ import classes from './LessonCard.module.css';
  * every step had to fit in about 110 characters, came out clipped, and gave way
  * to anything the student did, a curve hitting the end of its range included.
  * The column's width is fixed and its height is its own, so here a step can
- * take two short paragraphs and a key term without moving the diagram at all,
+ * take a few short paragraphs and a key term without moving the diagram at all,
  * and nothing the student does takes it off the screen.
  *
  * The lesson is chunked twice. Each step is one idea, and the steps are grouped
@@ -78,20 +78,27 @@ export interface LessonCardProps {
     onFinish?(): void;
 }
 
-/** A step's words, a paragraph per blank line. */
-function paragraphs(say: string): string[] {
-    return say.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 0);
+/**
+ * A step's words, a block per blank line: a paragraph, or a list where every
+ * line of the block starts "- ". A list steps out a run of items or the stages
+ * of a sum, which read better apart than strung along a sentence.
+ */
+function blocks(say: string): (string | string[])[] {
+    return say.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 0).map(block => {
+        const lines = block.split('\n').map(line => line.trim());
+        return lines.every(line => line.indexOf('- ') === 0) ? lines.map(line => line.slice(2)) : block;
+    });
 }
 
 /**
  * What a marker is called: the step's number and its title.
  *
- * The title rather than its words, which are two paragraphs now and would be a
- * long thing to hear on every marker a screen reader passes.
+ * The title rather than its words, which are a few paragraphs now and would be
+ * a long thing to hear on every marker a screen reader passes.
  */
 function markerName(step: LessonStep, position: number, total: number): string {
     const title = step.title || (step.ask ? 'A question' : '');
-    return title ? `Step ${position} of ${total}: ${title}` : `Step ${position} of ${total}`;
+    return title ? `Step ${position} of ${total} · ${title}` : `Step ${position} of ${total}`;
 }
 
 export function LessonCard({
@@ -197,8 +204,12 @@ export function LessonCard({
                                 {step.title ? (
                                     <Title order={3} className={classes.title}>{step.title}</Title>
                                 ) : null}
-                                {step.say ? paragraphs(step.say).map((p, i) => (
-                                    <p key={i} className={classes.para}>{p}</p>
+                                {step.say ? blocks(step.say).map((block, i) => (
+                                    typeof block === 'string'
+                                        ? <p key={i} className={classes.para}>{block}</p>
+                                        : <ul key={i} className={classes.list}>
+                                            {block.map(item => <li key={item}>{item}</li>)}
+                                        </ul>
                                 )) : null}
                                 {step.term ? (
                                     <div className={classes.term}>
@@ -211,7 +222,7 @@ export function LessonCard({
                         ) : (
                             <>
                                 <Title order={3} className={classes.title}>In this lesson</Title>
-                                <ul className={classes.goals}>
+                                <ul className={classes.list}>
                                     {goals.map(goal => <li key={goal}>{goal}</li>)}
                                 </ul>
                             </>

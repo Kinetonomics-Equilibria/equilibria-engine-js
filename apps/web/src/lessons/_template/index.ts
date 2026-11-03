@@ -20,16 +20,16 @@ import { CALCS, PANELS, PARAMS } from './chart';
 export const TEMPLATE: StudyContent = defineLesson({
     id: '_template',
     label: 'A template',
-    title: 'Strawberries at a farmers\' market',
+    title: 'The market for strawberries',
     goals: [
         'Who buys strawberries, and who grows them',
         'How the price of a punnet is set',
-        'One change to work out yourself'
+        'How to apply this to one change in the market'
     ],
     cover: {
-        question: 'Why are strawberries dear some weeks?',
-        hook: 'At a farmers\' market nobody sets the price of a punnet. It settles where what ' +
-            'shoppers want meets what growers bring, and it moves when either changes.'
+        question: 'Why do strawberries cost more in some weeks?',
+        hook: 'No single person sets the price of a punnet at a farmers\' market. In this lesson we look ' +
+            'at how shoppers and growers together set the price, and at why the price changes.'
     },
     steps: TEMPLATE_LESSON,
     model: {
@@ -55,8 +55,8 @@ export const TEMPLATE: StudyContent = defineLesson({
         },
         // Each answerable with the two sliders.
         explorePrompts: [
-            'Make a punnet cost $6. Which curve did you move, and which way?',
-            'Raise demand and supply by the same amount. What happens to the price?'
+            'What would make a punnet cost $6? Which curve moves, and which way?',
+            'What happens to the price when demand and supply rise by the same amount?'
         ],
         paramWords: {
             demand: {
@@ -88,7 +88,7 @@ export const TEMPLATE: StudyContent = defineLesson({
             {
                 id: 'hail',
                 label: 'Hail hits the crop',
-                description: 'Growers bring fewer punnets at every price: supply decreases.',
+                description: 'Growers bring fewer punnets at every price, so supply decreases.',
                 params: { supply: 40 }
             },
             { id: 'baseline', label: 'Back to $5.00 a punnet', params: { ...BASELINE } }

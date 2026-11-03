@@ -36,7 +36,7 @@ describe('The title line', () => {
     it('names the lesson\'s topic over its title', () => {
         mount();
         expect(heading().firstElementChild!.textContent).toBe('International economics');
-        expect(heading().lastElementChild!.textContent).toBe('The Australian dollar, and what moves it');
+        expect(heading().lastElementChild!.textContent).toBe('The Australian dollar exchange rate');
     });
 
     it('is the title alone for a lesson no topic lists', () => {

@@ -84,8 +84,8 @@ describe('the cover', () => {
         expect(within(sheet).getByRole('heading', { name: /less of another\?$/ })).toBeTruthy();
         const parts = within(within(sheet).getByRole('list')).getAllByRole('listitem');
         expect(parts.map(part => part.textContent)).toEqual([
-            '1 · What the café can make5 steps',
-            '2 · What each choice costs5 steps',
+            '1 · What the café can make6 steps',
+            '2 · What each choice costs6 steps',
             '3 · What the curve assumes5 steps',
             '4 · Your turn4 questions'
         ]);
@@ -98,8 +98,9 @@ describe('what each step says it costs', () => {
     const COSTS: Record<string, string> = {
         'Twenty more toasties': '2.0',
         'The cost of one toastie': '2.0',
+        'Moving A and B': '2.0',
         'The first toasties are cheap': '0.2',
-        'The last toasties are dear': '6.0',
+        'The last toasties are expensive': '6.0',
         'If everyone were equally good': '2.0',
         'Every model simplifies': '2.0'
     };
@@ -109,6 +110,7 @@ describe('what each step says it costs', () => {
         'Inside the curve': 'Z · inefficient',
         'On the curve': 'Z · efficient',
         'Outside the curve': 'Z · unattainable',
+        'Moving point Z': 'Z · unattainable',
         'Full employment': 'Z · inefficient'
     };
 
@@ -125,9 +127,9 @@ describe('what each step says it costs', () => {
                 expect(labels(), where).toContain(`1 more toastie costs ${COSTS[step.title!]} coffees`);
             }
 
-            // "A: 60 toasties and 160 coffees", and B the same.
-            const a = /A: (\d+) toasties and (\d+) coffees/.exec(said),
-                b = /B: (\d+) toasties and (\d+) coffees/.exec(said);
+            // "point A, which is 60 toasties and 160 coffees", and B the same.
+            const a = /point A, which is (\d+) toasties and (\d+) coffees/.exec(said),
+                b = /point B, which is (\d+) toasties and (\d+) coffees/.exec(said);
             if (a && b) {
                 expect(labels(), where).toContain(`A (${a[1]}, ${a[2]}) → B (${b[1]}, ${b[2]})`);
             }
@@ -167,7 +169,7 @@ describe('what each step says it costs', () => {
         await user.click(next());
         expect(chain()).toMatch(/Toasties at Z\s*60\s*→\s*100/);
 
-        await user.click(next());
+        await user.click(marker(at('Twenty more toasties')));
         expect(chain()).not.toContain('Toasties at Z');
     });
 });

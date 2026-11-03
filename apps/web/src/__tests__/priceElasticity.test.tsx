@@ -80,7 +80,7 @@ describe('the cover', () => {
     it('asks its question, and shows its parts as the track will draw them', () => {
         mount();
         const sheet = screen.getByRole('region', { name: 'About this lesson' });
-        expect(within(sheet).getByRole('heading', { name: /bring the canteen more money\?$/ })).toBeTruthy();
+        expect(within(sheet).getByRole('heading', { name: /bring in more money\?$/ })).toBeTruthy();
         const parts = within(within(sheet).getByRole('list')).getAllByRole('listitem');
         expect(parts.map(part => part.textContent)).toEqual([
             '1 · How much buyers respond5 steps',
@@ -110,8 +110,8 @@ describe('what each step says', () => {
             unmoved.forEach(n => expect(sold && sold.was, where).toBe(n));
             unmoved = [];
 
-            // "students buy 210 a day", "it sells just 140 a day".
-            (said.match(/(?<![\d.$])\d+(?= a day)/g) || []).forEach(n => {
+            // "students buy 210 a day", "sells only 140 rolls a day".
+            (said.match(/(?<![\d.$])\d+(?= (?:rolls )?a day)/g) || []).forEach(n => {
                 if (sold) expect(sold.is, where).toBe(n);
                 else unmoved.push(n);
             });
@@ -240,7 +240,7 @@ describe('the questions', () => {
         expect(verdict()).toContain('Correct');
         expect(verdict()).toContain('You moved the price down, which is the right direction.');
         const explain = ELASTICITY_LESSON[at('More money, with the bakery open') - 1].ask!.explain!;
-        expect(explain).toContain('at $4.00 the canteen sells 245 a day and takes $980.00');
+        expect(explain).toContain('at $4.00 the canteen sells 245 a day and earns $980.00');
         expect(caption('revenue')).toContain('Revenue$980.00');
         expect(now(/Quantity demanded (?:rises|falls)/)!.is).toBe('245');
     });
@@ -273,7 +273,7 @@ describe('the questions', () => {
         await user.click(screen.getByRole('button', { name: 'Check' }));
         expect(verdict()).toContain('Correct');
         const explain = ELASTICITY_LESSON[at('More money, with no bakery') - 1].ask!.explain!;
-        expect(explain).toContain('at $5.50 the canteen sells 190 a day and takes $100.00 more');
+        expect(explain).toContain('at $5.50 the canteen sells 190 a day and earns $100.00 more');
         expect(caption('revenue')).toContain('Revenue$1045.00');
         expect(now(/Quantity demanded (?:rises|falls)/)!.is).toBe('190');
     });

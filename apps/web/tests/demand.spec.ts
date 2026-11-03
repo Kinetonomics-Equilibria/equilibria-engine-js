@@ -37,7 +37,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('opens the Air Jordans lesson from its address, without an error', async ({ page, pageErrors }) => {
-    await expect(page.getByRole('heading', { name: 'Air Jordans, and what shifts demand' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Demand and its determinants' })).toBeVisible();
     await page.getByRole('button', { name: 'Start lesson' }).click();
     await expect(page.getByText('Your first pair', { exact: true })).toBeVisible();
     expect(pageErrors).toEqual([]);

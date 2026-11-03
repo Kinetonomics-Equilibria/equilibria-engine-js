@@ -97,31 +97,31 @@ const SCENARIOS: Scenario[] = [
     {
         id: 'sick',
         label: 'Two staff call in sick',
-        description: '8 hours of work gone, 12 left. Fewer resources shift the whole curve inward.',
+        description: 'The café loses 8 hours of work, which leaves 12. Fewer resources shift the whole curve inward.',
         params: { h: 12 }
     },
     {
         id: 'espresso',
         label: 'A faster espresso machine',
-        description: '15 coffees an hour instead of 10. The curve pivots up the coffee axis.',
+        description: 'The machine makes 15 coffees an hour instead of 10, so the curve pivots up the coffee axis.',
         params: { C: 15 }
     },
     {
         id: 'press',
         label: 'A bigger sandwich press',
-        description: '7.5 toasties an hour instead of 5. The curve pivots out along the toastie axis.',
+        description: 'The press makes 7.5 toasties an hour instead of 5, so the curve pivots out along the toastie axis.',
         params: { T: 7.5 }
     },
     {
         id: 'ordering-app',
         label: 'Customers order on an app',
-        description: 'Nobody has to take orders at the counter, so every hour makes more of both. The whole curve shifts outward.',
+        description: 'Staff no longer take orders at the counter, so every hour makes more of both goods. The whole curve shifts outward.',
         params: { C: 12, T: 6 }
     },
     {
         id: 'equally-good',
         label: 'Everyone equally good at both',
-        description: 'A straight-line PPC: every toastie costs 2 coffees, wherever the café is on it.',
+        description: 'The PPC becomes a straight line, and every toastie costs 2 coffees wherever the café is on it.',
         params: { k: 1 }
     },
     {
@@ -157,9 +157,9 @@ const MODEL: ModelSpec = {
     // of the curve; B left of A, where the cost is a coffee's, in toasties;
     // and specialisation at 1.
     explorePrompts: [
-        'Put A and B where each extra toastie costs less than 1 coffee. Which end of the curve are they at?',
-        'Drag B to the left of A. What does each extra coffee cost, in toasties?',
-        'Make every toastie cost the same number of coffees, wherever A and B are.'
+        'Where do A and B need to be for each extra toastie to cost less than 1 coffee? Which end of the curve is that?',
+        'If B is to the left of A, what does each extra coffee cost in toasties?',
+        'How can every toastie cost the same number of coffees, wherever A and B are?'
     ],
     // The three things the curve is built from are blue, as the curve is; A
     // and B are orange, as their points and the step between them are; Z is
@@ -216,8 +216,8 @@ const MODEL: ModelSpec = {
         },
         a: { about: 'Point A, on the curve. Drag it along the curve, or move it here.', curve: 'choice' },
         b: { about: 'Point B, on the curve. Drag it along the curve, or move it here.', curve: 'choice' },
-        pt: { about: 'Point Z can go anywhere: inside the curve, on it or outside.', curve: 'combination' },
-        pc: { about: 'Point Z can go anywhere: inside the curve, on it or outside.', curve: 'combination' }
+        pt: { about: 'Point Z can go anywhere, including inside the curve, on it or outside it.', curve: 'combination' },
+        pc: { about: 'Point Z can go anywhere, including inside the curve, on it or outside it.', curve: 'combination' }
     },
     scenarios: SCENARIOS
 };
@@ -225,17 +225,17 @@ const MODEL: ModelSpec = {
 export const PRODUCTION_POSSIBILITIES: StudyContent = defineLesson({
     id: 'ppc',
     label: 'Production possibilities',
-    title: 'What a café can make, and what each choice costs',
+    title: 'The production possibility curve',
     goals: [
         'What a café can make with the staff and time it has',
-        'What one more toastie really costs',
+        'How to measure the opportunity cost of one more toastie',
         'What the curve assumes, and what moves it'
     ],
     cover: {
         question: 'Why does more of one thing mean less of another?',
-        hook: 'A café has five staff, four hours and one espresso machine for the Saturday rush. ' +
-            'Every hour spent toasting is an hour not spent making coffee. Follow that trade-off ' +
-            'and you can work out what every choice really costs.',
+        hook: 'A café has five staff, four hours and one espresso machine for the Saturday rush. Every ' +
+            'hour spent making toasties is an hour that cannot be spent making coffee. In this lesson we ' +
+            'use a diagram to show the café\'s choices and what each choice costs.',
         picture: 'cover'
     },
     pictures: {
@@ -250,7 +250,7 @@ export const PRODUCTION_POSSIBILITIES: StudyContent = defineLesson({
             src: crewPicture,
             still: crewStill,
             alt: 'Five staff behind a café counter, with one espresso machine, one sandwich press ' +
-                'and a clock reading 7 to 11: everything the café has to make coffees and toasties with.'
+                'and a clock reading 7 to 11. This is everything the café has to make coffees and toasties.'
         }
     },
     asides: {

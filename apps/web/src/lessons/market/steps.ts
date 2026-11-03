@@ -1,4 +1,5 @@
 import type { LessonStep } from '../../track/track';
+import { GLOSSARY } from '../glossary';
 
 /**
  * The lesson, in order (P10).
@@ -22,78 +23,61 @@ import type { LessonStep } from '../../track/track';
  */
 export const MARKET_LESSON: LessonStep[] = [
     {
-        part: 'Meet the market',
+        part: 'Demand, supply and equilibrium',
         reveal: ['demand_market'],
-        title: 'Demand: what buyers want',
-        say: 'The demand curve, D, shows how much of something buyers want at each price.\n\n' +
-            'It slopes down. When the price goes up, people buy less, and when it comes down, ' +
+        title: 'The demand curve',
+        say: 'The demand curve, labelled D, shows how much of a good buyers want at each price.\n\n' +
+            'The curve slopes down. When the price rises, people buy less, and when the price falls, ' +
             'they buy more.',
-        term: {
-            word: 'Demand',
-            meaning: 'How much buyers are willing and able to buy at each price.'
-        }
+        term: GLOSSARY.demand
     },
     {
         reveal: ['supply_market'],
-        title: 'Supply: what sellers offer',
-        say: 'The supply curve, S, shows how much sellers want to sell at each price.\n\n' +
-            'It slopes up. A higher price makes it worth producing more.',
-        term: {
-            word: 'Supply',
-            meaning: 'How much sellers are willing and able to sell at each price.'
-        }
+        title: 'The supply curve',
+        say: 'The supply curve, labelled S, shows how much of a good sellers want to sell at each ' +
+            'price.\n\n' +
+            'The curve slopes up, because a higher price makes it worthwhile to produce more.',
+        term: GLOSSARY.supply
     },
     {
         reveal: ['equilibrium_market'],
-        title: 'Where they meet',
-        say: 'Where the curves cross, the amount buyers want is exactly the amount sellers ' +
-            'offer. Nothing is left over, and nobody who will pay that price misses out.\n\n' +
-            'That point gives one price, P*, and one quantity, Q*.',
-        term: {
-            word: 'Equilibrium',
-            meaning: 'The price and quantity where demand equals supply.'
-        }
+        title: 'Market equilibrium',
+        say: 'At the point where the curves cross, the amount buyers want equals the amount sellers ' +
+            'offer. Nothing is left over, and every buyer willing to pay this price can buy the ' +
+            'good.\n\n' +
+            'This point gives one price, labelled P*, and one quantity, labelled Q*.',
+        term: GLOSSARY.equilibrium
     },
     {
         part: 'When demand changes',
         reveal: ['surplus'],
         title: 'What buyers gain',
-        say: 'Lots of buyers would have paid more than the market price. The shaded area adds ' +
-            'up that extra value, for every buyer.\n\n' +
-            'It\'s the same market, shown a second way.',
-        term: {
-            word: 'Consumer surplus',
-            meaning: 'The difference between what buyers would be willing to pay and what they ' +
-                'actually pay.'
-        }
+        say: 'Many buyers would have paid more than the market price. The shaded area adds up this ' +
+            'extra value for every buyer, and it is called consumer surplus.\n\n' +
+            'This panel shows the same market in a second way.',
+        term: GLOSSARY.consumerSurplus
     },
     {
         set: { a: 26 },
         title: 'Incomes rise',
-        say: 'Say people\'s incomes rise. Buyers can afford more, so they want more at every ' +
+        say: 'Suppose people\'s incomes rise. Buyers can afford more, so they want more at every ' +
             'price, and the whole demand curve shifts to the right.\n\n' +
-            'Watch the price, the quantity and the shaded area all change together.',
-        term: {
-            word: 'Increase in demand',
-            meaning: 'Buyers want more at every price, so the demand curve shifts right.'
-        }
+            'Notice that the price, the quantity and the shaded area all change at the same time.',
+        term: GLOSSARY.increaseInDemand
     },
     {
         reveal: ['revenue'],
         title: 'What sellers earn',
-        say: 'The new panel shows the money that changes hands: the price times the quantity ' +
+        say: 'The new panel shows total revenue, which is the price multiplied by the quantity ' +
             'sold.\n\n' +
-            'When demand rises, sellers sell more, at a higher price, so their revenue goes up. ' +
-            'Move demand yourself and watch revenue follow it.',
+            'When demand rises, sellers sell more at a higher price, so their revenue increases.\n\n' +
+            'You can move the demand curve below to see how revenue changes.',
         // The one "see what happens" step: a slider on the card, since the
         // lesson has no instruments beside it. Safe to hand over here because
         // the step after it sets both params, so wherever the student leaves
         // demand, "back to the start" is where the market goes.
         try: [{ param: 'a', label: 'Demand' }],
-        term: {
-            word: 'Total revenue',
-            meaning: 'Price × quantity: everything buyers spend, and sellers receive.'
-        }
+        term: GLOSSARY.totalRevenue
     },
     // "Where we started" is both params, not just the one the lesson moved.
     // Setting `a` alone made this step false for any student who had moved
@@ -114,8 +98,8 @@ export const MARKET_LESSON: LessonStep[] = [
     {
         set: { a: 20, c: 2 },
         title: 'Back to the start',
-        say: 'Incomes settle back, and the market returns to where it began.\n\n' +
-            'All three panels are on screen now: the market, what buyers gain, and what ' +
+        say: 'Suppose incomes fall back to where they were. The market returns to where it began.\n\n' +
+            'All three panels are now on screen. They show the market, what buyers gain and what ' +
             'sellers earn.'
     },
     // The question the build-up was for (P11). It sets its own starting value
@@ -137,13 +121,13 @@ export const MARKET_LESSON: LessonStep[] = [
         part: 'Your turn',
         set: { a: 20, c: 2 },
         title: 'Incomes rise again',
-        say: 'Incomes rise again, by the same amount as before.\n\n' +
-            'Move the demand curve to where it goes, then press Check.',
+        say: 'Suppose incomes rise again, by the same amount as before.\n\n' +
+            'Move the demand curve to its new position, then press Check.',
         ask: {
             param: 'a', direction: 'up', target: 26, tolerance: 1,
-            explain: 'Higher incomes mean buyers want more at every price, so demand ' +
-                'increases and the curve shifts right — as far as it went last time, which ' +
-                'takes the price to $14.00.'
+            explain: 'Higher incomes mean buyers want more at every price, so demand increases and the ' +
+                'curve shifts to the right. It moves as far as it did last time, which takes the price ' +
+                'to $14.00.'
         }
     },
     // The lesson hands the market back where it found it, so Finish hands the
@@ -152,9 +136,9 @@ export const MARKET_LESSON: LessonStep[] = [
     {
         set: { a: 20, c: 2 },
         title: 'Over to you',
-        say: 'One shift in demand moved the price, the quantity, consumer surplus and revenue, ' +
-            'all at once.\n\n' +
-            'Press Finish and the market is yours in the Playground: drag the demand curve, ' +
-            'try a scenario, or see the maths behind each number.'
+        say: 'One shift in demand changed the price, the quantity, consumer surplus and revenue at the ' +
+            'same time.\n\n' +
+            'If you would like to explore further, press Finish to open this market in the Playground. ' +
+            'You can drag the demand curve, try a scenario or see the maths behind each number.'
     }
 ];

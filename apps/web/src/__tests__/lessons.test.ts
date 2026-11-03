@@ -77,19 +77,24 @@ const onGrid = (def: ParamDef, value: number) =>
 /**
  * How much a step may say: the chunking the lesson card is built for, held.
  *
- * One idea per step, said in a short title and at most two short paragraphs —
- * what happens, then what it means. The limits are generous for a sentence
- * and tight for a lecture: a paragraph of 220 characters is about six lines of
- * the card at its narrowest, 320px, and two of them, a title and a key term still
- * fit a laptop's column without scrolling. A step that needs more is two
- * steps. A title is read on the progress bar's markers as well as over the
- * words, so it is a few words, not a sentence.
+ * One idea per step, stepped out in a short title and a few short blocks, each
+ * a paragraph or a list: what happens, then what it means. The limits are
+ * generous for a sentence and tight for a lecture. A block of 200 characters is
+ * about five lines of the card at its narrowest, 320px. Three blocks are
+ * easier to read than two long ones, but the gaps take room, so the step as a
+ * whole is held as well. With a title and a key term it fits a laptop's column
+ * with little or no scrolling. A step that needs more is two steps. A title is
+ * read on the progress bar's markers as well as over the words, so it is a few
+ * words, not a sentence.
  */
 const TITLE_CHARACTERS = 40;
-const PARAGRAPHS = 2;
-const PARAGRAPH_CHARACTERS = 220;
+const BLOCKS = 3;
+const BLOCK_CHARACTERS = 200;
+const STEP_CHARACTERS = 480;
 /** An explanation is shown under a verdict, in a smaller box than the step's words. */
-const EXPLAIN_CHARACTERS = 200;
+const EXPLAIN_CHARACTERS = 240;
+/** A recap's rule and a cover's hook are each one paragraph, with the stage's width to sit in. */
+const SUMMARY_CHARACTERS = 280;
 /** Alt text is read in one breath by a screen reader: what the picture shows, not all of it. */
 const ALT_CHARACTERS = 250;
 /** A cover's question is its headline: one line at a laptop's stage width. */
@@ -177,13 +182,14 @@ describe.each([...LESSONS, TEMPLATE].map(lesson => [lesson.id, lesson] as const)
         });
     });
 
-    it('says one idea per step, in at most two short paragraphs', () => {
+    it('says one idea per step, in a few short blocks', () => {
         lesson.lesson.forEach((step, i) => {
-            const paragraphs = (step.say || '').split(/\n\s*\n/);
-            expect(paragraphs.length, `step ${i + 1}`).toBeLessThanOrEqual(PARAGRAPHS);
-            paragraphs.forEach(p => {
-                expect(p.length, `step ${i + 1}: "${p}"`).toBeLessThanOrEqual(PARAGRAPH_CHARACTERS);
+            const blocks = (step.say || '').split(/\n\s*\n/);
+            expect(blocks.length, `step ${i + 1}`).toBeLessThanOrEqual(BLOCKS);
+            blocks.forEach(p => {
+                expect(p.length, `step ${i + 1}: "${p}"`).toBeLessThanOrEqual(BLOCK_CHARACTERS);
             });
+            expect((step.say || '').length, `step ${i + 1}, "${step.title}"`).toBeLessThanOrEqual(STEP_CHARACTERS);
         });
     });
 
@@ -219,7 +225,7 @@ describe.each([...LESSONS, TEMPLATE].map(lesson => [lesson.id, lesson] as const)
             if (!step.recap) return;
             expect(lesson.lesson.slice(0, i).some(earlier => !!earlier.ask), `step ${i + 1} recaps nothing`)
                 .toBe(true);
-            expect(step.recap.takeaway.length, `step ${i + 1}'s takeaway`).toBeLessThanOrEqual(PARAGRAPH_CHARACTERS);
+            expect(step.recap.takeaway.length, `step ${i + 1}'s takeaway`).toBeLessThanOrEqual(SUMMARY_CHARACTERS);
             expect(step.ask || step.try || step.picture || step.reveal, `step ${i + 1} recaps and more`)
                 .toBeFalsy();
         });
@@ -231,7 +237,7 @@ describe.each([...LESSONS, TEMPLATE].map(lesson => [lesson.id, lesson] as const)
     });
 
     // The cover is read once, by someone deciding whether to start: a question
-    // on a line, and a paragraph no longer than one of a step's. It must not
+    // on a line, and one paragraph. It must not
     // say the lesson's title over again — the title is over the stage already,
     // and a heading containing it is a second heading by that name.
     it('asks its question on the cover in a line, and says why in a paragraph', () => {
@@ -241,7 +247,7 @@ describe.each([...LESSONS, TEMPLATE].map(lesson => [lesson.id, lesson] as const)
         expect(question.length, question).toBeLessThanOrEqual(COVER_QUESTION_CHARACTERS);
         expect(question.indexOf(lesson.title), question).toBe(-1);
         expect(hook.split(/\n\s*\n/).length, hook).toBe(1);
-        expect(hook.length, hook).toBeLessThanOrEqual(PARAGRAPH_CHARACTERS);
+        expect(hook.length, hook).toBeLessThanOrEqual(SUMMARY_CHARACTERS);
     });
 
     it('shows only pictures it has, and says what each one shows', () => {

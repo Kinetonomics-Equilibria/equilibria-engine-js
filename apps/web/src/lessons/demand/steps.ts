@@ -1,4 +1,5 @@
 import type { LessonStep } from '../../track/track';
+import { GLOSSARY } from '../glossary';
 
 /** Where the market starts, and where every question starts from. */
 export const BASELINE = { price: 300, demand: 200 };
@@ -7,10 +8,11 @@ export const BASELINE = { price: 300, demand: 200 };
  * The lesson, in four parts: why demand slopes down, from one buyer to the
  * market, PETPIG, and four news items for the student to work out.
  *
- * Written the way the other lessons are, for Year 10 to first-year students:
- * one idea per step, a short title that says it, a paragraph saying what
- * happens and, where it helps, one saying what it means. A word is defined
- * where it is first used, in a key-term box, and not again.
+ * Written the way the other lessons are, for Year 10 to first-year students,
+ * in the voice `docs/language.md` sets out: one idea per step, a short title
+ * that says it, and short paragraphs that say what happens and then what it
+ * means. A word is defined where it is first used, in a key-term box, and not
+ * again.
  *
  * Every number a step states is one the diagram solves to at that step, and
  * `demandShifters.test.tsx` holds them to it.
@@ -23,41 +25,37 @@ export const DEMAND_LESSON: LessonStep[] = [
         part: 'Why demand slopes down',
         reveal: ['pair1'],
         title: 'Your first pair',
-        say: 'Say you\'ve wanted a pair of Air Jordans for ages. What\'s the most you\'d pay for your ' +
-            'first pair this year? Say $400.\n\n' +
-            'That\'s what the first pair is worth to you, so it goes on the chart at 1 pair and $400.',
-        term: {
-            word: 'Utility',
-            meaning: 'The satisfaction you get from having or using something.'
-        }
+        say: 'Suppose you have wanted a pair of Air Jordans for a long time. The most you would pay for ' +
+            'your first pair this year is $400.\n\n' +
+            'Economists call the satisfaction you get from something its utility. Your first pair has a ' +
+            'lot of utility, so it is worth $400 to you.\n\n' +
+            'We can show this on the chart as a point at 1 pair and $400.',
+        term: GLOSSARY.utility
     },
     {
         reveal: ['pair2'],
         title: 'Your second pair',
-        say: 'Now a second pair. A spare is good to have, but it isn\'t as exciting as the first. ' +
-            'You\'d pay $300 for it, tops.\n\n' +
-            'The second pair adds less to your satisfaction than the first did.',
-        term: {
-            word: 'Marginal utility',
-            meaning: 'The extra satisfaction you get from one more of something.'
-        }
+        say: 'Now think about a second pair. A spare pair is useful, but it is not as exciting as the ' +
+            'first, so the most you would pay is $300.\n\n' +
+            'The second pair adds less to your satisfaction than the first pair did. The extra ' +
+            'satisfaction from one more pair is called marginal utility.',
+        term: GLOSSARY.marginalUtility
     },
     {
         reveal: ['pair3'],
         title: 'Your third pair',
-        say: 'A third pair? You\'d wear them, but not as often. They\'re worth $200 to you.\n\n' +
-            'Each pair adds less than the one before, so each is worth less to you.',
-        term: {
-            word: 'Diminishing marginal utility',
-            meaning: 'Each extra unit of something adds less satisfaction than the one before.'
-        }
+        say: 'You would wear a third pair less often, so it is worth only $200 to you.\n\n' +
+            'Notice the pattern. Each pair adds less satisfaction than the pair before it, so each pair ' +
+            'is worth less to you.',
+        term: GLOSSARY.diminishingMarginalUtility
     },
     {
         reveal: ['pair4'],
         title: 'Your fourth pair',
-        say: 'By the fourth pair you have more than you can wear: $100, tops.\n\n' +
-            'Every pair is worth $100 less than the last. The more pairs you have, the less one ' +
-            'more is worth, so your points step down.'
+        say: 'By the fourth pair, you have more shoes than you can wear, so the most you would pay is ' +
+            '$100.\n\n' +
+            'Each pair is worth $100 less than the one before. This is why your points step down the ' +
+            'chart as you buy more pairs.'
     },
     // The price arrives on the student's chart before there is a market to
     // put it on, so "how many would you buy?" is answered by counting points.
@@ -65,15 +63,18 @@ export const DEMAND_LESSON: LessonStep[] = [
         reveal: ['priceLine', 'priceSymbol'],
         set: { price: 300 },
         title: 'Nike sets the price',
-        say: 'Nike charges $300 a pair: the dotted line, P. Your first two pairs are worth at least ' +
-            'that to you, so you buy 2. Your third is worth only $200, so you don\'t buy it.\n\n' +
-            'Move the price and count how many pairs you\'d buy.',
+        say: 'Now let\'s add a price. Nike charges $300 a pair, which is shown by the dotted line ' +
+            'labelled P.\n\n' +
+            'Your first two pairs are worth at least $300 to you, so you buy 2. Your third pair is worth ' +
+            'only $200, so you don\'t buy it.'
+    },
+    {
+        title: 'The law of demand',
+        say: 'You can move the price below to count the pairs you would buy at each price.\n\n' +
+            'As the price falls, more pairs are worth buying, so you buy more. This pattern is called the ' +
+            'law of demand.',
         try: [{ param: 'price', label: 'Nike\'s price' }],
-        term: {
-            word: 'Law of demand',
-            meaning: 'When the price of something falls, people buy more of it. When it rises, they ' +
-                'buy less.'
-        }
+        term: GLOSSARY.lawOfDemand
     },
     {
         part: 'From you to the market',
@@ -83,13 +84,11 @@ export const DEMAND_LESSON: LessonStep[] = [
         focus: 'market',
         set: { ...BASELINE },
         title: 'Every fan in Australia',
-        say: 'You\'re one of about 100,000 Air Jordan fans in Australia, and each values a pair a ' +
-            'bit differently. Add up the pairs they\'d all buy at each price.\n\n' +
-            'All those points together make one smooth line: the market demand curve, D.',
-        term: {
-            word: 'Market demand',
-            meaning: 'How much all buyers together are willing and able to buy at each price.'
-        }
+        say: 'You are one of about 100,000 Air Jordan fans in Australia, and each fan values a pair a ' +
+            'little differently.\n\n' +
+            'If we add up the pairs that all fans would buy at each price, the points form one smooth ' +
+            'line. This line is the market demand curve, labelled D.',
+        term: GLOSSARY.marketDemand
     },
     // Draws the point on the market's curve, by its `show` rather than a
     // reveal: the step before revealed the market's panel, which reaches
@@ -97,25 +96,20 @@ export const DEMAND_LESSON: LessonStep[] = [
     // claiming one object.
     {
         title: 'Quantity demanded',
-        say: 'At Nike\'s price, P = $300, fans want 200,000 pairs a year. Read it off the bottom ' +
-            'axis, at Qd.\n\n' +
-            'One price gives one quantity: a single point on the curve.',
-        term: {
-            word: 'Quantity demanded',
-            meaning: 'How much buyers want to buy at one particular price.'
-        }
+        say: 'At Nike\'s price of $300, fans want 200,000 pairs a year. You can read this amount from the ' +
+            'bottom axis, where it is labelled Qd.\n\n' +
+            'Each price matches one quantity, so each price is a single point on the curve.',
+        term: GLOSSARY.quantityDemanded
     },
     {
         set: { price: 250 },
         title: 'Quantity demanded rises',
-        say: 'Say Nike cuts its price to $250. Fans want 250,000 pairs a year, and the point slides ' +
-            'down the curve from the faint one, where it was. The curve itself doesn\'t move.\n\n' +
-            'You still buy 2: your third pair is worth only $200.',
+        say: 'Suppose Nike cuts its price to $250. Fans now want 250,000 pairs a year.\n\n' +
+            'The point slides down the curve from the faint point, which shows where it was. The curve ' +
+            'itself does not move.\n\n' +
+            'You still buy 2, because your third pair is worth only $200.',
         try: [{ param: 'price', label: 'Nike\'s price' }],
-        term: {
-            word: 'Change in quantity demanded',
-            meaning: 'A move along the demand curve, because the good\'s own price changed.'
-        }
+        term: GLOSSARY.changeInQuantityDemanded
     },
     // The determinants in the order the acronym spells them. Each step moves
     // demand from where the step before left it, so the dashed curve is
@@ -123,90 +117,87 @@ export const DEMAND_LESSON: LessonStep[] = [
     // start rather than climbing off the chart. Each says of "fans" what it
     // says, never of "you": the student's chart stays put (see the top).
     {
-        part: 'PETPIG: what shifts demand',
+        part: 'What shifts demand (PETPIG)',
         set: { ...BASELINE },
         title: 'What shifts the whole curve',
-        say: 'Back at $300, change anything other than Nike\'s price and the whole demand curve ' +
-            'shifts. The six things that shift it spell PETPIG.\n\n' +
-            'Prices of related goods, Expectations, Tastes, Population, Income and Government policy.',
-        term: {
-            word: 'Change in demand',
-            meaning: 'The whole demand curve shifts, because something other than the good\'s own ' +
-                'price changed.'
-        }
+        say: 'Let\'s return to a price of $300. So far, only Nike\'s price has changed, which moves fans ' +
+            'along the curve.\n\n' +
+            'When something other than Nike\'s price changes, the whole demand curve can shift.',
+        term: GLOSSARY.changeInDemand
+    },
+    {
+        title: 'The six determinants of demand',
+        say: 'Economists call the factors that shift demand its determinants. There are six, and the ' +
+            'letters of PETPIG help us remember them.\n\n' +
+            '- Prices of related goods\n' +
+            '- Expectations\n' +
+            '- Tastes and preferences\n' +
+            '- Population\n' +
+            '- Income\n' +
+            '- Government policy'
     },
     {
         set: { demand: 150 },
-        title: 'P: a substitute gets cheaper',
-        say: 'Adidas puts its sneakers on sale. Fans could buy them instead of Jordans, and now ' +
-            'they\'re cheaper.\n\n' +
-            'So fans want fewer Jordans at every price. Demand decreases: the curve shifts left of ' +
-            'the dashed one, where it was, to 150,000 pairs at $300.',
-        term: {
-            word: 'Substitute',
-            meaning: 'A good bought instead of another, like Adidas sneakers instead of Air Jordans.'
-        }
+        title: 'A substitute gets cheaper',
+        say: 'The first P stands for prices of related goods. Suppose Adidas puts its sneakers on sale. ' +
+            'Fans could buy these instead of Jordans, and they now cost less.\n\n' +
+            'Fans want fewer Jordans at every price, so demand decreases.\n\n' +
+            'The curve shifts to the left of the dashed curve, which shows where it was. At $300, fans ' +
+            'now want 150,000 pairs.',
+        term: GLOSSARY.substitute
     },
     {
         set: { demand: 200 },
-        title: 'P: a complement gets cheaper',
-        say: 'Air Jordans began as basketball shoes. Say club basketball fees fall, so more people ' +
-            'sign up to play.\n\n' +
-            'Playing and the shoes go together, so fans want more Jordans at every price. Demand ' +
-            'increases: the curve shifts right.',
-        term: {
-            word: 'Complement',
-            meaning: 'A good used together with another, like basketball and basketball shoes.'
-        }
+        title: 'A complement gets cheaper',
+        say: 'A related good can also be something used together with Jordans. Air Jordans began as ' +
+            'basketball shoes, so suppose club basketball fees fall and more people sign up to play.\n\n' +
+            'Playing basketball and wearing the shoes go together, so fans want more Jordans at every ' +
+            'price. Demand increases and the curve shifts to the right.',
+        term: GLOSSARY.complement
     },
     {
         set: { demand: 150 },
-        title: 'E: expectations',
-        say: 'Fans hear that Air Jordans will be marked down in the Boxing Day sales, so many decide ' +
-            'to wait.\n\n' +
-            'They want fewer pairs now, at every price. Demand today decreases: the curve shifts left.',
-        term: {
-            word: 'Expectations',
-            meaning: 'What buyers think will happen later, such as a price rising or falling.'
-        }
+        title: 'Expectations',
+        say: 'E stands for expectations. Suppose fans hear that Air Jordans will be marked down in the ' +
+            'Boxing Day sales, so many of them decide to wait.\n\n' +
+            'Fans want fewer pairs today at every price. Demand today decreases and the curve shifts to ' +
+            'the left.',
+        term: GLOSSARY.consumerExpectations
     },
     {
         set: { demand: 200 },
-        title: 'T: tastes and preferences',
-        say: 'An NBA star wears a new pair of Jordans in the finals, and the clip goes viral.\n\n' +
-            'Suddenly Jordans are the shoe everyone wants. Demand increases: the curve shifts right.',
-        term: {
-            word: 'Tastes and preferences',
-            meaning: 'What buyers like, which changes with fashion, advertising and who\'s wearing what.'
-        }
+        title: 'Tastes and preferences',
+        say: 'T stands for tastes and preferences. Suppose an NBA star wears a new pair of Jordans in the ' +
+            'finals, and the clip is shared widely.\n\n' +
+            'More people now want Jordans at every price. Demand increases and the curve shifts to the ' +
+            'right.',
+        term: GLOSSARY.tastesAndPreferences
     },
     {
         set: { demand: 250 },
-        title: 'P: population',
-        say: 'Australia\'s population grows, with more teenagers and young adults: the people who buy ' +
-            'the most Jordans.\n\n' +
-            'More buyers want more pairs at every price, so demand increases. Your own points don\'t ' +
-            'move: there are just more fans.'
+        title: 'Population',
+        say: 'The second P stands for population. Suppose Australia\'s population grows, with more ' +
+            'teenagers and young adults, who are the people most likely to buy Jordans.\n\n' +
+            'More buyers want more pairs at every price, so demand increases.\n\n' +
+            'Your own points don\'t move, because you are still the same buyer. There are more fans in ' +
+            'the market.'
     },
     {
         set: { demand: 300 },
-        title: 'I: income',
-        say: 'Wages rise, and fans have more to spend. Air Jordans are a normal good: people buy more ' +
-            'of them as their income rises.\n\n' +
+        title: 'Income',
+        say: 'I stands for income. Suppose wages rise, so fans have more to spend. Air Jordans are a ' +
+            'normal good, which means people buy more of them as their income rises.\n\n' +
             'Demand increases again. At $300, fans now want 300,000 pairs a year.',
-        term: {
-            word: 'Normal good',
-            meaning: 'A good people buy more of when their income rises.'
-        }
+        term: GLOSSARY.normalGood
     },
     // Named and left, as the course does at this point: taxes and subsidies
     // need supply on the chart to say anything true about them.
     {
-        title: 'G: government policy',
-        say: 'The last letter, G, is for government policies, such as taxes and subsidies. They\'re a ' +
-            'lesson of their own, so we\'ll leave G there.\n\n' +
-            'Everything in PETPIG shifts the whole curve. A change in Nike\'s own price only moves ' +
-            'fans along it.'
+        title: 'Government policy',
+        say: 'G stands for government policy, such as taxes and subsidies. Government policy needs a ' +
+            'lesson of its own, so we will stop at this letter for now.\n\n' +
+            'To sum up, every factor in PETPIG shifts the whole demand curve. A change in Nike\'s own ' +
+            'price moves fans along the curve instead.'
     },
     // The questions. Each starts from the baseline, and each offers the price
     // and the curve, in that order every time: which one the news moves is
@@ -229,11 +220,11 @@ export const DEMAND_LESSON: LessonStep[] = [
         aside: 'wageNews',
         title: 'Junior wages rise',
         say: 'Read the news report next to the diagram.\n\n' +
-            'What moves, and which way? Move it, then press Check.',
+            'What moves, and which way? Move it on the diagram, then press Check.',
         ask: {
             param: 'demand', direction: 'up', among: ['price', 'demand'], illustrate: 50,
-            explain: 'Teenagers earn more, and Jordans are a normal good. So fans want more pairs at ' +
-                'every price: demand increases, and the curve shifts right.'
+            explain: 'Teenagers earn more, and Air Jordans are a normal good, so fans want more pairs ' +
+                'at every price. Demand increases and the curve shifts to the right.'
         }
     },
     {
@@ -243,8 +234,9 @@ export const DEMAND_LESSON: LessonStep[] = [
             'What moves, and which way?',
         ask: {
             param: 'price', direction: 'down', among: ['price', 'demand'], illustrate: 50,
-            explain: 'This is the price of Jordans themselves, so the curve stays put. Fans move ' +
-                'down along it to $250: quantity demanded rises, and demand doesn\'t change.'
+            explain: 'This is a change in the price of Jordans themselves, so the curve does not move. ' +
+                'Fans move down along the curve to $250. Quantity demanded rises, and demand does not ' +
+                'change.'
         }
     },
     {
@@ -254,8 +246,9 @@ export const DEMAND_LESSON: LessonStep[] = [
             'What moves, and which way?',
         ask: {
             param: 'demand', direction: 'down', among: ['price', 'demand'], illustrate: 50,
-            explain: 'A price fell, but not the price of Jordans. New Balance is a substitute, so fans ' +
-                'want fewer Jordans at every price: demand decreases, and the curve shifts left.'
+            explain: 'A price fell, but it was not the price of Jordans. New Balance sneakers are a ' +
+                'substitute, so fans want fewer Jordans at every price. Demand decreases and the curve ' +
+                'shifts to the left.'
         }
     },
     {
@@ -265,20 +258,20 @@ export const DEMAND_LESSON: LessonStep[] = [
             'What moves, and which way?',
         ask: {
             param: 'demand', direction: 'up', among: ['price', 'demand'], illustrate: 50,
-            explain: 'Today\'s price hasn\'t changed. Fans expect it to rise, so they buy now: demand ' +
-                'today increases, and the curve shifts right.'
+            explain: 'Today\'s price has not changed. Fans expect the price to rise, so they buy now. ' +
+                'Demand today increases and the curve shifts to the right.'
         }
     },
     {
         set: { ...BASELINE },
         title: 'Over to you',
-        say: 'Here\'s how you went on the four cases.\n\n' +
-            'Press Finish to take this market to the Playground, where you can try more cases in ' +
-            'Scenarios or move the price and the curve yourself.',
+        say: 'Here is how you went on the four cases.\n\n' +
+            'If you would like more practice, press Finish to open this market in the Playground. You ' +
+            'can try more cases in Scenarios, or move the price and the curve yourself.',
         recap: {
-            takeaway: 'A change in a good\'s own price moves buyers along its demand curve. Anything ' +
-                'else in PETPIG shifts the whole curve: right when buyers want more at every price, ' +
-                'left when they want less.'
+            takeaway: 'A change in a good\'s own price moves buyers along the demand curve. A change in ' +
+                'any factor in PETPIG shifts the whole curve, to the right when buyers want more at ' +
+                'every price and to the left when they want less.'
         }
     }
 ];

@@ -57,7 +57,7 @@ export interface ActionRowProps {
  * it, and an arrow, on one surface that is the whole button — a scenario, a
  * story's move, a way to another page.
  *
- * Named by its name alone, so it is "Iron ore prices soar, button" to a screen
+ * Named by its name alone, so it is "Iron ore prices rise sharply, button" to a screen
  * reader, with the reasoning read after as its description — the same order the
  * eye takes.
  */

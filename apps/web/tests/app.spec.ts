@@ -748,7 +748,7 @@ test('before the lesson begins, nothing offers a curve to drag', async ({ page }
     // lesson's card, and says what it is waiting for.
     await expect(page.getByRole('button', { name: 'Start lesson' })).toBeVisible();
     await expect(page.locator(STRIP)).toHaveAttribute('data-kind', 'rest');
-    await expect(page.locator(STRIP)).toContainText('Start the lesson, and what each step changes will show here.');
+    await expect(page.locator(STRIP)).toContainText('What each step changes will show here once the lesson starts.');
 
     // On a phone the strip holds its line under the stage whatever it says,
     // and says that instead.

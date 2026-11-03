@@ -75,9 +75,9 @@ describe('the cover', () => {
         expect(within(sheet).getByRole('heading', { name: /offer more seats\?$/ })).toBeTruthy();
         const parts = within(within(sheet).getByRole('list')).getAllByRole('listitem');
         expect(parts.map(part => part.textContent)).toEqual([
-            '1 · Why supply slopes up5 steps',
+            '1 · Why supply slopes up6 steps',
             '2 · From you to the market3 steps',
-            '3 · PEANUT: what shifts supply8 steps',
+            '3 · What shifts supply (PEANUT)9 steps',
             '4 · Your turn4 questions'
         ]);
     });
@@ -124,7 +124,7 @@ describe('what each step says', () => {
         expect(chain()).toMatch(/Quantity supplied rises\s*200\s*→\s*250/);
         expect(chain()).not.toMatch(/shifts/);
 
-        await user.click(next());
+        await user.click(marker(at('Prices of inputs') - 1));
         await user.click(next());
         expect(chain()).toMatch(/Supply of seats decreases\s*200\s*→\s*150/);
         expect(chain()).toMatch(/[Ss]upply shifts to the left/);
@@ -139,6 +139,7 @@ describe('what each step says', () => {
         await user.click(marker(at('What shifts the whole curve')));
         expect(caption('you')).toContain('Flights you run 3');
 
+        await user.click(marker(at('Prices of inputs') - 1));
         await user.click(next());
         expect(caption('you')).toContain('Flights you run 2');
         expect(chain()).toMatch(/You run fewer flights\s*3\s*→\s*2/);
@@ -149,10 +150,10 @@ describe('what each step says', () => {
     it('leaves the student\'s own flights where they were when a new airline joins', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(marker(at('A: a complement pays more')));
+        await user.click(marker(at('A complement pays more')));
         const before = caption('you');
         await user.click(next());
-        expect(SUPPLY_LESSON[at('N: number of sellers') - 1].say).toContain('Your own points don\'t move');
+        expect(SUPPLY_LESSON[at('Number of sellers') - 1].say).toContain('Your own points don\'t move');
         expect(caption('market')).toContain('Quantity supplied 250');
         expect(caption('you')).toBe(before);
     });
@@ -163,7 +164,7 @@ describe('what each step says', () => {
     it('lifts the curve by the tax', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(marker(at('U: upgraded technology')));
+        await user.click(marker(at('Upgraded technology')));
         expect(caption('you')).toContain('Flights you run 4');
         await user.click(next());
         expect(caption('market')).toContain('Quantity supplied 250');
@@ -175,7 +176,7 @@ describe('what each step says', () => {
     it('puts the student\'s flights back at their own costs for the questions', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(marker(at('T: taxes and subsidies')));
+        await user.click(marker(at('Taxes and subsidies')));
         await user.click(marker(FIRST_QUESTION));
         expect(caption('you')).toContain('Flights you run 3');
         press(row(), 'Supply of seats', 'ArrowLeft', 5);
@@ -194,7 +195,7 @@ describe('the stage', () => {
         expect(role('you')).toBe('focal');
         expect(chrome('market')).toBeNull();
 
-        await user.click(marker(at('The going fare')));
+        await user.click(marker(at('The law of supply')));
         await user.click(next());
         expect(role('market')).toBe('focal');
         expect(role('you')).toBe('rail');

@@ -29,7 +29,7 @@ export const WRITTEN: Story[] = [
         model: AUD_MARKET,
         move: { demand: 40 },
         reasoning: 'China\'s steel mills pay less for Australian iron ore, so fewer AUD are bought to pay ' +
-            'for it: demand for AUD falls.'
+            'for it. Demand for AUD falls.'
     },
     {
         id: '2026-09-rba-cash-rate',
@@ -44,7 +44,7 @@ export const WRITTEN: Story[] = [
         model: AUD_MARKET,
         move: { demand: 60 },
         reasoning: 'Higher interest rates here draw investors overseas into Australian bonds, which they ' +
-            'buy with AUD: demand for AUD rises.'
+            'buy with AUD. Demand for AUD rises.'
     },
     {
         id: '2026-09-us-fed-rate',
@@ -58,8 +58,8 @@ export const WRITTEN: Story[] = [
         },
         model: AUD_MARKET,
         move: { supply: 60 },
-        reasoning: 'Higher US rates draw Australian savers into US bonds, and they sell AUD to buy them: ' +
-            'supply of AUD rises.'
+        reasoning: 'Higher US rates draw Australian savers into US bonds, and they sell AUD to buy them. ' +
+            'Supply of AUD rises.'
     },
     {
         id: '2026-09-petrol-price',
@@ -74,7 +74,7 @@ export const WRITTEN: Story[] = [
         },
         model: MARKET,
         move: { c: 6 },
-        reasoning: 'Petrol is made from oil, so every litre costs sellers more to supply: the supply curve ' +
+        reasoning: 'Petrol is made from oil, so every litre costs sellers more to supply. The supply curve ' +
             'shifts up.'
     },
     {
@@ -93,6 +93,6 @@ export const WRITTEN: Story[] = [
         // bottom of its range.
         move: { c: 0 },
         reasoning: 'Excise is a tax sellers pay on every litre, so halving it means each litre costs them ' +
-            'less to supply: the supply curve shifts down.'
+            'less to supply. The supply curve shifts down.'
     }
 ];

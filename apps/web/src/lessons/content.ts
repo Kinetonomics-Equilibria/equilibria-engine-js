@@ -37,8 +37,8 @@ export interface StudyContent {
      * What the stage shows before the first step, in place of an empty frame.
      *
      * The lesson card says what the student will be able to do (`goals`); the
-     * cover says why they would want to — a question the lesson answers, and a
-     * sentence or two that makes it a real one. Optional: without it the stage
+     * cover says why they would want to: a question the lesson answers, and a
+     * few sentences that say what it covers. Optional: without it the stage
      * shows the diagram's frame, as it always did.
      */
     cover?: LessonCover;
@@ -219,7 +219,10 @@ export interface ParamWords extends Reading {
 export interface LessonCover {
     /** The question the lesson answers, as its headline: one line, ending in "?". */
     question: string;
-    /** Why it is worth asking: one short paragraph, in the lesson's own voice. */
+    /**
+     * The situation, then what the lesson covers: one short paragraph, written
+     * as `docs/language.md` says.
+     */
     hook: string;
     /** A key in `StudyContent.pictures`, drawn across the top of the cover. */
     picture?: string;

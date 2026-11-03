@@ -89,7 +89,7 @@ attention on finding things.
 
 ```
  ● International economics                              ╭─────────────────╮
- The Australian dollar, and what moves it               │ ◉  ↺  ┊  ▭  ⇪   │
+ The Australian dollar exchange rate                    │ ◉  ↺  ┊  ▭  ⇪   │
                                                         ╰─────────────────╯
  ● International economics · 29 September 2026          ╭─────────────────╮
  The RBA raises the cash rate to 4.60%                  │ ◉  ↺  ┊  ▭  ⇪   │
@@ -106,8 +106,8 @@ attention on finding things.
   sits on the desk above them, the one thing there. The tools are in a
   capsule of paper, because they are things to press, and so they read as
   one set rather than loose glyphs on the desk, a greyed one included.
-- A lesson's title is its own, under the topic the Lessons panel lists it
-  in. In the playground the title is the model's name, under the topic of
+- A lesson's title says what it teaches, under the topic the Lessons panel
+  lists it in. In the playground the title is the model's name, under the topic of
   the first lesson drawn on it, which is where the Playground panel lists it.
   A story's title is its headline, under its model's topic and then the day
   it happened, after a middle dot on the same small line: a story is true of
@@ -126,8 +126,9 @@ attention on finding things.
   window, so the stage's height never depends on them; the capsule is
   centred on the two. Every tool is an icon, so the tools are as wide
   whatever the lesson, and where the title is too long for what they leave
-  it is cut with an ellipsis rather than wrapped. The A$ lesson's title is
-  whole from about 945px.
+  it is cut with an ellipsis rather than wrapped. A lesson's title is the
+  economics it teaches ([Titles](./language.md#7-keep-titles-informative)), so
+  most are short enough never to be cut.
 - Presenting, the topic and title are drawn as large as the side column
   (`--present-zoom`, 1.25; see [Present](#present)), and the tools stay as
   they are. At that size a cut title would lose its last words on a
@@ -584,6 +585,7 @@ Reusable pieces, in `apps/web/src`. Reach for these before writing new CSS.
 
 | Piece | Where | What it is |
 | --- | --- | --- |
+| Lesson card | `LessonCard.tsx` | The lesson's place, its markers and the step: a title, then its words as paragraphs and lists, then the key term and the way on. |
 | Title line | `TitleLine.tsx` | The lesson's topic over its title, and the stage's tools in a capsule of paper beside them; the title never wraps but when presenting: the tools are borderless round icons, named in their tooltips, and the title is cut where it meets them. The arrangement is one icon that switches Focus and Grid. On a phone the tools but the arrangement are in a `⋯`, and Present is not offered. |
 | QR code | `QrCode.tsx` | A link as a QR code, one SVG path that scales sharp to any size, black on white whatever the theme because that is what a camera reads. Share's sheet and the printed page use it. |
 | Paper | `ui/paper.module.css` `.paper` | The one surface: white, hairline edge, 12px corner, a shadow only just there. Every card and every panel sheet composes it, and so does the title line's capsule, with its own corner. Corner and shadow are tokens in `index.css` (`--paper-radius`, `--paper-shadow`). |
@@ -620,11 +622,11 @@ are the lesson's own:
 | `paramWords.rise` / `fall` | The chain's cause | A whole clause, present tense, sentence case: "Supply of AUD increases". |
 | `paramWords.because` | The whole chain, between the curves and what followed | Why the move led to what followed, one sentence each way, true however far the param moves: "At the old price, buyers now want more than sellers offer, so some buyers miss out and the price is pushed up until the two match again." Not the move again, and not the numbers. Left out where no one sentence is true of every move. |
 | `paramWords.curve` | The chain's markers, and the param's slider | The colour its curve is drawn in, as the diagram names it: `demand` for `color: 'colors.demand'`. Where the param moves curves in two panels, the colour of the first panel's: demand for AUD is blue, though in the USD market it moves the orange supply of USD. |
-| `narratedCalcs[].rise` / `fall` | The chain's effects | The step title that teaches it: "The AUD appreciates", "Sellers earn more". Mind reciprocals — a dearer USD 1 is a USD that has *appreciated*. |
-| `explorePrompts` | "Try this" | Two or three open questions, each answerable with the controls on screen. |
-| `scenarios[].description` | Scenarios | The reasoning: who needs AUD or sells them, so which curve, which way. |
-| step `term` | The lesson card | A word, and what it means, the first time it is used. |
-| `cover` | The stage, before the first step | A question the lesson answers, one line ending "?", and a hook of one short paragraph. Not the lesson's title over again. |
+| `narratedCalcs[].rise` / `fall` | The chain's effects | The step title that teaches it: "The AUD appreciates", "Sellers earn more". Mind reciprocals — a USD 1 that costs more is a USD that has *appreciated*. |
+| `explorePrompts` | "Try this" | Two or three open questions, each answerable with the controls on screen. Each ends in "?". |
+| `scenarios[].description` | Scenarios | The reasoning: who needs AUD or sells them, so which curve, which way, with the result as a sentence of its own. |
+| step `term` | The lesson card | A key term from `GLOSSARY`, the first time it is used. See [Definitions](./language.md#definitions). |
+| `cover` | The stage, before the first step | A question the lesson answers, one line ending "?", and a hook of one short paragraph that gives the situation and then what the lesson covers. Not the lesson's title over again. |
 | step `picture` | The stage, at that step | A key in `pictures`. The step's words stay on the card and say what the picture is for; the step draws nothing on the diagram under it. |
 | step `recap.takeaway` | The recap, under the cases | The rule every question was an instance of, in one paragraph. Said here and not on the card as well. |
 | `asides`, step `aside` | A panel beside the diagram, at that step | The event a question turns on, as a report: a name for its caption ("News report"), a headline, one sentence, and a note that says it is made up. It is part of the question's prompt, so it names no curve the question offers — and the card does not tell the story again. A real event is a story, below, and never an aside. |
@@ -648,12 +650,16 @@ article's.
 | `source` | The report panel | The outlet's name as a student would know it, and a link to the article or the statement it was checked against. |
 | `model` | The stage | The model the story is told against. |
 | `move` | The action row | Where it leaves each param it moves, from the model's own market, as a scenario's set: which way is the point, and how far is the model's, so a move goes as far as the model's scenarios do. |
-| `reasoning` | The action row | Who, which curve, which way, as `scenarios[].description` is written, ending on the curve and the way: "…: demand for AUD rises." |
+| `reasoning` | The action row | Who, which curve, which way, as `scenarios[].description` is written, ending on the curve and the way in a sentence of its own: "… Demand for AUD rises." |
 
 The note under every story's report is the app's, not the story's: "The
 diagram shows which way this moves the market, not how far" (`STORY_NOTE`).
 
 ## Writing for the screen
+
+How the words are written is [`language.md`](./language.md): the voice, the order
+of a sentence, titles, definitions and punctuation. What follows is what the
+screen itself asks of them.
 
 - Present tense, sentence case, plain words first: "Demand for AUD increases".
 - Name the people behind a curve, not the curve: "Australians paying for
@@ -792,16 +798,16 @@ under [Still open](#still-open).
 ### Home
 
 ```
- Learn it, play with it, see it happen
+ Economics lessons, diagrams and news
 
  ┌──────────────────────────────────┐ ┌──────────────────────────────────┐
  │ Where to go                      │ │ Latest in the news               │
  │ ▤  Lessons                     → │ │ 15 Oct 2026  ● Iron ore falls  → │
- │    Each idea built up a step …   │ │ 29 Sep 2026  ● The RBA raises  → │
+ │    Each idea is explained …      │ │ 29 Sep 2026  ● The RBA raises  → │
  │ ⌒  Playground                  → │ │ 16 Sep 2026  ● The US Federal  → │
- │    A market to yourself: drag …  │ └──────────────────────────────────┘
+ │    A diagram of each market …    │ └──────────────────────────────────┘
  │ ▦  In the news                 → │
- │    Real events, and which …      │
+ │    Recent real events, and …     │
  └──────────────────────────────────┘
 ```
 
@@ -817,9 +823,9 @@ Built, at `/` (`Home.tsx`).
   and "Latest in the news". Each card is paper with a card head, as every
   card on the study screen is, and the rows on them are action rows.
 - Its title is on the desk above the cards, as a page's title is, and says
-  what the three places are for, in the order the rail has them: "Learn it,
-  play with it, see it happen". No topic over it and no tools beside it: it
-  is in no topic, and has no stage.
+  what the three places hold, in the order the rail has them: "Economics
+  lessons, diagrams and news". No topic over it and no tools beside it: it is
+  in no topic, and has no stage.
 - "Where to go" is the three places, each with the rail's icon and name, a
   line saying what is in it, and the arrow. A press brings out that place's
   panel, as its icon on the rail would — on a phone, the overlay at that
@@ -869,8 +875,8 @@ Built, at `lessons/<id>`.
   link would write it. It is pushed, as a change of lesson is, and the
   lesson's own entry remembers its answers, so Back returns to the recap
   with its questions on it. The line under the recap says where Finish goes:
-  "Finish, and this market is yours in the Playground", and each lesson's
-  last step says so in its own words.
+  "You can press Finish to open this market in the Playground", and each
+  lesson's last step says so in its own words.
 - "Why? See the maths" is not offered. The maths is the playground's.
 - Reset is the step's market.
 - On a phone: the lesson under the stage and the chain in the strip, with
@@ -921,7 +927,7 @@ Built, at `playground/<id>`.
  │           News report           │ │AUD market│ │ What it moves          │ │
  │ The RBA raises the cash rate …  │ │          │ │ Show it on the       → │ │
  │ The Reserve Bank lifted the …   │ └──────────┘ │ diagram                │ │ the column
- │ Source: Reserve Bank of Austr…  │ ┌──────────┐ │ Higher interest rates… │ │
+ │ Source · Reserve Bank of Austr… │ ┌──────────┐ │ Higher interest rates… │ │
  │ The diagram shows which way …   │ │USD market│ │ Open in the          → │ │
  │                                 │ │          │ │ Playground             │ │
  │                                 │ └──────────┘ ├────────────────────────┤ │

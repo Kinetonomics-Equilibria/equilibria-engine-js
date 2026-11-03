@@ -147,8 +147,8 @@ describe('what each step says', () => {
             const volume = /[Vv]olume (?:edges up|jumps) to (\d+)/.exec(said);
             if (volume) expect(now(/Export volume (?:rises|falls)/), where).toBe(volume[1]);
 
-            // "Now it's 216", "export revenue rises to 224".
-            const revenue = /(?:Now it's|revenue rises to) (\d+)/.exec(said);
+            // "Export revenue is now 216", "export revenue rises to 224".
+            const revenue = /[Rr]evenue (?:is now|rises to) (\d+)/.exec(said);
             if (revenue) expect(headline('revenue', 'Export revenue'), where).toBe(revenue[1]);
         }
     });
@@ -180,7 +180,7 @@ describe('what each step says', () => {
     it('turns the line for import prices, and for the market', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(marker(at('Imports get dearer') - 1));
+        await user.click(marker(at('Imports cost more') - 1));
         await user.click(next());
         expect(chain()).toMatch(/terms of trade line gets flatter/);
         expect(chain()).not.toMatch(/shifts/);
@@ -196,7 +196,7 @@ describe('what each step says', () => {
     it('hands the student import prices, and takes them back', async () => {
         const user = userEvent.setup();
         mount();
-        await user.click(marker(at('Imports get cheaper')));
+        await user.click(marker(at('Imports cost less')));
         press(document.body, 'Import prices', 'ArrowRight', 2);
         await user.click(next());
         expect(headline('trade', 'Terms of trade')).toBe('100');
@@ -222,7 +222,7 @@ describe('the stage', () => {
         mount();
         await user.click(marker(at('China starts building')));
         expect(role('market')).toBe('focal');
-        await user.click(marker(at('The terms of trade soar')));
+        await user.click(marker(at('The terms of trade rise sharply')));
         expect(role('trade')).toBe('focal');
         await user.click(marker(at('More money coming in')));
         expect(role('revenue')).toBe('focal');

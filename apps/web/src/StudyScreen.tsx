@@ -1899,7 +1899,7 @@ export function StudyScreen({
             where: story ? `In the news, ${dateWords(story.date, 'long')}`
                 : exploring ? 'In the Playground'
                     : position === 0 ? 'The start of the lesson'
-                        : `Step ${position} of ${steps.length}${title ? `: ${title}` : ''}`,
+                        : `Step ${position} of ${steps.length}${title ? ` · ${title}` : ''}`,
             short: position > 0 ? `step ${position}` : null,
             arrangement: mode === 'grid' ? 'Every panel side by side, in a grid'
                 : view && onStage > 1 ? `${nameOf(view.atFront)} at the front` : null,
@@ -1965,13 +1965,13 @@ export function StudyScreen({
             {...narration}
             place={lesson ? track.position : story ? 'story' : instrument}
             restHint={notStarted
-                ? 'Start the lesson, and what each step changes will show here.'
+                ? 'What each step changes will show here once the lesson starts.'
                 : under === 'picture'
                     ? 'This step is a picture, so nothing on the diagram changes. ' +
                         'The diagram is back at the next step.'
                     : under === 'recap'
-                        ? 'This step looks back, so nothing on the diagram changes. ' +
-                            'Finish, and this market is yours in the Playground.'
+                        ? 'This step looks back over the lesson, so nothing on the diagram changes. ' +
+                            'You can press Finish to open this market in the Playground.'
                         : story
                             ? 'Press Show it on the diagram to see what this news changes, or drag a ' +
                                 'curve yourself.'
@@ -2060,7 +2060,7 @@ export function StudyScreen({
                         restHint={notStarted
                             ? 'Press Start lesson when you\'re ready.'
                             : under === 'picture' ? 'The diagram is back at the next step.'
-                                : under === 'recap' ? 'Finish, and this market is yours in the Playground.'
+                                : under === 'recap' ? 'You can press Finish to open this market in the Playground.'
                                     : story ? 'Press Show it on the diagram, below.' : undefined}
                     />
                 ) : null}

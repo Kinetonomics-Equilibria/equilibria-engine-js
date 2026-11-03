@@ -1,8 +1,13 @@
 # Working in this repo
 
 The app is for Year 10 to first-year students, mostly in Australia. Everything
-they see follows two written design languages. Read the one that applies before
-you change anything a student will see:
+they see follows three written guides. Read the one that applies before you
+change anything a student will see:
+
+- **Any words a student reads**: a lesson's steps, titles and key terms, a
+  model's words, a news story, a button or a hint. Read
+  [`docs/language.md`](./docs/language.md). Key terms live in one place,
+  `apps/web/src/lessons/glossary.ts`.
 
 - **A chart**, or anything inside a panel's sheet: a lesson's diagram config,
   its caption, axes, curves, points, labels, droplines or annotations. Read
@@ -11,7 +16,7 @@ you change anything a student will see:
   [`docs/design.md`](./docs/design.md).
 - **A new lesson.** Read [`docs/lesson-authoring.md`](./docs/lesson-authoring.md)
   first, and start from `apps/web/src/lessons/_template/`. It says which
-  sections of the two above each step needs.
+  sections of the guides above each step needs.
 
 Follow them as written. When a chart has to break a rule, say why beside the
 config, in a `breaksRule: { rule, why }` on the object, which the chart rules

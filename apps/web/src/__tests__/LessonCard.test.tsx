@@ -162,12 +162,30 @@ describe('the progress bar', () => {
         expect(markers()[2].getAttribute('data-kinds')).not.toContain('ask');
     });
 
-    // The title, not the step's words: those are two paragraphs now, and would
-    // be a long thing to hear on every marker.
+    // The title, not the step's words: those are a few paragraphs now, and
+    // would be a long thing to hear on every marker.
     it('names each marker by its step\'s number and title', () => {
         mount();
-        expect(screen.getByLabelText('Step 1 of 4: Demand')).toBeTruthy();
-        expect(screen.getByLabelText('Step 4 of 4: Your turn')).toBeTruthy();
+        expect(screen.getByLabelText('Step 1 of 4 · Demand')).toBeTruthy();
+        expect(screen.getByLabelText('Step 4 of 4 · Your turn')).toBeTruthy();
+    });
+
+    // A run of items or the stages of a sum read better apart than strung
+    // along a sentence, so a block of "- " lines is a real list.
+    it('steps a block of "- " lines out as a list, and leaves the rest as paragraphs', () => {
+        mount({
+            state: at(1),
+            steps: [{ title: 'PETPIG', say: 'There are six letters.\n\n- Prices\n- Expectations\n\nThat is two of them.' }]
+        });
+        const items = within(card()).getAllByRole('listitem');
+        expect(items.map(item => item.textContent)).toEqual(['Prices', 'Expectations']);
+        expect(screen.getByText('There are six letters.').tagName).toBe('P');
+        expect(screen.getByText('That is two of them.').tagName).toBe('P');
+    });
+
+    it('keeps a line that only mentions a dash in its paragraph', () => {
+        mount({ state: at(1), steps: [{ title: 'Elasticity', say: 'Its change is −10%.\n- Prices' }] });
+        expect(within(card()).queryAllByRole('listitem')).toEqual([]);
     });
 });
 
@@ -247,7 +265,7 @@ describe('a question stops it', () => {
 
         const locked = markers()[2];
         expect(locked.getAttribute('aria-label'))
-            .toBe('Step 3 of 3: Supply (locked until the question before it is answered)');
+            .toBe('Step 3 of 3 · Supply (locked until the question before it is answered)');
 
         // Still a button, still pressable: it moves as far as the track will go.
         expect(locked.hasAttribute('disabled')).toBe(false);
@@ -255,7 +273,7 @@ describe('a question stops it', () => {
 
     it('unlocks them once the question is answered, and says nothing more about it', () => {
         quiz(at(2, [1]));
-        expect(markers()[2].getAttribute('aria-label')).toBe('Step 3 of 3: Supply');
+        expect(markers()[2].getAttribute('aria-label')).toBe('Step 3 of 3 · Supply');
         expect(screen.queryByText(UNLOCK)).toBeNull();
         expect(next().hasAttribute('disabled')).toBe(false);
     });

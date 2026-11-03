@@ -60,7 +60,7 @@ const NARRATED_CALCS = [
     },
     {
         name: 'mine', label: 'Pairs you buy', precision: 0,
-        meaning: 'Your pairs a year at Nike\'s price: every pair worth at least that to you',
+        meaning: 'The pairs you buy each year at Nike\'s price, which are the pairs worth at least that price to you',
         rise: 'You buy more pairs', fall: 'You buy fewer pairs'
     }
 ];
@@ -76,55 +76,57 @@ const SCENARIOS: Scenario[] = [
     {
         id: 'adidas-sale',
         label: 'Adidas has a sale',
-        description: 'A substitute gets cheaper, so fans want fewer Jordans at every price: demand decreases.',
+        description: 'A substitute gets cheaper, so fans want fewer Jordans at every price. Demand decreases.',
         params: { demand: 150 }
     },
     {
         id: 'club-fees',
         label: 'Basketball club fees fall',
-        description: 'More people play, and the shoes go with playing: a complement gets cheaper, so demand increases.',
+        description: 'More people play basketball, and the shoes go with playing. A complement gets cheaper, ' +
+            'so demand increases.',
         params: { demand: 250 }
     },
     {
         id: 'price-rise-coming',
         label: 'A price rise is announced',
-        description: 'Fans expect to pay more next month, so they buy now: demand today increases.',
+        description: 'Fans expect to pay more next month, so they buy now. Demand today increases.',
         params: { demand: 250 }
     },
     {
         id: 'boxing-day',
         label: 'Boxing Day sales are coming',
-        description: 'Fans expect lower prices soon, so many wait: demand today decreases.',
+        description: 'Fans expect lower prices soon, so many of them wait. Demand today decreases.',
         params: { demand: 150 }
     },
     {
         id: 'nba-star',
         label: 'An NBA star wears them',
-        description: 'Tastes swing towards Jordans, so fans want more at every price: demand increases.',
+        description: 'Tastes move towards Jordans, so fans want more at every price. Demand increases.',
         params: { demand: 250 }
     },
     {
         id: 'more-teenagers',
         label: 'More teenagers in Australia',
-        description: 'More buyers want more pairs at every price: demand increases.',
+        description: 'More buyers want more pairs at every price, so demand increases.',
         params: { demand: 250 }
     },
     {
         id: 'wages-rise',
         label: 'Wages rise',
-        description: 'Jordans are a normal good, so fans with more to spend want more: demand increases.',
+        description: 'Jordans are a normal good, so fans with more to spend want more. Demand increases.',
         params: { demand: 250 }
     },
     {
         id: 'downturn',
         label: 'Part-time shifts dry up',
-        description: 'Fans have less to spend, so they want fewer pairs at every price: demand decreases.',
+        description: 'Fans have less to spend, so they want fewer pairs at every price. Demand decreases.',
         params: { demand: 150 }
     },
     {
         id: 'nike-sale',
         label: 'Nike takes $50 off',
-        description: 'Jordans\' own price falls, so fans move along the curve: quantity demanded rises, and demand stays put.',
+        description: 'The price of Jordans falls, so fans move along the curve. Quantity demanded rises, and ' +
+            'demand does not change.',
         params: { price: 250 }
     },
     {
@@ -157,37 +159,37 @@ const MODEL: ModelSpec = {
     // raises quantity demanded and leaves the curve; and 250 at $300 is
     // demand at 250, which any of P, E, T, P or I can cause.
     explorePrompts: [
-        'Find the highest price at which you\'d buy 3 pairs. How many do all fans want there?',
-        'Make quantity demanded rise without moving the demand curve.',
-        'Shift demand so fans want 250,000 pairs at $300. Which letters of PETPIG could do that?'
+        'What is the highest price at which you would buy 3 pairs? How many pairs do all fans want at that price?',
+        'How can you make quantity demanded rise without moving the demand curve?',
+        'How could demand shift so that fans want 250,000 pairs at $300? Which letters of PETPIG could cause this?'
     ],
     // The curve is blue, as demand always is; the price is orange, as the
     // point it moves and the line it draws are.
     paramWords: {
         price: {
-            about: 'What Nike charges for a pair. Changing it moves fans along the curve, and the ' +
-                'curve stays put.',
+            about: 'The price Nike charges for a pair. Changing it moves fans along the demand curve ' +
+                'without shifting the curve.',
             rise: 'Nike raises its price',
             fall: 'Nike cuts its price',
             curve: 'choice',
             // Said of a pair, not of fans, so it holds at the steps where the
             // chart is your own pairs alone.
             because: {
-                rise: 'Fewer pairs are worth at least the higher price, so fewer are bought: a move ' +
-                    'along the curve.',
-                fall: 'More pairs are worth at least the lower price, so more are bought: a move ' +
-                    'along the curve.'
+                rise: 'Fewer pairs are worth at least the higher price, so buyers move up along the ' +
+                    'curve and fewer pairs are bought.',
+                fall: 'More pairs are worth at least the lower price, so buyers move down along the ' +
+                    'curve and more pairs are bought.'
             }
         },
         demand: {
-            about: 'What all fans want at each price. Anything in PETPIG shifts it.',
+            about: 'The pairs all fans want at each price. Any factor in PETPIG shifts this curve.',
             rise: 'Demand for Air Jordans increases',
             fall: 'Demand for Air Jordans decreases',
             curve: 'demand',
             because: {
-                rise: 'Nike\'s price hasn\'t changed, but fans now want more pairs at every price, ' +
+                rise: 'Nike\'s price has not changed, but fans now want more pairs at every price, ' +
                     'including this one.',
-                fall: 'Nike\'s price hasn\'t changed, but fans now want fewer pairs at every price, ' +
+                fall: 'Nike\'s price has not changed, but fans now want fewer pairs at every price, ' +
                     'including this one.'
             }
         }
@@ -201,24 +203,25 @@ const MODEL: ModelSpec = {
 
 export const DEMAND_SHIFTERS: StudyContent = defineLesson({
     id: 'demand',
-    label: 'What shifts demand',
-    title: 'Air Jordans, and what shifts demand',
+    label: 'Demand and its determinants',
+    title: 'Demand and its determinants',
     goals: [
         'Why each extra pair is worth less to you',
-        'Moving along the demand curve, and shifting it',
-        'The six things that shift demand: PETPIG'
+        'The difference between moving along the demand curve and shifting it',
+        'The six determinants of demand, known as PETPIG'
     ],
     cover: {
         question: 'What makes people want more Air Jordans?',
-        hook: 'A pair of Air Jordans costs the same in every shop, yet some months they sell out and ' +
-            'some months they sit on the shelf. Work out why and you can say which way demand will move.',
+        hook: 'Air Jordans sell out in some months and stay on the shelf in others, even when the price ' +
+            'does not change. In this lesson we look at why people buy more at lower prices, and at the ' +
+            'six factors that shift demand.',
         picture: 'cover'
     },
     pictures: {
         cover: {
             name: 'A sneaker shop',
             src: coverPicture,
-            alt: 'A sneaker wall in a shop, with high-tops on its shelves and a red pair on the counter ' +
+            alt: 'A sneaker wall in a shop, with high-top shoes on its shelves and a red pair on the counter ' +
                 'under a $300 price tag.'
         }
     },

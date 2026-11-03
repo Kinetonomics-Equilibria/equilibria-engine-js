@@ -54,16 +54,18 @@ export interface LessonStep extends StepDefinition {
     /**
      * What the student reads at this step, on the lesson card.
      *
-     * One idea, in a sentence or three. A blank line starts a new paragraph,
-     * and two short paragraphs are easier to take in than one long one: the
-     * first says what happens, the second what it means. The card has room for
-     * that now. The strip it used to share was one line, so every step had to
-     * fit in about 110 characters and came out clipped.
+     * One idea, stepped out. A blank line starts a new paragraph, and a few
+     * short paragraphs are easier to take in than one long one: what happens,
+     * then what it means. A block whose every line starts "- " is a list, for a
+     * run of items or the stages of a sum. The card has room for that now. The
+     * strip it used to share was one line, so every step had to fit in about
+     * 110 characters and came out clipped. `docs/language.md` has the voice.
      */
     say?: string;
 
     /**
-     * A word the step introduces, with what it means in plain English.
+     * A word the step introduces, from `GLOSSARY` in `lessons/glossary.ts`, so
+     * it has one definition across the app.
      *
      * At most one per step: a term is shown in a box of its own, and two boxes
      * would be two new ideas at once. A step that uses a word an earlier step

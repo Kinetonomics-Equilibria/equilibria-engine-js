@@ -181,8 +181,8 @@ test('on paper: the title, the view in words, the diagram fitted to the page, an
     await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
     await page.emulateMedia({ media: 'print' });
 
-    await expect(page.getByRole('heading', { name: 'The Australian dollar, and what moves it' })).toBeVisible();
-    await expect(page.getByText('Step 8 of 15: Up is stronger, down is weaker')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'The Australian dollar exchange rate' })).toBeVisible();
+    await expect(page.getByText('Step 8 of 15 · Up is stronger, down is weaker')).toBeVisible();
     await expect(page.getByText('Supply of AUD 50 → 56')).toBeVisible();
     await expect(page.getByRole('img', { name: /back to this view, for the printed page/ })).toBeVisible();
     // The whole chain, since paper has no "See all" to press.

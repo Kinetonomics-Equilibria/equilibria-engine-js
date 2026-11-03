@@ -33,7 +33,7 @@ export { TERMS_OF_TRADE_LESSON } from './steps';
 const NARRATED_CALCS = [
     {
         name: 'tot', label: 'Terms of trade', tex: '\\text{ToT}', precision: 0,
-        meaning: 'Export prices ÷ import prices × 100: what 100 baskets of exports buy in imports',
+        meaning: 'Export prices ÷ import prices × 100, which is what 100 baskets of exports buy in imports',
         rise: 'The terms of trade rise', fall: 'The terms of trade fall'
     },
     {
@@ -48,7 +48,7 @@ const NARRATED_CALCS = [
     },
     {
         name: 'revenue', label: 'Export revenue', precision: 0,
-        meaning: 'What the world pays Australia for its exports, as an index: price times volume',
+        meaning: 'What the world pays Australia for its exports, as an index of price multiplied by volume',
         rise: 'Export revenue rises', fall: 'Export revenue falls'
     }
 ];
@@ -58,37 +58,37 @@ const SCENARIOS = [
     {
         id: 'boom',
         label: 'China starts building',
-        description: 'Steel mills want more ore and coal at every price: demand for commodities rises.',
+        description: 'Steel mills want more iron ore and coal at every price. Demand for commodities rises.',
         params: { demand: 200 }
     },
     {
         id: 'slowdown',
         label: 'Steel mills cut back',
-        description: 'Mills overseas want less ore and coal at every price: demand for commodities falls.',
+        description: 'Mills overseas want less iron ore and coal at every price. Demand for commodities falls.',
         params: { demand: 80 }
     },
     {
         id: 'new-mines',
         label: 'New mines open',
-        description: 'Miners can ship more at every price: supply of commodities rises.',
+        description: 'Miners can ship more at every price. Supply of commodities rises.',
         params: { supply: 150 }
     },
     {
         id: 'cyclone',
         label: 'A cyclone shuts a port',
-        description: 'Ore can\'t reach the ships, so miners ship less at every price: supply of commodities falls.',
+        description: 'Iron ore cannot reach the ships, so miners ship less at every price. Supply of commodities falls.',
         params: { supply: 80 }
     },
     {
         id: 'dearer-imports',
-        label: 'Phones and cars get dearer',
-        description: 'Factories overseas raise their prices, so a basket of imports costs more: import prices rise.',
+        label: 'Phones and cars cost more',
+        description: 'Factories overseas raise their prices, so a basket of imports costs more. Import prices rise.',
         params: { imports: 125 }
     },
     {
         id: 'cheaper-imports',
         label: 'Factories cut their prices',
-        description: 'A basket of imports costs less, so the same exports buy more of it: import prices fall.',
+        description: 'A basket of imports costs less, so the same exports buy more of it. Import prices fall.',
         params: { imports: 80 }
     },
     { id: 'baseline', label: 'Back to terms of trade of 100', params: { ...BASELINE } }
@@ -111,9 +111,9 @@ const MODEL: ModelSpec = {
     // at 80; import prices of 120 want export prices of 120, which is demand
     // at 125; and import prices touch nothing in the market.
     explorePrompts: [
-        'Get the terms of trade to 200 without touching import prices.',
-        'Raise import prices to 120, then bring the terms of trade back to 100 by moving demand.',
-        'Find a move that lowers the terms of trade and leaves export revenue alone.'
+        'How can the terms of trade reach 200 without any change in import prices?',
+        'If import prices rise to 120, how can a move in demand bring the terms of trade back to 100?',
+        'Which move lowers the terms of trade without changing export revenue?'
     ],
     // Demand and supply in their own colours. Import prices are in the terms
     // of trade's, the line they turn. They turn it whichever way the market
@@ -167,18 +167,18 @@ const MODEL: ModelSpec = {
 export const TERMS_OF_TRADE: StudyContent = defineLesson({
     id: 'terms-of-trade',
     label: 'Terms of trade',
-    title: 'Iron ore, phones and the terms of trade',
+    title: 'The terms of trade',
     goals: [
-        'What the terms of trade measure, and how to work them out',
+        'What the terms of trade measure, and how to calculate them',
         'Why a commodity boom lifts them, and who gains',
         'Why a boom fades, and where prices settle',
-        'Four cases to work out yourself'
+        'How to apply this to four cases'
     ],
     cover: {
         question: 'How many phones does a shipload of iron ore buy?',
-        hook: 'Australia sells iron ore and buys phones. When ore gets dearer against what we buy, ' +
-            'every shipload buys more. Follow one mining boom from start to finish, and see why it ' +
-            'doesn\'t last.',
+        hook: 'Australia sells iron ore and buys phones. When the price of iron ore rises compared with ' +
+            'the price of phones, each shipload buys more phones. In this lesson we measure this change ' +
+            'and follow one mining boom from start to finish.',
         picture: 'cover'
     },
     pictures: {

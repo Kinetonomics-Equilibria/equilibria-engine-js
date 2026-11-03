@@ -38,7 +38,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('opens the plane tickets lesson from its address, without an error', async ({ page, pageErrors }) => {
-    await expect(page.getByRole('heading', { name: 'Plane tickets, and what shifts supply' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Supply and its determinants' })).toBeVisible();
     await page.getByRole('button', { name: 'Start lesson' }).click();
     await expect(page.getByText('Your first flight', { exact: true })).toBeVisible();
     expect(pageErrors).toEqual([]);
@@ -48,7 +48,7 @@ test('opens the plane tickets lesson from its address, without an error', async 
 // their chart is looked at there as well as the market's.
 test('no text lands on other text through PEANUT', async ({ page }) => {
     for (const arrangement of ['', '&arrange=grid']) {
-        for (let step = 9; step <= 16; step++) {
+        for (let step = 10; step <= 18; step++) {
             await page.goto(`/lessons/supply?step=${step}${arrangement}`);
             await expect(page.getByRole('region', { name: 'What changed' })).toBeVisible();
             await expect.poll(() => textCollisions(page), { message: `step ${step}${arrangement}` }).toEqual([]);
@@ -62,7 +62,7 @@ test('no text on the stage lands on other text', async ({ page }) => {
 
     for (const arrangement of ['Focus', 'Grid'] as const) {
         await arrange(page, arrangement);
-        for (const scenario of ['Back to the start', 'Jet fuel gets dearer', 'Airlines get new planes',
+        for (const scenario of ['Back to the start', 'The price of jet fuel rises', 'Airlines get new planes',
             'Holiday fares rise $50']) {
             // Exact: a progress marker is named by its step's title, and a
             // title could share words with a scenario.

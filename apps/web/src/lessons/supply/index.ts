@@ -69,7 +69,7 @@ const NARRATED_CALCS = [
     },
     {
         name: 'mine', label: 'Flights you run', precision: 0,
-        meaning: 'Your flights a day at the fare: every flight whose costs it covers',
+        meaning: 'The flights you run each day at the fare, which are the flights whose costs it covers',
         rise: 'You run more flights', fall: 'You run fewer flights'
     }
 ];
@@ -84,64 +84,65 @@ const NARRATED_CALCS = [
 const SCENARIOS: Scenario[] = [
     {
         id: 'fuel-dearer',
-        label: 'Jet fuel gets dearer',
-        description: 'An input costs more, so every flight costs more to run: supply decreases.',
+        label: 'The price of jet fuel rises',
+        description: 'An input costs more, so every flight costs more to run. Supply decreases.',
         params: { supply: 150 }
     },
     {
         id: 'boom-expected',
         label: 'Airlines expect a boom',
-        description: 'They lease planes and train crew now, ready for more travellers: supply increases.',
+        description: 'Airlines lease planes and train crew now, ready for more travellers. Supply increases.',
         params: { supply: 250 }
     },
     {
         id: 'gold-coast',
         label: 'Gold Coast fares jump',
-        description: 'Planes move to the route that pays more, a substitute in production: supply decreases.',
+        description: 'Planes move to the route that pays more, which is a substitute in production. Supply ' +
+            'decreases.',
         params: { supply: 150 }
     },
     {
         id: 'freight',
         label: 'Freight rates rise',
-        description: 'Each flight earns more from the freight in its hold, a complement in production: ' +
-            'supply increases.',
+        description: 'Each flight earns more from the freight in its hold, which is a complement in ' +
+            'production. Supply increases.',
         params: { supply: 250 }
     },
     {
         id: 'new-airline',
         label: 'A new airline joins the route',
-        description: 'More sellers offer more seats at every fare: supply increases.',
+        description: 'More sellers offer more seats at every fare, so supply increases.',
         params: { supply: 250 }
     },
     {
         id: 'airline-broke',
         label: 'An airline goes broke',
-        description: 'Fewer sellers offer fewer seats at every fare: supply decreases.',
+        description: 'Fewer sellers offer fewer seats at every fare, so supply decreases.',
         params: { supply: 150 }
     },
     {
         id: 'new-planes',
         label: 'Airlines get new planes',
-        description: 'Planes that burn less fuel make every flight cheaper to run: supply increases.',
+        description: 'Planes that burn less fuel make every flight cheaper to run, so supply increases.',
         params: { supply: 250 }
     },
     {
         id: 'ticket-tax',
         label: 'A $50 tax on every ticket',
-        description: 'Each seat must sell for $50 more to cover its costs: supply decreases.',
+        description: 'Each seat must sell for $50 more to cover its costs, so supply decreases.',
         params: { supply: 150 }
     },
     {
         id: 'seat-subsidy',
         label: 'A $50 subsidy on every seat',
-        description: 'Each seat costs airlines $50 less to fly: supply increases.',
+        description: 'Each seat costs airlines $50 less to fly, so supply increases.',
         params: { supply: 250 }
     },
     {
         id: 'school-holidays',
         label: 'Holiday fares rise $50',
-        description: 'The fare itself rises, so airlines move along the curve: quantity supplied rises, ' +
-            'and supply stays put.',
+        description: 'The fare itself rises, so airlines move along the curve. Quantity supplied rises, ' +
+            'and supply does not change.',
         params: { price: 250 }
     },
     {
@@ -174,37 +175,37 @@ const MODEL: ModelSpec = {
     // raises quantity supplied and leaves the curve; and 250 at $200 is
     // supply at 250, which E, A, N, U or T can cause.
     explorePrompts: [
-        'Find the lowest fare at which you\'d run all 4 flights. How many seats do all airlines offer there?',
-        'Make quantity supplied rise without moving the supply curve.',
-        'Shift supply so airlines offer 250,000 seats at $200. Which letters of PEANUT could do that?'
+        'What is the lowest fare at which you would run all 4 flights? How many seats do all airlines offer at that fare?',
+        'How can you make quantity supplied rise without moving the supply curve?',
+        'How could supply shift so that airlines offer 250,000 seats at $200? Which letters of PEANUT could cause this?'
     ],
     // The curve is orange, as supply always is; the fare is grey, as the
     // point it moves and the line it draws are.
     paramWords: {
         price: {
-            about: 'What a seat on the route sells for. Changing it moves airlines along the curve, and ' +
-                'the curve stays put.',
+            about: 'The price of a seat on the route. Changing it moves airlines along the supply curve ' +
+                'without shifting the curve.',
             rise: 'Fares rise',
             fall: 'Fares fall',
             curve: 'price',
             // Said of a flight, not of airlines, so it holds at the steps where
             // the chart is your own flights alone.
             because: {
-                rise: 'More flights cover their costs at the higher fare, so more seats are offered: ' +
-                    'a move along the curve.',
-                fall: 'Fewer flights cover their costs at the lower fare, so fewer seats are offered: ' +
-                    'a move along the curve.'
+                rise: 'More flights cover their costs at the higher fare, so sellers move up along the ' +
+                    'curve and more seats are offered.',
+                fall: 'Fewer flights cover their costs at the lower fare, so sellers move down along the ' +
+                    'curve and fewer seats are offered.'
             }
         },
         supply: {
-            about: 'The seats all airlines offer at each fare. Anything in PEANUT shifts it.',
+            about: 'The seats all airlines offer at each fare. Any factor in PEANUT shifts this curve.',
             rise: 'Supply of seats increases',
             fall: 'Supply of seats decreases',
             curve: 'supply',
             because: {
-                rise: 'The fare hasn\'t changed, but airlines now offer more seats at every fare, ' +
+                rise: 'The fare has not changed, but airlines now offer more seats at every fare, ' +
                     'including this one.',
-                fall: 'The fare hasn\'t changed, but airlines now offer fewer seats at every fare, ' +
+                fall: 'The fare has not changed, but airlines now offer fewer seats at every fare, ' +
                     'including this one.'
             }
         }
@@ -218,17 +219,18 @@ const MODEL: ModelSpec = {
 
 export const SUPPLY_SHIFTERS: StudyContent = defineLesson({
     id: 'supply',
-    label: 'What shifts supply',
-    title: 'Plane tickets, and what shifts supply',
+    label: 'Supply and its determinants',
+    title: 'Supply and its determinants',
     goals: [
         'Why each extra flight needs a higher fare',
-        'Moving along the supply curve, and shifting it',
-        'The six things that shift supply: PEANUT'
+        'The difference between moving along the supply curve and shifting it',
+        'The six determinants of supply, known as PEANUT'
     ],
     cover: {
         question: 'What makes airlines offer more seats?',
-        hook: 'Some weeks there\'s a flight to Melbourne every half hour, and some weeks airlines cut ' +
-            'back. Work out what airlines weigh up and you can say which way supply will move.',
+        hook: 'Airlines run more flights between Sydney and Melbourne in some weeks than in others. In ' +
+            'this lesson we look at how an airline decides how many flights to run, and at the six ' +
+            'factors that shift supply.',
         picture: 'cover'
     },
     pictures: {

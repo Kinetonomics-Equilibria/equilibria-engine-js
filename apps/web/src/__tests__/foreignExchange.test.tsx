@@ -44,7 +44,7 @@ const caption = (panel: 'market' | 'mirror') => {
 
 /** The cover's parts row: each part's name and how it is counted. */
 const FX_PARTS = [
-    ['1 · Meet the market', '5 steps'],
+    ['1 · The market for the AUD', '5 steps'],
     ['2 · When the AUD moves', '5 steps'],
     ['3 · Your turn', '4 questions']
 ];
@@ -254,7 +254,7 @@ describe('the recap', () => {
         ]);
         expect(cases()[0].textContent).toContain('Demand for AUD increases');
         expect(cases()[3].textContent).toContain('Supply of AUD decreases');
-        expect(within(recap()!).getByText(/more demand or less supply and the AUD appreciates/)).toBeTruthy();
+        expect(within(recap()!).getByText(/More demand or less supply makes the AUD appreciate/)).toBeTruthy();
 
         // Back to the question that was shown, and right this time.
         const shown = FX_LESSON.findIndex(step => step.title === 'China buys less iron ore') + 1;

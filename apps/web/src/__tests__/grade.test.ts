@@ -92,14 +92,14 @@ describe('magnitude, which is the question that brings the traps', () => {
         // The sentence this whole split exists to make possible.
         expect(verdictFor(toTarget, g, 23, A).direction).toContain('the right direction');
         expect(verdictFor(toTarget, g, 23, A).magnitude)
-            .toBe('Not quite far enough: you stopped at 23.0, and it goes to 26.0.');
+            .toBe('That\'s not quite far enough. You stopped at 23.0, and it goes to 26.0.');
     });
 
     it('says "too far" on the other side of the same target', () => {
         const g = grade(toTarget, 20, 27.5, A);
         expect(g.magnitudeCorrect).toBe(false);
         expect(verdictFor(toTarget, g, 27.5, A).magnitude)
-            .toBe('A bit too far: you went to 27.5, and it only goes to 26.0.');
+            .toBe('That\'s a bit too far. You went to 27.5, and it goes to 26.0.');
     });
 
     // Exactly `tolerance` away is inside. Left to floating point it would be

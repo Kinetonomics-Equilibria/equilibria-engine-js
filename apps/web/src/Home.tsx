@@ -22,9 +22,9 @@ import classes from './Home.module.css';
 
 /** What is in each place, in a line: the people it is for, not the features. */
 const LINES: Record<NavPanel, string> = {
-    lessons: 'Each idea built up a step at a time, with questions to try on the way.',
-    playground: 'A market to yourself: drag its curves, try what could happen, see the maths.',
-    news: 'Real events, and which curve each one moves.'
+    lessons: 'Each idea is explained step by step, with questions to check your understanding.',
+    playground: 'A diagram of each market, where you can move the curves and try different scenarios.',
+    news: 'Recent real events, and which curve each one moves.'
 };
 
 export interface HomeProps {
@@ -40,7 +40,7 @@ export function Home({ onPanel, onOpen }: HomeProps) {
     return (
         <div className={classes.home}>
             <div className={classes.heading}>
-                <Title order={1} size="h4" className={classes.title}>Learn it, play with it, see it happen</Title>
+                <Title order={1} size="h4" className={classes.title}>Economics lessons, diagrams and news</Title>
             </div>
 
             <div className={classes.cards}>

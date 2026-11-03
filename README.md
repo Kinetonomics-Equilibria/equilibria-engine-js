@@ -130,7 +130,10 @@ paper, callouts and controls, and how a lesson's words reach the screen — is i
 will see. How a diagram itself is drawn — type, line weights, axes, labels,
 droplines and annotations — is in
 [`docs/chart-design.md`](./docs/chart-design.md). Read it before drawing or
-changing a chart.
+changing a chart. How the app speaks to a student — its voice, the order of a
+sentence, titles, definitions and punctuation — is in
+[`docs/language.md`](./docs/language.md). Read it before writing anything a
+student will read.
 
 Vendored third-party reference docs — currently the full Mantine documentation,
 pinned to the installed version — live under

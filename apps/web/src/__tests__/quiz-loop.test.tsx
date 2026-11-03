@@ -89,12 +89,12 @@ describe('a question arrives', () => {
 
         const card = screen.getByRole('region', { name: 'Lesson' });
         const words = card.querySelector('[aria-live="polite"]') as HTMLElement;
-        expect(words.textContent).toContain('Move the demand curve to where it goes');
+        expect(words.textContent).toContain('Move the demand curve to its new position');
         expect(words.compareDocumentPosition(row()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         // The student's own move wins the strip, so a prompt there would vanish
         // the moment they moved something to answer it.
         const strip = document.querySelector('[data-kind]') as HTMLElement;
-        expect(strip.textContent).not.toContain('where it goes');
+        expect(strip.textContent).not.toContain('its new position');
     });
 
     it('stops the track until it is answered', async () => {
