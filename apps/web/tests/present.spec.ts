@@ -4,8 +4,8 @@ import { test } from './helpers';
 
 /**
  * Present, in a real browser: the page full screen, the rail put away and its
- * room given to the stage, the side column drawn 1.5 times as large, and back
- * to the page as it was.
+ * room given to the stage, the side column drawn `--present-zoom` times as
+ * large on its narrower rule, and back to the page as it was.
  *
  * Only a browser can say it, because full screen is the browser's: jsdom has
  * none, and the unit tests stand in for it with a page that says it has gone
@@ -19,6 +19,20 @@ import { test } from './helpers';
  */
 
 const fullScreen = (page: Page) => page.evaluate(() => document.fullscreenElement === document.documentElement);
+
+/**
+ * How large Present draws the column's words, read from the stylesheet's own
+ * token, so the test follows the design when the zoom is changed again.
+ */
+const presentZoom = (page: Page) => page.evaluate(() =>
+    Number(getComputedStyle(document.documentElement).getPropertyValue('--present-zoom')));
+
+/**
+ * The column's width while presenting: the narrower rule, 20vw from 320px up
+ * to 380px, drawn at the zoom (`StudyScreen.module.css`, `.presenting`).
+ */
+const presentingColumn = (windowWidth: number, zoom: number) =>
+    Math.min(380, Math.max(320, windowWidth * 0.2)) * zoom;
 
 test('Present puts the page full screen with the rail away, and comes back', async ({ page }) => {
     await page.goto('/lessons/fx');
@@ -41,12 +55,12 @@ test('Present puts the page full screen with the rail away, and comes back', asy
         await expect(rail).not.toBeInViewport();
         // The rail's room is the stage's: it starts where the rail was.
         await expect.poll(async () => (await where()).left).toBeLessThan(before.left - 60);
-        // The column is drawn 1.5 times as large, its width with it, and the
-        // stage takes what is left beside it, at the same gap as before. So
-        // the stage can come out narrower than it went in: the column grows by
-        // more than the rail gave back (docs/design.md, "Present").
-        const now = await where();
-        expect(now.column).toBeCloseTo(before.column * 1.5, 0);
+        // The column keeps the narrower rule and is drawn at the zoom, its
+        // width with it, and the stage takes what is left beside it, at the
+        // same gap as before (docs/design.md, "Present").
+        const now = await where(), zoom = await presentZoom(page);
+        expect(zoom).toBeGreaterThan(1);
+        expect(now.column).toBeCloseTo(presentingColumn(page.viewportSize()!.width, zoom), 0);
         expect(now.gap).toBeCloseTo(before.gap, 0);
     };
     const back = async () => {
