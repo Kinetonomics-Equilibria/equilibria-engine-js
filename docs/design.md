@@ -741,6 +741,12 @@ under [Still open](#still-open).
   For now each model sits beside its one lesson, in that lesson's file. The
   playground's list is read off the lessons (`MODELS`), so a model is in it
   once a lesson on it is listed.
+- A model can come before its lesson. A topic lists it in its `models`, and
+  `defineModel` builds it as `defineLesson` would with no steps: aggregate
+  demand and supply, in `lessons/ad-as/`, is in the Playground under
+  Economic activity with no lesson yet. A topic with no lessons is left out
+  of the Lessons panel. Once a lesson is drawn on the model, the lesson lists
+  it, and it comes out of the topic's `models`.
 - A model's own expressions may read the step a lesson has reached: the
   café draws Z before its choices and again once the lesson is over. The
   playground hands the engine no steps, so it declares that param itself,

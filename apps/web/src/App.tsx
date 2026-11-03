@@ -20,7 +20,9 @@ const pathTo = (place: Place) => import.meta.env.BASE_URL + writeLink(place);
 /**
  * What each of the rail's panels lists: the lessons, and the models they are
  * drawn on, in the same strands and topics with the same dots, so a model
- * sits under the topic its lessons do.
+ * sits under the topic its lessons do. A topic with nothing to list in a
+ * panel is left out of it: one whose model has no lesson yet is in the
+ * Playground panel only.
  */
 const LISTS: Record<'lessons' | 'playground', NavStrand[]> = {
     lessons: CURRICULUM.map(strand => ({
@@ -29,7 +31,7 @@ const LISTS: Record<'lessons' | 'playground', NavStrand[]> = {
             id: topic.id, label: topic.label, color: topic.color,
             items: topic.lessons.map((lesson): NavItem =>
                 ({ id: lesson.id, label: lesson.label, href: pathTo({ kind: 'lesson', id: lesson.id }) }))
-        }))
+        })).filter(topic => topic.items.length > 0)
     })),
     playground: CURRICULUM.map(strand => ({
         label: strand.label,

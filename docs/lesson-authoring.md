@@ -25,7 +25,9 @@ it beside every real lesson, so it is a lesson that passes them. Three files:
 
 A lesson is listed by adding it to its topic in `CURRICULUM`
 (`apps/web/src/lessons/index.ts`). That is what puts it on the Lessons panel,
-and its model in the Playground.
+and its model in the Playground. A lesson drawn on a model a topic already
+lists in its `models`, such as `lessons/ad-as/`, takes the model out of there
+and builds it with its steps.
 
 ## What the kit works out
 
@@ -41,7 +43,7 @@ Don't write any of these. `defineLesson` and the chart kit do:
   asked, the drag that freezes after Check, and, with `asked: true`, the
   question's dashed start line and dotted answer line, from the curve's own
   shape.
-- `$` in an axis title, escaped for the engine.
+- `$` and `%` in an axis title, escaped for the engine.
 
 ## In this order
 

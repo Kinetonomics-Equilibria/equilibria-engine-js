@@ -88,6 +88,12 @@ import { Schema } from "../../schemas/schema";
                 // trade: what a country's exports buy in imports.
                 termsOfTrade: 'purple',
 
+                // the economy as a whole: potential GDP, which long-run
+                // aggregate supply, the long-run Phillips curve and the
+                // business cycle's trend all draw; and real GDP over time.
+                potential: 'grey',
+                businessCycle: 'purple',
+
                 // equilibrium
                 price: 'grey',
                 paretoLens: "'#ffff99'",

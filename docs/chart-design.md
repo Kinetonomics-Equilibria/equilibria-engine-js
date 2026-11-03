@@ -260,6 +260,8 @@ A new colour must clear 3:1 as a line, because nothing darkens a line for you.
 | `price` | grey | A price sellers take as given, and the point it picks on supply: the plane tickets lesson's fare. Not `choice`, which is supply's orange, so the point would be the colour of the curve it slides along, and a point on the price line the colour of the line |
 | `combination` | purple | A combination anywhere: inside, on or outside the curve |
 | `termsOfTrade` | purple | The terms of trade: the line through the origin, and the point on it that says what 100 baskets of exports buy |
+| `potential` | grey | Potential GDP, which the economy can produce with its resources fully employed: long-run aggregate supply, the long-run Phillips curve, and the business cycle's trend |
+| `businessCycle` | purple | Real GDP over time, through the business cycle, and the words for its parts |
 
 Contrast of the engine's palette on white. "Text" is what a label in that
 colour is drawn in:
@@ -486,8 +488,14 @@ point gives one price, labelled P\*, and one quantity, labelled Q\*."
 | S | The supply curve | A market's supply curve |
 | PPC | The production possibility curve | The PPC |
 | ToT | The terms of trade, export prices ÷ import prices × 100 | Its line, and the imports axis, at the end of a dropline |
-| D₀, S₀, PPC₀, ToT₀ | Where that curve was | Its ghost |
-| D₁, S₁, PPC₁, ToT₁ | Where that curve goes | The answer, after a question |
+| AD | Aggregate demand | The economy's aggregate demand curve |
+| SRAS | Short-run aggregate supply | The economy's short-run aggregate supply curve |
+| LRAS | Long-run aggregate supply, at potential GDP | The vertical line at potential GDP |
+| SRPC | The short-run Phillips curve | The curve inflation and unemployment move along |
+| LRPC | The long-run Phillips curve, at the natural rate of unemployment | The vertical line at the natural rate |
+| GDP | Real GDP over time | The business cycle |
+| D₀, S₀, PPC₀, ToT₀, AD₀, SRAS₀, LRAS₀, SRPC₀, LRPC₀, GDP₀ | Where that curve was | Its ghost |
+| D₁, S₁, PPC₁, ToT₁, AD₁, SRAS₁, LRAS₁, SRPC₁, LRPC₁, GDP₁ | Where that curve goes | The answer, after a question |
 | P\* | The equilibrium price | The price axis, at the end of a dropline |
 | Q\* | The equilibrium quantity | The quantity axis, at the end of a dropline |
 | P | A price a seller sets, or sellers take as given, where nothing clears a market | The price axis, at the end of a dropline or a price line |
@@ -496,6 +504,10 @@ point gives one price, labelled P\*, and one quantity, labelled Q\*."
 | Q<sub>s</sub> | The quantity supplied at P | The quantity axis, at the end of a dropline |
 | e\* | The equilibrium exchange rate, USD per AUD | The AUD market's rate axis |
 | 1/e\* | Its reciprocal, AUD per USD | The USD market's rate axis |
+| Y | Real GDP, where AD meets SRAS | The real GDP axis, at the end of a dropline |
+| PL | The price level, where AD meets SRAS | The price level axis, at the end of a dropline |
+| U | The unemployment rate | The Phillips curve's unemployment axis, at the end of a dropline |
+| π | The inflation rate | The Phillips curve's inflation axis, at the end of a dropline |
 | A, B, C… | Points the lesson names | Beside the point |
 
 A new symbol is added here first, and only if a word won't fit where it has to

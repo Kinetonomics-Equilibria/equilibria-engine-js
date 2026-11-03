@@ -19,14 +19,18 @@ import { ONCE_REVEALED, UNLESS_ASKING, UNTIL_SUBMITTED, WHILE_ASKING, answerOf, 
  * `colors.blue`). A new one goes into the doc and `EconSchema` first.
  */
 export const MEANINGS = [
-    'demand', 'supply', 'equilibriumPrice', 'ppf', 'choice', 'price', 'combination', 'termsOfTrade'
+    'demand', 'supply', 'equilibriumPrice', 'ppf', 'choice', 'price', 'combination', 'termsOfTrade',
+    'potential', 'businessCycle'
 ] as const;
 export type Meaning = typeof MEANINGS[number];
 
 export const colourOf = (meaning: Meaning) => `colors.${meaning}`;
 
 /** The symbols a curve is labelled with, as the engine is given them (Symbols). */
-export const CURVE_SYMBOLS = ['D', 'S', '\\text{PPC}', '\\text{ToT}'] as const;
+export const CURVE_SYMBOLS = [
+    'D', 'S', '\\text{PPC}', '\\text{ToT}',
+    '\\text{AD}', '\\text{SRAS}', '\\text{LRAS}', '\\text{SRPC}', '\\text{LRPC}', '\\text{GDP}'
+] as const;
 export type CurveSymbol = typeof CURVE_SYMBOLS[number];
 
 /** What a ghost adds to its curve's symbol, D₀, and what the answer to a question adds, D₁. */
@@ -34,7 +38,9 @@ export const GHOST_SUFFIX = '_0';
 export const ANSWER_SUFFIX = '_1';
 
 /** The symbols a dropline or a price line puts on an axis (Symbols). */
-export const AXIS_SYMBOLS = ['P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*', '\\text{ToT}'] as const;
+export const AXIS_SYMBOLS = [
+    'P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*', '\\text{ToT}', 'Y', '\\text{PL}', 'U', '\\pi'
+] as const;
 export type AxisSymbol = typeof AXIS_SYMBOLS[number];
 
 /**
@@ -80,20 +86,23 @@ export interface AxisDefinition {
     intercept?: number;
     /** The same number of decimals on every tick. */
     tickPrecision?: number;
+    /** The ticks to draw, where they are not the engine's: `[]` for none, on a time axis with no dates. */
+    tickValues?: number[];
 }
 
 /**
  * An axis, titled in words with its unit, sentence case: "Price ($)",
  * "Thousands of pairs a year" (Axes).
  *
- * `$` is written as it is read. The engine typesets an axis title, and a bare
- * `$` would start maths, so the kit escapes it: a title is never written
+ * `$` and `%` are written as they are read. The engine typesets an axis
+ * title, and a bare `$` would start maths and a bare `%` end the title there,
+ * as TeX's comment, so the kit escapes both: a title is never written
  * `'Price (\\$)'` by hand again. Size an axis to the sliders, not to the
  * start: the furthest any curve can reach, and a little room past it.
  */
 export function axis(title: string, min: number, max: number,
-    options: { intercept?: number; tickPrecision?: number } = {}): AxisDefinition {
-    return { title: title.replace(/\\?\$/g, '\\$'), min, max, ...options };
+    options: { intercept?: number; tickPrecision?: number; tickValues?: number[] } = {}): AxisDefinition {
+    return { title: title.replace(/\\?\$/g, '\\$').replace(/\\?%/g, '\\%'), min, max, ...options };
 }
 
 /** The price axis, from 0: "Price ($)". `$` on its own is Australian dollars. */

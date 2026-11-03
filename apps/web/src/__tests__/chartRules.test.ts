@@ -47,6 +47,7 @@ section('Colour').forEach(line => {
  */
 const asRead = (tex: string) => tex
     .replace(/\\text\{(\w+)\}/, '$1')
+    .replace('\\pi', 'π')
     .replace('^*', '\\*')
     .replace('_0', '₀')
     .replace('_1', '₁')

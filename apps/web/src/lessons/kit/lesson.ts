@@ -43,6 +43,11 @@ export interface ParamDefinition {
      */
     precision?: number;
     presentation?: boolean;
+    /**
+     * A param with two states, 0 and 1, which Explore offers as a switch
+     * rather than a slider of two stops.
+     */
+    isBoolean?: boolean;
 }
 
 /** A panel: what the app calls it and headlines it with, and what the engine draws in it. */
@@ -99,6 +104,19 @@ export function askedParams(steps: LessonStep[], params: ParamDefinition[]): str
 
 export function defineLesson(spec: LessonSpec): StudyContent {
     const { steps, model, ...words } = spec;
+    return { ...words, lesson: steps, model: defineModel(model, steps) };
+}
+
+/**
+ * A model, from what only its author can say: what `defineLesson` builds a
+ * lesson's diagram with, and what a topic lists in the Playground before any
+ * lesson is drawn on it (`LessonTopic.models`).
+ *
+ * `steps` are the lesson's, whose questions each need a start and an answer
+ * for the params they ask about. A model with no lesson has none, and asks
+ * nothing.
+ */
+export function defineModel(model: ModelSpec, steps: LessonStep[] = []): StudyModel {
     const { params, calcs, panels, explainedCalcs, ...said } = model;
 
     const asked = askedParams(steps, params);
@@ -162,7 +180,7 @@ export function defineLesson(spec: LessonSpec): StudyContent {
         ...(brokenRules.length > 0 ? { brokenRules } : {})
     };
 
-    return { ...words, lesson: steps, model: built };
+    return built;
 }
 
 /**

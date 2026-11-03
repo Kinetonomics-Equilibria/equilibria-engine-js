@@ -549,11 +549,23 @@ describe('finding a lesson by its address', () => {
 
 describe('the models', () => {
 
-    // The playground's list is read off the lessons, so the two panels cannot
+    // The playground's list is read off the lessons, and the models a topic
+    // lists before a lesson is drawn on them, so the two panels cannot
     // disagree about what exists.
-    it('are every model a lesson is drawn on, once each, in the order the lessons list them', () => {
+    it('are every model a lesson is drawn on, and every model a topic lists with no lesson, once each', () => {
         const drawnOn = LESSONS.map(lesson => lesson.model).filter((model, i, all) => all.indexOf(model) === i);
-        expect(MODELS).toEqual(drawnOn);
+        const waiting = CURRICULUM.flatMap(strand => strand.topics.flatMap(topic => topic.models || []));
+        const ids = (models: StudyModel[]) => models.map(m => m.id).sort();
+        expect(ids(MODELS)).toEqual(ids([...drawnOn, ...waiting]));
+        expect(drawnOn.filter(model => waiting.indexOf(model) > -1)).toEqual([]);
+    });
+
+    // A topic's own models wait for a lesson, and a lesson drawn on one lists
+    // it by itself: listed both ways, it would be under two topics' dots.
+    it('lists a model under its topic with no lesson only until a lesson is drawn on it', () => {
+        CURRICULUM.forEach(strand => strand.topics.forEach(topic => (topic.models || []).forEach(model => {
+            expect(LESSONS.filter(lesson => lesson.model.id === model.id).map(l => l.id), model.id).toEqual([]);
+        })));
     });
 
     it('opens the model an id names, and the first for an id that names nothing', () => {
