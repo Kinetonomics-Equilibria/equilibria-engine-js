@@ -1595,8 +1595,14 @@ export function StudyScreen({
                           * or under it in a column. Either way the space
                           * separates them; a dot between them is not needed. */}
                         <Group gap={6} wrap="nowrap" className={classes.values}>
+                            {/* The label and the number apart, so that where
+                              * there is no room for both the label gives way
+                              * and the number does not (`.shelf .headline`).
+                              * One text still: "Unemployment (%) 4.0". */}
                             <Text component="span" className={classes.headline}>
-                                {isName ? '' : label + ' '}{unit}{formatValue(level, places)}
+                                {isName ? null : <span className={classes.headlineLabel}>{label}</span>}
+                                {isName ? null : ' '}
+                                <span className={classes.headlineNumber}>{unit}{formatValue(level, places)}</span>
                             </Text>
                             {/* A direction and an amount, in the panel's own
                               * unit, and no verdict. Red for a fall said a lower
