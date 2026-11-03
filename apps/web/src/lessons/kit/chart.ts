@@ -43,7 +43,7 @@ export const ANSWER_SUFFIX = '_1';
  * axis shows the reading's value (`axisValue`).
  */
 export const AXIS_SYMBOLS = [
-    'P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*', '\\text{ToT}', 'Y', '\\text{PL}', 'U', '\\pi'
+    'P^*', 'Q^*', 'P', 'P_1', 'Q_d', 'Q_s', 'e^*', '1/e^*', '\\text{ToT}', 'U', '\\pi'
 ] as const;
 export type AxisSymbol = typeof AXIS_SYMBOLS[number];
 

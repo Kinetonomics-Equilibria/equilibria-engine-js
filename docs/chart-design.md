@@ -282,8 +282,8 @@ A new colour must clear 3:1 as a line, because nothing darkens a line for you.
 | `price` | grey | A price sellers take as given, and the point it picks on supply: the plane tickets lesson's fare. Not `choice`, which is supply's orange, so the point would be the colour of the curve it slides along, and a point on the price line the colour of the line |
 | `combination` | purple | A combination anywhere: inside, on or outside the curve |
 | `termsOfTrade` | purple | The terms of trade: the line through the origin, and the point on it that says what 100 baskets of exports buy |
-| `potential` | grey | Potential GDP, which the economy can produce with its resources fully employed: long-run aggregate supply, the long-run Phillips curve, and the business cycle's trend |
-| `businessCycle` | purple | Real GDP over time, through the business cycle, and the words for its parts |
+| `potential` | grey | Potential growth, how fast the economy can grow with its resources fully employed: long-run aggregate supply, the long-run Phillips curve, and the business cycle's trend |
+| `businessCycle` | purple | GDP growth over time, through the business cycle, and the words for its parts |
 
 Contrast of the engine's palette on white. "Text" is what a label in that
 colour is drawn in:
@@ -528,10 +528,10 @@ Maths tab's formulas. These rows say where.
 | ToT | The terms of trade, export prices ÷ import prices × 100 | Its line; the imports axis shows its value |
 | AD | Aggregate demand | The economy's aggregate demand curve |
 | SRAS | Short-run aggregate supply | The economy's short-run aggregate supply curve |
-| LRAS | Long-run aggregate supply, at potential GDP | The vertical line at potential GDP |
+| LRAS | Long-run aggregate supply, at potential growth | The vertical line at potential growth |
 | SRPC | The short-run Phillips curve | The curve inflation and unemployment move along |
 | LRPC | The long-run Phillips curve, at the natural rate of unemployment | The vertical line at the natural rate |
-| GDP | Real GDP over time | The business cycle |
+| GDP | GDP growth over time | The business cycle |
 | D₀, S₀, PPC₀, ToT₀, AD₀, SRAS₀, LRAS₀, SRPC₀, LRPC₀, GDP₀ | Where that curve was | Its ghost |
 | D₁, S₁, PPC₁, ToT₁, AD₁, SRAS₁, LRAS₁, SRPC₁, LRPC₁, GDP₁ | Where that curve goes | The answer, after a question |
 | P\* | The equilibrium price | Said in the lesson and written in the Maths tab; its axis shows the value |
@@ -542,8 +542,6 @@ Maths tab's formulas. These rows say where.
 | Q<sub>s</sub> | The quantity supplied at P | Said in the lesson and written in the Maths tab; its axis shows the value |
 | e\* | The equilibrium exchange rate, USD per AUD | Said in the lesson and written in the Maths tab; its axis shows the value |
 | 1/e\* | Its reciprocal, AUD per USD | Said in the lesson and written in the Maths tab; its axis shows the value |
-| Y | Real GDP, where AD meets SRAS | Said in the lesson and written in the Maths tab; its axis shows the value |
-| PL | The price level, where AD meets SRAS | Said in the lesson and written in the Maths tab; its axis shows the value |
 | U | The unemployment rate | Said in the lesson and written in the Maths tab; its axis shows the value |
 | π | The inflation rate | Said in the lesson and written in the Maths tab; its axis shows the value |
 | A, B, C… | Points the lesson names | Beside the point |

@@ -17,29 +17,34 @@ import { CALCS, PANELS, PARAMS } from './chart';
  * (docs/design.md). The Strait of Hormuz scenario is a scenario here, with
  * the RBA's response as another, so a student can make the closure and then
  * the rate rise, and see what each does.
+ *
+ * Its numbers are Australia's, roughly, in the rates the ABS and the RBA
+ * report: GDP growing 3.4% a year, inflation at 2.5%, the middle of the RBA's
+ * target, and unemployment at 4.5%. They were an index once, which no
+ * student had seen anywhere else.
  */
 
-/** Where the model starts: at potential GDP, on the falling half of the cycle. */
-export const BASELINE = { demand: 104, supply: 104, potential: 104, expanding: 0 };
+/** Where the model starts: GDP growing at its potential rate, on the falling half of the cycle. */
+export const BASELINE = { demand: 3.4, supply: 3.4, potential: 3.4, expanding: 0 };
 
 /**
- * The numbers the strip reports, and what they are called everywhere. Real
- * GDP first, as the effect of every move, then the two a central bank
- * watches, then the gap between real and potential GDP, and the pieces the
- * Maths tab builds unemployment from.
+ * The numbers the strip reports, and what they are called everywhere. GDP
+ * growth first, as the effect of every move, then the two a central bank
+ * watches, then the gap between GDP growth and potential growth, and the
+ * pieces the Maths tab builds unemployment from.
  *
  * A percentage says so in its label, since a unit goes in front of its
- * number: "Inflation (%) 4.0".
+ * number: "Inflation (%) 2.5".
  */
 const NARRATED_CALCS = [
     {
-        name: 'realGdp', label: 'Real GDP', tex: 'Y', precision: 1,
-        meaning: 'Real GDP, where aggregate demand meets short-run aggregate supply',
-        rise: 'Real GDP rises', fall: 'Real GDP falls'
+        name: 'gdpGrowth', label: 'GDP growth (%)', tex: '\\text{GDP growth}', precision: 1,
+        meaning: 'The rise in real GDP over the year, as a percentage, where aggregate demand meets short-run aggregate supply',
+        rise: 'GDP growth rises', fall: 'GDP growth falls'
     },
     {
         name: 'inflation', label: 'Inflation (%)', tex: '\\pi', precision: 1,
-        meaning: 'The rise in the price level since last year, as a percentage',
+        meaning: 'The rise in the consumer price index (CPI) over the year, as a percentage',
         rise: 'Inflation rises', fall: 'Inflation falls'
     },
     {
@@ -48,21 +53,16 @@ const NARRATED_CALCS = [
         rise: 'Unemployment rises', fall: 'Unemployment falls'
     },
     {
-        name: 'gap', label: 'Output gap', tex: '\\text{Output gap}', precision: 1,
-        meaning: 'Real GDP minus potential GDP'
-    },
-    {
-        name: 'level', label: 'Price level', tex: '\\text{PL}', precision: 1,
-        meaning: 'The price level, where last year\'s was 100',
-        rise: 'The price level rises', fall: 'The price level falls'
+        name: 'gap', label: 'Growth gap', tex: '\\text{Growth gap}', precision: 1,
+        meaning: 'GDP growth minus potential growth, in percentage points'
     },
     {
         name: 'cyclical', label: 'Cyclical unemployment (%)', tex: '\\text{Cyclical}', precision: 1,
-        meaning: 'Unemployment minus the natural rate, which rises as real GDP falls below potential GDP'
+        meaning: 'Unemployment minus the natural rate, which rises as GDP growth falls below potential growth'
     },
     {
         name: 'natural', label: 'Natural rate (%)', tex: '\\text{Natural}', precision: 1,
-        meaning: 'The natural rate of unemployment, when real GDP is at potential GDP',
+        meaning: 'The natural rate of unemployment, when GDP grows at its potential rate',
         rise: 'The natural rate of unemployment rises', fall: 'The natural rate of unemployment falls'
     }
 ];
@@ -70,7 +70,8 @@ const NARRATED_CALCS = [
 /**
  * Shocks an Australian student hears about, each moving one curve and saying
  * which in its own words, so two can be combined: the Strait of Hormuz and
- * then the RBA is the stagflation and the central bank's answer to it.
+ * then the RBA is the stagflation and the central bank's answer to it, which
+ * takes inflation back to 2.5% and GDP growth down to 1.4%.
  */
 const SCENARIOS: Scenario[] = [
     {
@@ -78,35 +79,35 @@ const SCENARIOS: Scenario[] = [
         label: 'The Strait of Hormuz closes',
         description: 'A war cuts Australia\'s diesel imports, so fuel costs more for every firm. ' +
             'Short-run aggregate supply decreases.',
-        params: { supply: 102 }
+        params: { supply: 1.4 }
     },
     {
         id: 'rba',
         label: 'The RBA raises the cash rate',
         description: 'Loans cost more, so households and firms spend less. Aggregate demand decreases.',
-        params: { demand: 102 }
+        params: { demand: 1.4 }
     },
     {
         id: 'infrastructure',
         label: 'The government builds more roads',
         description: 'The government spends more on Australian workers and materials. Aggregate demand increases.',
-        params: { demand: 106 }
+        params: { demand: 5.4 }
     },
     {
         id: 'oil-falls',
         label: 'Oil prices fall',
-        description: 'Fuel costs less for every firm, so firms produce more at every price level. ' +
+        description: 'Fuel costs less for every firm, so firms produce more at every inflation rate. ' +
             'Short-run aggregate supply increases.',
-        params: { supply: 106 }
+        params: { supply: 5.4 }
     },
     {
         id: 'migration',
         label: 'More skilled workers arrive',
-        description: 'Skilled migrants join the workforce, so the economy can produce more at full employment. ' +
-            'Potential GDP increases.',
-        params: { potential: 106 }
+        description: 'More skilled migrants join the workforce each year, so the economy can grow faster at full ' +
+            'employment. Potential growth rises.',
+        params: { potential: 4.2 }
     },
-    { id: 'baseline', label: 'Back to potential GDP', params: { ...BASELINE } }
+    { id: 'baseline', label: 'Back to potential growth', params: { ...BASELINE } }
 ];
 
 export const AGGREGATE_DEMAND_AND_SUPPLY: StudyModel = defineModel({
@@ -118,10 +119,9 @@ export const AGGREGATE_DEMAND_AND_SUPPLY: StudyModel = defineModel({
     narratedCalcs: NARRATED_CALCS,
     // The levels, and none of what the later panels are drawn from: where on
     // the cycle the economy is and how far out the PPC reaches are pictures
-    // of real GDP and potential GDP, not more of the model.
+    // of GDP growth and potential growth, not more of the model.
     explainedCalcs: {
-        realGdp: CALCS.realGdp,
-        level: CALCS.level,
+        gdpGrowth: CALCS.gdpGrowth,
         inflation: CALCS.inflation,
         gap: CALCS.gap,
         natural: CALCS.natural,
@@ -129,16 +129,16 @@ export const AGGREGATE_DEMAND_AND_SUPPLY: StudyModel = defineModel({
         unemployment: CALCS.unemployment
     },
     paramMeanings: {
-        demand: 'Real GDP that buyers want at a price level of 104',
-        supply: 'Real GDP that firms offer at a price level of 104, before potential GDP changes',
-        potential: 'Real GDP when the economy\'s workers and capital are fully employed'
+        demand: 'GDP growth that buyers want at an inflation rate of 2.5%',
+        supply: 'GDP growth that firms offer at an inflation rate of 2.5%, before potential growth changes',
+        potential: 'GDP growth when the economy\'s workers and capital are fully employed'
     },
     // Each answerable with the controls: a fall in supply, a fall in demand,
-    // and a rise in potential GDP or supply.
+    // and a rise in potential growth or supply.
     explorePrompts: [
         'How can inflation and unemployment rise at the same time?',
         'What moves the production point inside the production possibility curve, and what happens to unemployment?',
-        'How can real GDP grow without the price level rising?'
+        'How can GDP grow faster without inflation rising?'
     ],
     paramWords: {
         demand: {
@@ -147,10 +147,10 @@ export const AGGREGATE_DEMAND_AND_SUPPLY: StudyModel = defineModel({
             fall: 'Aggregate demand decreases',
             curve: 'demand',
             because: {
-                rise: 'At the old price level, buyers now want more than firms produce, so firms raise ' +
-                    'output and prices until the two match again.',
-                fall: 'At the old price level, firms now produce more than buyers want, so firms cut ' +
-                    'output and prices until the two match again.'
+                rise: 'At the old inflation rate, buyers now want more than firms produce, so firms raise ' +
+                    'output faster and prices rise faster until the two match again.',
+                fall: 'At the old inflation rate, firms now produce more than buyers want, so firms raise ' +
+                    'output more slowly and prices rise more slowly until the two match again.'
             }
         },
         supply: {
@@ -159,26 +159,26 @@ export const AGGREGATE_DEMAND_AND_SUPPLY: StudyModel = defineModel({
             fall: 'Short-run aggregate supply decreases',
             curve: 'supply',
             because: {
-                rise: 'At the old price level, firms now offer more than buyers want, so prices fall ' +
-                    'until buyers take what firms produce.',
-                fall: 'At the old price level, firms now offer less than buyers want, so prices rise ' +
+                rise: 'At the old inflation rate, firms now offer more than buyers want, so prices rise more ' +
+                    'slowly until buyers take what firms produce.',
+                fall: 'At the old inflation rate, firms now offer less than buyers want, so prices rise faster ' +
                     'until buyers want only what firms produce.'
             }
         },
         potential: {
-            about: 'What the economy can produce with its workers, capital and technology fully employed.',
-            rise: 'Potential GDP increases',
-            fall: 'Potential GDP decreases',
+            about: 'How fast the economy can grow with its workers, capital and technology fully employed.',
+            rise: 'Potential growth rises',
+            fall: 'Potential growth falls',
             curve: 'potential',
             because: {
-                rise: 'The economy can produce more at every price level, so firms offer more than buyers ' +
-                    'want and prices fall until the two match again.',
-                fall: 'The economy can produce less at every price level, so firms offer less than buyers ' +
-                    'want and prices rise until the two match again.'
+                rise: 'The economy can grow faster at every inflation rate, so firms offer more than buyers ' +
+                    'want and prices rise more slowly until the two match again.',
+                fall: 'The economy can grow only more slowly at every inflation rate, so firms offer less than ' +
+                    'buyers want and prices rise faster until the two match again.'
             }
         },
         expanding: {
-            about: 'The half of the business cycle the economy is on. Real GDP rises in an expansion and falls in a contraction.',
+            about: 'The half of the business cycle the economy is on. GDP growth speeds up in an expansion and slows in a contraction.',
             rise: 'The economy moves into an expansion',
             fall: 'The economy moves into a contraction'
         }
