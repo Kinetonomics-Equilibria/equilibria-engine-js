@@ -189,6 +189,11 @@ export class ViewObject extends UpdateListener implements IViewObject {
     public handleDrawn: string;
     /** Where the handle is, in the panel's pixels: where a key press grabs the object (`InteractionHandler.keyed`). */
     public handleAt: [number, number] | null;
+    /**
+     * Where a curve's handle settled, in the axes' units: what it goes with
+     * the curve from, and null until it is first placed (`view/handles.ts`).
+     */
+    public handleHome: [number, number] | null;
     /** What the object last said as a slider, so its attributes are written only when that changes. */
     public sliderSaid: string | null;
 

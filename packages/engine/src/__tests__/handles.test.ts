@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { mountConfig } from './helpers';
 
 /**
@@ -27,8 +27,9 @@ beforeAll(() => {
 
 const LOCKED = { name: 'locked', value: 0, min: 0, max: 1, round: 1 };
 const PARAMS = [
-    { name: 'a', value: 20, min: 10, max: 28, round: 0.1 },
+    { name: 'a', value: 20, min: 4, max: 28, round: 0.1 },
     { name: 'p', value: 8, min: 0, max: 20, round: 0.1 },
+    { name: 's', value: 2, min: 0, max: 10, round: 0.1 },
     LOCKED
 ];
 
@@ -55,10 +56,10 @@ const PRICE_POINT = {
     }
 };
 
-function build(objects: any[], panel: any = {}) {
+function build(objects: any[], panel: any = {}, values: Record<string, number> = {}) {
     return mountConfig({
         schema: 'EconSchema',
-        params: PARAMS,
+        params: PARAMS.map(p => (p.name in values ? { ...p, value: values[p.name] } : p)),
         layout: {
             CustomLayout: {
                 aspectRatio: 1.25,
@@ -172,6 +173,135 @@ describe('a curve that can be dragged', () => {
         const [x, y] = placed(demand);
         const px = [demand.xScale.scale(5), demand.yScale.scale(15)];
         expect(Math.hypot(x - px[0], y - px[1])).toBeGreaterThan(18 + 7);
+        r.destroy();
+    });
+});
+
+/**
+ * A handle goes with its curve while something is being moved, and keeps
+ * clear of things only once it stops.
+ *
+ * Placed afresh on every update, supply's handle ran down its line ahead of
+ * the equilibrium in jumps while demand was dragged, and demand's own leapt
+ * from under the pointer as another line crossed it.
+ */
+describe('while something is being moved', () => {
+
+    const SUPPLY_MOVES = {
+        type: 'Line',
+        def: { name: 'supply', title: 'supply', yIntercept: 'params.s', slope: 1, color: 'colors.supply', drag: [{ vertical: 's' }] }
+    };
+    const EQUILIBRIUM = {
+        type: 'Point',
+        def: { name: 'eq', title: '', x: '(params.a - params.s) / 2', y: '(params.a + params.s) / 2', color: 'colors.equilibriumPrice' }
+    };
+    /** The same place, but for a rounding: a handle that has not moved. */
+    const still = (at: [number, number], was: [number, number]) => {
+        expect(at[0]).toBeCloseTo(was[0], 6);
+        expect(at[1]).toBeCloseTo(was[1], 6);
+    };
+    const onLine = (vo: any, at: [number, number], intercept: number, slope: number) =>
+        expect(vo.yScale.scale.invert(at[1])).toBeCloseTo(intercept + slope * vo.xScale.scale.invert(at[0]), 1);
+
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('goes with its curve, keeping the height a sideways drag leaves alone', () => {
+        const r = build([DEMAND]);
+        const demand = live(r, 'demand'), before = placed(demand);
+        r.kg.beginGesture();
+        setParam(r, 'a', 17);
+        const after = placed(demand);
+        r.kg.endGesture();
+        expect(after[1]).toBeCloseTo(before[1], 6);
+        expect(after[0]).toBeLessThan(before[0]);
+        onLine(demand, after, 17, -1);
+        r.destroy();
+    });
+
+    it('holds still on a curve that is not moving, with the equilibrium passing over it', () => {
+        const r = build([DEMAND, SUPPLY_MOVES, EQUILIBRIUM]);
+        const supply = live(r, 'supply'), before = placed(supply);
+        r.kg.beginGesture();
+        [18, 14, 10, 8].forEach(a => {
+            setParam(r, 'a', a);
+            still(placed(supply), before);
+        });
+        r.kg.endGesture();
+        r.destroy();
+    });
+
+    it('steps aside once nothing has moved for a moment, if it was left covered', () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        const r = build([DEMAND, SUPPLY_MOVES, EQUILIBRIUM]);
+        const supply = live(r, 'supply'), point = named(r, 'eq')[0], before = placed(supply);
+        r.kg.beginGesture();
+        // Supply's handle starts near x 3, where the equilibrium is with a at 8.
+        setParam(r, 'a', 8);
+        // Held still is still a drag.
+        vi.advanceTimersByTime(1000);
+        still(placed(supply), before);
+        r.kg.endGesture();
+        still(placed(supply), before);
+        vi.advanceTimersByTime(300);
+        const after = placed(supply), at = point.pixelCircle().at;
+        expect(Math.hypot(after[0] - at[0], after[1] - at[1])).toBeGreaterThan(18 + 4);
+        onLine(supply, after, 2, 1);
+        // Once, and nearby: no further than it had to.
+        expect(Math.hypot(after[0] - before[0], after[1] - before[1])).toBeLessThan(60);
+        vi.advanceTimersByTime(1000);
+        still(placed(supply), after);
+        r.destroy();
+    });
+
+    it('stays where its curve took it when nothing covers it', () => {
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        const r = build([DEMAND]);
+        const demand = live(r, 'demand');
+        r.kg.beginGesture();
+        setParam(r, 'a', 17);
+        r.kg.endGesture();
+        const rode = placed(demand);
+        vi.advanceTimersByTime(300);
+        still(placed(demand), rode);
+        r.destroy();
+    });
+
+    it('never jumps along a curve as it is dragged, step by small step', () => {
+        // A curve written as x in terms of y, sampled at three points, as the
+        // lesson kit's are. Where a rounding made the end of a piece cut to the
+        // plot miss the next sample by a hair, the curve read as leaving the
+        // plot there, split in two, and its handle jumped to the longer half.
+        const ad = {
+            type: 'Curve',
+            def: { name: 'ad', title: 'ad', fn: 'params.a - (y)', samplePoints: 2, color: 'colors.demand', drag: [{ horizontal: 'a' }] }
+        };
+        const r = build([ad]);
+        const curve = live(r, 'ad');
+        r.kg.beginGesture();
+        let last = placed(curve);
+        for (let a = 20; a >= 8; a -= 0.1) {
+            setParam(r, 'a', Math.round(a * 10) / 10);
+            const at = placed(curve);
+            expect(Math.hypot(at[0] - last[0], at[1] - last[1])).toBeLessThan(10);
+            last = at;
+        }
+        r.kg.endGesture();
+        r.destroy();
+    });
+
+    it('goes back to where it starts at a step of a lesson', () => {
+        const fresh = build([DEMAND], {}, { a: 14 });
+        const start = placed(live(fresh, 'demand'));
+        fresh.destroy();
+        const r = build([DEMAND]);
+        r.kg.beginGesture();
+        setParam(r, 'a', 14);
+        r.kg.endGesture();
+        expect(placed(live(r, 'demand'))[1]).not.toBeCloseTo(start[1], 0);
+        r.kg.update({ params: [{ name: 'p', value: 9 }] }, { arrive: true });
+        const back = placed(live(r, 'demand'));
+        expect(back[0]).toBeCloseTo(start[0], 1);
+        expect(back[1]).toBeCloseTo(start[1], 1);
         r.destroy();
     });
 });

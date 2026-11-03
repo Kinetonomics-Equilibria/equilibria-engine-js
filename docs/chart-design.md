@@ -207,11 +207,23 @@ config sets nothing.
   the arrows go: three curves' arrows in one grid panel were more marks than
   the curves themselves, and the thumb already says the curve can be dragged.
   A point keeps its arrows, which are the whole of its handle.
-- **A quarter of the way along the curve**, from its left-hand end: the end away
-  from D and S's labels, and from the equilibrium in the middle. It slides
-  along the curve, as little as it must, to keep clear of points, labels and
-  other handles, and of other curves where it can. It goes with the curve as
-  the curve is dragged.
+- **It starts a quarter of the way along the curve**, from its left-hand end:
+  the end away from D and S's labels, and from the equilibrium in the middle.
+  Where that spot is taken it starts at the nearest clear one along the curve:
+  clear of points, labels and other handles, and of other curves where it can.
+  A step of a lesson puts it back there.
+- **It goes with its curve, and only with it.** A curve dragged sideways keeps
+  its handle at the same height, and one dragged up and down keeps it at the
+  same distance across, so the handle stays under the pointer. Where that
+  would take it off the plot, it slides along the curve to stay on. A curve
+  that isn't moving keeps its handle still, whatever else moves.
+- **It gets out of the way once the student stops.** While a drag, a slider or
+  a run of key presses is going, a handle keeps clear of nothing: the
+  equilibrium passes over supply's handle, which is drawn under it. Once
+  nothing has moved for 300ms, with nothing held, a handle left covered moves
+  once to the nearest clear spot along its curve and stays there. Re-placed
+  on every update, handles used to hop along their curves ahead of the
+  equilibrium and jump out from under the pointer.
 - **A label beside a point that can be dragged sits past its arrows.** The
   engine moves a point's own label out to 20px. A label set beside one by hand
   keeps the same distance, as the café's "+20 toasties" does beside A.

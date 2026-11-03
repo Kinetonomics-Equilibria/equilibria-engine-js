@@ -23,11 +23,24 @@ import { boxOf } from "./labelYields";
  *
  * Placed after everything has drawn, for the reason `LabelYields` is: a
  * curve's handle keeps clear of the points and labels in its panel, and they
- * are only where they are once their own updates have run this tick. It sits a
- * quarter of the way along the curve's visible length from its left-hand end,
- * the end away from where D and S are labelled, and slides along the curve to
- * the nearest place clear of a point, a label, another handle and, where it
- * can, another line: a curve, or a segment such as a dropline.
+ * are only where they are once their own updates have run this tick.
+ *
+ * It starts a quarter of the way along the curve's visible length from its
+ * left-hand end, the end away from where D and S are labelled, or at the
+ * nearest place to that clear of a point, a label, another handle and, where
+ * it can, another line: a curve, or a segment such as a dropline. From there
+ * it goes with its curve. It keeps the coordinate the drag leaves alone, its
+ * height on a curve dragged sideways, so it moves as the pointer does and
+ * stays under it, and a curve that is not moving keeps its handle still.
+ *
+ * It keeps clear of nothing while something is being moved. Placed afresh on
+ * every update, a handle hopped: supply's ran down its line ahead of the
+ * equilibrium in 20px jumps while demand was dragged, and demand's own leapt
+ * 90px from under the pointer as the long-run line crossed it. Now the
+ * equilibrium passes over supply's handle, which is drawn underneath it, and
+ * once nothing has moved for a moment, with nothing held, a handle left
+ * covered steps aside, once, to the nearest place along its curve that is
+ * clear. A step of a lesson puts each back where it starts.
  */
 
 /** The thumb: a disc this wide inside a ring this heavy, 16px across, as the sliders' is. */
@@ -42,8 +55,21 @@ const REACH = ARROW_TIP;
 /** Room kept between a handle and a point's edge, or a label's box. */
 const GAP = 4;
 
-/** Where along the curve's visible length a handle tries, in order: a quarter of the way, and then out from there. */
-const ALONG = [0.25, 0.2, 0.3, 0.15, 0.35, 0.1, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9];
+/** Where along the curve's visible length a handle starts: a quarter of the way. */
+const START = 0.25;
+
+/** How much of the curve's visible length a handle keeps off at either end. */
+const ENDS = 0.1;
+
+/** How finely a handle looks along its curve for a clear place, in pixels. */
+const STEP = 2;
+
+/**
+ * How long nothing has to move, with nothing held, before a handle left
+ * covered steps aside, in milliseconds: longer than a held arrow key takes to
+ * repeat, so a run of presses is one move, as a drag is.
+ */
+const SETTLE_AFTER = 300;
 
 type Pt = [number, number];
 type Directions = '' | 'x' | 'y' | 'xy';
@@ -108,6 +134,9 @@ interface Obstacles {
 export class Handles {
 
     private panels: { objects: ViewObject[] }[];
+    private model;
+    /** The settle that waits for things to stop moving, while one does. */
+    private waiting: ReturnType<typeof setTimeout> | null = null;
 
     /** The panels with something that can be dragged, or null when nothing can. */
     static over(viewObjects: ViewObject[]): Handles | null {
@@ -122,19 +151,50 @@ export class Handles {
             if (!panel) panels.push(panel = { objects: [] });
             panel.objects.push(vo);
         });
-        return new Handles(panels);
+        return new Handles(panels, handled[0].model);
     }
 
-    constructor(panels: { objects: ViewObject[] }[]) {
+    constructor(panels: { objects: ViewObject[] }[], model) {
         this.panels = panels;
+        this.model = model;
     }
 
+    /**
+     * Every update takes the handles along with their curves. While a gesture
+     * is open, a drag, a key press or a slider under the diagram, that is all
+     * it does, and they settle once it has closed and nothing has moved for a
+     * moment. Any other update, a scenario or a question set, settles them at
+     * once, and a step of a lesson puts them back where they start.
+     */
     update() {
-        this.panels.forEach(panel => this.place(panel.objects));
-        return this;
+        const handles = this, model = handles.model;
+        if (model && model.arriving) {
+            handles.panels.forEach(panel => panel.objects.forEach(vo => { vo.handleHome = null; }));
+        }
+        const moving = !!(model && model.inGesture);
+                handles.panels.forEach(panel => handles.place(panel.objects, !moving));
+        if (handles.waiting) clearTimeout(handles.waiting);
+        handles.waiting = moving ? setTimeout(() => handles.settle(), SETTLE_AFTER) : null;
+        return handles;
     }
 
-    private place(objects: ViewObject[]) {
+    /** Settle once nothing is held: a drag held still is still a drag. */
+    private settle() {
+        const handles = this;
+        handles.waiting = null;
+        if (handles.model.inGesture) {
+            handles.waiting = setTimeout(() => handles.settle(), SETTLE_AFTER);
+            return;
+        }
+        // Not a diagram taken down while it waited.
+        const attached = handles.panels.some(panel => panel.objects.some(function (vo) {
+            const node = vo.rootElement && vo.rootElement.node();
+            return !!node && node.isConnected;
+        }));
+        if (attached) handles.panels.forEach(panel => handles.place(panel.objects, true));
+    }
+
+    private place(objects: ViewObject[], settle: boolean) {
         // Which handles show, and what is drawn in each, first: a point's
         // arrows are in the way of a curve's handle only while they show.
         const on = objects.filter(function (vo) {
@@ -142,7 +202,11 @@ export class Handles {
             const directions: Directions = (vo.interactionHandler && vo.interactionHandler.directions) || '';
             const showing = !!directions && !!vo.handle && displayed(vo);
             vo.handleElement.style('display', showing ? null : 'none');
-            if (!showing) return false;
+            // A handle that comes back starts afresh.
+            if (!showing) {
+                vo.handleHome = null;
+                return false;
+            }
             // A curve's thumb drops its arrows where the panel says to; a
             // point's arrows are all of its handle, and stay.
             const thumb = vo instanceof Curve,
@@ -160,7 +224,7 @@ export class Handles {
         // already moved to. A curve's is placed along it.
         on.filter((vo): vo is Point => vo instanceof Point).forEach(p => { p.handleAt = p.pixelCircle().at; });
         const curves = on.filter((vo): vo is Curve => vo instanceof Curve);
-        if (curves.length > 0) placeAlong(curves, objects, on);
+        if (curves.length > 0) placeAlong(curves, objects, on, settle);
 
         // What has a handle is what the keyboard can move. Asked of what was
         // decided here, not of the element's style, which the print stylesheet
@@ -171,10 +235,17 @@ export class Handles {
     }
 }
 
-/** Place each curve's handle along it, clear of what else is in its panel. */
-function placeAlong(curves: Curve[], objects: ViewObject[], on: ViewObject[]) {
+/** The stretch of a curve a handle can sit on, in pixels, and how far along it each sample is. */
+interface Run {
+    path: Pt[];
+    lengths: number[];
+    total: number;
+}
+
+/** What a handle keeps clear of in a panel, once its points, labels and lines have drawn. */
+function obstaclesIn(objects: ViewObject[], on: ViewObject[]): Obstacles {
     const shown = objects.filter(displayed);
-    const obstacles: Obstacles = {
+    return {
         // A point that can be dragged reaches as far as the arrows round it.
         points: shown.filter((vo): vo is Point => vo instanceof Point).map(function (p) {
             const { at, r } = p.pixelCircle();
@@ -189,16 +260,49 @@ function placeAlong(curves: Curve[], objects: ViewObject[], on: ViewObject[]) {
         }).filter(line => !!line),
         handles: []
     };
+}
 
-    curves.forEach(function (curve) {
-        const at = along(curve, obstacles);
-        curve.handleAt = at;
-        if (!at) {
+/**
+ * Place each curve's handle along it: where it goes with its curve and, when
+ * `settle`, clear of what else is in its panel. A handle with no place yet is
+ * placed clear whatever is moving, as it has nowhere to go with its curve from.
+ */
+function placeAlong(curves: Curve[], objects: ViewObject[], on: ViewObject[], settle: boolean) {
+    const runs = curves.map(runOf);
+    // Where each goes with its curve, first, so that one settling keeps clear
+    // of where the others are now rather than where they were.
+    const riding = curves.map((curve, i) => runs[i] && curve.handleHome ? rideAlong(curve, runs[i]) : null);
+    const ridingAt = riding.map((s, i) => s === null ? null : pointAlong(runs[i], s));
+    const placed: Pt[] = [];
+    let obstacles: Obstacles | null = null;
+
+    curves.forEach(function (curve, i) {
+        const run = runs[i];
+        if (!run) {
+            curve.handleHome = null;
+            curve.handleAt = null;
             curve.handleElement.style('display', 'none');
             return;
         }
+        let s = riding[i];
+        if (s === null || settle) {
+            obstacles = obstacles || obstaclesIn(objects, on);
+            const around: Obstacles = {
+                ...obstacles,
+                handles: placed.concat(ridingAt.slice(i + 1).filter(at => !!at))
+            };
+            s = s === null ? clearOf(curve, run, START * run.total, around, true) : clearOf(curve, run, s, around, false);
+        }
+        const at = pointAlong(run, s);
+        // Where it settles is where the next move takes it from, so a handle
+        // slid along an edge as its curve went off the plot is dragged on from
+        // there, under the pointer, and not from where it was before.
+        if (settle || !curve.handleHome) {
+            curve.handleHome = [curve.xScale.scale.invert(at[0]), curve.yScale.scale.invert(at[1])];
+        }
+        curve.handleAt = at;
         curve.handleElement.attr('transform', `translate(${at[0]} ${at[1]})`);
-        obstacles.handles.push(at);
+        placed.push(at);
     });
 }
 
@@ -253,35 +357,74 @@ function displayed(vo: ViewObject): boolean {
 }
 
 /**
- * Where on a curve its handle goes: the first place in `ALONG` that is clear
- * of everything, or else the first clear of points, labels and handles, which
- * another line may run past: a question's start line lies on the curve until
- * the student moves it. With nothing clear even of those, the place that keeps
- * furthest from them. Null when too little of the curve is inside the plot to
- * hold a handle and still show as a curve either side of it.
+ * The visible run of a curve, measured, or null when too little of it is
+ * inside the plot to hold a handle and still show as a curve either side of it.
  */
-function along(curve: Curve, obstacles: Obstacles): Pt | null {
-    const run = visibleRun(curve);
-    if (!run) return null;
-
+function runOf(curve: Curve): Run | null {
+    const path = visibleRun(curve);
+    if (!path) return null;
     const lengths = [0];
-    for (let i = 1; i < run.length; i++) lengths.push(lengths[i - 1] + distance(run[i - 1], run[i]));
+    for (let i = 1; i < path.length; i++) lengths.push(lengths[i - 1] + distance(path[i - 1], path[i]));
     const total = lengths[lengths.length - 1];
-    if (total < 4 * REACH) return null;
+    return total < 4 * REACH ? null : { path, lengths, total };
+}
 
-    const places = ALONG.map(f => pointAlong(run, lengths, f * total));
-    const hard = places.map(at => clearance(at, obstacles));
-    const soft = places.map(at => obstacles.lines
+/**
+ * How far along its run a handle is once its curve has moved: at the place
+ * that keeps the coordinate its drag leaves alone, its height on a curve
+ * dragged sideways and how far across on one dragged up and down, so it goes
+ * as the pointer does. Where that place has gone off the plot, the end of the
+ * run nearer it. A curve dragged any way, or one that no longer reaches that
+ * coordinate at all, takes the place nearest where the handle was. Kept out
+ * of the last tenth of the run at either end, by sliding along it.
+ */
+function rideAlong(curve: Curve, run: Run): number {
+    const home: Pt = [curve.xScale.scale(curve.handleHome[0]), curve.yScale.scale(curve.handleHome[1])];
+    const directions = curve.interactionHandler && curve.interactionHandler.directions;
+    const kept = directions === 'x' ? 1 : directions === 'y' ? 0 : -1;
+    let s: number | null = null;
+    if (kept > -1) {
+        const on = crossing(run.path, home, kept);
+        if (on) {
+            s = run.lengths[on.i - 1] + on.t * (run.lengths[on.i] - run.lengths[on.i - 1]);
+        } else {
+            const off = crossing(curve.pixelPath(), home, kept);
+            if (off) s = distance(off.at, run.path[0]) <= distance(off.at, run.path[run.path.length - 1]) ? 0 : run.total;
+        }
+    }
+    if (s === null) s = nearestAlong(run, home);
+    return Math.min((1 - ENDS) * run.total, Math.max(ENDS * run.total, s));
+}
+
+/**
+ * The nearest place to `s` along a run that is clear of everything, or else
+ * of the points, labels and handles, which another line may run past: a
+ * question's start line lies on the curve until the student moves it. With
+ * nothing clear even of those, a handle already placed stays where it is, and
+ * one being placed for the first time takes the place with the most room.
+ */
+function clearOf(curve: Curve, run: Run, s: number, obstacles: Obstacles, first: boolean): number {
+    const lo = ENDS * run.total, hi = (1 - ENDS) * run.total;
+    let clearOfHard: number | null = null, roomiest = s, room = -Infinity;
+    for (let d = 0; s - d >= lo || s + d <= hi; d += STEP) {
+        for (const at of d === 0 ? [s] : [s - d, s + d]) {
+            if (at < lo || at > hi) continue;
+            const p = pointAlong(run, at), hard = clearance(p, obstacles);
+            if (hard > room) { room = hard; roomiest = at; }
+            if (hard < 0) continue;
+            if (lineClearance(curve, p, obstacles) >= 0) return at;
+            if (clearOfHard === null) clearOfHard = at;
+        }
+    }
+    if (clearOfHard !== null) return clearOfHard;
+    return first ? roomiest : s;
+}
+
+/** How far a handle at `at` is from the other lines in its panel, past its reach: negative where it would touch one. */
+function lineClearance(curve: Curve, at: Pt, obstacles: Obstacles): number {
+    return obstacles.lines
         .filter(line => line.from !== curve)
-        .reduce((least, line) => Math.min(least, distanceToPath(at, line.path) - REACH), Infinity));
-
-    const clearOfAll = places.findIndex((_, i) => hard[i] >= 0 && soft[i] >= 0);
-    if (clearOfAll > -1) return places[clearOfAll];
-    const clearOfHard = places.findIndex((_, i) => hard[i] >= 0);
-    if (clearOfHard > -1) return places[clearOfHard];
-    let best = 0;
-    hard.forEach((h, i) => { if (h > hard[best]) best = i; });
-    return places[best];
+        .reduce((least, line) => Math.min(least, distanceToPath(at, line.path) - REACH), Infinity);
 }
 
 /** How much room a handle at `at` has to spare: negative where it would touch something. */
@@ -357,17 +500,61 @@ function clip(a: Pt, b: Pt, box: { left: number, right: number, top: number, bot
             else { if (t < t0) return null; if (t < t1) t1 = t; }
         }
     }
-    return [[a[0] + t0 * dx, a[1] + t0 * dy], [a[0] + t1 * dx, a[1] + t1 * dy]];
+    // An end the box did not cut is the sample itself, exactly: `a + 1 * (b - a)`
+    // can be a rounding away from `b`, which read as the curve leaving the box
+    // there and split it in two, and the handle jumped to the longer half.
+    return [
+        t0 === 0 ? a : [a[0] + t0 * dx, a[1] + t0 * dy],
+        t1 === 1 ? b : [a[0] + t1 * dx, a[1] + t1 * dy]
+    ];
 }
 
-function pointAlong(run: Pt[], lengths: number[], s: number): Pt {
-    for (let i = 1; i < run.length; i++) {
+function pointAlong(run: Run, s: number): Pt {
+    const { path, lengths } = run;
+    for (let i = 1; i < path.length; i++) {
         if (lengths[i] >= s) {
             const piece = lengths[i] - lengths[i - 1], t = piece > 0 ? (s - lengths[i - 1]) / piece : 0;
-            return [run[i - 1][0] + t * (run[i][0] - run[i - 1][0]), run[i - 1][1] + t * (run[i][1] - run[i - 1][1])];
+            return [path[i - 1][0] + t * (path[i][0] - path[i - 1][0]), path[i - 1][1] + t * (path[i][1] - path[i - 1][1])];
         }
     }
-    return run[run.length - 1];
+    return path[path.length - 1];
+}
+
+/**
+ * Where a path crosses the line through `at` that keeps `at[axis]`, at the
+ * crossing nearest `at`: on the piece ending at sample `i`, `t` of the way
+ * along it. Null where it never does.
+ */
+function crossing(path: Pt[], at: Pt, axis: number): { i: number, t: number, at: Pt } | null {
+    let best: { i: number, t: number, at: Pt } | null = null, least = Infinity;
+    for (let i = 1; i < path.length; i++) {
+        const a = path[i - 1], b = path[i], span = b[axis] - a[axis];
+        if (!(span !== 0 && isFinite(span))) continue;
+        const t = (at[axis] - a[axis]) / span;
+        if (t < 0 || t > 1) continue;
+        const p: Pt = [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])], d = distance(at, p);
+        if (d < least) { least = d; best = { i, t, at: p }; }
+    }
+    return best;
+}
+
+/** How far along a run its nearest place to `at` is. */
+function nearestAlong(run: Run, at: Pt): number {
+    const { path, lengths } = run;
+    let best = 0, least = Infinity;
+    for (let i = 1; i < path.length; i++) {
+        const t = towards(at, path[i - 1], path[i]),
+            a = path[i - 1], b = path[i],
+            d = distance(at, [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+        if (d < least) { least = d; best = lengths[i - 1] + t * (lengths[i] - lengths[i - 1]); }
+    }
+    return best;
+}
+
+/** How far from `a` to `b` the nearest place on that piece to `at` is, from 0 to 1. */
+function towards(at: Pt, a: Pt, b: Pt): number {
+    const dx = b[0] - a[0], dy = b[1] - a[1], length2 = dx * dx + dy * dy;
+    return length2 > 0 ? Math.max(0, Math.min(1, ((at[0] - a[0]) * dx + (at[1] - a[1]) * dy) / length2)) : 0;
 }
 
 function distance(a: Pt, b: Pt): number {
@@ -379,9 +566,8 @@ function distanceToPath(at: Pt, path: Pt[]): number {
     for (let i = 1; i < path.length; i++) {
         const a = path[i - 1], b = path[i];
         if (![a[0], a[1], b[0], b[1]].every(isFinite)) continue;
-        const dx = b[0] - a[0], dy = b[1] - a[1], length2 = dx * dx + dy * dy;
-        const t = length2 > 0 ? Math.max(0, Math.min(1, ((at[0] - a[0]) * dx + (at[1] - a[1]) * dy) / length2)) : 0;
-        least = Math.min(least, distance(at, [a[0] + t * dx, a[1] + t * dy]));
+        const t = towards(at, a, b);
+        least = Math.min(least, distance(at, [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]));
     }
     return least;
 }
