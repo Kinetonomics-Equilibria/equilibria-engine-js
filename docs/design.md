@@ -187,9 +187,13 @@ attention on finding things.
   the stage gets its width; it is inert while it is away, so the keyboard
   cannot reach it.
 - The words a class reads from across the room are drawn 1.25 times as large
-  (`--present-zoom` in `index.css`, a CSS `zoom` under `:fullscreen`). The
-  chart's text was made large enough for a projector, and the column's 15px
-  body and 12px heads were not; at 1.25 they are about 19px and 15px.
+  (`--present-zoom` in `index.css`, a CSS `zoom` under `:fullscreen`): the
+  column's 15px body and 12px heads are about 19px and 15px. So are the
+  chart's labels, 14px and 16px on a laptop and 17.5px and 20px presenting,
+  and its lines are half as heavy again, 2px to 3px (`--present-line-scale`).
+  The engine reads both where it paints (`--kg-type-scale`, `--kg-line-scale`),
+  so the chart is laid out as it was and only drawn larger. The laptop keeps
+  its lighter chart: see [`chart-design.md`](./chart-design.md), principle 7.
 - It was 1.5, after 1.3 was tried and judged too small, and the column took
   the diagram's room. At 1366×768 the stage was under 900px, the rail went
   under the focal panel, and the focal panel was 367px. 1.25 gives up some

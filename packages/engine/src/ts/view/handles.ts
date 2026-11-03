@@ -62,7 +62,7 @@ const FOCUS_RING = REACH + 5;
  * Draw a handle's shapes into its group, in `colour`, centred on the group's
  * origin, with the ring keyboard focus shows round it (kgjs-theme.css).
  */
-export function drawHandle(group, directions: Directions, colour: string, thumb: boolean) {
+export function drawHandle(group, directions: Directions, colour: string, thumb: boolean, arrows = true) {
     group.selectAll('*').remove();
     // Nothing on it of its own, for the stylesheet to add to on focus. A copy
     // of the diagram can leave the stylesheet behind, as a saved picture does,
@@ -80,7 +80,7 @@ export function drawHandle(group, directions: Directions, colour: string, thumb:
             .style('stroke', colour)
             .style('stroke-width', `${THUMB_RING}px`);
     }
-    (ARROWS[directions] || []).forEach(function ([dx, dy]) {
+    (arrows ? ARROWS[directions] || [] : []).forEach(function ([dx, dy]) {
         const tip: Pt = [dx * ARROW_TIP, dy * ARROW_TIP],
             left: Pt = [dx * ARROW_BASE - dy * ARROW_HALF, dy * ARROW_BASE - dx * ARROW_HALF],
             right: Pt = [dx * ARROW_BASE + dy * ARROW_HALF, dy * ARROW_BASE + dx * ARROW_HALF];
@@ -143,11 +143,14 @@ export class Handles {
             const showing = !!directions && !!vo.handle && displayed(vo);
             vo.handleElement.style('display', showing ? null : 'none');
             if (!showing) return false;
+            // A curve's thumb drops its arrows where the panel says to; a
+            // point's arrows are all of its handle, and stay.
             const thumb = vo instanceof Curve,
                 colour = thumb ? vo.stroke : vo.fill,
-                drawn = `${directions} ${colour}`;
+                arrows = !thumb || !!vo.handleArrows,
+                drawn = `${directions} ${colour} ${arrows}`;
             if (vo.handleDrawn !== drawn) {
-                drawHandle(vo.handleElement, directions, colour, thumb);
+                drawHandle(vo.handleElement, directions, colour, thumb, arrows);
                 vo.handleDrawn = drawn;
             }
             return true;

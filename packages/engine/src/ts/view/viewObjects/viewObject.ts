@@ -14,12 +14,32 @@ import { KG_HANDLE_CLASS } from "../../constants";
  * How heavy a line in a diagram is, unless its author says otherwise: every
  * curve and every segment, droplines and arrows included.
  *
- * 3px, up from 2, because these diagrams are read on a projector at the front
- * of a classroom as well as on a laptop, and at 100% zoom a 2px curve and a 1px
- * axis were hard to see from the back of the room. The axes are 2px
- * (kgjs-theme.css), so a curve still outweighs the frame it is drawn in.
+ * 2px, for a student reading the diagram up close on a laptop. It was 3px for
+ * a projector at 100% zoom, where a 2px curve and a 1px axis were hard to see
+ * from the back of the room, and at 3px four panels in a grid were a tangle of
+ * heavy strokes. A projected diagram is in Present, which draws every line
+ * half as heavy again (`--kg-line-scale`, see `paintScale`): 3px, as it was.
+ * The axes are 1.5px (kgjs-theme.css), so a curve still outweighs the frame
+ * it is drawn in.
  */
-export const LINE_WEIGHT = 3;
+export const LINE_WEIGHT = 2;
+
+/**
+ * How much larger than its def a node's text, or its lines, are painted: the
+ * host's `--kg-type-scale` or `--kg-line-scale`, read where the node is, or 1.
+ *
+ * So a host can draw the diagram larger for a projector without a second
+ * config. The study app sets both in Present (`:fullscreen`), where a class
+ * reads the diagram from across a room. Read off the node itself, so the
+ * setting can be anywhere above it, and at paint time, so entering Present,
+ * which resizes the stage and redraws it, paints at the new scale. A def's
+ * own sizes, and everything measured from them, stay as authored.
+ */
+export function paintScale(node: Element | null | undefined, property: '--kg-type-scale' | '--kg-line-scale'): number {
+    if (!node || typeof getComputedStyle !== 'function') return 1;
+    const scale = parseFloat(getComputedStyle(node).getPropertyValue(property));
+    return isFinite(scale) && scale > 0 ? scale : 1;
+}
 
 export interface ViewObjectDefinition extends UpdateListenerDefinition {
     layer?: any;
@@ -58,6 +78,11 @@ export interface ViewObjectDefinition extends UpdateListenerDefinition {
      * `view/handles.ts`). True unless a panel is too small to be read.
      */
     handle?: any;
+    /**
+     * Whether a curve's handle draws its arrows beside its thumb. True unless
+     * a panel is the size of a grid cell, where the thumb alone says it.
+     */
+    handleArrows?: any;
 
     color?: string;
     fill?: string;
@@ -158,6 +183,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
     public clearColor;
     public arrive;
     public handle;
+    public handleArrows;
     /** The group a handle is drawn in, on an object that can be dragged; and what was last drawn in it. */
     public handleElement;
     public handleDrawn: string;
@@ -183,10 +209,11 @@ export class ViewObject extends UpdateListener implements IViewObject {
             inDef: false,
             lineStyle: 'solid',
             checkOnGraph: true,
-            handle: true
+            handle: true,
+            handleArrows: true
         });
 
-        setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'strokeScale', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc', 'handle']);
+        setProperties(def, 'updatables', ['xScaleMin', 'xScaleMax', 'yScaleMin', 'yScaleMax', 'fill', 'stroke', 'strokeWidth', 'strokeScale', 'opacity', 'strokeOpacity', 'show', 'lineStyle', 'srTitle', 'srDesc', 'handle', 'handleArrows']);
         setProperties(def, 'constants', ['xScale', 'yScale', 'clipPath', 'clipPath2', 'interactive', 'alwaysUpdate', 'inDef', 'checkOnGraph', 'tabbable', 'view', 'arrive']);
         setProperties(def, 'colorAttributes', ['stroke', 'fill', 'color']);
 
@@ -345,10 +372,21 @@ export class ViewObject extends UpdateListener implements IViewObject {
         return width * (isNaN(scale) ? 1 : scale);
     }
 
+    /**
+     * The width a stroke is painted at: its drawn width, times the host's
+     * line scale where `el` is (`paintScale`). A width that is not a number
+     * is the author's own CSS length, and is painted as given.
+     */
+    paintedStrokeWidth(el) {
+        const width = this.drawnStrokeWidth();
+        if (isNaN(+width)) return width;
+        return +width * paintScale(el && el.node ? el.node() : null, '--kg-line-scale');
+    }
+
     drawStroke(el) {
         const vo = this;
         el.attr('stroke', vo.stroke);
-        el.attr('stroke-width', vo.drawnStrokeWidth());
+        el.attr('stroke-width', vo.paintedStrokeWidth(el));
         el.style('stroke-opacity', vo.strokeOpacity);
         if (vo.lineStyle == 'dashed') {
             el.style('stroke-dashArray', '10,10');
@@ -358,7 +396,7 @@ export class ViewObject extends UpdateListener implements IViewObject {
             // were 1px long whatever the weight, which at 2px and up read as a
             // thin hatched line rather than as dots, and on a projector as
             // nothing at all. A dash of no length with a round cap is a dot.
-            const width = +vo.drawnStrokeWidth() || LINE_WEIGHT;
+            const width = +vo.paintedStrokeWidth(el) || LINE_WEIGHT;
             el.style('stroke-dashArray', `0,${2 * width}`);
             el.style('stroke-linecap', 'round');
         }

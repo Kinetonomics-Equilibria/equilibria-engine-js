@@ -51,7 +51,9 @@
 .kg-container g.axis line,
 .kg-container g.axis path {
     stroke: var(--kg-axis-color);
-    stroke-width: 2px;
+    /* Under a curve's 2px, and heavier in Present with every line
+     * (`--kg-line-scale`, `paintScale` in view/viewObjects/viewObject.ts). */
+    stroke-width: calc(1.5px * var(--kg-line-scale, 1));
 }
 
 /*

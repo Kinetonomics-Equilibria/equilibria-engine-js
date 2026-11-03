@@ -40,7 +40,7 @@ by default, and `chartRules.test.ts` checks every rule here a machine can.
    needs it.
 
 3. **Weight follows attention.** The thing a student is reading is the heaviest
-   mark on the chart, and the frame is the lightest: curves are 3px, axes 2px,
+   mark on the chart, and the frame is the lightest: curves are 2px, axes 1.5px,
    and a shaded area has no outline at all.
 
 4. **A line's style says when it is.** Solid is now. Dashed and faint is where
@@ -52,9 +52,19 @@ by default, and `chartRules.test.ts` checks every rule here a machine can.
    can reach, so nothing rescales while a student is dragging. This is
    `design.md`'s "nothing moves under the pointer", inside the plot.
 
-6. **Hide, don't shrink.** In a small panel the engine's density levels drop
-   axis titles, then ticks and labels. Nothing is drawn smaller to fit. A chart
-   is written once, at its focal size, and the same config serves every size.
+6. **Hide first, then one step down.** In a smaller panel the engine's
+   density levels drop what a glance does not need: at grid size (`compact`)
+   the axis titles, a ghost's name and a curve handle's arrows, and at rail
+   size (`indicator`) the ticks and every label. A curve's symbol steps down
+   once, at grid size, to the size of the words beside it. Nothing is drawn
+   smaller than 14px. A chart is written once, at its focal size, and the same
+   config serves every size.
+
+7. **Sized for a laptop; Present is for the room.** A student reads the chart
+   up close, on a laptop, and the defaults are for that. A teacher projecting
+   presses Present, which draws every label a quarter larger and every line
+   half as heavy again (`--kg-type-scale` and `--kg-line-scale`). A chart does
+   not set its own sizes for a projector.
 
 ## Anatomy
 
@@ -82,12 +92,16 @@ never does. A word in a label is plain text (`plainText: true`), not `\text{}`.
 
 A label's `fontSize` is in **points**, not pixels: `fontSize: 12` is 16px.
 
+The sizes below are a laptop's. In Present every label is a quarter larger,
+so 14px is 17.5px and 16px is 20px; tick numbers stay 14px there, as their
+place beside the axis titles is measured for.
+
 | What | Size | Style | Colour |
 | --- | --- | --- | --- |
 | Chart title | 16px | semibold | text |
 | Headline number and chip | 14px | regular, tabular figures | dimmed grey |
-| Curve label (a symbol) | `SYMBOL_SIZE`, 14pt (18.7px) | maths italic | the curve's |
-| Axis title | `LABEL_SIZE`, 12pt (16px) | regular | text |
+| Curve label (a symbol) | `SYMBOL_SIZE`, 12pt (16px); `LABEL_SIZE` in a grid panel | maths italic | the curve's |
+| Axis title | `LABEL_SIZE`, 10.5pt (14px) | regular | text |
 | Dropline label | `LABEL_SIZE` | maths italic | the point's |
 | Point letter, area label, annotation | `LABEL_SIZE` | regular, plain text | the thing's |
 | Tick numbers | 14px | regular, tabular figures | axis grey |
@@ -95,28 +109,32 @@ A label's `fontSize` is in **points**, not pixels: `fontSize: 12` is 16px.
 These are the engine's defaults for each kind of label (`LABEL_SIZE` and
 `SYMBOL_SIZE` in `packages/engine/src/ts/view/typeScale.ts`; tick numbers in
 `kgjs-theme.css`), so a config sets no `fontSize` at all. They are sized for a
-projector at the front of a classroom at 100% zoom, not only for a laptop.
-Nothing a student has to read is smaller than 14px, and there are no sizes in
-between.
+student reading a laptop, and Present enlarges them for a projector
+(principle 7). They were set for a projector at 100% zoom, 16px and 18.7px,
+and a multi-letter symbol at that size, LRAS or SRPC, was the heaviest mark on
+its chart. Nothing a student has to read is smaller than 14px, and there are no
+sizes in between.
 
 ## Lines
 
 | Role | Weight | Style | Colour | Opacity |
 | --- | --- | --- | --- | --- |
-| Axis line and ticks | 2px | solid | `--kg-axis-color` (#333) | 100% |
-| A curve, now | 3px | solid | its own | 100% |
-| Where it was (the ghost) | 3px | dashed, 10 on 10 off | the curve's | 35% |
-| Where it should go (the answer, after Check) | 3px | dotted | the curve's | 100% |
-| Dropline | 3px | dotted | the point's | 100% |
-| Price line (a set price across the plot, to read points against; labelled P on the price axis) | 3px | dotted | `choice`, or `price` against supply | 100% |
-| Measured step ("+20 toasties") | 3px | dotted | the thing measured | 100% |
+| Axis line and ticks | 1.5px | solid | `--kg-axis-color` (#333) | 100% |
+| A curve, now | 2px | solid | its own | 100% |
+| Where it was (the ghost) | 2px | dashed, 10 on 10 off | the curve's | 35% |
+| Where it should go (the answer, after Check) | 2px | dotted | the curve's | 100% |
+| Dropline | 2px | dotted | the point's | 100% |
+| Price line (a set price across the plot, to read points against; labelled P on the price axis) | 2px | dotted | `choice`, or `price` against supply | 100% |
+| Measured step ("+20 toasties") | 2px | dotted | the thing measured | 100% |
 | Gridline | 1px | dotted | light grey | 100% |
 
-- **Weights are set for the back of a classroom.** These charts are shown on
-  a projector at 100% zoom as well as read on a laptop, and at 2px curves and
-  1px axes they could hardly be seen across a room. The defaults are 3px
-  (`LINE_WEIGHT` in `packages/engine/src/ts/view/viewObjects/viewObject.ts`)
-  and 2px (the axes, in `kgjs-theme.css`). A config sets no `strokeWidth`.
+- **Weights are set for a laptop, and Present sets them for the room.** The
+  defaults are 2px (`LINE_WEIGHT` in
+  `packages/engine/src/ts/view/viewObjects/viewObject.ts`) and 1.5px for the
+  axes (`kgjs-theme.css`). In Present every line is drawn half as heavy again,
+  3px and 2.25px: at 2px curves and 1px axes on a projector they could hardly
+  be seen across a room, and at 3px on a laptop four panels in a grid were a
+  tangle of heavy strokes. A config sets no `strokeWidth`.
 - Every curve is the same weight, the one a student can drag included. Don't
   thicken the curve a lesson is about: the lesson's words and the caption
   already say what it is about.
@@ -185,6 +203,10 @@ config sets nothing.
   once an answer is committed, has no handle, as it has no drag cursor. A
   ghost, a question's lines and an answer line never have one. Nor does a panel
   at `indicator` size, which is glanced at, not dragged.
+- **In a grid panel a curve's handle is its thumb alone.** At `compact` size
+  the arrows go: three curves' arrows in one grid panel were more marks than
+  the curves themselves, and the thumb already says the curve can be dragged.
+  A point keeps its arrows, which are the whole of its handle.
 - **A quarter of the way along the curve**, from its left-hand end: the end away
   from D and S's labels, and from the equilibrium in the middle. It slides
   along the curve, as little as it must, to keep clear of points, labels and
@@ -352,7 +374,8 @@ above the plot.
 - **The label is the curve's symbol** from the [list](#symbols). The live curve
   keeps its plain name always: D, never D′ or D₁. Its ghost adds ₀
   (`ghost: { label: '_0' }`), and the answer after a question adds ₁. The engine
-  moves the ghost's label clear of the live one.
+  moves the ghost's label clear of the live one, and in a grid panel leaves it
+  off: the dashed line says where the curve was, and D₀ piled up beside D.
 - **The same curve is called the same thing in every panel** it is drawn in.
 
 ### Points
@@ -383,7 +406,7 @@ above the plot.
 For a point whose values a student is meant to read off the axes: the
 equilibrium price and quantity, or the quantity traded under a price ceiling.
 
-- **From the point to both axes**, unless only one value matters. Dotted, 3px,
+- **From the point to both axes**, unless only one value matters. Dotted, 2px,
   in the point's colour. Set with `droplines: { vertical: 'Q^*', horizontal:
   'P^*' }` on the point.
 - **Labelled on the axis**, among the tick numbers, with the symbol. A tick
@@ -540,7 +563,7 @@ Currency codes (AUD, USD) are fine: that is how money is written.
 - Nothing a student has to read is smaller than 14px.
 - Don't shrink a drag target. The engine gives curves and points an invisible
   grip 20px across or more, so a student on a trackpad doesn't have to land on
-  a 3px line.
+  a 2px line.
 - Whatever can be dragged has a [handle](#handles) at rest, so finding it
   doesn't depend on hovering, which a tablet can't do.
 - Whatever can be dragged can be moved from the keyboard as well, as a slider

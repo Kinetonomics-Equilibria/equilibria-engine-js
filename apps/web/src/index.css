@@ -22,6 +22,11 @@
      * `.heading` and AsidePanel's `.words`. 1.5 cost the diagram too much;
      * see docs/design.md, "Present". */
     --present-zoom: 1.25;
+    /* The diagram's labels, presenting, are as much larger as the column's
+     * words; its lines half as heavy again, the 3px a curve needs to be seen
+     * from the back of the room. The engine reads both where it paints
+     * (`paintScale`), and the laptop's sizes are untouched by them. */
+    --present-line-scale: 1.5;
     /* How a sheet rises over a card's body, and goes back down: "What
      * changed"'s, from its foot and into it again. Long enough to watch it
      * come up from where it was, quick to start and slowing as it lands. The
@@ -29,6 +34,13 @@
      * agree (paper.module.css `.stack`). */
     --sheet-rise: 340ms;
     --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Presenting: `present.ts` puts the whole page full screen, so this is the
+ * root, and the diagram inherits the two scales from here. */
+:fullscreen {
+    --kg-type-scale: var(--present-zoom);
+    --kg-line-scale: var(--present-line-scale);
 }
 
 /* A word in a diagram's label (`\text{PPC}`) in the theme's font, and the ring

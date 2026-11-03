@@ -1,5 +1,6 @@
 import { ViewDefinition } from "../../view/view";
 import { DEFAULT_TICKS } from "../../view/viewObjects/axis";
+import { LABEL_SIZE, SYMBOL_SIZE } from "../../view/typeScale";
 import { allObjects, combineShow } from "./steps";
 
 /**
@@ -232,11 +233,21 @@ export function compileDensity(parsedData: ViewDefinition): ViewDefinition {
             }
 
             if (o.type === 'Label') {
-                // An axis title goes at `compact`; every other label — a curve's
-                // name, a point's coordinates, a dropline's axis value — survives
-                // until `indicator`, where the panel stops being read at all.
-                const goesAt = (o.def.furniture === 'axisTitle') ? 1 : 2;
+                // An axis title goes at `compact`, and so does a ghost's name,
+                // D₀, which a ghost's label is by yielding to the live one
+                // (`yieldLabel` in ghosts.ts): in a panel the size of a grid
+                // cell the dashed line already says where the curve was, and
+                // its name piled up beside the live one's. Every other label —
+                // a curve's name, a point's state, a dropline's axis value —
+                // survives until `indicator`, where the panel stops being read.
+                const goesAt = (o.def.furniture === 'axisTitle' || o.def.yieldsTo) ? 1 : 2;
                 o.def.show = combineShow(o.def.show, `params.${param} < ${goesAt}`);
+                // A curve's symbol steps down to the size of the words beside
+                // it at `compact`, once, and no further: LRAS at 16px was the
+                // heaviest thing in a grid panel. Never under 14px.
+                if (o.def.fontSize === SYMBOL_SIZE) {
+                    o.def.fontSize = `(params.${param} == 0 ? ${SYMBOL_SIZE} : ${LABEL_SIZE})`;
+                }
                 return;
             }
 
@@ -244,6 +255,11 @@ export function compileDensity(parsedData: ViewDefinition): ViewDefinition {
             // A handle goes with the labels: a panel too small to be read is
             // not where a student is meant to drag.
             o.def.handle = combineShow(o.def.handle, `params.${param} < 2`);
+            // And a curve's handle keeps its thumb and drops its arrows at
+            // `compact`, where three handles' arrows in one grid panel read
+            // as clutter. The thumb still says the curve can be dragged; a
+            // point's arrows are its whole handle, and stay (view/handles.ts).
+            o.def.handleArrows = combineShow(o.def.handleArrows, `params.${param} < 1`);
         });
     });
 

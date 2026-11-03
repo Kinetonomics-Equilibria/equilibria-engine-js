@@ -1,5 +1,5 @@
 import { setDefaults, setProperties } from "../../util";
-import { ViewObjectDefinition, ViewObject } from "./viewObject";
+import { ViewObjectDefinition, ViewObject, paintScale } from "./viewObject";
 import { UnivariateFunction, UnivariateFunctionDefinition } from "../../math/univariateFunction";
 import { AXIS_TITLE } from "../../KGAuthor/graphObjects/axis";
 import * as katex from "katex";
@@ -423,6 +423,17 @@ export class Label extends ViewObject {
         return label.addInteraction();
     }
 
+    /**
+     * The size the text is painted at, in points: its `fontSize`, times the
+     * host's type scale where the label is. Written as given where the scale
+     * is 1, so a size the def set reads back as the def set it.
+     */
+    paintedFontSize() {
+        const label = this,
+            scale = paintScale(label.rootElement ? label.rootElement.node() : null, '--kg-type-scale');
+        return scale === 1 || isNaN(+label.fontSize) ? label.fontSize : +label.fontSize * scale;
+    }
+
     // update properties
     redraw() {
         let label = this;
@@ -440,8 +451,9 @@ export class Label extends ViewObject {
             // Applied here as well as in draw(): the size can now change after
             // the div exists, and the measurements below (clientWidth/Height,
             // which the alignment offsets are computed from) have to be taken
-            // after the text has been re-sized, not before.
-            .style('font-size', label.fontSize + 'pt');
+            // after the text has been re-sized, not before. Times the host's
+            // type scale, which is 1 but in Present (`paintScale`).
+            .style('font-size', label.paintedFontSize() + 'pt');
 
         const at = label.placement(),
             x = label.xScale.scale(at.x) + (+label.xPixelOffset),

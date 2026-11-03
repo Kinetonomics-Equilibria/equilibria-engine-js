@@ -126,10 +126,10 @@ test('the picture has the axes as they are drawn, not as d3 writes them', async 
 
     const down = (await redsIn(page, png, column)).map(([red]) => red);
     const line = down.filter(red => red < 128);
-    // 2px is four of the picture's, where d3's 1px would be two, and in the
+    // 1.5px is three of the picture's, where d3's 1px would be two, and in the
     // axis colour, #333, where d3's would be black.
-    expect(line.length).toBeGreaterThanOrEqual(4);
-    expect(line.length).toBeLessThanOrEqual(5);
+    expect(line.length).toBeGreaterThanOrEqual(3);
+    expect(line.length).toBeLessThanOrEqual(4);
     expect(Math.min(...down)).toBeGreaterThan(40);
 
     // 14px type has digits 10px tall, so twenty here, where d3's 10px has fourteen.
