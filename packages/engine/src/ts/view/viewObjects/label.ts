@@ -7,6 +7,7 @@ import * as d3 from "d3";
 import { readableOn } from "../readable";
 import { fillInsideLetters } from "../letterFill";
 import { LABEL_SIZE } from "../typeScale";
+import { reducedMotion } from "../arrival";
 
 
 
@@ -47,6 +48,17 @@ const SLIDE_REFINEMENTS = 16;
 
 /** Pixels kept between a label and the one it gives way to. */
 const LABEL_GAP = 2;
+
+/**
+ * How far a label has to move in one update to have jumped, as a share of its
+ * plot's width and height: further than a curve carries its label in any one
+ * step, a Shift-arrow press of five included, which is an eighth, and short of
+ * a label sent to its curve's other end, which is half the plot or more.
+ */
+const JUMP = 0.25;
+
+/** How long a label that jumped takes to fade in where it landed. See `landed`. */
+const FADE_MS = 200;
 
 /**
  * A label's letters are ringed in the canvas colour, not set on a box of it.
@@ -135,6 +147,8 @@ export class Label extends ViewObject {
     public labelId: string;
     public yieldsTo: string;
     private avoiding: LabelBox | null = null;
+    /** Where the label was last put, as a share of its plot's width and height. See `landed`. */
+    private lastAt: [number, number] | null = null;
 
     constructor(def: LabelDefinition) {
 
@@ -572,7 +586,39 @@ export class Label extends ViewObject {
         label.rootElement.style('-webkit-transform', rotate)
             .style('transform', rotate);
 
+        label.landed(x, y);
         return label;
+    }
+
+    /**
+     * A label that jumps fades in where it lands.
+     *
+     * A curve's label goes to its curve's other end while the equilibrium, or
+     * another line, is at the end it was at (docs/chart-design.md, Labels on
+     * the plot): AD's goes across the whole of the chart in one step of the
+     * demand slider. Drawn there at once, it read as the label being thrown,
+     * and its ghost's a press later read as a second one. Faded in, it reads
+     * as the name of the curve appearing where there is room for it.
+     *
+     * A jump is measured as a share of the plot, so a panel that grows onto
+     * the stage, whose labels all move with it, has not jumped. Under the
+     * system's reduced motion, a jump is simply drawn.
+     */
+    private landed(x: number, y: number) {
+        const label = this,
+            node = label.rootElement && label.rootElement.node() as HTMLElement,
+            [x0, x1] = label.xScale.scale.range(),
+            [y0, y1] = label.yScale.scale.range(),
+            width = Math.abs(x1 - x0), height = Math.abs(y1 - y0);
+        if (!node || !(width > 0) || !(height > 0)) return;
+        const at: [number, number] = [(x - Math.min(x0, x1)) / width, (y - Math.min(y0, y1)) / height],
+            was = label.lastAt;
+        label.lastAt = at;
+        if (!was || Math.hypot(at[0] - was[0], at[1] - was[1]) <= JUMP) return;
+        if (reducedMotion() || typeof node.animate !== 'function') return;
+        // To whatever it is drawn at, which a faint label is less than whole.
+        const opacity = getComputedStyle(node).opacity;
+        node.animate([{ opacity: 0 }, { opacity }], { duration: FADE_MS, easing: 'ease-out' });
     }
 
 

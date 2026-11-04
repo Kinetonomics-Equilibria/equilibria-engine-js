@@ -383,6 +383,13 @@ above the plot.
   (`lessons/market/chart.ts`). A ghost shows when the curve moves, not its
   label, so a label placed by the equilibrium raises no ghost when only the
   other curve moved.
+- **A label that moves to the other end fades in there.** The engine does
+  this for any label that goes more than a quarter of the way across its plot
+  in one update, over 200ms ([Motion](#motion)). Drawn there at once, AD's
+  label read as thrown across the chart, and its ghost's a press later as a
+  second throw. A label going with its curve never moves that far in one
+  update, so it simply moves. Nothing to set: write the label's two ends as a
+  calc, as above.
 - **The label is the curve's symbol** from the [list](#symbols). The live curve
   keeps its plain name always: D, never D′ or D₁. Its ghost adds ₀
   (`ghost: { label: '_0' }`), and the answer after a question adds ₁. The engine
@@ -496,6 +503,10 @@ brings something onto it. Otherwise it holds still (principle 5).
   A ghost never arrives: it is where something was, nothing new.
 - **Nothing loops, bounces or shakes**, and nothing moves to say an answer is
   right or wrong.
+- **A label that jumps fades in where it lands**, in 200ms, at a step or not:
+  while a student drags too, because a label moved across the chart at once
+  reads as thrown ([Labels on the plot](#curves)). It only fades in: nothing
+  slides across the chart to get there.
 - **No motion for a student who has asked for less.** With reduced motion set
   on their device, everything simply appears, and the chart reads the same.
 
