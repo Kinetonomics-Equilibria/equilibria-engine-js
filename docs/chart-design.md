@@ -648,4 +648,9 @@ is. The lesson kit takes `breaksRule` off before the engine sees it.
 `chartRules.test.ts` checks the rules a machine can, skips a rule only for an
 object whose `breaksRule` names it, and holds every such object to a line here.
 
-None today.
+- **Labels on the plot**: aggregate demand, `ad` in `lessons/ad-as/chart.ts`,
+  is labelled at its upper left, not its lower right as demand is. Its lower
+  right is on the bottom edge, close to the economy whenever inflation is low
+  and to LRAS for much of potential growth's range, so a label there went to
+  the other end with the demand slider alone. The reason is in its
+  `breaksRule`.

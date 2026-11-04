@@ -146,8 +146,8 @@ const PHASE = 'params.expanding > 0.5 ? "Expansion" : "Contraction"';
  * sideways. Only they are dragged: every other panel follows from them.
  *
  * The labels sit at each curve's end, a little in from the edge of the plot
- * across every slider: AD's lower right, or its upper left where that is in
- * the way, SRAS's upper right, and LRAS at the top, clear of the
+ * across every slider: AD's upper left, or its lower right where the economy
+ * is down by it, SRAS's upper right, and LRAS at the top, clear of the
  * equilibrium, which stays between 0% and 5% inflation.
  */
 export const PANELS: PanelDefinition[] = [
@@ -167,19 +167,26 @@ export const PANELS: PanelDefinition[] = [
                 name: 'ad', title: 'aggregate demand', meaning: 'demand', symbol: '\\text{AD}',
                 moves: ['demand'],
                 shape: p => ({ fn: `${p.demand} + ${INFLATION} - (y)`, samplePoints: 2 }),
-                // Where AD leaves the plot at its lower right, the bottom
-                // edge, which is close to the equilibrium and to LRAS: with
-                // inflation at 2.5%, AD reaches the bottom only 2.5 points
-                // of growth past the economy. So the label moves to AD's upper-left
-                // end, on the left edge, while the economy is low on AD and
-                // the point would sit on it, or while LRAS would run through
-                // it. Potential growth is read as the calc, so AD's label is
-                // not drawn by a grey param.
+                // At its upper-left end, on the left edge. The economy is
+                // as far below and to the right of the label as GDP growth is
+                // past 0.6%, so it is clear of the label until growth is under
+                // 1.8%, which takes two sliders down. Then the label goes to
+                // the lower right, on the bottom edge, unless LRAS would run
+                // through it there. Potential growth is read as the calc, so
+                // AD's label is not drawn by a grey param.
                 labelAt: p => ({
-                    y: `calcs.inflation < 1.8 or abs(${p.demand} + ${INFLATION - INSET} - ${GROWTH} - calcs.shift) < 0.6` +
-                        ` ? ${p.demand} + ${INFLATION - INSET} : ${INSET}`
+                    y: `calcs.gdpGrowth < 1.8 and abs(${p.demand} + ${INFLATION - INSET} - ${GROWTH} - calcs.shift) >= 0.6` +
+                        ` ? ${INSET} : ${p.demand} + ${INFLATION - INSET}`
                 }),
-                drag: [{ horizontal: 'demand' }], ghost: true, shiftAt: 'prev.calcs.inflation'
+                drag: [{ horizontal: 'demand' }], ghost: true, shiftAt: 'prev.calcs.inflation',
+                breaksRule: {
+                    rule: 'Labels on the plot',
+                    why: 'Demand is labelled at its lower right, but AD\'s lower right is on the bottom edge, ' +
+                        'only as far past the economy as inflation is above 0.6%, and LRAS stands there for much of ' +
+                        'potential growth\'s range. Labelled there, the label went to the other end with the demand ' +
+                        'slider alone, at 2.2. At the upper left only the economy at its lowest growth reaches it, ' +
+                        'which takes two sliders down.'
+                }
             }),
             ...curve({
                 name: 'sras', title: 'short-run aggregate supply', meaning: 'supply', symbol: '\\text{SRAS}',
