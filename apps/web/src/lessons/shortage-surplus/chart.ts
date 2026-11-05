@@ -37,7 +37,7 @@ const supplyAt = (supply: string, price: string) => `${supply} + 100*(${price} -
  * The lowest price the supply curve is drawn from, as the plane tickets
  * lesson's is: with supply at its most, a line drawn on down to $0 would
  * meet the quantity axis and say growers bring 100 mangoes for nothing. The
- * price slider stops at $1, so nothing a student reads is lost.
+ * price slider stops at $1.50, so nothing a student reads is lost.
  */
 const LOWEST_PRICE_DRAWN = 0.5;
 
@@ -50,13 +50,17 @@ const SURPLUS = stepRevealing(SHORTAGE_LESSON, 'surplusLeg');
 const SHORTAGE = stepRevealing(SHORTAGE_LESSON, 'shortageLeg');
 
 /**
- * The price from $1 to $5 in steps of 50c, so at its ends, with either curve
- * at the end of its range, one side of the market wants or brings none: the
- * corner of what the sliders reach, with the point on the price axis. Each
- * curve has three places, the start and 100 mangoes either side of it.
+ * The price from $1.50 to $4.50 in steps of 50c: a gap of up to 300 at the
+ * start, and every equilibrium the curves make, $2.00 to $4.00, with room
+ * either side of it. Each curve has three places, the start and 100 mangoes
+ * either side of it.
+ *
+ * No further. On a phone the gap's words are two thirds of the plot wide, and
+ * at $1.00 "Shortage of 400 mangoes" ran into D's label, as a surplus at
+ * $5.00 did into S's.
  */
 export const PARAMS: ParamDefinition[] = [
-    { name: 'price', label: 'The price', value: 3, min: 1, max: 5, round: 0.5, precision: 2 },
+    { name: 'price', label: 'The price', value: 3, min: 1.5, max: 4.5, round: 0.5, precision: 2 },
     { name: 'demand', label: 'Demand for mangoes', value: 300, min: 200, max: 400, round: 100 },
     { name: 'supply', label: 'Supply of mangoes', value: 300, min: 200, max: 400, round: 100 }
 ];
@@ -77,9 +81,13 @@ export const CALCS = {
         ' ? min(calcs.Qd, calcs.Qs) : max(calcs.Qd, calcs.Qs)'
 };
 
-/** Where D and S are labelled: D at its lower right and S at its upper right, half a dollar past the furthest a point on either can go. */
-const D_LABEL_AT = 0.5;
-const S_LABEL_AT = 5.5;
+/**
+ * Where D and S are labelled: D at its lower right and S at its upper right,
+ * $1.25 past the furthest the price can go, which leaves room between them
+ * and the gap's words at either end of the price slider.
+ */
+const D_LABEL_AT = 0.25;
+const S_LABEL_AT = 5.75;
 
 /**
  * The gap at the price: a surplus or a shortage, as a measured step.
@@ -122,6 +130,39 @@ const gap = (kind: 'surplus' | 'shortage') => {
 };
 
 /**
+ * Which way the gap pushes the price: down from a surplus, up from a
+ * shortage, from the price line to where the market would clear.
+ *
+ * Straight down the middle between the curves, because the middle of the gap
+ * is always over or under the equilibrium: at any price the two quantities
+ * add to demand plus supply, so halfway between them is Q*. A surplus's words
+ * are above the line and a shortage's below it, so the arrow, on the other
+ * side, never runs into them. Stopped short of the line and of the point at
+ * either end, as the engine's shift arrows are. In the price's grey: it says
+ * where the price goes, as the price's own points do when it moves.
+ *
+ * Unlabelled, like the engine's shift arrows: the step that brings it in says
+ * what it is, and "Price pressure" beside it ran across a curve wherever the
+ * gap was small, and across half the plot on a phone.
+ */
+const pressure = (kind: 'surplus' | 'shortage') => ({
+    type: 'Arrow',
+    def: {
+        name: kind + 'Pressure', title: '',
+        begin: ['calcs.Qe', 'params.price'], end: ['calcs.Qe', 'calcs.Pe'],
+        color: colourOf('price'), inset: 12,
+        srTitle: kind === 'surplus' ? 'The surplus pushes the price down' : 'The shortage pushes the price up',
+        show: `calcs.${kind} > 0`,
+        breaksRule: {
+            rule: 'Annotations',
+            why: 'Which way a surplus or a shortage pushes the price is what the lesson teaches, and the ' +
+                'engine draws no arrow for it: its arrows say where something was, and this says where the ' +
+                'price is going. Drawn by hand, from the price line to the equilibrium.'
+        }
+    }
+});
+
+/**
  * One panel, the market, headlined by the price it would clear at: the price
  * a surplus or a shortage pushes the price towards.
  *
@@ -161,6 +202,8 @@ export const PANELS: PanelDefinition[] = [
             }),
             ...gap('surplus'),
             ...gap('shortage'),
+            pressure('surplus'),
+            pressure('shortage'),
             // What buyers want and growers bring at the price, each read off
             // the quantity axis. The price line reads the price for both.
             // Either one drags the price up and down.

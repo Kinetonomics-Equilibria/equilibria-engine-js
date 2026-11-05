@@ -39,11 +39,13 @@ export const SHORTAGE_LESSON: LessonStep[] = [
             'amounts as Qd and Qs, the quantity demanded and the quantity supplied.'
     },
     {
-        reveal: ['surplusLeg', 'surplusLabel'],
+        reveal: ['surplusLeg', 'surplusLabel', 'surplusPressure'],
         title: 'A surplus',
         say: 'Growers bring 400 − 200 = 200 more mangoes than buyers want, so 200 mangoes are left over at ' +
             'the end of the morning.\n\n' +
-            'This gap between quantity supplied and quantity demanded is called a surplus, or excess supply.',
+            'This gap between quantity supplied and quantity demanded is called a surplus, or excess supply.\n\n' +
+            'A surplus puts pressure on the price to fall. The grey arrow shows this pressure, pointing down ' +
+            'towards $3.00.',
         term: GLOSSARY.surplus
     },
     {
@@ -69,11 +71,12 @@ export const SHORTAGE_LESSON: LessonStep[] = [
             'At this price, buyers want 400 mangoes, but growers bring only 200.'
     },
     {
-        reveal: ['shortageLeg', 'shortageLabel'],
+        reveal: ['shortageLeg', 'shortageLabel', 'shortagePressure'],
         title: 'A shortage',
         say: 'Buyers want 400 − 200 = 200 more mangoes than growers bring. The stalls sell out early in the ' +
             'morning, and some buyers miss out.\n\n' +
-            'This gap between quantity demanded and quantity supplied is called a shortage, or excess demand.',
+            'This gap between quantity demanded and quantity supplied is called a shortage, or excess demand.\n\n' +
+            'A shortage puts pressure on the price to rise, so this time the arrow points up.',
         term: GLOSSARY.shortage
     },
     {

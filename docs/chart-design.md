@@ -654,3 +654,10 @@ object whose `breaksRule` names it, and holds every such object to a line here.
   and to LRAS for much of potential growth's range, so a label there went to
   the other end with the demand slider alone. The reason is in its
   `breaksRule`.
+- **Annotations**: the pressure a surplus or a shortage puts on the price,
+  `surplusPressure` and `shortagePressure` in
+  `lessons/shortage-surplus/chart.ts`, is an arrow drawn by hand, in the
+  price's grey, from the price line down or up to the equilibrium. The
+  engine's arrows say where something was, and the lesson is about where the
+  price is going. It is unlabelled, as a shift arrow is, and the step that
+  brings it in says what it is. The reason is in its `breaksRule`.

@@ -20,10 +20,10 @@ export { SHORTAGE_LESSON } from './steps';
  *
  * Drawn after econgraphs.org's "Shortage and surplus" graph, in the house's
  * own way: a straight demand curve, so every number a step says comes out
- * round, and no hand-drawn arrow for the price's pressure, which the chart
- * rules keep to the engine's (Annotations). The pressure is said in the
- * words, shown by the steps that move the price, and drawn by the points'
- * own arrows as they move.
+ * round. Its arrow for the price's pressure is kept, as the one arrow on the
+ * chart drawn by hand, a departure from Annotations said beside it in
+ * `chart.ts`: from the gap straight to the equilibrium, unlabelled, and in
+ * the price's grey, where econgraphs puts a labelled one off to the side.
  */
 
 /**
