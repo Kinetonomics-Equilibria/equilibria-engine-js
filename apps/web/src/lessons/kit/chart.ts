@@ -86,10 +86,18 @@ const reason = (breaksRule?: BrokenRule) => breaksRule ? { breaksRule } : {};
  */
 export const axisValue = (value: string, places: number) => fixed(value, places);
 
+/**
+ * The decimals a point's quantity, then its price, are printed to, as their
+ * captions print them: `[0, 2]`. `null` for an axis it draws no dropline to,
+ * where only one value matters (Droplines) or something else on the chart
+ * already reads it there.
+ */
+export type Places = [number | null, number | null];
+
 /** A point's droplines, each labelled with its value on its axis. */
-const readOff = (x: string | null, y: string | null, places: [number, number]) => ({
-    ...(x !== null ? { vertical: axisValue(x, places[0]) } : {}),
-    ...(y !== null ? { horizontal: axisValue(y, places[1]) } : {}),
+const readOff = (x: string | null, y: string | null, places: Places) => ({
+    ...(x !== null && places[0] !== null ? { vertical: axisValue(x, places[0]) } : {}),
+    ...(y !== null && places[1] !== null ? { horizontal: axisValue(y, places[1]) } : {}),
     plainText: true
 });
 
@@ -264,8 +272,12 @@ export function equilibrium(spec: {
     name: string;
     x: string;
     y: string;
-    /** The decimals its quantity, then its price, are printed to, as their captions print them: `[0, 2]`. */
-    places: [number, number];
+    /**
+     * The decimals its quantity, then its price, are printed to, as their
+     * captions print them: `[0, 2]`. `[null, 2]` reads the price alone, where
+     * the points a price picks already read the quantity axis.
+     */
+    places: Places;
     srTitle?: string;
     ghost?: boolean;
     breaksRule?: BrokenRule;
@@ -292,23 +304,35 @@ export function equilibrium(spec: {
  *
  * Two objects, `priceLine` and `priceSymbol`, which the step that brings the
  * price in reveals by name. `places` is the decimals the price is printed to.
+ *
+ * `across` is where it starts and ends, in quantities: the plot's width, or
+ * an expression where it stops at a point, as the shortage lesson's stops
+ * where a shortage or a surplus takes over the line. `show` hides the line
+ * and its value together.
  */
-export function priceLine(spec: { param: string; across: [number, number]; meaning: 'choice' | 'price'; places: number }): object[] {
+export function priceLine(spec: {
+    param: string;
+    across: [number | string, number | string];
+    meaning: 'choice' | 'price';
+    places: number;
+    show?: string;
+}): object[] {
     const at = `params.${spec.param}`, color = colourOf(spec.meaning);
+    const shown = spec.show ? { show: spec.show } : {};
     return [
         {
             type: 'Segment',
             def: {
                 name: 'priceLine', title: '',
                 a: [spec.across[0], at], b: [spec.across[1], at],
-                color, lineStyle: 'dotted'
+                color, lineStyle: 'dotted', ...shown
             }
         },
         {
             type: 'Label',
             def: {
                 name: 'priceSymbol', title: '', x: 'AXIS', y: at, text: axisValue(at, spec.places),
-                plainText: true, color
+                plainText: true, color, ...shown
             }
         }
     ];
@@ -345,13 +369,25 @@ export function pricePoint(spec: {
     on: string[];
     at: (p: Drawn) => string;
     x?: string;
-    /** The decimals its quantity, then the price, are printed to, as their captions print them: `[0, 2]`. */
-    places: [number, number];
+    /**
+     * The decimals its quantity, then the price, are printed to, as their
+     * captions print them: `[0, 2]`. `[0, null]` reads the quantity alone,
+     * where a `priceLine` reads the price, as two points one price picks do.
+     */
+    places: Places;
     srTitle: string;
     show?: string;
     asked?: boolean;
+    /**
+     * What its question's points are named for after `questionStart` and
+     * `questionAnswer`: the price, `questionStartPrice`, unless given. Two
+     * points one price picks, on two curves, each take a name of their own:
+     * `PriceOnSupply`.
+     */
+    askedAs?: string;
 }): object[] {
-    const color = colourOf(spec.meaning), all = [spec.price, ...spec.on], called = capitalised(spec.price);
+    const color = colourOf(spec.meaning), all = [spec.price, ...spec.on];
+    const called = spec.askedAs || capitalised(spec.price);
     const now = {
         type: 'Point',
         def: {
@@ -382,7 +418,9 @@ export function pricePoint(spec: {
                 name: 'questionAnswer' + called, title: '',
                 x: spec.at({ ...started(spec.on), ...answered([spec.price]) }), y: `params.${answerOf(spec.price)}`,
                 color,
-                droplines: readOff(null, `params.${answerOf(spec.price)}`, spec.places),
+                ...(spec.places[1] !== null
+                    ? { droplines: readOff(null, `params.${answerOf(spec.price)}`, spec.places) }
+                    : {}),
                 show: answerDiffers([spec.price])
             }
         },

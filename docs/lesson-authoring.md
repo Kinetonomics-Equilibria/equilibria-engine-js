@@ -59,6 +59,14 @@ A$ lesson's step of 2 is a cent on the rate. Read
 [principle 5, "The chart holds still"](./chart-design.md#principles) and
 [Axes](./chart-design.md#axes), "Size the axes to the sliders".
 
+Two values on one axis need room between them on a phone, where the plot
+is a third of its width on a laptop: two points' droplines, or a price line
+and P\*. Nothing moves one label off another. So choose the steps so that,
+other than together, two values come no closer than about a twelfth of
+their axis. The shortages lesson's price moves in 50c on a $6 axis, and its
+curves in 100 mangoes on an 800 one, for this. At 25c and 50 mangoes, a
+price one step from P\* printed "275" and "325" as "27325".
+
 A param's `name` is read by students: the Maths tab writes a formula with it,
 "210 − response · (price − 4.5)", where the slider says its `label`. Name it
 with a word that reads in a formula, and say what it is in `paramMeanings`.
@@ -89,9 +97,9 @@ that uses it:
 | --- | --- | --- |
 | `axis`, `priceAxis` | An axis with a title in words; the price axis's `$` escaped | every lesson; `priceAxis` all but `fx`, `ppc` and `terms-of-trade` |
 | `curve` | A curve, by what it means and its symbol; its ghost, its level shift arrow (`shiftAt`) and a question's lines | every lesson but `ppc` |
-| `equilibrium` | Where two curves cross, with droplines, and its ghost with no arrow | `market`, `fx`, `terms-of-trade`, the template |
-| `priceLine` | A price across a panel with no curve to sit on, P on the axis | `demand`'s and `supply`'s first panel |
-| `pricePoint` | The point a price picks on a curve, with its droplines: P on the price axis, so no `priceLine` beside it | `demand`, `supply`, `elasticity` |
+| `equilibrium` | Where two curves cross, with droplines, and its ghost with no arrow. `places: [null, 2]` reads the price alone, where other points read the quantity axis | `market`, `fx`, `terms-of-trade`, the template; `shortage-surplus` reads the price alone |
+| `priceLine` | A price across a panel, P on the axis: across a panel with no curve to sit on, or out to the points it picks, with `across` an expression | `demand`'s and `supply`'s first panel; `shortage-surplus` |
+| `pricePoint` | The point a price picks on a curve, with its droplines: P on the price axis, so no `priceLine` beside it. Two points one price picks, one on each curve, read the quantity alone (`places: [0, null]`) beside a `priceLine`, and each names its question's points (`askedAs`) | `demand`, `supply`, `elasticity`; two in `shortage-surplus` |
 | `namedArea` | An area the lesson names, at 20% | `market`, `elasticity`, `terms-of-trade` |
 | `contextArea` | A region that is context, at 8% | `ppc` |
 | `readout` | A line in the plot's top-right corner | `ppc` |

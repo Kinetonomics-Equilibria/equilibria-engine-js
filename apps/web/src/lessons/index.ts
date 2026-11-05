@@ -1,5 +1,6 @@
 import type { StudyContent, StudyModel } from './content';
 import { SUPPLY_AND_DEMAND } from './market';
+import { SHORTAGES_AND_SURPLUSES } from './shortage-surplus';
 import { FOREIGN_EXCHANGE } from './fx';
 import { PRODUCTION_POSSIBILITIES } from './ppc';
 import { DEMAND_SHIFTERS } from './demand';
@@ -54,11 +55,13 @@ export const CURRICULUM: LessonStrand[] = [
                 lessons: [PRODUCTION_POSSIBILITIES]
             },
             // Demand's determinants, then supply's, before the whole
-            // market, as a course meets them; then how far buyers respond
-            // to a price, which needs demand and a price on it.
+            // market, as a course meets them; then what a price away from
+            // equilibrium leaves, which is why the market gets there; then
+            // how far buyers respond to a price, which needs demand and a
+            // price on it.
             {
                 id: 'markets', label: 'Markets', color: 'teal',
-                lessons: [DEMAND_SHIFTERS, SUPPLY_SHIFTERS, SUPPLY_AND_DEMAND, PRICE_ELASTICITY]
+                lessons: [DEMAND_SHIFTERS, SUPPLY_SHIFTERS, SUPPLY_AND_DEMAND, SHORTAGES_AND_SURPLUSES, PRICE_ELASTICITY]
             }
         ]
     },

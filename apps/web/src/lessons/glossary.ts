@@ -237,6 +237,22 @@ export const GLOSSARY = {
         meaning: 'Equilibrium is the point at which quantity demanded equals quantity supplied, so there is ' +
             'no pressure for the price to change.'
     },
+    surplus: {
+        word: 'Surplus',
+        meaning: 'A surplus is a situation in which quantity supplied is greater than quantity demanded, which ' +
+            'occurs when the price is above the equilibrium price. It is also called excess supply.'
+    },
+    shortage: {
+        word: 'Shortage',
+        meaning: 'A shortage is a situation in which quantity demanded is greater than quantity supplied, which ' +
+            'occurs when the price is below the equilibrium price. It is also called excess demand.'
+    },
+    priceMechanism: {
+        word: 'Price mechanism',
+        meaning: 'The price mechanism is the way prices change to bring quantity demanded and quantity supplied ' +
+            'into balance. A surplus pushes the price down and a shortage pushes it up, until the market ' +
+            'reaches equilibrium.'
+    },
     consumerSurplus: {
         word: 'Consumer surplus',
         meaning: 'Consumer surplus is the difference between the highest price consumers are willing to pay ' +
