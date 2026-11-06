@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     AT_START, trackReducer, maxPosition, isBlocked, stepKinds,
-    paramsAt, paramsBetween, sayAt, revealedPanels, partsOf, partCounts, slideAt, asideAt, focusBetween
+    paramsAt, marketAt, lastMoveAt, sayAt, revealedPanels, partsOf, partCounts, slideAt, asideAt, focusBetween
 } from '../track/track';
 import type { LessonStep, TrackState } from '../track/track';
 
@@ -61,13 +61,14 @@ describe('where the position may go', () => {
 });
 
 /**
- * The decision the plan turns on.
+ * Where a step has the market, whichever way the student arrives at it.
  *
- * Reveals reverse because the compiled predicate is `>=`; param changes do not,
- * because a student who has dragged the curve since step 2 should not have their
- * work thrown away by navigating.
+ * Reveals reverse because the compiled predicate is `>=`. The market is the
+ * lesson's at every step, not wherever the student left the curves at the
+ * one before, so that the ghost a step plays its move from is where the
+ * lesson had the curve.
  */
-describe('what going back undoes', () => {
+describe('where a step has the market', () => {
 
     it('un-reveals only what was revealed at or after the position', () => {
         const panels = ['market', 'surplus'];
@@ -79,24 +80,41 @@ describe('what going back undoes', () => {
         expect(revealedPanels(STEPS, 2, panels)).toEqual(['market']);
     });
 
-    it('applies nothing when the move is backwards', () => {
-        expect(paramsBetween(STEPS, 5, 2)).toEqual([]);
-        expect(paramsBetween(STEPS, 4, 3)).toEqual([]);
-    });
-
-    it('applies every set the move passed through, later steps winning', () => {
-        expect(paramsBetween(STEPS, 0, 4)).toEqual([{ name: 'a', value: 26 }]);
-        expect(paramsBetween(STEPS, 3, 5).sort((x, y) => x.name.localeCompare(y.name)))
-            .toEqual([{ name: 'a', value: 24 }, { name: 'c', value: 6 }]);
-    });
-
-    // "Reset to this step" is the escape hatch the asymmetry above requires, and
-    // it means every set up to here — not the last one the author happened to
-    // write, which is what a stored "authored params" record would have given.
-    it('resets to the accumulation of every set up to a position', () => {
+    // Every set up to here, not the last one the author happened to write,
+    // which is what a stored "authored params" record would have given.
+    it('is the accumulation of every set up to a position', () => {
         expect(paramsAt(STEPS, 0)).toEqual({});
         expect(paramsAt(STEPS, 4)).toEqual({ a: 26 });
         expect(paramsAt(STEPS, 5)).toEqual({ a: 24, c: 6 });
+    });
+
+    it('is the diagram\'s own under every set, so a param no step sets is where the diagram drew it', () => {
+        const base = { a: 20, c: 2 };
+        expect(marketAt(STEPS, 0, base)).toEqual(base);
+        expect(marketAt(STEPS, 4, base)).toEqual({ a: 26, c: 2 });
+        expect(marketAt(STEPS, 5, base)).toEqual({ a: 24, c: 6 });
+    });
+
+    it('was last moved by the step that moves it, or the last one before that did', () => {
+        const base = { a: 20, c: 2 };
+        expect(lastMoveAt(STEPS, 5, base)).toBe(5);
+        expect(lastMoveAt(STEPS, 4, base)).toBe(4);
+        // Reveals alone: nothing has moved yet.
+        expect(lastMoveAt(STEPS, 3, base)).toBe(0);
+        expect(lastMoveAt(STEPS, 0, base)).toBe(0);
+        // A step that only reveals is still talking about the move before it.
+        const revealing = [...STEPS, { reveal: ['label'] }];
+        expect(lastMoveAt(revealing, 6, base)).toBe(5);
+    });
+
+    // `set: { ...BASELINE }` where the market already is: the step puts it
+    // back before a new idea, and the move before is not what it is about.
+    it('has no move at a step whose set moves nothing, and none before it either', () => {
+        const steps: LessonStep[] = [{ set: { a: 20 } }, { set: { a: 26 } }, { set: { a: 26, c: 2 } }, {}];
+        expect(lastMoveAt(steps, 1, { a: 20, c: 2 })).toBe(0);
+        expect(lastMoveAt(steps, 2, { a: 20, c: 2 })).toBe(2);
+        expect(lastMoveAt(steps, 3, { a: 20, c: 2 })).toBe(0);
+        expect(lastMoveAt(steps, 4, { a: 20, c: 2 })).toBe(0);
     });
 });
 

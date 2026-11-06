@@ -73,9 +73,9 @@ export const MARKET_LESSON: LessonStep[] = [
             'When demand rises, sellers sell more at a higher price, so their revenue increases.\n\n' +
             'You can move the demand curve below to see how revenue changes.',
         // The one "see what happens" step: a slider on the card, since the
-        // lesson has no instruments beside it. Safe to hand over here because
-        // the step after it sets both params, so wherever the student leaves
-        // demand, "back to the start" is where the market goes.
+        // lesson has no instruments beside it. Safe to hand over: wherever
+        // the student leaves demand, the step after it starts where the
+        // lesson had it and plays the move back to the start.
         try: [{ param: 'a', label: 'Demand' }],
         term: GLOSSARY.totalRevenue
     },

@@ -177,8 +177,9 @@ export function NarrationFoot({
 
     // Each settled line, counted, so the rows come in afresh for a new one and
     // not for a re-render of the same. They come in turn only after a move made
-    // all at once — a step, a scenario, Reset — since a drag has already
-    // unfolded under the student's hand.
+    // all at once — a scenario, a story's move, a step that tells the move
+    // before it — since a drag has already unfolded under the student's hand,
+    // and so has a step's move that played.
     const [seen, setSeen] = useState({ line, count: 0, arrive: false });
     if (seen.line !== line) {
         setSeen({

@@ -270,28 +270,42 @@ export function paramsAt(steps: LessonStep[], position: number): Record<string, 
 }
 
 /**
- * The params a move from `from` to `to` should apply.
+ * The market the lesson has at `position`: `base`, the diagram's own, with
+ * every step's `set` up to there over it.
  *
- * Forward only, and the asymmetry is the plan's central pedagogy decision:
- * **reveals reverse and param changes do not.** Reveals reverse for free — the
- * compiled predicate is `params.step >= n` — while a student who has dragged the
- * curve since step 2 would have their work thrown away by a scrub that restored
- * the authored numbers. So going back un-draws and leaves the values alone, and
- * Reset, on the title's line, puts a step's own state back as something the
- * student chooses rather than something navigation does to them.
- *
- * It will feel wrong to somebody whichever way it goes, and it wants trying with
- * a real student rather than settling by argument.
+ * Whichever way a student arrives at a step, by Next, Back or the track, this
+ * is where its curves are: the lesson's picture of the step, whatever the
+ * student did to the diagram at the step before. A student who dragged a
+ * curve at a question and pressed Next found the next step drawn from their
+ * answer, its ghost where they had left the curve rather than where the
+ * lesson had it. Reset puts it back too.
  */
-export function paramsBetween(steps: LessonStep[], from: number, to: number): { name: string; value: number }[] {
-    if (to <= from) return [];
-    const applied: Record<string, number> = {};
-    steps.slice(from, to).forEach(function (step) {
-        Object.keys(step.set || {}).forEach(function (name) {
-            applied[name] = (step.set as Record<string, number>)[name];
-        });
-    });
-    return Object.keys(applied).map(name => ({ name: name, value: applied[name] }));
+export function marketAt(
+    steps: LessonStep[], position: number, base: Record<string, number>
+): Record<string, number> {
+    return { ...base, ...paramsAt(steps, position) };
+}
+
+/**
+ * The step whose move the ghost shows at `position`, by position, or 0 for
+ * none.
+ *
+ * The step's own, where its `set` moves something. A step with no `set` is
+ * usually talking about the move before it ("the new equilibrium", once a
+ * curve has shifted), so it has that one, back to the last step with a
+ * `set`. A step whose `set` moves nothing has none: that is how a lesson
+ * puts the market back before a new idea, `set: { ...BASELINE }`, and the
+ * move before it, of a point the step may have put away, is not what it is
+ * about.
+ */
+export function lastMoveAt(steps: LessonStep[], position: number, base: Record<string, number>): number {
+    for (let at = Math.min(position, steps.length); at > 0; at--) {
+        if (Object.keys(steps[at - 1].set || {}).length === 0) continue;
+        const before = marketAt(steps, at - 1, base), after = marketAt(steps, at, base);
+        const moved = Object.keys(after).some(name => !(name in before) || Math.abs(after[name] - before[name]) > 1e-9);
+        return moved ? at : 0;
+    }
+    return 0;
 }
 
 /** The sentence for the step just applied, or null before the first step. */

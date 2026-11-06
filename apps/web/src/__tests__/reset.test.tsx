@@ -10,9 +10,9 @@ import { theme } from '../theme';
  * Reset, on the title's line: the diagram back where the step began, or
  * where the playground opened.
  *
- * A move like any other, which is the claim most of these are about: it is
- * reported in "What changed", Undo takes it back, and it moves the market and
- * nothing else — not the lesson's place, and not an answer. The shipped lesson
+ * Back as it was, which is the claim most of these are about: no ghost, and
+ * nothing in "What changed" about the move back. It moves the market and
+ * nothing else: not the lesson's place, and not an answer. The shipped lesson
  * and a real engine underneath, since every claim is about where the curves
  * end up.
  */
@@ -66,7 +66,7 @@ describe('Reset', () => {
         expect(reset()).toHaveProperty('disabled', true);
     });
 
-    it('puts the step\'s market back, says so, and Undo brings the student\'s back', async () => {
+    it('puts the step\'s market back, with no ghost and nothing said about the move back', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(TRIES));
@@ -79,33 +79,29 @@ describe('Reset', () => {
 
         // a = 26 and c = 2, as "Incomes rise" left them: P* = 14.
         expect(marketCaption()).toContain('Price $14.00');
-        expect(changed().getAttribute('data-kind')).toBe('settled');
-        // The cause's numbers are on the whole chain, a press away.
-        await user.click(within(changed()).getByRole('button', { name: /^See (why|all)/ }));
-        expect(changed().textContent).toContain('28.0→26.0');
+        // "What changed" at rest is the snapshot where the reset landed, the
+        // one every ghost is drawn from: no ghost of 28, where the student had
+        // demand, and none of the step's own move either.
+        expect(changed().getAttribute('data-kind')).toBe('rest');
+        expect(within(changed()).queryByRole('button', { name: 'Undo' })).toBeNull();
         expect(reset()).toHaveProperty('disabled', true);
         // Still the step the student was at.
         expect(screen.getByRole('group', { name: 'Try it' })).toBeTruthy();
-
-        await user.click(within(changed()).getByRole('button', { name: 'Undo' }));
-        expect(marketCaption()).toContain('Price $15.00');
-        expect(reset()).toHaveProperty('disabled', false);
     });
 
-    // Going back un-draws and leaves the student's values alone, so this is
-    // how a step's own market comes back — including a curve no step up to
-    // here has set, which goes back where the diagram drew it.
-    it('puts back the market of a step scrubbed back to', async () => {
+    // Going back is arriving at a step too, so it puts the step's own market
+    // back, with a curve no step up to here has set where the diagram drew
+    // it: there is nothing left for Reset to do.
+    it('has nothing to do at a step gone back to', async () => {
         const user = userEvent.setup();
         mount();
         await user.click(marker(MOVES));
-        await user.click(marker(MOVES - 1));
         expect(marketCaption()).toContain('Price $14.00');
-
-        await user.click(reset());
+        await user.click(marker(MOVES - 1));
 
         // a = 20 and c = 2, the diagram's own: P* = 11.
         expect(marketCaption()).toContain('Price $11.00');
+        expect(reset()).toHaveProperty('disabled', true);
     });
 
     it('puts a question\'s curve back where the question found it, and keeps asking', async () => {
@@ -144,5 +140,7 @@ describe('Reset', () => {
 
         expect(marketCaption()).toContain('Price $14.00');
         expect(reset()).toHaveProperty('disabled', true);
+        // Nothing drawn or said for the move back: the market as it opened.
+        expect(changed().getAttribute('data-kind')).toBe('rest');
     });
 });

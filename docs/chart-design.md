@@ -481,7 +481,8 @@ For all three:
 ## Motion
 
 A chart moves for one reason: to show a student where to look when a step
-brings something onto it. Otherwise it holds still (principle 5).
+brings something onto it, or moves something on it. Otherwise it holds still
+(principle 5).
 
 - **A point a step brings in can arrive.** It pops, growing from nothing to a
   little past its size and back in 200ms. Then its droplines are drawn out
@@ -491,6 +492,23 @@ brings something onto it. Otherwise it holds still (principle 5).
 - **Only for what the step is about**: the thing the student reads next, not
   everything the step reveals. A panel coming onto the stage is movement
   enough, and what is in it doesn't pop as well.
+- **A step plays its move.** However a student arrives at a step, by Next,
+  Back or its marker, the chart starts where the lesson had it at the step
+  before, whatever the student did there, and the curves glide from there to
+  where the step's `set` puts them, in 450ms, easing out of the start and
+  into the end. The ghost holds still where the curve was, and its shift
+  arrow grows as the curve moves away, so Next plays what the step's words
+  say happens. What the step reveals is there as the move begins, and a
+  boolean param changes at once, having nothing between its two values. A
+  glide moves on a param's `dragRound`, or a tenth of its `round` where it
+  has none, so a curve passes smoothly between the lesson's round numbers
+  and every number prints at the param's precision as it goes. A step with
+  no `set` keeps the move before it, ghost and all, and doesn't play it
+  again; a step whose `set` moves nothing has no ghost. Its question is
+  asked once the move lands. A link and a remount put a step back without
+  playing it, and Reset puts its market back with no ghost at all.
+- **A point that arrives isn't one the step's move carries.** The move
+  redraws it every frame, and the pop is cut short. The move is the motion.
 - **Only at a step.** Not when a lesson opens at a step from a link, when the
   view is put back after a remount, when a question is set, or while a
   student drags. Going back a step plays it again. The app says which updates
@@ -498,7 +516,8 @@ brings something onto it. Otherwise it holds still (principle 5).
   one is a param moving.
 - **Half a second at most, and never in the way.** Nothing waits for it: the
   next step can come at any time, and a redraw puts everything where it
-  belongs.
+  belongs. A step's move still playing lands at once when the student moves
+  anything or goes on to another step.
 - **What a step takes away goes at once**, so the eye stays on what arrived.
   A ghost never arrives: it is where something was, nothing new.
 - **Nothing loops, bounces or shakes**, and nothing moves to say an answer is
@@ -518,7 +537,8 @@ brings something onto it. Otherwise it holds still (principle 5).
   so choose one that still prints whole: 5c and 10 mangoes for 50c and 100.
 - **No motion for a student who has asked for less.** With reduced motion set
   on their device, everything simply appears, and the chart reads the same. A
-  drag lets go where its `round` puts it, at once.
+  drag lets go where its `round` puts it, at once, and a step's move is there
+  as the step is, its ghost where the curve was.
 
 ## Keys and legends
 

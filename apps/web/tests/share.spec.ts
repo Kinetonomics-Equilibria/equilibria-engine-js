@@ -174,16 +174,32 @@ test('the QR code is as large as the stage allows, and Esc puts it away', async 
 
 test('on paper: the title, the view in words, the diagram fitted to the page, and the chain', async ({ page }) => {
     await opened(page, VIEW);
-    // A move, so the chain has something to say.
-    await page.getByRole('button', { name: 'Next' }).click();
     const onScreen = await stageWidth(page);
+    const toPaper = async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+        await page.emulateMedia({ media: 'print' });
+    };
+    const toScreen = async () => {
+        await page.emulateMedia({ media: 'screen' });
+        await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    };
 
-    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
-    await page.emulateMedia({ media: 'print' });
-
+    // The view in words: the step, and what the link moved from where the
+    // lesson puts it.
+    await toPaper();
     await expect(page.getByRole('heading', { name: 'The Australian dollar exchange rate' })).toBeVisible();
-    await expect(page.getByText('Step 8 of 15 · Up is stronger, down is weaker')).toBeVisible();
+    await expect(page.getByText('Step 7 of 15 · The AUD appreciates')).toBeVisible();
     await expect(page.getByText('Supply of AUD 50 → 56')).toBeVisible();
+    await toScreen();
+
+    // A step's move, so the chain has something to say. It plays from where
+    // the lesson had the market, so the supply the link moved goes back.
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.getByRole('region', { name: 'What changed' })).toHaveAttribute('data-kind', 'settled');
+
+    await toPaper();
+    await expect(page.getByText('Step 8 of 15 · Up is stronger, down is weaker')).toBeVisible();
+    await expect(page.getByText('Supply of AUD 50 → 56')).toBeHidden();
     await expect(page.getByRole('img', { name: /back to this view, for the printed page/ })).toBeVisible();
     // The whole chain, since paper has no "See all" to press.
     await expect(page.locator('[data-printed] [data-part="effect"]')).toBeVisible();
@@ -194,7 +210,6 @@ test('on paper: the title, the view in words, the diagram fitted to the page, an
     await expect(page.getByRole('tab', { name: 'Lesson' })).toBeHidden();
     expect(await stageWidth(page)).toBeLessThanOrEqual(681);
 
-    await page.emulateMedia({ media: 'screen' });
-    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await toScreen();
     await expect.poll(() => stageWidth(page)).toBe(onScreen);
 });

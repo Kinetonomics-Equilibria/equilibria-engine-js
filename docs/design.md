@@ -168,13 +168,16 @@ attention on finding things.
   market the page opened with: the model's own, or the one a link, a
   lesson's Finish or a story handed it. On a story's page it is the market
   the page opened with too, so a story's move is undone by Reset as by Undo.
-- It is how a step's own market comes back after scrubbing back, which
-  un-draws and leaves the student's values alone. It took the place of the
-  lesson card's "Reset the diagram to this step", which put back only what
-  the steps had set.
-- A move like any other: it takes the engine's snapshot first, as a scenario
-  does, so "What changed" reports it and Undo brings the student's curves
-  back. That is why it never asks "Are you sure?".
+- A clean slate: no ghost and no shift arrow, and "What changed" at rest.
+  The engine's snapshot is taken where it lands. It used to be taken first,
+  as a scenario's is, so that Undo could bring the student's curves back,
+  and what that drew was a ghost of everything they had moved, over the
+  diagram they had asked to have back. A step's own move is not drawn again
+  either: pressing the step again plays it
+  ([Motion](./chart-design.md#motion)).
+- It never asks "Are you sure?": what it takes away is a few drags, and
+  the step it puts back is the one the student read.
+- Greyed while a step's move plays, which it would only stop halfway.
 - Greyed, not hidden, when nothing would change.
 - It does not move the lesson's place or forget an answer: a curve whose
   answer is in stays where it was answered. The lesson's own Back and track
@@ -501,12 +504,14 @@ leaves the diagram more of the screen.
   changes" — since it is the one thing on the sheet that is not more of what
   the foot shows. The printed page and the screen reader's sentence say it
   too. See [Why the chain says why](#why-the-chain-says-why).
-- After a move made all at once — a step's, a scenario's, Reset, a story's
-  move — what moved is there at once and what followed comes after it in
-  turn: the curves at 160ms, the reason at 260ms, the effects at 360ms. The order the chain is
-  read in is said a second time by when. After a drag it is all there when
-  the student lets go, since the chain has already unfolded under their
-  hand; with reduced motion it is always all there at once.
+- After a move made all at once — a scenario's, a story's move, or a step
+  that tells the move before it — what moved is there at once and what
+  followed comes after it in turn: the curves at 160ms, the reason at 260ms,
+  the effects at 360ms. The order the chain is read in is said a second time
+  by when. After a drag it is all there when the student lets go, since the
+  chain has already unfolded under their hand, and after a step's move has
+  played it is all there when it lands, for the same reason: its readings
+  ran with the curve. With reduced motion it is always all there at once.
 - The tabs are each as wide as their name, sharing out what is left, and the
   open one is no bolder than the rest, so opening one moves no other.
 - The tabs float over the top of the open instrument, which scrolls up under

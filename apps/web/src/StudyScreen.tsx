@@ -29,7 +29,7 @@ import { StageSheet } from './StageSheet';
 import { TitleLine } from './TitleLine';
 import type { TitleTopic } from './TitleLine';
 import {
-    AT_START, askAt, asideAt, focusBetween, paramsAt, paramsBetween, revealedPanels, slideAt, trackReducer,
+    AT_START, askAt, asideAt, focusBetween, lastMoveAt, marketAt, paramsAt, revealedPanels, slideAt, trackReducer,
     tryAt
 } from './track/track';
 import type { LessonQuestion, LessonStep, Outcome, TrackState } from './track/track';
@@ -145,6 +145,14 @@ function recapCases(
  * without the diagram drawing the ghost of a curve nobody touched.
  */
 const QUESTION_OFF = questionState({ asking: 0, submitted: 0, revealed: 0 });
+
+/**
+ * How long a step's move takes to play: from the ghost, where the lesson had
+ * the market at the step before, to where the step puts it. Under the half
+ * second `chart-design.md` allows any motion, long enough for the eye to
+ * follow a curve across the plot, and the next step can come at any time.
+ */
+export const PLAY_MS = 450;
 
 /** The params a student moves, by name and value: presentation ones left out. */
 function marketOf(params: { name: string; value: number; presentation?: boolean }[]): Record<string, number> {
@@ -645,6 +653,20 @@ export function StudyScreen({
      */
     const applyingStep = useRef(false);
 
+    /**
+     * The step whose move is playing, if one is: its position, the market it
+     * is gliding to, and which arrival it was, so one that landed after
+     * another had begun is known to be stale. A ref, read by the change
+     * handler on every frame; `playing` is the same fact for what renders,
+     * Reset greyed while a step is still on its way.
+     *
+     * Kept for a remount too, which throws the glide away with the engine:
+     * the new one is put where the step was going and asks its question.
+     */
+    const play = useRef<{ id: number; position: number; target: Record<string, number> } | null>(null);
+    const playSeq = useRef(0);
+    const [playing, setPlaying] = useState(false);
+
     // The engine, and the state to narrate against — refs rather than state
     // because a drag writes to them sixty times a second and none of those
     // writes is a render this component owes anyone.
@@ -758,7 +780,9 @@ export function StudyScreen({
         }
 
         latest.current = event;
-        retell(dragging.current);
+        // A step's move playing is told as a drag is, live, and settles
+        // where it lands.
+        retell(dragging.current || !!play.current);
     }, [isNarrated, retell, refreshParams]);
 
     /**
@@ -785,7 +809,7 @@ export function StudyScreen({
      */
     const onParamBlocked = useCallback((data: unknown) => {
         const event = data as ParamBlockedEvent;
-        if (applyingStep.current) return;
+        if (applyingStep.current || play.current) return;
         if (!isNarrated(event.name)) return;
 
         const said = phraseRefusal(event);
@@ -856,7 +880,11 @@ export function StudyScreen({
             }));
         setDockParams(engine.getParams());
 
-        const previous = lastParams.current,
+        // A step whose move was still playing when its engine went is put
+        // where it was going, and asks its question once the market is back.
+        const inFlight = play.current;
+        play.current = null;
+        const previous = inFlight ? { ...lastParams.current, ...inFlight.target } : lastParams.current,
             position = trackAt.current.position,
             question = asking.current,
             apparatus = question ? questionApparatus[question.question.param] : undefined;
@@ -923,6 +951,9 @@ export function StudyScreen({
             arriving.current = false;
             if (exploring) setOpened(marketOf(engine.getParams()));
             else if (arm.current) arm.current(askAt(steps, position), position - 1);
+        } else if (inFlight) {
+            setPlaying(false);
+            if (arm.current) arm.current(askAt(steps, inFlight.position), inFlight.position - 1);
         }
     }, [questionApparatus, steps, paramWords, exploring]);
 
@@ -1008,51 +1039,99 @@ export function StudyScreen({
     }, [frozen]);
 
     /**
-     * Move the lesson, and tell the engine in the right order.
+     * Put the diagram where the lesson has it at a step, and play the step's
+     * move.
      *
-     * Two things happen and the order of both is load-bearing.
+     * Three writes, and the order is the whole of it.
      *
-     * `snapshot()` first, when the move establishes params or goes backwards: it
-     * marks where the diagram is *now* as the state its ghosts and the sentence
-     * under it should both call "before". A lesson step is invisible to the
-     * engine — it arrives as ordinary param updates — and P9 shipped exactly
-     * this bug for scenarios: the diagram moved, every ghost appeared, and the
-     * strip read "drag a curve to see what it changes".
+     * First the market where the step's move starts: where the lesson had it
+     * at the step before, whatever the student did to it there. Then the
+     * engine's snapshot, which makes that the "before" the ghosts and "What
+     * changed" both describe the move from. A lesson step is invisible to the
+     * engine, which sees ordinary param updates, and without the snapshot the
+     * diagram moves and every ghost appears with "Drag a curve to see what it
+     * changes" under them, which is what P9 shipped for scenarios. Taken
+     * before the first write, the ghost is wherever the student left the
+     * curve at the step before.
      *
-     * Going back re-bases it for the opposite reason. Scrubbing back un-draws
-     * and deliberately leaves the values alone, so without a snapshot the ghost
-     * and the delta chip go on describing a shift the lesson has scrubbed away
-     * from — a panel reading "+3.0" three steps after anything moved. A forward
-     * move that only reveals does *not* re-base, because the ghost of the step
-     * before it is usually the thing the new step is talking about.
-     *
-     * Then one `update`, with the step param first so the reveal lands before
-     * the values move — a curve arriving and then shifting, rather than arriving
-     * already shifted. It is one call rather than several because a multi-param
+     * Then the step: its param first, so what it reveals is there as its move
+     * begins, then its values. Played, they glide there from the ghost over
+     * `PLAY_MS`, as the step's words say what happens, and the engine says when
+     * they have landed. One `update` rather than several, because a multi-param
      * update is applied and validated one param at a time and rolls back
-     * silently, so keeping the ordering in one place is the most a host can do
+     * silently, so keeping the order in one place is the most a host can do
      * about it until the engine offers a batched update. The study diagram
      * declares no restrictions, so nothing here can trip today; that is luck,
      * not design.
      *
-     * It is an arrival, so what the step brings in is animated in where its
-     * config asks: this, and not a restore of the same step, is the student
-     * moving through the lesson.
+     * A step with no `set` has the ghost of the move before it, which is
+     * usually what it is talking about: so its "before" is where the lesson
+     * had the market before that move, and nothing plays. One whose `set`
+     * moves nothing has no ghost, nor one with no move before it
+     * (`lastMoveAt`).
+     *
+     * `landed` is called once the step's values are there, after the sentence
+     * under the diagram is told: at once with nothing to play. Another step
+     * arrived at before then lands this one's move at once, and this one's
+     * `landed` is not called: the other step is the one the student is at.
      */
-    const applyStep = useCallback((
-        params: { name: string; value: number }[], position: number, rebase: boolean
-    ) => {
+    const stage = useCallback((position: number, landed: () => void) => {
         const engine = engineRef.current;
         if (!engine) return;
 
+        const mover = lastMoveAt(steps, position, declared),
+            plays = mover > 0 && mover === position,
+            before = marketAt(steps, mover > 0 ? mover - 1 : position, declared),
+            after = marketAt(steps, position, declared),
+            writes = (market: Record<string, number>) =>
+                Object.keys(market).map(name => ({ name, value: market[name] }));
+
+        const id = ++playSeq.current;
+        let landedNow = false;
+        const land = () => {
+            if (play.current && play.current.id !== id) return;
+            if (!play.current && plays) return;
+            play.current = null;
+            setPlaying(false);
+            // The calcs again, as `onReady` reads them: a step that moves
+            // nothing raised no event after the snapshot, and the last one
+            // it did raise was computed against the `prev` before it.
+            setReadout(engine.getCalcs() as Readout);
+            refreshParams();
+            retell(false);
+            landed();
+        };
+
+        play.current = null;
         applyingStep.current = true;
         try {
-            if (params.length > 0 || rebase) engine.snapshot();
-            engine.update({ params: [{ name: STEP_PARAM, value: position }, ...params] }, { arrive: true });
+            engine.update({ params: writes(before) });
+            engine.snapshot();
+            if (plays) play.current = { id, position, target: after };
+            // An arrival, so what the step brings in is animated in where its
+            // config asks: this, and not a restore of the same step, is the
+            // student moving through the lesson.
+            engine.update({ params: [{ name: STEP_PARAM, value: position }, ...writes(after)] }, {
+                arrive: true,
+                glide: plays ? PLAY_MS : 0,
+                landed: () => {
+                    // Called at once when nothing glides, inside this `try`:
+                    // what it calls writes too, so it waits for the writes
+                    // above to finish.
+                    if (applyingStep.current) landedNow = true;
+                    else land();
+                }
+            });
         } finally {
             applyingStep.current = false;
         }
-    }, []);
+        if (landedNow) land();
+        else {
+            setPlaying(true);
+            // As a drag starts: the new "before", with nothing moved from it yet.
+            retell(true);
+        }
+    }, [steps, declared, retell, refreshParams]);
 
     /**
      * Put a question on screen, or take the last one off (P11).
@@ -1133,12 +1212,22 @@ export function StudyScreen({
         }));
         // The snapshot above re-based `prev`, so the chain is describing a move
         // the diagram no longer remembers. Recomputed rather than blanked, for
-        // the same reason scrubbing back recomputes: it reads the engine, which
-        // now agrees with itself, and comes back as rest.
+        // the same reason a step recomputes: it reads the engine, which now
+        // agrees with itself, and comes back as rest.
         retell(false);
     }, [attempt, retell, questionApparatus]);
     arm.current = armQuestion;
 
+    /**
+     * Move the lesson to a step, by Next, Back or the track, and play it.
+     *
+     * Every way of arriving at a step is the same: the market where the lesson
+     * had it at the step before, and the step's move played from there (see
+     * `stage`). Going back a step plays it again, as its arrivals do. The
+     * question a step asks is asked once its move has landed, from where the
+     * step put the curves: the one the student was answering is taken down
+     * first, so its lines are not drawn over the move.
+     */
     const goTo = useCallback((position: number) => {
         const next = trackReducer(track, { type: 'goTo', position }, steps);
         if (next === track) return;
@@ -1146,27 +1235,13 @@ export function StudyScreen({
         // Before the step's own `set`, which would otherwise read as the student
         // answering the question they are about to be asked.
         asked.current = [];
-
-        const backwards = next.position < track.position,
-            established = paramsBetween(steps, track.position, next.position);
-        applyStep(established, next.position, backwards);
-
-        // The step param is presentation, so its own change is not narrated and
-        // the chain would otherwise still be describing the move we just
-        // re-based away from. Recomputed rather than blanked: it reads the
-        // engine, which now agrees with itself, and comes back as rest.
-        //
-        // Forward too, whenever the step established params and so re-based.
-        // A step whose params were already where it puts them raises no change
-        // to narrate, and the chain stayed on the step before's move — which
-        // the snapshot had just forgotten, about a point the new step may have
-        // put away. Where the params did move, this retells what their own
-        // events already told.
-        if (backwards || established.length > 0) retell(false);
+        armQuestion(null, -1);
 
         setTrack(next);
-        armQuestion(askAt(steps, next.position), next.position - 1);
-    }, [track, steps, applyStep, retell, armQuestion]);
+        stage(next.position, () => {
+            if (arm.current) arm.current(askAt(steps, next.position), next.position - 1);
+        });
+    }, [track, steps, stage, armQuestion]);
 
     /**
      * Take the answer.
@@ -1306,20 +1381,30 @@ export function StudyScreen({
     }, [exploring, opened, declared, steps, track.position, attempt, dockParams, frozen]);
 
     /**
-     * Reset: a move like any other.
+     * Reset: the diagram as the step or the page began, with no ghost.
      *
-     * The snapshot comes first, as a scenario's does, so the move is measured
-     * from where the student had the diagram: "What changed" reports it and
-     * Undo brings their curves back. That is why it never asks "Are you sure?".
-     * It moves the market and nothing else — not the lesson's place, not an
+     * It used to be a move like any other, snapshotted first as a scenario is,
+     * so that Undo could bring the student's curves back. What that drew was a
+     * ghost of their curves and an arrow from it, over a diagram they had
+     * asked to have back as it was. So the snapshot comes after: nothing is
+     * drawn or said for the move back, and nothing for the step's own move
+     * either, which pressing the step again plays.
+     *
+     * It moves the market and nothing else: not the lesson's place, not an
      * answer, not which panel is in front.
      */
     const onReset = useCallback(() => {
         if (resetTo.length === 0) return;
+        const engine = engineRef.current;
+        if (!engine) return;
         endGesture();
-        engineRef.current?.snapshot();
         updateParams(resetTo);
-    }, [resetTo, endGesture, updateParams]);
+        engine.snapshot();
+        // The calcs again, as `onReady` reads them: the events the reset
+        // raised were computed against the `prev` before it.
+        setReadout(engine.getCalcs() as Readout);
+        retell(false);
+    }, [resetTo, endGesture, updateParams, retell]);
 
     /**
      * Which panels are on the stage: what the lesson has brought in, or, in
@@ -1402,12 +1487,18 @@ export function StudyScreen({
      * Taken from the params as they were when the view last settled, which
      * is the boundary the narration already keeps: a drag is one move, part
      * of the view once it is let go, and not sixty a second while it is held.
+     * A step's move playing is part of the view where it lands, so the link
+     * is the step's from the press of Next, not the step's with the market
+     * it started from.
      *
      * Null until the engine has said what its params are, since a link
      * written before then would leave out every param the student moved.
      */
     const settledParams = useRef(dockParams);
-    if (line.kind !== 'live') settledParams.current = dockParams;
+    const landing = play.current;
+    if (landing) {
+        settledParams.current = dockParams.map(p => (p.name in landing.target ? { ...p, value: landing.target[p.name] } : p));
+    } else if (line.kind !== 'live') settledParams.current = dockParams;
     const settled = settledParams.current;
 
     const view = useMemo(() => {
@@ -2013,7 +2104,7 @@ export function StudyScreen({
                         mode={mode}
                         onModeChange={setMode}
                         covered={!!covering}
-                        canReset={resetTo.length > 0}
+                        canReset={resetTo.length > 0 && !playing}
                         onReset={onReset}
                         stacked={stacked}
                         share={share}

@@ -34,6 +34,12 @@ export function containsUndefinedToken(value: any): boolean {
 /** A string that is a number and nothing else — leading sign, decimals and exponent included. */
 const BARE_NUMBER = /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/;
 
+/** A drag let go is already moving, so its settle slows as it lands. */
+const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+
+/** A step's move starts from rest at the ghost, so it eases out of it as well as in. */
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
 /** One restriction that said no, as a host sees it. */
 export interface BlockedRestriction {
     /** The author's id for this rule, if they gave one. */
@@ -340,7 +346,10 @@ export class Model implements IModel {
         return this.gestureDepth > 0;
     }
 
-    /** A drag's params gliding onto `round` after it was let go; see `settle`. */
+    /**
+     * What is moving on its own: a drag's params gliding onto `round` after it
+     * was let go, or a step's move playing. See `settle` and `glide`.
+     */
     private settling: { finish: () => void; cancel: () => void } | null = null;
 
     /**
@@ -370,8 +379,54 @@ export class Model implements IModel {
         const moves = names
             .map(name => model.getParam(name))
             .filter((p, i, all) => p && all.indexOf(p) === i && p.unsettled())
-            .map(p => ({ param: p, from: p.value as number, to: model.restingPlace(p), wrote: p.value as number }))
-            .filter(m => m.to !== null);
+            .map(p => ({ param: p, to: model.restingPlace(p) }))
+            .filter(m => m.to !== null) as { param: Param; to: number }[];
+        model.animate(moves, ms, { dragging: true }, easeOut, done);
+    }
+
+    /**
+     * Glide each named param to its value over `ms`, then call `done`.
+     *
+     * A lesson step's move, played: the host puts the market where the step
+     * before left it, snapshots there, and asks for the step's values with
+     * `update(…, { glide })`, so the ghost holds still where the market was and
+     * the curve moves away from it as the step's words say it does. Each frame
+     * writes a value on the param's `glideStep`, and the last one the value
+     * itself, on `round`.
+     *
+     * It is a move like the settle above, and shares its slot: whatever moves
+     * next lands it first, a write it did not make stops it, and given no time
+     * it lands at once. A param already at its value, or with none to glide
+     * to, is left out; with nothing to glide, `done` is called at once.
+     */
+    glide(targets: { name: string; value: any }[], ms: number, done: () => void) {
+        const model = this;
+        model.finishSettling();
+        const moves = targets
+            .map(t => ({ param: model.getParam(t.name), value: Number(t.value) }))
+            .filter(m => m.param && isFinite(m.value))
+            .map(m => ({ param: m.param as Param, to: m.param!.landing(m.value) }))
+            .filter(m => m.to !== m.param.value);
+        model.animate(moves, ms, { gliding: true }, easeInOut, done);
+    }
+
+    /** Whether a glide moves this param, rather than it being put there at once; see `Param.glides`. */
+    glides(name: string): boolean {
+        const param = this.params.find(p => p.name === name);
+        return !!param && param.glides();
+    }
+
+    /**
+     * Move each param from where it is to `to` over `ms`, eased, writing every
+     * frame but the last on the grid `grid` names, then call `done`. The one
+     * animation `settle` and `glide` both are.
+     */
+    private animate(
+        targets: { param: Param; to: number }[], ms: number,
+        grid: { dragging?: boolean; gliding?: boolean }, ease: (t: number) => number, done: () => void
+    ) {
+        const model = this;
+        const moves = targets.map(m => ({ param: m.param, from: m.param.value as number, to: m.to, wrote: m.param.value as number }));
         if (moves.length === 0) {
             done();
             return;
@@ -384,9 +439,9 @@ export class Model implements IModel {
         const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
         const start = now();
         const overwritten = () => moves.some(m => m.param.value !== m.wrote);
+        const between = { dragging: !!grid.dragging, gliding: !!grid.gliding }, landing = {};
         const write = (t: number) => moves.forEach(m => {
-            const eased = 1 - Math.pow(1 - t, 3);
-            model.updateParam(m.param.name, t >= 1 ? m.to : m.from + (m.to - m.from) * eased, { dragging: t < 1 });
+            model.updateParam(m.param.name, t >= 1 ? m.to : m.from + (m.to - m.from) * ease(t), t < 1 ? between : landing);
             m.wrote = m.param.value;
         });
         const stop = () => {
@@ -427,12 +482,12 @@ export class Model implements IModel {
         } else settling.finish();
     }
 
-    /** Land a settling drag now, where it was going. */
+    /** Land a settling drag or a gliding step now, where it was going. */
     finishSettling() {
         if (this.settling) this.settling.finish();
     }
 
-    /** Drop a settling drag where it is, saying nothing: for an engine being torn down. */
+    /** Drop a settling drag or a gliding step where it is, saying nothing: for an engine being torn down. */
     cancelSettling() {
         if (this.settling) this.settling.cancel();
     }
@@ -726,12 +781,14 @@ export class Model implements IModel {
     /**
      * `dragging` says a pointer drag asked for this, which moves a param with
      * a `dragRound` on that finer grid; see `settle` for where it rests.
+     * `gliding` says a frame of a glide wrote it, on the param's `glideStep`;
+     * see `glide`.
      */
-    updateParam(name: string, newValue: any, opts?: { dragging?: boolean }) {
+    updateParam(name: string, newValue: any, opts?: { dragging?: boolean; gliding?: boolean }) {
         let model = this,
             param = model.getParam(name);
         if (!param) return;
-        const dragging = !!(opts && opts.dragging);
+        const dragging = !!(opts && opts.dragging), gliding = !!(opts && opts.gliding);
         const oldValue = param.value;
         // Held for 'change' mode: once the hypothetical below rebinds these fields
         // the pre-change generation is otherwise unreachable.
@@ -748,7 +805,7 @@ export class Model implements IModel {
                 : requested > param.max ? 'max'
                     : null;
 
-        param.update(newValue, dragging);
+        param.update(newValue, dragging, gliding);
         const attempted = param.value;
 
         // if param has changed, check to make sure the change is valid

@@ -1380,16 +1380,15 @@ test('the reveal draws the answer beside the student\'s, and takes it away again
         .filter(n => /^0,/.test((n as SVGElement).style.strokeDasharray.replace(/\s|px/g, ''))).length);
     await expect.poll(dotted, 'the answer line').toBe(0);
 
-    // What stays is the student's own move. The question's faint start line
-    // stands down with it, and demand's ghost — off while a question is asked —
-    // takes its place at the same height: `D₀`, where the question found the
-    // curve, beside the curve where they left it. A forward step that only
-    // reveals does not re-base. This used to count six, because the question
-    // row leaving changed the stage's shape, the engine was rebuilt, and the
-    // rebuilt one had forgotten the move (NOTES.md, issue 19).
-    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(7);
+    // Nothing of the student's answer stays either. The step after it starts
+    // where the lesson had the market, as every step does, so demand is back
+    // where the question found it and there is no ghost of where they left
+    // it: its start line stands down, and no `D₀` takes its place. This used
+    // to keep the student's move, ghost and all, which was the ghost of a
+    // wrong answer drawn under the next step's words.
+    await expect(page.locator(RENDERED.visibleCurve)).toHaveCount(6);
     const labels = await page.locator(`${LABEL}:visible`).allTextContents();
-    expect(labels.filter(t => t.includes('D_0')), `labels: ${labels.join(' | ')}`).toHaveLength(1);
+    expect(labels.filter(t => t.includes('D_0')), `labels: ${labels.join(' | ')}`).toHaveLength(0);
 });
 
 /**

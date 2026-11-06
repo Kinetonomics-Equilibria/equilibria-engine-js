@@ -187,22 +187,51 @@ export class Param implements IParam {
 
     // Receives an instruction to update the parameter to a new value
     // Updates to the closest rounded value to the desired newValue within accepted range
-    update(newValue: any, dragging?: boolean) {
+    update(newValue: any, dragging?: boolean, gliding?: boolean) {
         let param = this;
-        param.value = param.landing(newValue, dragging);
+        param.value = param.landing(newValue, dragging, gliding);
         return param.value;
     }
 
     /**
      * What `update` would make the value: clamped to the range, and rounded
-     * within it, onto `dragRound` while `dragging` where it has one.
+     * within it, onto `dragRound` while `dragging` where it has one, and onto
+     * `glideStep` while `gliding`.
      */
-    landing(newValue: any, dragging?: boolean): number {
+    landing(newValue: any, dragging?: boolean, gliding?: boolean): number {
         const param = this;
         if (newValue < param.min) return param.min;
         if (newValue > param.max) return param.max;
+        if (gliding) return onGrid(newValue, param.glideStep());
         if (dragging && param.dragRound) return onGrid(newValue, param.dragRound);
         return Math.round(newValue / param.round) * param.round;
+    }
+
+    /**
+     * The grid a glide moves it on: its `dragRound`, or a tenth of `round`.
+     *
+     * A step's move glides there from where the step before left it (see
+     * `Model.glide`), and on `round` most of those moves are four or five
+     * steps long: a curve that jumps five times in half a second. So a glide
+     * moves on the drag's finer grid where there is one, which an author chose
+     * to print whole, and otherwise on a tenth of `round`, which prints at the
+     * param's own precision or one place past it.
+     */
+    glideStep(): number {
+        const param = this;
+        if (param.dragRound) return param.dragRound;
+        return parseFloat((param.round / 10).toFixed(decimalPlaces(param.round.toString()) + 1));
+    }
+
+    /**
+     * Whether a glide moves it, rather than putting it there at once.
+     *
+     * Not a presentation param, which says how the diagram is shown, and the
+     * step it has reached is one: a reveal lands at once. Not a boolean,
+     * which has nothing between its two values to pass through.
+     */
+    glides(): boolean {
+        return !this.presentation && !this.isBoolean;
     }
 
     /** Whether a drag left it between two of the values it rests at. */

@@ -99,8 +99,9 @@ export const PPC_LESSON: LessonStep[] = [
             'number is the opportunity cost per unit.',
         term: GLOSSARY.opportunityCostPerUnit
     },
-    // The step after this one sets both points, so wherever the student
-    // leaves them, the next step's numbers are the ones it quotes.
+    // Wherever the student leaves A and B, the step after this one plays
+    // its move from where the lesson had them, so the move it shows is the
+    // one its numbers quote.
     {
         title: 'Moving A and B',
         say: 'You can move A and B along the curve yourself with the sliders below.\n\n' +
@@ -169,9 +170,9 @@ export const PPC_LESSON: LessonStep[] = [
         try: [{ param: 'C', label: 'Coffees an hour' }],
         term: GLOSSARY.technology
     },
-    // Z alone. The faster espresso machine stays from the step before, or
-    // wherever the student left its slider: at 30 toasties and 80 coffees Z
-    // is inside the curve for any coffees an hour from 5 to 15. Putting the
+    // Z alone. The faster espresso machine stays from the step before, at
+    // 15 coffees an hour, whatever the student did with its slider, and at
+    // 30 toasties and 80 coffees Z is inside the curve with it. Putting the
     // machine back here as well led "What changed" with coffee-making
     // getting slower, under words about Z.
     {

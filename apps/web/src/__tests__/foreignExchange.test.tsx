@@ -679,16 +679,15 @@ describe('a market not drawn yet', () => {
         expect(caption('mirror')).not.toBe('');
         expect(chain()).toMatch(USD_MOVES);
 
-        // Back before it, and Reset: the AUD falls back, and the USD market,
-        // gone from the stage, is gone from the chain.
+        // Back before it: the USD market, gone from the stage, is gone from
+        // the chain. The lesson moves nothing before it draws the USD
+        // market, so the step is at rest.
         await user.click(marker(USD_MARKET - 1));
         expect(caption('mirror')).toBe('');
-        await user.click(screen.getByRole('button', { name: 'Reset' }));
-        expect(chain()).toContain('The AUD depreciates');
         expect(chain()).not.toMatch(USD_MOVES);
 
-        // And it is said again from the step that draws it.
-        await user.click(marker(USD_MARKET));
+        // And it is said again from the step that moves demand with it drawn.
+        await user.click(marker(USD_MARKET + 1));
         expect(chain()).toMatch(USD_MOVES);
     });
 });

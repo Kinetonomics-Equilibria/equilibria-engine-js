@@ -3,6 +3,7 @@ import { StepDefinition } from "./KGAuthor/parsers/steps";
 import { DensityLevel } from "./KGAuthor/parsers/density";
 import { KG_EVENTS } from "./constants";
 import type { ParamInfo } from "./model/param";
+import { reducedMotion } from "./view/arrival";
 import { EventEmitter } from "eventemitter3";
 import "../css/kgjs-theme.css";
 // Labels are rendered by KaTeX (view/viewObjects/label.ts), which needs its own
@@ -159,30 +160,51 @@ export class KineticGraph extends EventEmitter {
      * object that `arrive`s and is shown by it is animated in. The host says
      * so because only it knows: to the engine, a step and a link restoring
      * step 3 are the same param moving. See `view/arrival.ts`.
+     *
+     * `glide` plays the move over that many milliseconds rather than making it
+     * at once: a lesson step's, from where the host has put the market and
+     * snapshotted it, so the ghost holds still and the curve moves away from
+     * it. A param that says how the diagram is shown, the step among them, and
+     * a boolean are put there at once, before the rest set off, so what the
+     * step reveals is there as its move begins. Only those are arrivals: the
+     * glide's frames are not. See `Model.glide`.
+     *
+     * `landed` is called once the params are where they were asked to be: at
+     * the end of the glide, or at once with none, or under reduced motion,
+     * which glides nothing. Whatever moves next lands a glide first, and calls
+     * it then; a diagram torn down mid-glide never calls it.
      */
-    public update(newConfig: any, opts?: { arrive?: boolean }) {
+    public update(newConfig: any, opts?: { arrive?: boolean; glide?: number; landed?: () => void }) {
         this.config = { ...this.config, ...newConfig };
+        const landed = (opts && opts.landed) || (() => { });
 
-        if (this.view) {
-            const model = (this.view as any).model;
-            model.arriving = !!(opts && opts.arrive);
-            try {
-                // Update params explicitly if they were passed
-                if (newConfig.params) {
-                    // A drag still settling lands, and closes its gesture,
-                    // before the host's values go in over it.
-                    model.finishSettling();
-                    newConfig.params.forEach((param: any) => {
-                        model.updateParam(param.name, param.value);
-                    });
-                } else {
-                    // Generic update if underlying structure changed
-                    model.update(true);
-                }
-            } finally {
-                model.arriving = false;
-            }
+        if (!this.view) {
+            landed();
+            return;
         }
+        const model = (this.view as any).model;
+        const ms = opts && opts.glide && opts.glide > 0 && !reducedMotion() ? opts.glide : 0;
+        const gliding: { name: string; value: any }[] = [];
+        model.arriving = !!(opts && opts.arrive);
+        try {
+            // Update params explicitly if they were passed
+            if (newConfig.params) {
+                // A drag still settling, or a step still gliding, lands, and
+                // closes its gesture, before the host's values go in over it.
+                model.finishSettling();
+                newConfig.params.forEach((param: any) => {
+                    if (ms > 0 && model.glides(param.name)) gliding.push(param);
+                    else model.updateParam(param.name, param.value);
+                });
+            } else {
+                // Generic update if underlying structure changed
+                model.update(true);
+            }
+        } finally {
+            model.arriving = false;
+        }
+        if (gliding.length > 0) model.glide(gliding, ms, landed);
+        else landed();
     }
 
     /**

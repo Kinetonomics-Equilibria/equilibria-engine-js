@@ -96,8 +96,9 @@ export const SHORTAGE_LESSON: LessonStep[] = [
             'towards equilibrium. This is called the price mechanism.',
         term: GLOSSARY.priceMechanism
     },
-    // The one "see what happens" step. The step after it sets the price
-    // back, so wherever the student leaves it, the next part starts at $3.
+    // The one "see what happens" step. Wherever the student leaves the
+    // price, the step after it starts where the lesson had it, at $3, as
+    // every step does, so the next part starts there with no ghost of it.
     {
         title: 'A price further from equilibrium',
         say: 'You can move the price below to see the shortage or surplus at each price.\n\n' +

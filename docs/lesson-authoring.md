@@ -144,14 +144,19 @@ test's `marker()` takes. In the Playground every `fromStep` is true.
 
 A number a step reads has to be on the screen at that step: a panel's
 headline, or a clause of "What changed". "What changed" says what the last
-move changed, so a step that moves nothing shows the step before's. A number
+move changed, so a step with no `set` shows the step before's, and one whose
+`set` moves nothing shows nothing. A number
 held back with `fromStep` until a step that moves nothing is on the screen
 only if it is a headline: the elasticity lesson's percentages are there from
 the start for that reason, and its elasticity, a headline, is held back.
 
-A step that sets a param a student could have moved on the step before, with
-`try`, is sure of where it starts; a step after a `try` that sets nothing is
-not.
+A step's move plays when a student arrives at it, by Next, Back or its
+marker ([Motion](./chart-design.md#motion)). The chart starts where the
+lesson had it at the step before, whatever the student did there with a
+`try` or a question, and glides to where the step's `set` puts it, with the
+ghost left where it started. So write a step's `set` as the move its words
+describe, and its words for that move: the student watches it happen as
+they read them.
 
 A step moves the params of one curve. "What changed" leads with the first
 cause it moved, and marks the curves in the causes' colour only when they
@@ -235,7 +240,9 @@ the label and its numbers.
 ### 5. The questions
 
 A step's `ask`. Start each from the baseline with `set`, so where it starts
-does not depend on what the student did on the way. Offer every curve that
+does not depend on the question before it: a step's market is every `set` up
+to it, so one that sets only the curve it shifts keeps the price the last
+question opened at. Offer every curve that
 could move (`among`), in the same order every time, and name none of them in
 the prompt or a report beside it: which curve moves is the first half of the
 answer. Give a `target`, or for a question of direction only an `illustrate`
@@ -251,7 +258,7 @@ on screen; `lessons.test.ts` holds every object to a name of its own.
 
 A question may start somewhere other than `BASELINE`, where its words need it
 to, as the elasticity lesson's do with the bakery open. What matters is that
-the `set` is the same whatever the student did on the way. Where a question is
+its `set` puts back everything the questions before it moved. Where a question is
 marked by direction only, check the whole range of its param: every move the
 right way should be right. The elasticity lesson's price stops at $3.50
 because with elastic demand a cut to $3.00 would bring in no more than $4.50
@@ -278,9 +285,10 @@ way to learn its format ("Revenue$945.00▲ $100.00"). Three things a test meets
 - A slider moved by the keyboard is a move a press, so a caption's chip says
   only the last press. Read the two captions either side instead. A curve or
   point moved by the keyboard is the same.
-- A step reached from the cover by its marker has nothing drawn before it, so
-  "What changed" cannot say how a curve moved. Step to it from the step
-  before.
+- A step plays its move from the step before, whether a test reaches it by
+  Next or by its marker, so "What changed" says the step's own move either
+  way. The setup reports reduced motion, so a step's move has landed by the
+  time the click has; `studyPlay.test.tsx` is where the motion is tested.
 - Break a number in a step and see the test fail, once, so you know it reads
   what you think it reads.
 

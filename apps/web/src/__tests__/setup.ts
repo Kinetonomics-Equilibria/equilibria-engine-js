@@ -19,9 +19,15 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 }
 
 // Mantine reads this in several components; jsdom does not implement it.
+//
+// It says the student has asked for less motion, which is what a test of
+// where a lesson's step puts the market is reading: under it a step's move
+// lands at once, rather than half a second after Next, so a test can read the
+// step as soon as it is at it. A test about the motion itself says it wants
+// motion, as `studyPlay.test.tsx` and the picture step's do.
 if (typeof window !== 'undefined' && !window.matchMedia) {
     window.matchMedia = ((query: string) => ({
-        matches: false,
+        matches: /prefers-reduced-motion:\s*reduce/.test(query),
         media: query,
         onchange: null,
         addListener: () => { },
