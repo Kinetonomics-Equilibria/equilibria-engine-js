@@ -637,9 +637,9 @@ Currency codes (AUD, USD) are fine: that is how money is written.
    to read.
 9. **Drags.** Nothing to draw: the engine puts a handle on whatever can be
    dragged. A label set by hand beside a point that can be dragged sits 20px
-   out, past its arrows. A param whose step is a big share of its axis, as
-   the shortages lesson's are at a twelfth and an eighth, gets a `dragRound`
-   ([Motion](#motion)).
+   out, past its arrows. A param dragged in steps of more than a fiftieth of
+   its axis gets a `dragRound` ([Motion](#motion)): the shortages lesson's,
+   at a twelfth and an eighth, AD–AS's at a fortieth and the PPC's.
 10. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
     hand-set `strokeWidth`.
 11. **Words.** Every symbol is in the list above, and the lesson says it in words

@@ -50,16 +50,19 @@ const NATURAL = 4.5;
  * so its trough stays above zero growth.
  *
  * In steps of 0.2, because a step moves GDP growth and inflation 0.1, which
- * is what their captions print.
+ * is what their captions print. Dragged on the chart, each moves in 0.02 and
+ * glides onto its step once let go: on 0.2, a fortieth of the axis, a curve
+ * jumped 8px at a time behind the pointer. Everything the panels print is to
+ * one decimal, so nothing mid-drag reads any finer than at rest.
  *
  * `expanding` is the business cycle's phase: which half of the cycle the
  * economy is on, with GDP growth at the height the other three set. A switch,
  * and nothing else reads it.
  */
 export const PARAMS: ParamDefinition[] = [
-    { name: 'demand', label: 'Aggregate demand', value: GROWTH, min: 1.4, max: 5.4, round: 0.2, precision: 1 },
-    { name: 'supply', label: 'Short-run aggregate supply', value: GROWTH, min: 1.4, max: 5.4, round: 0.2, precision: 1 },
-    { name: 'potential', label: 'Potential growth', value: GROWTH, min: 2.6, max: 4.2, round: 0.2, precision: 1 },
+    { name: 'demand', label: 'Aggregate demand', value: GROWTH, min: 1.4, max: 5.4, round: 0.2, dragRound: 0.02, precision: 1 },
+    { name: 'supply', label: 'Short-run aggregate supply', value: GROWTH, min: 1.4, max: 5.4, round: 0.2, dragRound: 0.02, precision: 1 },
+    { name: 'potential', label: 'Potential growth', value: GROWTH, min: 2.6, max: 4.2, round: 0.2, dragRound: 0.02, precision: 1 },
     { name: 'expanding', label: 'Expansion', value: 0, min: 0, max: 1, round: 1, isBoolean: true }
 ];
 

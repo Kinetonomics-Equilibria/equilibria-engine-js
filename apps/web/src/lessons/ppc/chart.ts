@@ -144,9 +144,16 @@ const readoutLine = (name: string, line: number, text: string, show = 'true') =>
     show: `(${SHOW_CHOICES}) and ${show}`
 });
 
-/** Where a point is: "A (60, 160)". */
+/**
+ * Where a point is: "A (60, 160)".
+ *
+ * Its toasties to a tenth, which is as fine as they get at rest: a point
+ * pushed to the curve's end is at most toasties, T·h, which is 126.5 at 5.5
+ * an hour for 23 hours. Dragged, T·h is a product of two finer steps, and
+ * 5.05·23 is 116.14999999999999.
+ */
 const at = (name: 'A' | 'B') =>
-    `"${name} (", string(calcs.t${name}), ", ", string(calcs.c${name}), ")"`;
+    `"${name} (", string(round(calcs.t${name}, 1)), ", ", string(calcs.c${name}), ")"`;
 
 /**
  * A label on the move from A to B: how many toasties it gains, or coffees it
@@ -231,19 +238,26 @@ export const PARAMS: ParamDefinition[] = [
     // axes, which is every move a question or a step makes. Two at the top
     // together run off them, which the playground allows — the diagram is
     // clipped, and nothing is refused.
-    { name: 'h', label: 'Work hours', value: 20, min: 10, max: 30, round: 1 },
-    { name: 'C', label: 'Coffees an hour', value: 10, min: 5, max: 15, round: 0.5 },
-    { name: 'T', label: 'Toasties an hour', value: 5, min: 2.5, max: 7.5, round: 0.5 },
+    //
+    // Each dragged on the chart in a tenth of its step, and glided onto the
+    // step once let go. At 20 hours an hour's step moves the curve's ends 100
+    // toasties and 200 coffees, a thirty-second of each axis, and half a
+    // toastie an hour moves its toastie end 10, a sixteenth.
+    { name: 'h', label: 'Work hours', value: 20, min: 10, max: 30, round: 1, dragRound: 0.1 },
+    { name: 'C', label: 'Coffees an hour', value: 10, min: 5, max: 15, round: 0.5, dragRound: 0.05 },
+    { name: 'T', label: 'Toasties an hour', value: 5, min: 2.5, max: 7.5, round: 0.5, dragRound: 0.05 },
     { name: 'k', label: 'Specialisation', value: 2, min: 1, max: 3, round: 0.5 },
 
     // In steps of 5 toasties, so every move is a sum a student can check.
-    { name: 'a', label: 'Toasties at A', value: 60, min: 0, max: 150, round: 5 },
-    { name: 'b', label: 'Toasties at B', value: 80, min: 0, max: 150, round: 5 },
+    // Dragged in whole toasties, so the sums stay whole while the point
+    // follows the pointer, and glided onto the 5s once let go.
+    { name: 'a', label: 'Toasties at A', value: 60, min: 0, max: 150, round: 5, dragRound: 1 },
+    { name: 'b', label: 'Toasties at B', value: 80, min: 0, max: 150, round: 5, dragRound: 1 },
     // Z's coffees stop 40 short of the top of the axis, where the word
     // above it still fits on the plot. At 320 it ran off the top: a
     // label is turned to fit sideways (`flipToFit`), never up and down.
-    { name: 'pt', label: 'Toasties at Z', value: 40, min: 0, max: 160, round: 5 },
-    { name: 'pc', label: 'Coffees at Z', value: 120, min: 0, max: 280, round: 5 }
+    { name: 'pt', label: 'Toasties at Z', value: 40, min: 0, max: 160, round: 5, dragRound: 1 },
+    { name: 'pc', label: 'Coffees at Z', value: 120, min: 0, max: 280, round: 5, dragRound: 1 }
 ];
 
 /**
@@ -366,11 +380,11 @@ export const PANELS: PanelDefinition[] = [
                 }
             },
             legLabel('gainRight', 'calcs.tA', 'calcs.cA',
-                'concat("+", string(calcs.gain), " toasties")', true, PAST_A_RIGHTWARDS),
+                'concat("+", string(round(calcs.gain, 1)), " toasties")', true, PAST_A_RIGHTWARDS),
             legLabel('costRight', 'calcs.tB', '(calcs.cA + calcs.cB) / 2',
                 `concat("−", ${counted('calcs.cost', 'coffee')})`, true, { position: 'l' }),
             legLabel('gainLeft', 'calcs.tA', 'calcs.cA',
-                'concat("−", string(-calcs.gain), " toasties")', false, PAST_A_LEFTWARDS),
+                'concat("−", string(round(-calcs.gain, 1)), " toasties")', false, PAST_A_LEFTWARDS),
             legLabel('costLeft', 'calcs.tB', '(calcs.cA + calcs.cB) / 2',
                 `concat("+", ${counted('-calcs.cost', 'coffee')})`, false, { position: 'r' }),
             readoutLine('route', 0, `concat(${at('A')}, " → ", ${at('B')})`),
