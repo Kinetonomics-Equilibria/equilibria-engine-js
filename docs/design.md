@@ -326,8 +326,8 @@ One menu for everything that leaves the screen (`ShareMenu`):
   puts one is the model's own, so a story's move is in its address once it
   is made.
 - Addresses are written from the app's root, so the app can be served
-  anywhere. Netlify serves `index.html` for every path (a `/* /index.html
-  200` rewrite in `netlify.toml`), and the root itself is [Home](#home),
+  anywhere. The host serves `index.html` for every path that is not a file
+  (see [Addresses](#addresses)), and the root itself is [Home](#home),
   which has no view to write.
 - The address follows the view. Opening another page — from the rail, from
   Home, by Finish or by a story's "Open in the Playground" — is pushed, as
@@ -1017,8 +1017,11 @@ Built, as [Links](#links) describes.
   query for the path, but stays reserved, since old links carry it.
 - A story that is not there, and a path the app does not have, open Home,
   and the address becomes the root.
-- Netlify serves `index.html` for every path (a `/* /index.html 200`
-  rewrite in `netlify.toml`).
+- The host serves `index.html` for every path that is not a file. On Azure
+  Static Web Apps (econ.knovia.com.au) that is the `navigationFallback` in
+  `apps/web/public/staticwebapp.config.json`, which leaves `/assets/*` out so
+  a missing asset is a 404, not a page. Netlify does the same from a
+  `/* /index.html 200` rewrite in `netlify.toml`, until that site is retired.
 
 ### What each supplies
 
