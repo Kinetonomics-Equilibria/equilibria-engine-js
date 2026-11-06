@@ -37,6 +37,14 @@ export interface ParamDefinition {
     max: number;
     round: number;
     /**
+     * A finer step for a drag on the chart, where `round` is coarse enough to
+     * make one jump: the shortages lesson's price rests on 50c and is dragged
+     * in 5c. Let go, it glides onto `round` in 150ms, so every value it rests
+     * at is still one of those. A slider and the keyboard move it on `round`.
+     * `round` must be a whole number of it (docs/lesson-authoring.md).
+     */
+    dragRound?: number;
+    /**
      * Decimal places the param is printed to, on its slider and in "What
      * changed", where its `round` would give too few: a price in 10c steps
      * is 4.50, not 4.5. The engine takes it from `round` otherwise.

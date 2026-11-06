@@ -507,8 +507,18 @@ brings something onto it. Otherwise it holds still (principle 5).
   while a student drags too, because a label moved across the chart at once
   reads as thrown ([Labels on the plot](#curves)). It only fades in: nothing
   slides across the chart to get there.
+- **A drag follows the pointer, and settles where the lesson's numbers are.**
+  A param whose `round` is a big share of its axis jumps when it is dragged on
+  it: the shortages lesson's price sat still under the pointer, then leapt a
+  twelfth of the axis. Give it a `dragRound`, a finer step that `round` is a
+  whole number of, and a drag moves on that. Let go, it glides onto the nearer
+  value of `round` in 150ms, inside the drag, so the ghost and "What changed"
+  treat the drag and the glide as one move. A slider, an arrow key and a step
+  move it on `round`, as before. Mid-drag, every number is on the finer step,
+  so choose one that still prints whole: 5c and 10 mangoes for 50c and 100.
 - **No motion for a student who has asked for less.** With reduced motion set
-  on their device, everything simply appears, and the chart reads the same.
+  on their device, everything simply appears, and the chart reads the same. A
+  drag lets go where its `round` puts it, at once.
 
 ## Keys and legends
 
@@ -627,7 +637,9 @@ Currency codes (AUD, USD) are fine: that is how money is written.
    to read.
 9. **Drags.** Nothing to draw: the engine puts a handle on whatever can be
    dragged. A label set by hand beside a point that can be dragged sits 20px
-   out, past its arrows.
+   out, past its arrows. A param whose step is a big share of its axis, as
+   the shortages lesson's are at a twelfth and an eighth, gets a `dragRound`
+   ([Motion](#motion)).
 10. **Nothing extra.** No legend, no gridlines, no hand-set `fontSize`, no
     hand-set `strokeWidth`.
 11. **Words.** Every symbol is in the list above, and the lesson says it in words

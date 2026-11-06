@@ -3,7 +3,15 @@ import { ViewObject } from "../view/viewObjects/viewObject";
 import { ClickListener } from "./listeners/clickListener";
 import { DragListener } from "./listeners/dragListener";
 import { KG_EVENTS } from "../constants";
+import { reducedMotion } from "../view/arrival";
 import * as d3 from "d3";
+
+/**
+ * How long a param a drag left between two of its resting values takes to
+ * glide onto the nearer one, once let go (`Model.settle`). Short, as a
+ * detent is: the pointer has already done the moving.
+ */
+export const SETTLE_MS = 150;
 
 
 
@@ -146,6 +154,9 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
             element.on("keydown", function (event) { handler.keyed(event) });
             element.call(d3.drag()
                 .on('start', function (event, d) {
+                    // The last drag lands first, so this one starts from where
+                    // it rests and opens a gesture of its own.
+                    handler.model.finishSettling();
                     handler.hold(true);
                     handler.scope.params = handler.model.currentParamValues;
                     handler.scope.calcs = handler.model.currentCalcValues;
@@ -174,17 +185,22 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
                     drag.dx = drag.x - drag.x0;
                     drag.dy = drag.y - drag.y0;
                     handler.dragListeners.forEach(function (dListener) {
-                        dListener.onChange(handler.scope)
+                        dListener.onChange(handler.scope, true)
                     });
                 })
                 .on('end', function (event, d) {
                     handler.hold(false);
                     //handler.element.style("cursor","default");
-                    if (handler.gestureOpen) {
-                        handler.gestureOpen = false;
-                        handler.model.endGesture();
-                        handler.announce(KG_EVENTS.CURVE_DRAGGED, { dragging: false });
-                    }
+                    // A param that moved on its `dragRound` settles onto its
+                    // `round` before the gesture closes, so the drag and the
+                    // settle are one move. With nothing to settle, it closes now.
+                    handler.model.settle(handler.movedParams(), reducedMotion() ? 0 : SETTLE_MS, function () {
+                        if (handler.gestureOpen) {
+                            handler.gestureOpen = false;
+                            handler.model.endGesture();
+                            handler.announce(KG_EVENTS.CURVE_DRAGGED, { dragging: false });
+                        }
+                    });
                 })
             );
         }
@@ -237,6 +253,8 @@ export class InteractionHandler extends UpdateListener implements IInteractionHa
         const way = keyWays(event.key, handler.directions);
         if (!way || event.altKey || event.ctrlKey || event.metaKey) return;
         event.preventDefault();
+        // A drag still settling lands first, so the press starts from where it rests.
+        handler.model.finishSettling();
 
         const at = vo.handleAt;
         if (!at) return;

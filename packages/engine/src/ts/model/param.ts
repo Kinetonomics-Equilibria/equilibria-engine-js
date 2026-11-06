@@ -9,8 +9,20 @@ export interface ParamDefinition {
     value: any;       // initial value (either a number or true/false)
     min?: any;        // if param is a number, lowest acceptable value; also sets left bound of a slider
     max?: any;        // ditto for max
-    round?: any;      // interval to snap to as user changes 
+    round?: any;      // interval to snap to as user changes
     precision?: any;  // number of decimal places to display value to; automatically sets itself based on "round" - i.e., if round = 0.01 then precision will automatically choose 2 decimal places
+
+    /**
+     * A finer interval the param moves on while a student drags it, so a
+     * coarse `round` does not make the drag jump. Let go, it settles onto
+     * `round` (`Model.settle`). Leave it out and a drag snaps onto `round` as
+     * it moves, as it always has.
+     *
+     * `round` should be a whole number of these, so every value the param
+     * rests at can be reached mid-drag. A keyboard press, a slider and a host
+     * writing the param still move it on `round`.
+     */
+    dragRound?: any;
 
     /**
      * Set by `View.parse`, not by an author: this param's value was declared as
@@ -81,6 +93,30 @@ export interface IParam {
     formatted: (precision?: number) => string;
 }
 
+function decimalPlaces(numAsString: string) {
+    let match = ('' + numAsString).match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
+    if (!match) {
+        return 0;
+    }
+    return Math.max(
+        0,
+        // Number of digits right of decimal point.
+        (match[1] ? match[1].length : 0)
+        // Adjust for scientific notation.
+        - (match[2] ? +match[2] : 0));
+}
+
+/**
+ * `value` on a grid of `step`, written to the step's own decimals.
+ *
+ * Without the last part a grid of 0.05 puts float dust on most of its values:
+ * 0.05 × 67 is 3.3500000000000005, and a label that writes a calc from it
+ * as a string says "Surplus of 70.00000000000011 mangoes".
+ */
+function onGrid(value: number, step: number): number {
+    return parseFloat((Math.round(value / step) * step).toFixed(decimalPlaces(step.toString())));
+}
+
 export class Param implements IParam {
 
     public name: string;
@@ -89,24 +125,13 @@ export class Param implements IParam {
     public min: number;
     public max: number;
     public round: number;
+    /** The grid a drag moves it on, or null where a drag moves it on `round`. */
+    public dragRound: number | null = null;
     public precision: number;
     public presentation: boolean;
     public isBoolean: boolean;
 
     constructor(def: ParamDefinition) {
-
-        function decimalPlaces(numAsString: string) {
-            let match = ('' + numAsString).match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
-            if (!match) {
-                return 0;
-            }
-            return Math.max(
-                0,
-                // Number of digits right of decimal point.
-                (match[1] ? match[1].length : 0)
-                // Adjust for scientific notation.
-                - (match[2] ? +match[2] : 0));
-        }
 
         setDefaults(def, { min: 0, max: 10, round: 1, label: '' });
 
@@ -144,24 +169,45 @@ export class Param implements IParam {
                 console.warn(`Param "${def.name}": value "${def.value}" is not a number, defaulting to ${this.min || 0}.`);
                 this.value = isNaN(this.min) ? 0 : this.min;
             }
+
+            if (def.dragRound !== undefined) {
+                const dragRound = parseFloat(def.dragRound), steps = this.round / dragRound;
+                if (!(dragRound > 0) || !(dragRound < this.round)) {
+                    console.warn(`Param "${def.name}": dragRound ${def.dragRound} is not finer than its round ${this.round}, so a drag moves it on round.`);
+                } else {
+                    if (Math.abs(steps - Math.round(steps)) > 1e-9) {
+                        console.warn(`Param "${def.name}": round ${this.round} is not a whole number of dragRound ${dragRound}, so a drag cannot reach every value it rests at.`);
+                    }
+                    this.dragRound = dragRound;
+                }
+            }
         }
 
     }
 
     // Receives an instruction to update the parameter to a new value
     // Updates to the closest rounded value to the desired newValue within accepted range
-    update(newValue: any) {
+    update(newValue: any, dragging?: boolean) {
         let param = this;
-        param.value = param.landing(newValue);
+        param.value = param.landing(newValue, dragging);
         return param.value;
     }
 
-    /** What `update` would make the value: clamped to the range, and rounded within it. */
-    landing(newValue: any): number {
+    /**
+     * What `update` would make the value: clamped to the range, and rounded
+     * within it, onto `dragRound` while `dragging` where it has one.
+     */
+    landing(newValue: any, dragging?: boolean): number {
         const param = this;
         if (newValue < param.min) return param.min;
         if (newValue > param.max) return param.max;
+        if (dragging && param.dragRound) return onGrid(newValue, param.dragRound);
         return Math.round(newValue / param.round) * param.round;
+    }
+
+    /** Whether a drag left it between two of the values it rests at. */
+    unsettled(): boolean {
+        return this.dragRound !== null && this.landing(this.value) !== this.value;
     }
 
     /** This param's declaration and current value, copied, for a host to read. */

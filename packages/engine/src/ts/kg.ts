@@ -169,6 +169,9 @@ export class KineticGraph extends EventEmitter {
             try {
                 // Update params explicitly if they were passed
                 if (newConfig.params) {
+                    // A drag still settling lands, and closes its gesture,
+                    // before the host's values go in over it.
+                    model.finishSettling();
                     newConfig.params.forEach((param: any) => {
                         model.updateParam(param.name, param.value);
                     });
@@ -362,6 +365,10 @@ export class KineticGraph extends EventEmitter {
     }
 
     public destroy() {
+        // A drag gliding onto its grid would go on writing to a diagram no one
+        // can see, and tell a host that has let go of it about each frame.
+        (this.view as any)?.model?.cancelSettling();
+
         // Disconnect the ResizeObserver to stop monitoring container size
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();

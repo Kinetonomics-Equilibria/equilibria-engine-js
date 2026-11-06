@@ -320,6 +320,9 @@ export class Model implements IModel {
      */
     beginGesture() {
         const model = this;
+        // A drag still settling is the move before this one: it lands, and
+        // closes its gesture, before this one opens and snapshots.
+        model.finishSettling();
         // 'change' coalesces to one snapshot per gesture rather than to none: the
         // gesture's "before" is its start, which is the same answer 'gesture' mode
         // gives. Only 'never' declines.
@@ -335,6 +338,127 @@ export class Model implements IModel {
     /** True while a gesture is open — the interaction handler asks before opening a second. */
     get inGesture(): boolean {
         return this.gestureDepth > 0;
+    }
+
+    /** A drag's params gliding onto `round` after it was let go; see `settle`. */
+    private settling: { finish: () => void; cancel: () => void } | null = null;
+
+    /**
+     * Settle each named param a drag left between two of its resting values
+     * onto the nearer one, gliding there over `ms`, then call `done`.
+     *
+     * A param with a `dragRound` moves on that finer grid while it is dragged,
+     * so the drag follows the pointer; but where it rests is still `round`,
+     * which is what a lesson's numbers are chosen for. So the drag ends with
+     * this, and `done` is where the drag closes its gesture: the ghost and the
+     * narration take the drag and its settle as one move. Glided rather than
+     * put there, because a jump is what the finer grid was for. Each frame
+     * writes a value on the drag grid, so nothing a label prints is ever
+     * between two of those.
+     *
+     * Where the nearer value is refused by a restriction it goes to the other
+     * side, and where both are, it stays: it got there by a drag the
+     * restrictions allowed.
+     *
+     * Whatever moves next finishes it first: a press, a key, a host's
+     * gesture, a step, a reset. A write it did not make stops it where that
+     * write left the param. With nothing to settle, `done` is called at once.
+     */
+    settle(names: string[], ms: number, done: () => void) {
+        const model = this;
+        model.finishSettling();
+        const moves = names
+            .map(name => model.getParam(name))
+            .filter((p, i, all) => p && all.indexOf(p) === i && p.unsettled())
+            .map(p => ({ param: p, from: p.value as number, to: model.restingPlace(p), wrote: p.value as number }))
+            .filter(m => m.to !== null);
+        if (moves.length === 0) {
+            done();
+            return;
+        }
+
+        let ended = false, frame: any = null, backstop: any = null;
+        const later = typeof requestAnimationFrame === 'function'
+            ? { ask: (f: () => void) => requestAnimationFrame(f), drop: (id: any) => cancelAnimationFrame(id) }
+            : { ask: (f: () => void) => setTimeout(f, 16), drop: (id: any) => clearTimeout(id) };
+        const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        const start = now();
+        const overwritten = () => moves.some(m => m.param.value !== m.wrote);
+        const write = (t: number) => moves.forEach(m => {
+            const eased = 1 - Math.pow(1 - t, 3);
+            model.updateParam(m.param.name, t >= 1 ? m.to : m.from + (m.to - m.from) * eased, { dragging: t < 1 });
+            m.wrote = m.param.value;
+        });
+        const stop = () => {
+            ended = true;
+            if (frame !== null) later.drop(frame);
+            if (backstop !== null) clearTimeout(backstop);
+            model.settling = null;
+        };
+        const end = () => {
+            if (ended) return;
+            stop();
+            done();
+        };
+        const tick = () => {
+            frame = null;
+            if (ended) return;
+            if (overwritten()) return end();
+            const t = ms > 0 ? Math.min(1, (now() - start) / ms) : 1;
+            write(t);
+            if (t >= 1) end();
+            else frame = later.ask(tick);
+        };
+        model.settling = {
+            finish: () => {
+                if (ended) return;
+                if (!overwritten()) write(1);
+                end();
+            },
+            cancel: stop
+        };
+        const settling = model.settling;
+        if (ms > 0) {
+            frame = later.ask(tick);
+            // A tab that is not shown draws no frames, and a drag let go as it
+            // was hidden would stay open, its gesture with it, until it was
+            // shown again. A timer lands it whatever the frames do.
+            backstop = setTimeout(() => settling.finish(), ms + 100);
+        } else settling.finish();
+    }
+
+    /** Land a settling drag now, where it was going. */
+    finishSettling() {
+        if (this.settling) this.settling.finish();
+    }
+
+    /** Drop a settling drag where it is, saying nothing: for an engine being torn down. */
+    cancelSettling() {
+        if (this.settling) this.settling.cancel();
+    }
+
+    /** Where a param a drag left settles: the nearer value it rests at, or the other, or null where neither is allowed. */
+    private restingPlace(param: Param): number | null {
+        const model = this, near = param.landing(param.value),
+            far = param.landing(near + (param.value < near ? -param.round : param.round));
+        if (model.accepts(param, near)) return near;
+        if (far !== near && model.accepts(param, far)) return far;
+        return null;
+    }
+
+    /** Whether the restrictions allow `value` for `param`, asked without moving it. */
+    private accepts(param: Param, value: number): boolean {
+        const model = this;
+        if (model.restrictions.length === 0) return true;
+        const was = param.value;
+        param.value = value;
+        model.currentParamValues = model.evalParams();
+        model.evalCalcs();
+        const ok = model.restrictions.every(r => r.check(model).ok);
+        param.value = was;
+        model.currentParamValues = model.evalParams();
+        model.evalCalcs();
+        return ok;
     }
 
     /**
@@ -399,6 +523,8 @@ export class Model implements IModel {
 
     resetParams() {
         const model = this;
+        // Its gesture closes before the reset, and the reset has the last word.
+        model.finishSettling();
         model.initialParams.forEach(function (p) {
             model.updateParam(p.name, p.value);
         })
@@ -597,10 +723,15 @@ export class Model implements IModel {
     }
 
 
-    updateParam(name: string, newValue: any) {
+    /**
+     * `dragging` says a pointer drag asked for this, which moves a param with
+     * a `dragRound` on that finer grid; see `settle` for where it rests.
+     */
+    updateParam(name: string, newValue: any, opts?: { dragging?: boolean }) {
         let model = this,
             param = model.getParam(name);
         if (!param) return;
+        const dragging = !!(opts && opts.dragging);
         const oldValue = param.value;
         // Held for 'change' mode: once the hypothetical below rebinds these fields
         // the pre-change generation is otherwise unreachable.
@@ -617,7 +748,7 @@ export class Model implements IModel {
                 : requested > param.max ? 'max'
                     : null;
 
-        param.update(newValue);
+        param.update(newValue, dragging);
         const attempted = param.value;
 
         // if param has changed, check to make sure the change is valid
@@ -665,8 +796,9 @@ export class Model implements IModel {
                 // breath, and the refusal is reported below.
                 if (!limit) delete model.blocked[name];
             } else {
-                // Otherwise rollback safely
-                param.update(oldValue);
+                // Otherwise rollback safely, to exactly where it was: mid-drag
+                // that can be between two of the values `round` would give.
+                param.value = oldValue;
                 model.currentParamValues = model.evalParams();
                 model.evalCalcs();
 

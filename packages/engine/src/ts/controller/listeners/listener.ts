@@ -33,9 +33,10 @@ export class Listener extends UpdateListener implements IListener {
         super(def);
     }
 
-    onChange(scope) {
+    /** `dragging` when a pointer drag asked: see `Model.updateParam`. */
+    onChange(scope, dragging?: boolean) {
         const l = this;
-        l.model.updateParam(l.param, l.requested(scope));
+        l.model.updateParam(l.param, l.requested(scope), { dragging: !!dragging });
     }
 
     /** The value this listener would ask its param for, in `scope`. */

@@ -23,6 +23,13 @@ import { SHORTAGE_LESSON } from './steps';
  * finer: at 25c and 50 mangoes a price one step from P* put the two points'
  * quantities 50 apart, and on a phone "275" and "325" ran together, as did
  * the price line's value and P*'s on the price axis.
+ *
+ * Dragged on the chart, each moves on a grid ten times finer, 5c and 10
+ * mangoes, and glides onto its own step once it is let go. On its own step
+ * the price sat still under a moving pointer, then jumped a twelfth of the
+ * axis. Mid-drag every quantity is still a whole number of mangoes and every
+ * gap a multiple of 10, and near P* the two points' labels can pass over each
+ * other until the drag settles them apart.
  */
 
 /**
@@ -60,9 +67,9 @@ const SHORTAGE = stepRevealing(SHORTAGE_LESSON, 'shortageLeg');
  * $5.00 did into S's.
  */
 export const PARAMS: ParamDefinition[] = [
-    { name: 'price', label: 'The price', value: 3, min: 1.5, max: 4.5, round: 0.5, precision: 2 },
-    { name: 'demand', label: 'Demand for mangoes', value: 300, min: 200, max: 400, round: 100 },
-    { name: 'supply', label: 'Supply of mangoes', value: 300, min: 200, max: 400, round: 100 }
+    { name: 'price', label: 'The price', value: 3, min: 1.5, max: 4.5, round: 0.5, dragRound: 0.05, precision: 2 },
+    { name: 'demand', label: 'Demand for mangoes', value: 300, min: 200, max: 400, round: 100, dragRound: 10 },
+    { name: 'supply', label: 'Supply of mangoes', value: 300, min: 200, max: 400, round: 100, dragRound: 10 }
 ];
 
 export const CALCS = {
@@ -118,7 +125,9 @@ const gap = (kind: 'surplus' | 'shortage') => {
             def: {
                 name: kind + 'Label', title: '',
                 x: '(calcs.Qd + calcs.Qs)/2', y: 'params.price',
-                text: `concat("${surplus ? 'Surplus' : 'Shortage'} of ", string(calcs.${kind}), " mangoes")`,
+                // Rounded, because at a price of 3.35 the sum is
+                // 70.00000000000011 in floating point, and a drag stops there.
+                text: `concat("${surplus ? 'Surplus' : 'Shortage'} of ", string(round(calcs.${kind})), " mangoes")`,
                 // Past the arrows of the points at either end, which can be
                 // dragged up and down: 12px off the line, the words ran
                 // between the two points' arrows (Handles).

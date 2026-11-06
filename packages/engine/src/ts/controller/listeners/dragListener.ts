@@ -77,9 +77,9 @@ import { ListenerDefinition, IListener, Listener } from "./listener";
          * it read `dl.draggable` going true to false to true, which is the shape
          * rather than the effect. P11 needs the effect.
          */
-        onChange(scope) {
+        onChange(scope, dragging?: boolean) {
             if (!this.draggable) return;
-            super.onChange(scope);
+            super.onChange(scope, dragging);
         }
 
     

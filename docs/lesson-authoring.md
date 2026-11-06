@@ -67,6 +67,15 @@ their axis. The shortages lesson's price moves in 50c on a $6 axis, and its
 curves in 100 mangoes on an 800 one, for this. At 25c and 50 mangoes, a
 price one step from P\* printed "275" and "325" as "27325".
 
+A step that coarse makes a drag jump, so give the param a `dragRound` as
+well: a finer step that `round` is a whole number of, and that a drag moves
+on before it glides onto `round` once let go (chart-design.md,
+[Motion](./chart-design.md#motion)). The shortages lesson's is 5c and 10
+mangoes. The twelfth applies where a drag lets go: mid-drag two labels can
+pass over each other. Every number mid-drag is on the finer step, so choose
+one that prints whole, and round a calc a label writes out as a string, as
+`string(round(calcs.surplus))` does: at 3.35 the surplus is 70.00000000000011.
+
 A param's `name` is read by students: the Maths tab writes a formula with it,
 "210 − response · (price − 4.5)", where the slider says its `label`. Name it
 with a word that reads in a formula, and say what it is in `paramMeanings`.
