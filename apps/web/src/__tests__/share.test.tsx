@@ -96,7 +96,7 @@ describe('Share', () => {
         open('lessons/market?step=6&a=28');
         await user.click(share());
         expect(screen.getAllByRole('menuitem').map(i => i.textContent))
-            .toEqual(['Copy link', 'Show a QR code', 'Download the diagramPNG', 'Print or save as PDF']);
+            .toEqual(['Copy link', 'Show a QR code', 'Embed…', 'Download the diagramPNG', 'Print or save as PDF']);
         expect(screen.queryByRole('radio')).toBeNull();
     });
 

@@ -2,21 +2,52 @@ import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import { toPng } from 'html-to-image';
 import { readyForPicture } from 'equilibria-engine-js';
+import type { EmbedLayout } from './links';
 
 /**
- * Share: everything that leaves the screen — a link, a QR code, a picture of
- * the diagram, a printed page.
+ * Share: everything that leaves the screen — a link, a QR code, the code to
+ * embed the page in another, a picture of the diagram, a printed page.
  *
  * What a link says is `links.ts`'s. This is the rest: making one whole, and
  * making a picture or a page of the view.
  */
 
 /**
- * An address from `writeLink` (`lessons/fx?…`) on this site, whole: from the
- * app's root, wherever the page asking is.
+ * An address from `writeLink` (`lessons/fx?…`) or `writeEmbed`
+ * (`embed/lessons/fx?…`) on this site, whole: from the app's root, wherever
+ * the page asking is. An embed's own page is under `embed/`, and a link from
+ * it opens the app.
  */
 export function linkHref(address: string): string {
     return new URL(address, new URL(import.meta.env.BASE_URL, window.location.origin)).href;
+}
+
+/**
+ * Each embed's size in a page, as its code asks for it: the room each layout
+ * was laid out for. The whole page is the study screen less the rail, with
+ * the side column beside the stage from 900px; the diagram alone fits a
+ * 640px column, as a page of text has.
+ */
+export const EMBED_SIZE: Record<EmbedLayout, { width: number; height: number }> = {
+    full: { width: 1000, height: 640 },
+    diagram: { width: 640, height: 480 }
+};
+
+const attribute = (text: string) =>
+    text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+/**
+ * The code to paste into a page: an iframe named for what it shows, at its
+ * layout's size, borderless, and never wider than the column it is put in.
+ * Narrower than 900px, the whole page takes the stacked layout a phone has.
+ * The whole page may go full screen, so Present works inside it: `allow` is
+ * how a browser is asked now, and `allowfullscreen` how an older one was.
+ */
+export function embedCode(src: string, title: string, layout: EmbedLayout): string {
+    const { width, height } = EMBED_SIZE[layout];
+    return `<iframe src="${attribute(src)}" title="${attribute(title)}" width="${width}" height="${height}" ` +
+        `style="border:0;max-width:100%"${layout === 'full' ? ' allow="fullscreen" allowfullscreen' : ''} ` +
+        'loading="lazy"></iframe>';
 }
 
 /**

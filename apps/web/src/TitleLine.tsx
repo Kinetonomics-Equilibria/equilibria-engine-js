@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ActionIcon, Divider, Menu, Text, Title, Tooltip } from '@mantine/core';
-import { IconDots, IconEye, IconLayoutGrid, IconPresentation, IconRotate } from '@tabler/icons-react';
+import {
+    IconDots, IconExternalLink, IconEye, IconLayoutGrid, IconPresentation, IconRotate
+} from '@tabler/icons-react';
 import type { StageMode } from 'equilibria-react';
 import type { LessonTopic } from './lessons';
 import { canPresent, togglePresenting, usePresenting } from './present';
@@ -27,6 +29,9 @@ import classes from './TitleLine.module.css';
  * On a phone there is no room for the row: the arrangement stays, and a `⋯`
  * beside it holds Reset and Share's items. Present and the QR code are not
  * among them: a phone is not what a class watches.
+ *
+ * In an embed, Share is "Open in Kinetonomics": the app at this view, in a
+ * tab of its own. What leaves the screen there is the other site's to offer.
  */
 
 /** What the line names of the topic a lesson, or a model's first lesson, is listed under. */
@@ -48,7 +53,9 @@ export interface TitleLineProps {
     /** No column beside the stage: the tools go into the `⋯`. */
     stacked: boolean;
     /** What Share hands out, and how. */
-    share: ShareActions;
+    share?: ShareActions;
+    /** In an embed, in Share's place: this view's address in the app, whole. */
+    openIn?: string;
 }
 
 const ICON = { size: 16, stroke: 1.75 };
@@ -97,8 +104,37 @@ function Arrangement({ mode, onModeChange, disabled }: {
     );
 }
 
+/** Reset, as an icon with its name as its tooltip. */
+function ResetTool({ disabled, onReset }: { disabled: boolean; onReset(): void }) {
+    return (
+        <Tooltip label="Reset" withArrow transitionProps={{ duration: 0 }}>
+            <ActionIcon {...TOOL} aria-label="Reset" disabled={disabled} onClick={onReset}>
+                <IconRotate {...GLYPH} />
+            </ActionIcon>
+        </Tooltip>
+    );
+}
+
+/** What an embed's way back to the app is called, wherever it is. */
+export const OPEN_IN = 'Open in Kinetonomics';
+
+/**
+ * The arrangement and Reset alone, in their capsule: under a diagram embedded
+ * on its own, which has no title line to hold them.
+ */
+export function StageTools({ mode, onModeChange, covered, canReset, onReset }: Pick<
+    TitleLineProps, 'mode' | 'onModeChange' | 'covered' | 'canReset' | 'onReset'
+>) {
+    return (
+        <div className={classes.tools}>
+            <Arrangement mode={mode} onModeChange={onModeChange} disabled={covered} />
+            <ResetTool disabled={covered || !canReset} onReset={onReset} />
+        </div>
+    );
+}
+
 export function TitleLine({
-    title, topic, date, mode, onModeChange, covered, canReset, onReset, stacked, share
+    title, topic, date, mode, onModeChange, covered, canReset, onReset, stacked, share, openIn
 }: TitleLineProps) {
     const resetDisabled = covered || !canReset;
     const presenting = usePresenting();
@@ -147,16 +183,23 @@ export function TitleLine({
                                 Reset
                             </Menu.Item>
                             <Menu.Divider />
-                            <ShareItems {...share} phone onDone={() => setMore(false)} />
+                            {share ? <ShareItems {...share} phone onDone={() => setMore(false)} /> : null}
+                            {openIn ? (
+                                <Menu.Item
+                                    component="a"
+                                    href={openIn}
+                                    target="_blank"
+                                    rel="noopener"
+                                    leftSection={<IconExternalLink {...ICON} />}
+                                >
+                                    {OPEN_IN}
+                                </Menu.Item>
+                            ) : null}
                         </Menu.Dropdown>
                     </Menu>
                 ) : (
                     <>
-                        <Tooltip label="Reset" withArrow transitionProps={{ duration: 0 }}>
-                            <ActionIcon {...TOOL} aria-label="Reset" disabled={resetDisabled} onClick={onReset}>
-                                <IconRotate {...GLYPH} />
-                            </ActionIcon>
-                        </Tooltip>
+                        <ResetTool disabled={resetDisabled} onReset={onReset} />
                         <Divider orientation="vertical" className={classes.hairline} />
                         {/* The page full screen with the rail put away, and
                           * pressed until the browser says it is not: Esc, which
@@ -177,8 +220,25 @@ export function TitleLine({
                                 </ActionIcon>
                             </Tooltip>
                         ) : null}
-                        {/* Works under a sheet: a cover is worth a link too. */}
-                        <ShareMenu {...share} />
+                        {/* Works under a sheet: a cover is worth a link too. In
+                          * an embed, the way to the app at this view instead: a
+                          * real link, so it opens in a tab of its own and the
+                          * page the embed is on stays where it was. */}
+                        {share ? <ShareMenu {...share} /> : null}
+                        {openIn ? (
+                            <Tooltip label={OPEN_IN} withArrow transitionProps={{ duration: 0 }}>
+                                <ActionIcon
+                                    {...TOOL}
+                                    component="a"
+                                    href={openIn}
+                                    target="_blank"
+                                    rel="noopener"
+                                    aria-label={OPEN_IN}
+                                >
+                                    <IconExternalLink {...GLYPH} />
+                                </ActionIcon>
+                            </Tooltip>
+                        ) : null}
                     </>
                 )}
             </div>

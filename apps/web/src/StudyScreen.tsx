@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Badge, Group, Text, UnstyledButton, VisuallyHidden } from '@mantine/core';
+import { Badge, Button, Group, Text, UnstyledButton, VisuallyHidden } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconArrowsDiagonal } from '@tabler/icons-react';
+import { IconArrowsDiagonal, IconExternalLink } from '@tabler/icons-react';
 import { STAGE_PAD, Stage } from 'equilibria-react';
 import type { PanelRole, Room, StageMode, StagePanel } from 'equilibria-react';
 import { STEP_PARAM } from 'equilibria-engine-js';
@@ -26,7 +26,7 @@ import { LessonRecap } from './LessonRecap';
 import type { RecapCase } from './LessonRecap';
 import { PictureSheet } from './PictureSheet';
 import { StageSheet } from './StageSheet';
-import { TitleLine } from './TitleLine';
+import { StageTools, TitleLine } from './TitleLine';
 import type { TitleTopic } from './TitleLine';
 import {
     AT_START, askAt, asideAt, focusBetween, lastMoveAt, marketAt, paramsAt, revealedPanels, slideAt, trackReducer,
@@ -45,11 +45,13 @@ import type { Instrument, InstrumentProps } from './dock/types';
 import { REST, calcPrecision, formatValue, leaveOut, narrate, undoParams } from './narration/narrate';
 import { phraseRefusal } from './narration/phrasebook';
 import type { NarratedCalc, NarratedParam, NarrationLine, Snapshot } from './narration/narrate';
-import { AT_THE_START, useAddressFollows, writeLink } from './links';
-import type { Link, Place } from './links';
+import { AT_THE_START, useAddressFollows, writeEmbed, writeLink } from './links';
+import type { EmbedLayout, Link, Place } from './links';
 import { downloadPicture, linkHref, pictureName, usePrintFit } from './share';
 import type { ShareActions } from './ShareMenu';
 import { QrSheet } from './QrSheet';
+import { EmbedDialog } from './EmbedDialog';
+import type { EmbedDialogProps } from './EmbedDialog';
 import { PrintedView } from './PrintedView';
 import classes from './StudyScreen.module.css';
 
@@ -457,10 +459,18 @@ export interface StudyScreenProps {
      * and leave this page's entry at the second.
      */
     onFinish?: (address: string, from: string | null) => void;
+    /**
+     * Shown in another site's page (`Embed`), and how: the whole page less
+     * the rail, with "Open in Kinetonomics" in Share's place; or the diagram
+     * alone, the playground's stage, with the arrangement and Reset under it
+     * and the way to the Playground at the other end. Without it, the app's
+     * own page, whose Share offers the code for either.
+     */
+    embed?: EmbedLayout;
 }
 
 export function StudyScreen({
-    content = SUPPLY_AND_DEMAND, playground, story, topic, link, answered, onLinkChange, onAnswer, onFinish
+    content = SUPPLY_AND_DEMAND, playground, story, topic, link, answered, onLinkChange, onAnswer, onFinish, embed
 }: StudyScreenProps) {
     // The lesson, on a lesson's page; none in the playground, where the model
     // is the page, or on a story's, where the story is.
@@ -1510,20 +1520,37 @@ export function StudyScreen({
             lessonPuts: Record<string, number> = { ...declared, ...paramsAt(steps, position) },
             front = focusBetween(steps, 0, position) || ownFront,
             params: Record<string, number> = {},
+            market: Record<string, number> = {},
             moved: { info: ParamInfo; from: number }[] = [];
         settled.forEach(p => {
-            if (!p.presentation && answering.indexOf(p.name) < 0 && p.name in lessonPuts
-                && Math.abs(p.value - lessonPuts[p.name]) > 1e-9) {
+            if (p.presentation || !(p.name in lessonPuts)) return;
+            const asked = answering.indexOf(p.name) > -1;
+            if (!asked && Math.abs(p.value - lessonPuts[p.name]) > 1e-9) {
                 params[p.name] = p.value;
                 moved.push({ info: p, from: lessonPuts[p.name] });
             }
+            // The market against the model's own, for the diagram alone,
+            // which is the playground's: a question's curves where the step
+            // puts them, as a link has them.
+            const value = asked ? lessonPuts[p.name] : p.value;
+            if (p.name in declared && Math.abs(value - declared[p.name]) > 1e-9) market[p.name] = value;
         });
         const shownAtFront = revealed.indexOf(focused) > -1 || focused === aside;
         const link: Link = {
             step: position, tab, arrange: mode, focus: shownAtFront && focused !== front ? focused : null, params
         };
-        return { link, moved, atFront: shownAtFront ? focused : revealed[0] };
-    }, [settled, instrumented, instrument, track.position, steps, declared, ownFront, revealed, focused, aside, mode]);
+        // The diagram alone draws the model's panels and no report, so the
+        // panel at the front is named where it is one of the model's and not
+        // its first.
+        const diagram: Link = {
+            ...AT_THE_START, arrange: mode,
+            focus: panelKeys.indexOf(focused) > 0 ? focused : null, params: market
+        };
+        return { link, diagram, moved, atFront: shownAtFront ? focused : revealed[0] };
+    }, [
+        settled, instrumented, instrument, track.position, steps, declared, ownFront, revealed, focused, aside, mode,
+        panelKeys
+    ]);
 
     const here = useMemo(() => (view ? writeLink(place, view.link) : null), [view, place]);
 
@@ -2016,10 +2043,34 @@ export function StudyScreen({
     usePrintFit(stageBox);
     const hidden = !!sheet;
     const title = lesson ? lesson.title : story ? story.headline : model.name;
+
+    /**
+     * The embeds Share's dialog offers, each at the page's start or at this
+     * view: the whole page, this page's address under `embed/`, at this view
+     * as the address bar has it; or the diagram alone, which is the
+     * playground's stage whatever page it came from, so the model's address,
+     * at this view the market on screen in this arrangement. A frame is named
+     * for what it shows: the page's title, or the model's name.
+     */
+    const [embedding, setEmbedding] = useState(false);
+    const embeds = useMemo((): EmbedDialogProps['embeds'] => {
+        const own: Place = { kind: 'playground', id: model.id };
+        return {
+            full: {
+                start: { address: writeEmbed(place), title },
+                view: { address: writeEmbed(place, 'full', view ? view.link : AT_THE_START), title }
+            },
+            diagram: {
+                start: { address: writeEmbed(own, 'diagram'), title: model.name },
+                view: { address: writeEmbed(own, 'diagram', view ? view.diagram : AT_THE_START), title: model.name }
+            }
+        };
+    }, [model, title, place, view]);
     const share: ShareActions = useMemo(() => ({
         link: shareLink,
         title,
         onShowQr: () => setQrUp(true),
+        onEmbed: () => setEmbedding(true),
         onDownload: hidden ? undefined
             : () => downloadPicture(stageLayer.current!, pictureName(lesson ? lesson.label : title, inWords.short)),
         onPrint: hidden ? undefined : () => window.print()
@@ -2078,6 +2129,75 @@ export function StudyScreen({
         />
     );
 
+    // The stage, and whatever covers it: under the title line on the page,
+    // and the whole of an embed of the diagram alone.
+    const stageBlock = (
+        <div ref={stageBox} className={classes.stageBox}>
+            <div ref={stageLayer} className={classes.stageLayer} inert={!!covering}>
+                <Stage
+                    config={config}
+                    focused={focused}
+                    revealed={revealed}
+                    mode={mode}
+                    onPromote={promote}
+                    renderChrome={chrome}
+                    hostPanels={hostPanels}
+                    renderPanel={report}
+                    renderBackdrop={sheetBehind}
+                    chromeRoom={CHROME_ROOM}
+                    promoteLabel={key => {
+                        const declared = panels.filter(p => p.key === key)[0];
+                        const told = asides ? asides[key] : undefined;
+                        return declared ? `Show ${declared.name}`
+                            : told ? `Show the ${told.name.charAt(0).toLowerCase()}${told.name.slice(1)}`
+                                : `Show ${key}`;
+                    }}
+                    onParamChanged={onParamChanged}
+                    onParamBlocked={onParamBlocked}
+                    onCurveDragged={onCurveDragged}
+                    onReady={onReady}
+                    onError={error => console.error('Equilibria failed to mount:', error)}
+                />
+            </div>
+            {covering}
+        </div>
+    );
+
+    /**
+     * The diagram alone, embedded in another site's page: the playground's
+     * stage, still draggable, with one line under it — the arrangement and
+     * Reset, in their capsule, at one end, and the Playground at this view at
+     * the other, in a tab of its own. No title, no tabs, no lesson and no
+     * "What changed": the page it is on says what it is for.
+     */
+    if (embed === 'diagram') {
+        return (
+            <div className={classes.diagramOnly}>
+                {stageBlock}
+                <div className={classes.diagramFoot} style={{ '--stage-pad': STAGE_PAD } as CSSProperties}>
+                    <StageTools
+                        mode={mode}
+                        onModeChange={setMode}
+                        covered={!!covering}
+                        canReset={resetTo.length > 0 && !playing}
+                        onReset={onReset}
+                    />
+                    <Button
+                        component="a"
+                        href={viewLink}
+                        target="_blank"
+                        rel="noopener"
+                        variant="subtle"
+                        size="compact-sm"
+                        rightSection={<IconExternalLink size={14} stroke={1.75} />}
+                    >
+                        Open in the Playground
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     // Two columns, and the side one is the screen's whole height: the title is
     // the diagram's, so it heads the stage's column rather than running over
     // the lesson as well, and the side column gets the height it took, all of
@@ -2107,7 +2227,8 @@ export function StudyScreen({
                         canReset={resetTo.length > 0 && !playing}
                         onReset={onReset}
                         stacked={stacked}
-                        share={share}
+                        share={embed ? undefined : share}
+                        openIn={embed ? viewLink : undefined}
                     />
                 </div>
 
@@ -2119,35 +2240,7 @@ export function StudyScreen({
                     href={viewLink}
                 />
 
-                <div ref={stageBox} className={classes.stageBox}>
-                    <div ref={stageLayer} className={classes.stageLayer} inert={!!covering}>
-                        <Stage
-                            config={config}
-                            focused={focused}
-                            revealed={revealed}
-                            mode={mode}
-                            onPromote={promote}
-                            renderChrome={chrome}
-                            hostPanels={hostPanels}
-                            renderPanel={report}
-                            renderBackdrop={sheetBehind}
-                            chromeRoom={CHROME_ROOM}
-                            promoteLabel={key => {
-                                const declared = panels.filter(p => p.key === key)[0];
-                                const told = asides ? asides[key] : undefined;
-                                return declared ? `Show ${declared.name}`
-                                    : told ? `Show the ${told.name.charAt(0).toLowerCase()}${told.name.slice(1)}`
-                                        : `Show ${key}`;
-                            }}
-                            onParamChanged={onParamChanged}
-                            onParamBlocked={onParamBlocked}
-                            onCurveDragged={onCurveDragged}
-                            onReady={onReady}
-                            onError={error => console.error('Equilibria failed to mount:', error)}
-                        />
-                    </div>
-                    {covering}
-                </div>
+                {stageBlock}
 
                 {/* Under the diagram, never moving, where there is no column
                   * beside it for "What changed". */}
@@ -2177,6 +2270,17 @@ export function StudyScreen({
                     <NarrationPrinted line={narration.line} />
                 </div>
             ) : null}
+
+            {/* Share's Embed…, in the app's own page and never in an embed. */}
+            {embed ? null : (
+                <EmbedDialog
+                    opened={embedding}
+                    onClose={() => setEmbedding(false)}
+                    kind={place.kind}
+                    here={[inWords.where, ...inWords.moved].join(' · ')}
+                    embeds={embeds}
+                />
+            )}
         </div>
     );
 }

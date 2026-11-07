@@ -1,0 +1,8 @@
+/* The code as it will be pasted: monospace, small, and broken anywhere, since
+ * an address has no spaces to break at. */
+.code {
+    font-family: var(--mantine-font-family-monospace);
+    font-size: var(--mantine-font-size-xs);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}

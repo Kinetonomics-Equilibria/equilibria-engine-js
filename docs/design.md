@@ -150,6 +150,8 @@ attention on finding things.
   screen reader says what it will do.
 - Under a sheet, the arrangement and Reset are disabled, not hidden. Present
   and Share still work: a cover is worth showing a class, and worth a link.
+- In an embed, Share's place is "Open in Kinetonomics", an icon like the
+  rest: the app at this view, in a tab of its own (see [Embeds](#embeds)).
 - On a phone there is no room for the row: the arrangement stays, a `⋯`
   beside it holds Reset and Share's items, and the title wraps, as it always
   has. Present and the QR code are not offered there. The `⋯` is in the
@@ -244,6 +246,7 @@ One menu for everything that leaves the screen (`ShareMenu`):
 ```
  Copy link
  Show a QR code
+ Embed…
  ──────────────────────────
  Download the diagram   PNG
  Print or save as PDF
@@ -299,9 +302,11 @@ One menu for everything that leaves the screen (`ShareMenu`):
 - On a phone the `⋯` holds Reset, Copy link, the phone's own share sheet
   ("Send with…") where it has one, Download and Print. A phone's link is
   the one a laptop would give on the same page.
-- Embed… joins the menu with [Embeds](#embeds), after Show a QR code. Where
-  an embed opens is asked in its own dialog, since a class page is where a
-  particular view is worth fixing.
+- Embed… opens a dialog of its own (`EmbedDialog`), since a class page is
+  where a particular view is worth fixing, and the link's answer, the
+  lesson's start, is not always the one wanted there. It asks what the embed
+  shows and where it opens, and gives the code to copy. See
+  [Embeds](#embeds). Not on a phone, which has no class page to be writing.
 
 ## Links
 
@@ -372,8 +377,74 @@ One menu for everything that leaves the screen (`ShareMenu`):
   lesson's model, at that tab and market.
 - A phone writes what a laptop does, so one link opens on either.
 - No model may give a param one of the address's own names: `lesson`,
-  `step`, `tab`, `arrange`, `focus`. `lesson` is in the path now, and stays
-  reserved, since old links carry it. A test checks.
+  `layout`, `step`, `tab`, `arrange`, `focus`. `lesson` is in the path now,
+  and stays reserved, since old links carry it; `layout` is an embed's. A
+  test checks.
+
+## Embeds
+
+```
+ embed/lessons/fx?step=7                          the whole lesson, at a view
+ embed/playground/aud?layout=diagram&supply=56    the diagram only, at a market
+```
+
+A page of the app in another site's page, a class page most often, in an
+iframe (`Embed`). The teacher's page says what it is for, so an embed brings
+the diagram and as much of the page as the teacher asks for, and nothing of
+the app's own: no rail, and nothing that leaves the screen but the way back
+to the app.
+
+- **The whole page** is the study screen less the rail: the title line, the
+  stage and the side column, a lesson's, a story's or the playground's
+  instruments. Share's place on the title line is "Open in Kinetonomics",
+  which opens the app at the same view in a tab of its own; on the `⋯` it is
+  the last item, after Reset. Present stays, where the frame may go full
+  screen, which its code asks for. It is 1000 × 640: the side column beside
+  the stage from 900px, and narrower the stacked layout a phone has, with
+  the card under the stage.
+- **The diagram only** is the playground's stage, whatever page it came
+  from: the model whole, every panel, still draggable. A lesson's steps
+  bring its diagram in an idea at a time, and a diagram on its own has no
+  steps to do that with. One line under it: the arrangement and Reset, in
+  their capsule as on the title line, at one end, and "Open in the
+  Playground" at the other, at this market, in a tab of its own. No title,
+  no tabs, no lesson and no "What changed". The arrangement stays because a
+  press on a panel in the grid brings it to the front and leaves the grid,
+  and without it there would be no way back. It is 640 × 480, and fits a
+  narrower column as well.
+- The address is the page's own path under `embed/`, then
+  `layout=diagram` for the diagram only, then the view in the words a link
+  uses. The whole page is left out, as a link leaves out what is at the
+  page's own default. The diagram only is always the model's address,
+  `embed/playground/<model>`, since that is what it draws; a lesson's or a
+  story's under `layout=diagram` opens its model, without the step or tab.
+- It opens as a link opens, and as forgivingly: a lesson or a model that has
+  gone opens the first one at its start. A story that is not there, or a
+  path the app does not have, says so in the frame, with a way to the app,
+  rather than opening the app's Home inside another site.
+- Embed… in [Share](#share) opens a dialog: what it shows (the whole lesson,
+  the diagram and instruments, or the whole story; or the diagram only),
+  where it opens (the start, or this view), and the code. Its answers start
+  as Share's link's do: the whole page, at the start for a lesson or a
+  story, and at this view in the playground. "This view" of a lesson is
+  said in words, as the printed page says it ("Step 7 of 15 · The AUD
+  appreciates · Supply of AUD 50 → 56"); of the diagram only, it is the
+  market on screen, a question's curves where the step puts them, as a link
+  has them. The code box is five lines whatever is chosen, so the buttons
+  under it never move; Copy code says "Copied", and Preview opens the embed
+  in a tab of its own.
+- The code is an iframe named for what it shows, the page's title or the
+  model's name, at its layout's size, with no border and never wider than
+  the column it is pasted into (`embedCode`).
+- **An embed saves nothing to the page it is on.** It never writes its
+  address: a frame's history is the page's, so a write would put a
+  student's drags under the other site's Back button. It keeps no answers.
+  Each student who opens it has their own copy, and nothing they do leaves
+  their browser. Every way out, "Open in Kinetonomics", Finish and a
+  story's "Open in the Playground" among them, opens the app in a tab of its
+  own, and the page the embed is on stays where it was.
+- The host must let the app be framed, so neither `staticwebapp.config.json`
+  nor `netlify.toml` sends `X-Frame-Options` or a `frame-ancestors` policy.
 
 ## The side column
 
@@ -714,9 +785,9 @@ was built, so the first one built lands where the others expect it.
 
 **Built:** models and all four places — the Lessons page, the Playground,
 In the news and Home — with their addresses and their places on the rail,
-and the sections above describe them. **Still to come:** what [Embeds](#embeds)
-becomes now the lesson and the playground are parted, and the questions
-under [Still open](#still-open).
+and the sections above describe them, and [Embeds](#embeds), now the lesson
+and the playground are parted. **Still to come:** the questions under
+[Still open](#still-open).
 
 ### Why the lesson and the instruments part
 
@@ -1006,6 +1077,7 @@ Built, at `news/<id>`, with its stories in `apps/web/src/news/`.
  /lessons/fx?step=7&arrange=grid         a lesson, at a view
  /playground/aud?tab=maths&supply=56     a model, at a view
  /news/2026-09-rba-cash-rate             a story
+ /embed/lessons/fx?step=7                a page in another site's page
 ```
 
 Built, as [Links](#links) describes.
@@ -1049,10 +1121,9 @@ column](#the-side-column), [Reset](#reset) and the rail. Rewritten for In
 the news and Home: [The title line](#the-title-line), for a story's date;
 [Share](#share) and [Links](#links), for a story's address and what its
 link opens; [What a lesson supplies](#what-a-lesson-supplies), for a
-story's fields; the kit; and the rail. Still to come:
-
-- [Embeds](#embeds): the diagram-only embed is the playground's stage, and its
-  link opens the Playground.
+story's fields; the kit; and the rail. Rewritten for embeds once the
+lesson and the playground were parted: [Embeds](#embeds), whose diagram
+only is the playground's stage and opens the Playground.
 
 ### Still open
 
@@ -1070,8 +1141,8 @@ story's fields; the kit; and the rail. Still to come:
 Places kept for tools that are not built yet, so that the first one built
 lands where the rest expect it and none of them has to move another. Nothing
 in this section is on the screen today but the profile circle at the rail's
-foot, which the tools to come there are placed around. Reset, Present, Share
-and Links were kept here once, and are built.
+foot, which the tools to come there are placed around. Reset, Present,
+Share, Links and Embeds were kept here once, and are built.
 
 ### The rail's foot
 
@@ -1081,20 +1152,3 @@ in a menu. Once there are accounts the circle shows the student's initials,
 the menu opens with their name, and Sign out goes at its end, under Settings.
 All of it is about the app rather than the diagram, so it belongs to the rail,
 apart from the places to go.
-
-### Embeds
-
-- `/embed/<lesson>?layout=full` or `layout=diagram`, plus the same view as a
-  link. The code is an iframe whose `title` is the lesson's.
-- Embed… in [Share](#share) opens a dialog: the whole lesson or the diagram
-  only, where it opens, and the code to copy.
-- **The whole lesson** is the study screen less the rail: the title line, the
-  stage and the side column. Share becomes "Open in Kinetonomics", which
-  opens the app at the same view in a tab of its own. It wants about
-  1000 × 640; narrower, it takes the stacked layout the screen already has
-  for a phone.
-- **The diagram only** is the stage, still draggable, with one line under it:
-  Reset at one end and "Open the full lesson" at the other. No tabs, no
-  lesson and no "What changed". It fits a 640px column.
-- An embed saves nothing to the page it is on. Each student who opens it has
-  their own copy, and nothing they do leaves their browser.

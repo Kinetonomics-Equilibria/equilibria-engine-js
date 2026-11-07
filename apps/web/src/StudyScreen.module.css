@@ -334,6 +334,28 @@
     min-height: 0;
 }
 
+/* The diagram alone, in another site's page (`Embed`): the stage, the
+ * frame's whole height less the line under it, and nothing beside it. The
+ * stage measures what it renders, so this has the height for it to take. */
+.diagramOnly {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* The one line under the diagram alone: the arrangement and Reset at one end,
+ * the way to the Playground at the other. Inset by the stage's margin, as the
+ * title line is, so its ends are the sheets' edges. */
+.diagramFoot {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mantine-spacing-xs);
+    padding-inline: calc(var(--stage-pad) * 100%);
+    margin-top: var(--mantine-spacing-xs);
+}
+
 /* One card — the lesson, a story's, or the instruments — with "What changed"
  * at its foot, at a width that depends on neither.
  *

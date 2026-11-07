@@ -1,0 +1,19 @@
+/* The frame's whole height, with the margin AppShell.Main gives the app's own
+ * page round it, so the study screen's height (`.screen` in
+ * StudyScreen.module.css, the window less that margin) is the frame's too, and
+ * the diagram alone takes all of it. */
+.embed {
+    height: 100vh;
+    padding: var(--mantine-spacing-md);
+}
+
+/* What an address that names nothing says, in the middle of the frame. */
+.nowhere {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--mantine-spacing-xs);
+    text-align: center;
+}

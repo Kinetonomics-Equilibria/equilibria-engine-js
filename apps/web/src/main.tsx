@@ -8,16 +8,22 @@ import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 
 import { App } from './App';
+import { Embed } from './Embed';
+import { readEmbed } from './links';
 import { theme } from './theme';
 import './index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('#root is missing from index.html');
 
+// An address under `embed/` is a page in another site's page (`Embed`), with
+// no rail and nothing written to the address; any other is the app's own.
+const embedded = readEmbed(window.location, import.meta.env.BASE_URL);
+
 createRoot(rootElement).render(
     <StrictMode>
         <MantineProvider theme={theme}>
-            <App />
+            {embedded ? <Embed {...embedded} /> : <App />}
         </MantineProvider>
     </StrictMode>
 );
